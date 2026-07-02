@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: riftbound-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: riftbound
+      POSTGRES_PASSWORD: riftbound
+      POSTGRES_DB: riftbound
+    volumes:
+      - riftbound_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U riftbound -d riftbound"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  riftbound_pg_data:

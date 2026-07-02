@@ -1,0 +1,87 @@
+import { Image } from 'expo-image';
+import { Pressable, ScrollView, View } from 'react-native';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { Text } from '@/components/ui/text';
+import { cn } from '@/lib/utils';
+import { formatPrintingLabel, isFoilVariant } from '@/utils/variants';
+
+export interface PrintingPreviewItem {
+  id: string;
+  variantNumber: string;
+  variantLabel: string;
+  variantType?: string;
+  imageUrl: string;
+  price?: string | null;
+}
+
+interface Props {
+  items: PrintingPreviewItem[];
+  selectedId: string;
+  onSelect: (variantNumber: string) => void;
+  compact?: boolean;
+  dense?: boolean;
+}
+
+export function PrintingPreviewStrip({
+  items,
+  selectedId,
+  onSelect,
+  compact = false,
+  dense = false,
+}: Props) {
+  if (items.length <= 1) return null;
+
+  const thumbWidth = compact ? 44 : 56;
+  const thumbHeight = compact ? 62 : 78;
+
+  return (
+    <View className={dense ? 'gap-1' : 'gap-2'}>
+      <SectionLabel className={dense ? 'mb-0.5' : undefined}>Printings</SectionLabel>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2.5 pr-1">
+        {items.map((item) => {
+          const foil = isFoilVariant(
+            item.variantNumber,
+            item.variantLabel,
+            item.variantType
+          );
+          const selected = item.variantNumber === selectedId;
+          const title = formatPrintingLabel(
+            item.variantLabel,
+            foil,
+            item.variantNumber
+          );
+          return (
+            <Pressable
+              key={item.id}
+              className="max-w-[72px] items-center gap-1 active:opacity-80"
+              onPress={() => {
+                onSelect(item.variantNumber);
+              }}
+            >
+              <Image
+                key={item.variantNumber}
+                recyclingKey={item.variantNumber}
+                source={{ uri: item.imageUrl }}
+                style={{ width: thumbWidth, height: thumbHeight }}
+                className={cn(
+                  'rounded-md border-2 bg-card',
+                  selected ? 'border-primary' : 'border-transparent'
+                )}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+              <Text className="w-[72px] text-center text-[9px] font-semibold text-muted-foreground" numberOfLines={1}>
+                {title}
+              </Text>
+              {item.price ? (
+                <Text className="text-center text-[9px] font-bold text-success" numberOfLines={1}>
+                  {item.price}
+                </Text>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
