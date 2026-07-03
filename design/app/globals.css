@@ -77,34 +77,33 @@
 :root {
   color-scheme: dark;
 
-  /* riftrune.com — minimal dark catalog. Near-neutral cool charcoal, one
-     restrained tech-blue accent. Card artwork carries the color; the UI
-     stays out of the way. */
-  --archive-bg: oklch(0.145 0.002 250);
-  --archive-surface: oklch(0.185 0.002 250);
-  --archive-panel: oklch(0.225 0.003 250);
-  --archive-raised: oklch(0.265 0.003 250);
-  --archive-ink: oklch(0.965 0.002 250);
-  --archive-muted: oklch(0.715 0.004 250);
-  --archive-subtle: oklch(0.575 0.004 250);
-  --archive-line: oklch(0.295 0.003 250);
-  --archive-soft-line: oklch(0.235 0.002 250);
-  --archive-accent: oklch(0.62 0.10 255);
-  --archive-accent-ink: oklch(0.99 0.005 250);
-  --archive-accent-text: oklch(0.75 0.08 255);
+  /* riftrune.com — pure monochrome dark catalog. Zero-chroma neutral ramp,
+     single chartreuse accent for actions and selection only. */
+  --archive-bg: oklch(0.130 0 0);
+  --archive-surface: oklch(0.175 0 0);
+  --archive-panel: oklch(0.215 0 0);
+  --archive-raised: oklch(0.258 0 0);
+  --archive-ink: oklch(0.960 0 0);
+  --archive-muted: oklch(0.720 0 0);
+  --archive-subtle: oklch(0.580 0 0);
+  --archive-line: oklch(0.292 0 0);
+  --archive-soft-line: oklch(0.228 0 0);
+  --archive-accent: oklch(0.976 0.063 111);
+  --archive-accent-ink: oklch(0.14 0 0);
+  --archive-accent-text: oklch(0.940 0.055 111);
   --archive-brass: var(--archive-muted);
   --archive-brass-text: var(--archive-muted);
-  --archive-success: oklch(0.72 0.08 160);
+  --archive-success: oklch(0.74 0.18 152);
   --archive-info: var(--archive-muted);
   --archive-warning: oklch(0.70 0.08 55);
 
   /* Legacy Riftbound tokens aligned to the neutral ramp. */
-  --rift-bg: oklch(0.145 0.002 250);
-  --rift-surface: oklch(0.185 0.002 250);
-  --rift-elevated: oklch(0.225 0.003 250);
-  --rift-line: oklch(0.295 0.003 250);
-  --rift-text: oklch(0.965 0.002 250);
-  --rift-muted: oklch(0.715 0.004 250);
+  --rift-bg: oklch(0.130 0 0);
+  --rift-surface: oklch(0.175 0 0);
+  --rift-elevated: oklch(0.215 0 0);
+  --rift-line: oklch(0.292 0 0);
+  --rift-text: oklch(0.960 0 0);
+  --rift-muted: oklch(0.720 0 0);
   --fury: var(--archive-accent);
   --fury-foreground: var(--archive-accent-ink);
   --accelerate: var(--archive-success);
@@ -125,7 +124,7 @@
   --destructive: oklch(0.60 0.12 50);
   --border: var(--archive-line);
   --input: var(--archive-line);
-  --ring: oklch(0.62 0.10 255);
+  --ring: oklch(0.976 0.063 111);
   --chart-1: var(--archive-accent);
   --chart-2: var(--archive-muted);
   --chart-3: var(--archive-success);
@@ -139,7 +138,7 @@
   --sidebar-accent: var(--archive-panel);
   --sidebar-accent-foreground: var(--archive-ink);
   --sidebar-border: var(--archive-line);
-  --sidebar-ring: oklch(0.62 0.10 255);
+  --sidebar-ring: oklch(0.976 0.063 111);
 }
 
 @layer base {
@@ -175,7 +174,7 @@
 
 @layer utilities {
   .archive-focus {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(0.62_0.10_255)] focus-visible:ring-offset-2 focus-visible:ring-offset-archive-bg;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(0.976_0.063_111)] focus-visible:ring-offset-2 focus-visible:ring-offset-archive-bg;
   }
 
   .archive-transition {

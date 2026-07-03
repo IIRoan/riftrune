@@ -4,10 +4,12 @@ import Image from "next/image"
 import { ContextMenu } from "@base-ui/react/context-menu"
 import { Menu } from "@base-ui/react/menu"
 import {
+  Archive,
   Bell,
   Check,
   ChevronDown,
   LayoutGrid,
+  Layers,
   Minus,
   MoreHorizontal,
   Plus,
@@ -15,7 +17,7 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   EnergyPip,
   FuryIcon,
@@ -528,9 +530,10 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-archive-bg text-archive-ink">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 sm:px-6 lg:px-8">
-        <AppHeader pageView={pageView} onPageChange={setPageView} />
+    <div className="flex min-h-screen bg-archive-bg text-archive-ink">
+      <SideRail pageView={pageView} onPageChange={setPageView} />
+      <main className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col pr-4 sm:pr-6 lg:pr-8">
 
         {pageView === "cards" && (
           <section className="grid flex-1 gap-6 pt-6 lg:grid-cols-[minmax(0,1fr)_430px] xl:grid-cols-[minmax(0,1fr)_470px]">
@@ -608,64 +611,63 @@ export default function Page() {
             </div>
           </section>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   )
 }
 
-function AppHeader({
+function SideRail({
   pageView,
   onPageChange,
 }: {
   pageView: PageView
   onPageChange: (view: PageView) => void
 }) {
-  const navItems: { id: PageView; label: string }[] = [
-    { id: "cards", label: "Cards" },
-    { id: "collection", label: "Collection" },
-    { id: "decks", label: "Decks" },
+  const navItems: { id: PageView; label: string; Icon: React.ElementType }[] = [
+    { id: "cards", label: "Cards", Icon: LayoutGrid },
+    { id: "collection", label: "Collection", Icon: Archive },
+    { id: "decks", label: "Decks", Icon: Layers },
   ]
 
   return (
-    <header className="sticky top-0 z-20 -mx-4 border-b border-archive-soft-line bg-archive-bg/92 px-4 backdrop-blur-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <div className="flex h-14 items-stretch justify-between gap-4">
-        <div className="flex min-w-0 items-stretch gap-5">
-          <a
-            href="#"
-            className="archive-focus archive-transition flex items-center gap-2.5 self-center rounded-lg"
-          >
-            <span
-              aria-hidden="true"
-              className="grid size-7 place-items-center rounded-md bg-archive-accent font-mono text-sm font-bold text-archive-accent-ink"
+    <aside className="sticky top-0 z-30 flex h-screen w-20 shrink-0 flex-col items-center py-3">
+      <div className="flex h-full w-12 flex-col items-center gap-1 overflow-hidden rounded-xl border border-archive-line bg-archive-surface py-3 shadow-xl shadow-black/50">
+        <a
+          href="#"
+          className="archive-focus archive-transition mb-2 grid size-8 place-items-center rounded-lg bg-archive-accent"
+          aria-label="riftrune home"
+        >
+          <span aria-hidden="true" className="font-mono text-sm font-bold text-archive-accent-ink">
+            r
+          </span>
+        </a>
+
+        <span aria-hidden="true" className="h-px w-6 shrink-0 bg-archive-soft-line" />
+
+        <nav className="mt-1 flex flex-col items-center gap-1" aria-label="Primary">
+          {navItems.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onPageChange(id)}
+              aria-current={pageView === id ? "page" : undefined}
+              aria-label={label}
+              className={cn(
+                "archive-focus archive-transition grid size-9 place-items-center rounded-lg",
+                pageView === id
+                  ? "bg-archive-panel text-archive-ink"
+                  : "text-archive-muted hover:bg-archive-panel/60 hover:text-archive-ink",
+              )}
             >
-              r
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">riftrune</span>
-          </a>
+              <Icon className="size-[18px]" aria-hidden="true" />
+            </button>
+          ))}
+        </nav>
 
-          <span aria-hidden="true" className="my-4 hidden w-px bg-archive-line md:block" />
+        <div className="flex-1" />
 
-          <nav className="hidden items-stretch gap-1 md:flex" aria-label="Primary">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onPageChange(item.id)}
-                aria-current={pageView === item.id ? "page" : undefined}
-                className={cn(
-                  "archive-focus archive-transition relative flex items-center rounded-lg px-3 text-sm",
-                  pageView === item.id
-                    ? "font-semibold text-archive-ink after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:rounded-full after:bg-archive-accent"
-                    : "font-medium text-archive-muted hover:text-archive-ink",
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-1">
           <button
             aria-label="Alerts"
             className="archive-focus archive-transition grid size-9 place-items-center rounded-lg text-archive-muted hover:bg-archive-panel hover:text-archive-ink"
@@ -674,17 +676,13 @@ function AppHeader({
           </button>
           <button
             aria-label="Add card"
-            className="archive-focus archive-transition grid size-9 place-items-center rounded-lg bg-archive-accent text-archive-accent-ink hover:brightness-110 active:translate-y-px sm:hidden"
+            className="archive-focus archive-transition grid size-9 place-items-center rounded-lg bg-archive-accent text-archive-accent-ink hover:brightness-110 active:translate-y-px"
           >
             <Plus className="size-4" aria-hidden="true" />
           </button>
-          <button className="archive-focus archive-transition hidden h-9 items-center gap-1.5 rounded-lg bg-archive-accent px-3.5 text-sm font-semibold text-archive-accent-ink hover:brightness-110 active:translate-y-px sm:inline-flex">
-            <Plus className="size-4" aria-hidden="true" />
-            Add card
-          </button>
         </div>
       </div>
-    </header>
+    </aside>
   )
 }
 
@@ -969,7 +967,7 @@ function OwnershipStepper({
                   >
                     <span className="flex items-center gap-2">
                       {p.variantLabel}
-                      {p.isFoil && (
+                      {p.isFoil && !p.variantLabel.toLowerCase().includes("foil") && (
                         <span className="rounded bg-archive-accent/15 px-1 py-0.5 text-[10px] font-semibold text-archive-accent-text">
                           Foil
                         </span>
@@ -1024,7 +1022,7 @@ function OwnershipStepper({
                   >
                     <span className="flex items-center gap-2">
                       {p.variantLabel}
-                      {p.isFoil && (
+                      {p.isFoil && !p.variantLabel.toLowerCase().includes("foil") && (
                         <span className="rounded bg-archive-accent/15 px-1 py-0.5 text-[10px] font-semibold text-archive-accent-text">
                           Foil
                         </span>
@@ -1063,7 +1061,7 @@ function OwnershipStepper({
         <span
           aria-live="polite"
           className={cn(
-            "text-center font-mono font-semibold tabular-nums text-archive-ink",
+            "text-center font-mono font-semibold tabular-nums text-archive-success",
             compact ? "min-w-5 text-[11px]" : "min-w-7 text-[13px]",
           )}
         >
@@ -1103,7 +1101,7 @@ function OwnershipStepper({
                   >
                     <span className="flex items-center gap-2">
                       {p.variantLabel}
-                      {p.isFoil && (
+                      {p.isFoil && !p.variantLabel.toLowerCase().includes("foil") && (
                         <span className="rounded bg-archive-accent/15 px-1 py-0.5 text-[10px] font-semibold text-archive-accent-text">
                           Foil
                         </span>
@@ -1201,7 +1199,7 @@ function CardRow({
           {owned > 0 ? (
             <>
               <span aria-hidden="true" className="size-1.5 rounded-full bg-archive-success" />
-              <span className="text-archive-muted">Owned ×{owned}</span>
+              <span className="text-archive-success">Owned ×{owned}</span>
               {summary && <span className="text-archive-subtle">· {summary}</span>}
             </>
           ) : (
@@ -1218,11 +1216,20 @@ function CardRow({
       </div>
 
       <div className="relative z-[2] flex items-center gap-3">
-        <div className="flex flex-col items-end gap-1">
-          <span className="font-mono text-sm font-semibold tabular-nums text-archive-ink">
-            {priceRange(card)}
-          </span>
-          <TrendTag trend={bestTrend(card)} />
+        <div className="flex flex-col items-end gap-0.5">
+          {card.printings.map((p) => (
+            <div key={p.variantNumber} className="flex items-center gap-1.5">
+              {card.printings.length > 1 && (
+                <span className="font-mono text-[10px] text-archive-subtle">
+                  {p.isFoil ? "Foil" : "Std"}
+                </span>
+              )}
+              <span className="font-mono text-sm font-semibold tabular-nums text-archive-ink">
+                {p.price}
+              </span>
+              <TrendTag trend={p.marketTrend} />
+            </div>
+          ))}
         </div>
         <OwnershipStepper
           owned={owned}
@@ -1752,14 +1759,28 @@ function ProgressRow({
 function CardDetail({ card, handlers }: { card: CardRecord; handlers: CardHandlers }) {
   const primary = primaryPrinting(card)
   const owned = totalOwned(card)
+  const [fullscreen, setFullscreen] = useState(false)
+
+  useEffect(() => { setFullscreen(false) }, [card.id])
+  useEffect(() => {
+    if (!fullscreen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFullscreen(false) }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [fullscreen])
+
   return (
-    <aside className="lg:sticky lg:top-[76px] lg:max-h-[calc(100vh-96px)]">
-      <section className="flex max-h-full flex-col overflow-hidden rounded-xl border border-archive-line bg-archive-surface">
-        <div
-          className="relative grid min-h-[188px] shrink-0 place-items-center p-3.5"
+    <>
+      <aside className="lg:sticky lg:top-6 lg:self-start">
+        <section className="flex flex-col rounded-xl border border-archive-line bg-archive-surface">
+        <button
+          type="button"
+          aria-label={`View ${card.name} full size`}
+          onClick={() => setFullscreen(true)}
+          className="archive-focus archive-transition relative grid min-h-[188px] w-full shrink-0 cursor-pointer place-items-center rounded-t-xl p-3.5 hover:brightness-110"
           style={{
             background:
-              "radial-gradient(110% 85% at 50% 12%, oklch(0.24 0.003 250), oklch(0.16 0.002 250) 78%)",
+              "radial-gradient(110% 85% at 50% 12%, oklch(0.225 0 0), oklch(0.152 0 0) 78%)",
           }}
         >
           <div key={card.id} className="archive-detail-enter relative aspect-[5/7] h-full max-h-[165px]">
@@ -1775,9 +1796,9 @@ function CardDetail({ card, handlers }: { card: CardRecord; handlers: CardHandle
           <span className="absolute right-4 top-3 font-mono text-xs text-archive-subtle">
             {primary.variantNumber}
           </span>
-        </div>
+        </button>
 
-        <div key={`${card.id}-body`} className="archive-detail-enter min-h-0 flex-1 overflow-y-auto p-4">
+        <div key={`${card.id}-body`} className="archive-detail-enter p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="text-xl font-semibold leading-tight tracking-tight">{card.name}</h2>
@@ -1867,7 +1888,7 @@ function CardDetail({ card, handlers }: { card: CardRecord; handlers: CardHandle
                       <span className="text-sm font-semibold text-archive-ink">
                         {printing.variantLabel}
                       </span>
-                      {printing.isFoil && (
+                      {printing.isFoil && !printing.variantLabel.toLowerCase().includes("foil") && (
                         <span className="rounded bg-archive-accent/15 px-1.5 py-0.5 text-[11px] font-semibold text-archive-accent-text">
                           Foil
                         </span>
@@ -1900,6 +1921,31 @@ function CardDetail({ card, handlers }: { card: CardRecord; handlers: CardHandle
         </div>
       </section>
     </aside>
+
+    {fullscreen && (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${card.name} full size`}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm"
+        onClick={() => setFullscreen(false)}
+      >
+        <div
+          className="relative"
+          style={{ aspectRatio: "5/7", height: "min(88vh, 560px)" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Image
+            src={primary.image}
+            alt={card.alt}
+            fill
+            sizes="40vw"
+            className="rounded-xl object-contain drop-shadow-[0_32px_64px_rgba(0,0,0,0.9)]"
+          />
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 
