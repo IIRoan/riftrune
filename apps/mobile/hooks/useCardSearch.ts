@@ -10,12 +10,15 @@ import {
 } from '@/services/searchHistoryService';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
-import { normalizeCardListItems, normalizeCardsListResponse } from '@/utils/variants';
+import { normalizeCardListItems, normalizeCardsListResponse, groupCatalogListItems } from '@/utils/variants';
+
+import type { CardsListQuery } from '@riftbound/contracts';
+import { DEFAULT_CATALOG_SORT, type CatalogSort } from '@/constants/catalogSort';
 
 const DEBOUNCE_MS = 400;
 const STALE_MS = 5 * 60 * 1000;
 
-export function useCardSearch(query: string) {
+export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG_SORT) {
   const trimmed = query.trim();
   const debounced = useDebounce(trimmed, DEBOUNCE_MS);
   const [immediateTerm, setImmediateTerm] = useState<string | null>(null);
@@ -49,9 +52,16 @@ export function useCardSearch(query: string) {
   }, [activeTerm, enabled]);
 
   const result = useQuery({
-    queryKey: cardQueryKeys.search(activeTerm),
+    queryKey: cardQueryKeys.search(activeTerm, 40, sort.sortBy, sort.dir),
     queryFn: async () => {
-      const response = await api.listCards({ q: activeTerm, limit: 40, page: 1 });
+      const params: Partial<CardsListQuery> = {
+        q: activeTerm,
+        limit: 40,
+        page: 1,
+        sortBy: sort.sortBy,
+        dir: sort.dir,
+      };
+      const response = await api.listCards(params);
       const normalized = normalizeCardsListResponse(response);
       await cacheSearchResults(activeTerm, normalized);
       await addSearchHistoryItem(activeTerm);
@@ -66,7 +76,7 @@ export function useCardSearch(query: string) {
       if (previous) return previous;
       if (instantCache) return instantCache;
       return queryClient.getQueryData<CardsListResponse>(
-        cardQueryKeys.search(activeTerm)
+        cardQueryKeys.search(activeTerm, 40, sort.sortBy, sort.dir)
       );
     },
     retry: 1,
@@ -83,14 +93,21 @@ export function useCardSearch(query: string) {
     }
   }, [result.data, queryClient]);
 
-  const searchNow = useCallback(() => {
-    if (trimmed.length >= MIN_SEARCH_LENGTH) {
-      setImmediateTerm(trimmed);
-    }
-  }, [trimmed]);
+  const searchNow = useCallback(
+    (override?: string) => {
+      const term = (override ?? trimmed).trim();
+      if (term.length >= MIN_SEARCH_LENGTH) {
+        setImmediateTerm(term);
+      }
+    },
+    [trimmed]
+  );
 
   const rawItems = result.data?.data ?? instantCache?.data ?? [];
-  const items = useMemo(() => normalizeCardListItems(rawItems), [rawItems]);
+  const items = useMemo(
+    () => groupCatalogListItems(normalizeCardListItems(rawItems)),
+    [rawItems]
+  );
 
   return {
     debouncedQuery: activeTerm,

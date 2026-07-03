@@ -35,7 +35,7 @@ export function SearchBar({
       autoCorrect={false}
       onSubmitEditing={onSubmitEditing}
       autoFocus={autoFocus}
-      className="border-border bg-card"
+      className="min-h-12 rounded-xl border-border bg-card"
     >
       {isLoading ? (
         <InputAddon align="inline-end">

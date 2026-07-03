@@ -1,244 +1,213 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CardTile } from '@/components/cards/CardTile';
-import { CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
-import { SearchBar } from '@/components/search/SearchBar';
+import { useCallback, useMemo } from 'react';
+import { View } from 'react-native';
+import {
+  BreakdownSection,
+  CollectionListPanel,
+  CollectionMoverRow,
+  DashboardStat,
+  DashboardStatGrid,
+  mergeSetStats,
+  computeTypeStats,
+  SetCardGrid,
+  WishlistRow,
+  rarityIconFor,
+  typeIconFor,
+} from '@/components/collection/CollectionDashboard';
+import { ScreenLayout } from '@/components/shell/ScreenLayout';
+import { Text } from '@/components/ui/text';
 import { Button, ButtonText } from '@/components/ui/button';
-import { Chip, ChipText } from '@/components/ui/chip';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { Stack } from '@/components/ui/stack';
-import { Layout } from '@/constants/Layout';
-import { useTheme } from '@/context/ThemeContext';
-import { useCollection, useCollectionMutations } from '@/hooks/useCollection';
-import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
-import {
-  filterCollection,
-  sortCollection,
-  type CollectionEntry,
-} from '@/services/collectionService';
-import { confirmRemoveFromCollection } from '@/utils/collectionConfirm';
-
-type SortOption = 'recent' | 'name' | 'set';
-
-const SORT_LABELS: Record<SortOption, string> = {
-  recent: 'Recent',
-  name: 'Name',
-  set: 'Set',
-};
+import { useCollection } from '@/hooks/useCollection';
+import { useCollectionInsights } from '@/hooks/useCollectionInsights';
+import { useFiltersData } from '@/hooks/useFiltersData';
+import { getWishlist } from '@/services/wishlistService';
+import { useQuery } from '@tanstack/react-query';
+import { openCard } from '@/utils/cardNavigation';
 
 export default function CollectionScreen() {
-  const { defaultLayout } = useTheme();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
+
   const { data: collection = [], isLoading, refetch } = useCollection();
-  const { setQuantity, removeCard } = useCollectionMutations();
+  const filtersQuery = useFiltersData();
+  const insightsQuery = useCollectionInsights(collection);
 
-  const collectionByVariant = useMemo(
-    () => new Map(collection.map((e) => [e.variantNumber, e])),
-    [collection]
-  );
-  const [query, setQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('recent');
-
-  const { numColumns, contentWidth, tileWidth, compact } =
-    useResponsiveColumns(defaultLayout);
+  const wishlistQuery = useQuery({
+    queryKey: ['wishlist'],
+    queryFn: getWishlist,
+  });
 
   useFocusEffect(
     useCallback(() => {
       void refetch();
-    }, [refetch])
+      void wishlistQuery.refetch();
+    }, [refetch, wishlistQuery])
   );
-
-  const entries = useMemo(() => {
-    const filtered = filterCollection(collection, query);
-    return sortCollection(filtered, sortBy);
-  }, [collection, query, sortBy]);
 
   const totalCards = useMemo(
     () => collection.reduce((sum, e) => sum + e.quantity, 0),
     [collection]
   );
 
-  const toListItem = useCallback(
-    (entry: CollectionEntry) => ({
-      cardId: '00000000-0000-0000-0000-000000000000',
-      variantNumber: entry.variantNumber,
-      name: entry.name,
-      type: '',
-      energy: 0,
-      might: 0,
-      power: 0,
-      rarity: entry.rarity,
-      setCode: entry.setCode,
-      colors: [],
-      imageUrl: entry.imageUrl,
-      cardmarketId: null,
-      priceEur: null,
-      printings: [
-        {
-          variantNumber: entry.variantNumber,
-          variantLabel: entry.variantLabel,
-          isFoil: entry.isFoil,
-          priceEur: null,
-        },
-      ],
-    }),
-    []
+  const apiSets = useMemo(
+    () =>
+      (filtersQuery.data?.sets ?? []).map((s) => ({
+        code: s.code ?? s.id,
+        name: s.name,
+        count: s.count,
+      })),
+    [filtersQuery.data?.sets]
+  );
+  const apiTypes = filtersQuery.data?.types ?? [];
+  const apiRarities = filtersQuery.data?.rarities ?? [];
+  const catalogTotal = apiSets.reduce((s, set) => s + set.count, 0);
+
+  const mergedSets = useMemo(
+    () => mergeSetStats(collection, apiSets),
+    [collection, apiSets]
   );
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: CollectionEntry; index: number }) => (
-      <Animated.View
-        entering={FadeInDown.delay(Math.min(index, 8) * 35).duration(260)}
-        className={
-          defaultLayout === 'grid'
-            ? 'mb-2 shrink-0 grow-0 gap-2'
-            : 'w-full max-w-[640px] gap-1 self-center pb-1'
-        }
-        style={
-          defaultLayout === 'grid'
-            ? { width: tileWidth, maxWidth: tileWidth }
-            : undefined
-        }
-      >
-        <CardTile
-          card={toListItem(item)}
-          layout={defaultLayout}
-          mode="collection"
-          compact={compact}
-          collectionByVariant={collectionByVariant}
-        />
-        <View
-          className={
-            defaultLayout === 'list'
-              ? 'mt-1 items-end pr-1'
-              : 'mt-1 items-center'
-          }
-        >
-          <CollectionQtyControls
-            compact
-            quantity={item.quantity}
-            isFoil={item.isFoil}
-            onIncrement={() => {
-              void setQuantity.mutateAsync({
-                variantNumber: item.variantNumber,
-                quantity: item.quantity + 1,
-              });
-            }}
-            onDecrement={() => {
-              void setQuantity.mutateAsync({
-                variantNumber: item.variantNumber,
-                quantity: item.quantity - 1,
-              });
-            }}
-            onRemove={() => {
-              confirmRemoveFromCollection(item.name, () => {
-                void removeCard.mutateAsync(item.variantNumber);
-              });
-            }}
-          />
-        </View>
-      </Animated.View>
-    ),
-    [
-      defaultLayout,
-      toListItem,
-      setQuantity,
-      removeCard,
-      tileWidth,
-      compact,
-      collectionByVariant,
-    ]
+  const totalSetOwned = mergedSets.reduce((sum, s) => sum + s.owned, 0);
+  const totalFoilOwned = mergedSets.reduce((sum, s) => sum + s.foilOwned, 0);
+
+  const rarityStats = useMemo(() => {
+    const ownedByRarity = new Map<string, number>();
+    for (const entry of collection) {
+      const r = entry.rarity || 'Unknown';
+      ownedByRarity.set(r, (ownedByRarity.get(r) ?? 0) + entry.quantity);
+    }
+    return apiRarities.map((r) => ({
+      name: r.name,
+      owned: ownedByRarity.get(r.name) ?? 0,
+      total: r.count,
+    }));
+  }, [collection, apiRarities]);
+
+  const typeStats = useMemo(
+    () => computeTypeStats(collection, apiTypes),
+    [collection, apiTypes]
   );
 
-  const listHeader = (
-    <Stack className="mb-4 gap-3.5 pt-3">
-      <ScreenHeader
-        title="Collection"
-        subtitle={`${String(collection.length)} unique · ${String(totalCards)} total`}
-        className="mb-0"
-      />
-
-      <SearchBar
-        value={query}
-        onChangeText={setQuery}
-        onClear={() => {
-          setQuery('');
-        }}
-        placeholder="Filter collection…"
-      />
-
-      <Stack direction="row" className="flex-wrap gap-2">
-        {(['recent', 'name', 'set'] as const).map((option) => (
-          <Chip
-            key={option}
-            variant={sortBy === option ? 'default' : 'outline'}
-            onPress={() => {
-              setSortBy(option);
-            }}
-          >
-            <ChipText>{SORT_LABELS[option]}</ChipText>
-          </Chip>
-        ))}
-      </Stack>
-    </Stack>
-  );
-
-  const listEmpty = (
-    <Empty className="mt-12 border-0">
-      <EmptyHeader>
-        <EmptyMedia variant="icon" className="mb-1 size-16 border border-ring/30">
-          <Ionicons name="albums-outline" size={32} className="text-ring" />
-        </EmptyMedia>
-        <EmptyTitle className="text-lg">
-          {query ? 'No matching cards' : 'Your collection is empty'}
-        </EmptyTitle>
-        <EmptyDescription>
-          {query
-            ? 'Try a different filter'
-            : 'Search for cards and add them to your collection'}
-        </EmptyDescription>
-      </EmptyHeader>
-      {!query ? (
-        <Button className="mt-3" onPress={() => { router.push('/(tabs)/search'); }}>
-          <ButtonText>Browse cards</ButtonText>
-        </Button>
-      ) : null}
-    </Empty>
-  );
+  const completion = catalogTotal > 0 ? (collection.length / catalogTotal) * 100 : 0;
+  const estimatedValue = insightsQuery.data?.estimatedValue ?? 0;
+  const movers = insightsQuery.data?.movers ?? [];
+  const wishlist = wishlistQuery.data ?? [];
 
   return (
-    <View className="flex-1 items-center bg-background" style={{ paddingTop: insets.top }}>
-      <FlatList
-        data={isLoading ? [] : entries}
-        key={`${defaultLayout}-${String(numColumns)}`}
-        numColumns={defaultLayout === 'grid' ? numColumns : 1}
-        keyExtractor={(item) => item.variantNumber}
-        renderItem={renderItem}
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={!isLoading ? listEmpty : null}
-        contentContainerClassName="flex-grow self-center px-4"
-        contentContainerStyle={{
-          width: contentWidth,
-          maxWidth: '100%',
-          paddingBottom: Layout.bottomPadding,
-        }}
-        columnWrapperStyle={
-          defaultLayout === 'grid' ? { gap: Layout.gridGap } : undefined
-        }
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+    <ScreenLayout>
+      <View className="pb-6">
+        <Text className="text-xl font-semibold tracking-tight text-foreground">
+          Collection Dashboard
+        </Text>
+        <Text className="mt-1 font-mono text-[13px] text-muted-foreground">
+          {totalSetOwned} unique cards · {totalFoilOwned} foils · €
+          {estimatedValue.toFixed(2)} estimated value
+        </Text>
+      </View>
+
+      <View className="mb-8">
+        <Text className="mb-4 text-sm font-semibold text-muted-foreground">Sets</Text>
+        <SetCardGrid sets={mergedSets} />
+      </View>
+
+      <DashboardStatGrid>
+        <DashboardStat
+          label="Cards Collected"
+          value={collection.length.toLocaleString()}
+          sub={`of ${catalogTotal.toLocaleString()} available`}
+        />
+        <DashboardStat
+          label="Total Cards"
+          value={totalCards.toLocaleString()}
+          sub="including duplicates"
+        />
+        <DashboardStat
+          label="Completion"
+          value={`${completion.toFixed(2)}%`}
+          sub="overall progress"
+          progress={completion / 100}
+        />
+        <DashboardStat
+          label="Estimated Value"
+          value={`€${estimatedValue.toFixed(2)}`}
+          sub="based on Cardmarket"
+        />
+      </DashboardStatGrid>
+
+      <View className="mb-8 gap-4 md:flex-row">
+        {apiTypes.length > 0 ? (
+          <View className="flex-1">
+            <BreakdownSection
+              title="Cards by Type"
+              stats={typeStats}
+              iconFor={typeIconFor}
+            />
+          </View>
+        ) : null}
+        {apiRarities.length > 0 ? (
+          <View className="flex-1">
+            <BreakdownSection
+              title="Cards by Rarity"
+              stats={rarityStats}
+              iconFor={rarityIconFor}
+            />
+          </View>
+        ) : null}
+      </View>
+
+      <View className="gap-6 md:flex-row">
+        <CollectionListPanel
+          title="Wishlist"
+          subtitle={`${wishlist.length} cards`}
+          className="flex-1"
+        >
+          {wishlist.length > 0 ? (
+            wishlist.map((item, i) => (
+              <View key={item.variantNumber}>
+                {i > 0 ? <View className="h-hairline bg-archive-soft-line" /> : null}
+                <WishlistRow
+                  name={item.name}
+                  variantNumber={item.variantNumber}
+                  price="—"
+                  trend="Flat"
+                  onPress={() => {
+                    openCard(router, item.variantNumber, 'modal');
+                  }}
+                />
+              </View>
+            ))
+          ) : (
+            <Text className="py-6 text-center text-sm text-muted-foreground">
+              No wishlist cards. Everything is in your collection.
+            </Text>
+          )}
+        </CollectionListPanel>
+
+        <CollectionListPanel title="Week movers" subtitle="7d" className="flex-1">
+          {movers.length > 0 ? (
+            movers.map(({ entry, trend }, i) => (
+              <View key={entry.variantNumber}>
+                {i > 0 ? <View className="h-hairline bg-archive-soft-line" /> : null}
+                <CollectionMoverRow entry={entry} trend={trend} />
+              </View>
+            ))
+          ) : (
+            <Text className="py-6 text-center text-sm text-muted-foreground">
+              No market movement in your collection this week.
+            </Text>
+          )}
+        </CollectionListPanel>
+      </View>
+
+      {collection.length === 0 && !isLoading ? (
+        <Button
+          className="mt-6"
+          onPress={() => {
+            router.push('/(tabs)/search');
+          }}
+        >
+          <ButtonText>Search cards</ButtonText>
+        </Button>
+      ) : null}
+    </ScreenLayout>
   );
 }

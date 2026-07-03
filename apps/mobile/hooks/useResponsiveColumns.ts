@@ -10,7 +10,7 @@ const TARGET_GRID_COLUMNS = 8;
 const DESKTOP_MAX_WIDTH = 1600;
 const LIST_MAX_WIDTH = 640;
 
-function computeGridLayout(contentWidth: number) {
+function computeGridLayout(contentWidth: number, fillAvailable = false) {
   const horizontalPad = Layout.screenPaddingHorizontal * 2;
   const gap = Layout.gridGap;
   const available = contentWidth - horizontalPad;
@@ -21,13 +21,21 @@ function computeGridLayout(contentWidth: number) {
   );
   numColumns = Math.min(MAX_GRID_COLUMNS, numColumns);
 
-  const minForEight =
-    TARGET_GRID_COLUMNS * GRID_TILE_MAX_WIDTH + (TARGET_GRID_COLUMNS - 1) * gap;
-  if (available >= minForEight) {
-    numColumns = Math.max(TARGET_GRID_COLUMNS, numColumns);
+  if (!fillAvailable) {
+    const minForEight =
+      TARGET_GRID_COLUMNS * GRID_TILE_MAX_WIDTH + (TARGET_GRID_COLUMNS - 1) * gap;
+    if (available >= minForEight) {
+      numColumns = Math.max(TARGET_GRID_COLUMNS, numColumns);
+    }
   }
 
   let tileWidth = (available - gap * (numColumns - 1)) / numColumns;
+
+  if (fillAvailable) {
+    tileWidth = Math.max(GRID_TILE_MIN_WIDTH, tileWidth);
+    return { numColumns, tileWidth, gap };
+  }
+
   if (tileWidth > GRID_TILE_MAX_WIDTH) {
     numColumns = Math.max(
       MIN_GRID_COLUMNS,
@@ -41,11 +49,29 @@ function computeGridLayout(contentWidth: number) {
   return { numColumns, tileWidth, gap };
 }
 
-export function useResponsiveColumns(layout: 'grid' | 'list') {
+type ResponsiveColumnOptions = {
+  /** Pixels to subtract from window width (side rail, detail panel, outer gutters). */
+  reservedWidth?: number;
+  /** Measured catalog column width — used in split layout for accurate column math. */
+  measuredWidth?: number | null;
+  /** Expand tiles to fill the measured column (split catalog + detail layout). */
+  fillAvailable?: boolean;
+};
+
+export function useResponsiveColumns(
+  layout: 'grid' | 'list',
+  options?: ResponsiveColumnOptions
+) {
   const { width } = useWindowDimensions();
+  const reservedWidth = options?.reservedWidth ?? 0;
+  const measuredWidth = options?.measuredWidth;
+  const fillAvailable = options?.fillAvailable ?? false;
 
   return useMemo(() => {
-    const contentWidth = Math.min(width, DESKTOP_MAX_WIDTH);
+    const contentWidth =
+      measuredWidth != null && measuredWidth > 0
+        ? measuredWidth
+        : Math.max(320, Math.min(width, DESKTOP_MAX_WIDTH) - reservedWidth);
 
     if (layout === 'list') {
       return {
@@ -58,14 +84,14 @@ export function useResponsiveColumns(layout: 'grid' | 'list') {
       };
     }
 
-    const grid = computeGridLayout(contentWidth);
+    const grid = computeGridLayout(contentWidth, fillAvailable);
     return {
       contentWidth,
       listMaxWidth: LIST_MAX_WIDTH,
       compact: grid.tileWidth < 160,
       ...grid,
     };
-  }, [layout, width]);
+  }, [layout, width, reservedWidth, measuredWidth, fillAvailable]);
 }
 
 export function useIsDesktopLayout() {

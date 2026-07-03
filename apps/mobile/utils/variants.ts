@@ -84,15 +84,54 @@ export function formatPrintingLabel(
 }
 
 export function hasMultiplePrintings(printings: CardListPrinting[]): boolean {
-  if (printings.length <= 1) return false;
-  let hasFoil = false;
-  let hasStandard = false;
-  for (const p of printings) {
-    if (p.isFoil) hasFoil = true;
-    else hasStandard = true;
-    if (hasFoil && hasStandard) return true;
+  return printings.length > 1;
+}
+
+function sortPrintings(printings: CardListPrinting[]): CardListPrinting[] {
+  return [...printings].sort((a, b) => {
+    if (a.isFoil !== b.isFoil) return a.isFoil ? 1 : -1;
+    return a.variantNumber.localeCompare(b.variantNumber);
+  });
+}
+
+/** Merge all variant rows that belong to the same logical card. */
+export function groupCatalogListItems(items: CardListItem[]): CardListItem[] {
+  const groups = new Map<
+    string,
+    { printings: CardListPrinting[]; rows: CardListItem[] }
+  >();
+
+  for (const item of items) {
+    const existing = groups.get(item.cardId);
+    if (!existing) {
+      groups.set(item.cardId, {
+        printings: [...getCardPrintings(item)],
+        rows: [item],
+      });
+      continue;
+    }
+
+    existing.rows.push(item);
+    for (const row of getCardPrintings(item)) {
+      const already = existing.printings.some(
+        (p) => p.variantNumber === row.variantNumber
+      );
+      if (!already) existing.printings.push(row);
+    }
   }
-  return false;
+
+  return Array.from(groups.values()).map(({ printings, rows }) => {
+    const sorted = sortPrintings(printings);
+    const primary = sorted.find((p) => !p.isFoil) ?? sorted[0];
+    const base =
+      rows.find((r) => r.variantNumber === primary?.variantNumber) ?? rows[0];
+    return {
+      ...base,
+      variantNumber: primary?.variantNumber ?? base.variantNumber,
+      priceEur: primary?.priceEur ?? base.priceEur,
+      printings: sorted,
+    };
+  });
 }
 
 function priceAmount(price: CardListItem['priceEur']): number | null {
@@ -134,4 +173,43 @@ export function printingSummary(card: CardListItem): string | null {
   if (hasStd) parts.push('Std');
   if (hasFoil) parts.push('Foil');
   return parts.join(' · ');
+}
+
+export function formatPrintingPrice(
+  price: CardListItem['priceEur']
+): string | null {
+  const amount = priceAmount(price);
+  return amount != null ? `€${amount.toFixed(2)}` : null;
+}
+
+/** Derive a week-over-week style trend label from market vs avg7d. */
+export function formatMarketTrend(
+  price: CardListItem['priceEur']
+): string {
+  if (!price?.market || !price.avg7d || price.avg7d === 0) return 'Flat';
+  const pct = Math.round(((price.market - price.avg7d) / price.avg7d) * 100);
+  if (pct >= 5) return `+${String(pct)}%`;
+  if (pct <= -5) return `${String(pct)}%`;
+  return 'Flat';
+}
+
+export function bestCardTrend(card: CardListItem): string {
+  const printings = getCardPrintings(card);
+  const trends = printings.map((p) => formatMarketTrend(p.priceEur));
+  const up = trends.filter((t) => t.startsWith('+'));
+  const down = trends.filter((t) => t.startsWith('-'));
+  if (up.length > 0) return up[0];
+  if (down.length > 0) return down[0];
+  return trends[0] ?? 'Flat';
+}
+
+export function totalOwnedForCard(
+  card: CardListItem,
+  collectionByVariant?: ReadonlyMap<string, { quantity: number }>
+): number {
+  if (!collectionByVariant) return 0;
+  return getCardPrintings(card).reduce(
+    (sum, p) => sum + (collectionByVariant.get(p.variantNumber)?.quantity ?? 0),
+    0
+  );
 }

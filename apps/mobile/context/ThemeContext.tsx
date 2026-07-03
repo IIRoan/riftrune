@@ -13,8 +13,6 @@ import { Uniwind } from 'uniwind';
 export type ThemeType = 'light' | 'dark' | 'system';
 export type ColorScheme = 'light' | 'dark';
 
-const DEFAULT_PRIMARY = '#c89b3c';
-
 type Settings = {
   theme: ThemeType;
   accentColor?: string;
@@ -23,7 +21,7 @@ type Settings = {
 
 const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
-  defaultLayout: 'grid',
+  defaultLayout: 'list',
 };
 
 const STORAGE_KEY = 'riftbound_settings';
@@ -71,12 +69,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     Uniwind.setTheme(settings.theme === 'system' ? 'system' : settings.theme);
   }, [settings.theme]);
 
-  useEffect(() => {
-    const accent = settings.accentColor ?? DEFAULT_PRIMARY;
-    const vars = { '--primary': accent, '--ring': accent } as const;
-    Uniwind.updateCSSVariables('light', vars);
-    Uniwind.updateCSSVariables('dark', vars);
-  }, [settings.accentColor]);
+  // Archive palette uses fixed chartreuse accent from global.css — do not override.
 
   const value = useMemo<ThemeContextValue>(
     () => ({

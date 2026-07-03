@@ -1,6 +1,7 @@
 import type { CardDetail, CardsListQuery } from '@riftbound/contracts';
 import {
   CardDetailResponse,
+  CardsBatchResponse,
   CardsListResponse,
   FiltersResponse,
   HealthResponse,
@@ -56,6 +57,12 @@ export const api = {
 
   getCard: (variantNumber: string) =>
     apiFetch(`/v1/cards/${encodeURIComponent(variantNumber)}`, CardDetailResponse),
+
+  batchCards: (variantNumbers: string[]) =>
+    apiFetch('/v1/cards/batch', CardsBatchResponse, {
+      method: 'POST',
+      body: JSON.stringify({ variantNumbers }),
+    }),
 
   getFilters: () => apiFetch('/v1/filters', FiltersResponse),
 };

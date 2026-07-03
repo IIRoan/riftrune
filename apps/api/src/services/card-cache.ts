@@ -7,7 +7,7 @@ import type { RiftruneClient } from '../upstream/riftrune-client.js';
 import {
   mapCardDetail,
   mapListItem,
-  groupCardListItems,
+  groupCatalogListItems,
   paCardHash,
   paVariantHash,
 } from './card-mapper.js';
@@ -278,34 +278,38 @@ export class CardCacheService {
 
     const q = query.q?.trim();
     if (q && q.length >= 2 && query.page === 1) {
-      const upstream = await this.riftrune.listCards({
-        q,
-        limit: query.limit,
-        page: query.page,
-        sortBy: query.sortBy,
-        dir: query.dir,
-      });
+      try {
+        const upstream = await this.riftrune.listCards({
+          q,
+          limit: query.limit,
+          page: query.page,
+          sortBy: query.sortBy,
+          dir: query.dir,
+        });
 
-      const localVariantNumbers = new Set(
-        result.items.map((item) => item.variantNumber)
-      );
-      const missing = upstream.data.filter(
-        (item) => !localVariantNumbers.has(item.variantNumber)
-      );
+        const localVariantNumbers = new Set(
+          result.items.map((item) => item.variantNumber)
+        );
+        const missing = upstream.data.filter(
+          (item) => !localVariantNumbers.has(item.variantNumber)
+        );
 
-      if (missing.length > 0) {
-        for (const item of missing) {
-          try {
-            const logical = await this.riftrune.getCard(item.variantNumber);
-            await this.upsertFromUpstream(logical);
-          } catch (err) {
-            console.warn(`Search backfill skipped ${item.variantNumber}:`, err);
+        if (missing.length > 0) {
+          for (const item of missing) {
+            try {
+              const logical = await this.riftrune.getCard(item.variantNumber);
+              await this.upsertFromUpstream(logical);
+            } catch (err) {
+              console.warn(`Search backfill skipped ${item.variantNumber}:`, err);
+            }
           }
+          result = await this.searchLocal(query);
+          source = 'mixed';
+        } else if (result.total === 0 && upstream.data.length === 0) {
+          source = 'upstream';
         }
-        result = await this.searchLocal(query);
-        source = 'mixed';
-      } else if (result.total === 0 && upstream.data.length === 0) {
-        source = 'upstream';
+      } catch (err) {
+        console.warn('Upstream search unavailable, using local cache only:', err);
       }
     }
 
@@ -384,13 +388,15 @@ export class CardCacheService {
     });
 
     if (hasSearch) {
-      const grouped = groupCardListItems(rawItems);
+      const grouped = groupCatalogListItems(rawItems);
       return {
         items: grouped.slice(offset, offset + query.limit),
         total: grouped.length,
         catalogHash: await this.getCatalogHash(),
       };
     }
+
+    const grouped = groupCatalogListItems(rawItems);
 
     const [totalRow] = await this.db
       .select({
@@ -402,7 +408,7 @@ export class CardCacheService {
       .where(where);
 
     return {
-      items: rawItems,
+      items: grouped,
       total: totalRow?.value ?? 0,
       catalogHash: await this.getCatalogHash(),
     };

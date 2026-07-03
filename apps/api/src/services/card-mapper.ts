@@ -184,6 +184,57 @@ export function groupCardListItems(items: CardListItem[]): CardListItem[] {
   });
 }
 
+function sortPrintings(printings: CardListPrinting[]): CardListPrinting[] {
+  return [...printings].sort((a, b) => {
+    if (a.isFoil !== b.isFoil) return a.isFoil ? 1 : -1;
+    return a.variantNumber.localeCompare(b.variantNumber);
+  });
+}
+
+function pickPrimaryPrinting(printings: CardListPrinting[]): CardListPrinting {
+  return printings.find((p) => !p.isFoil) ?? printings[0];
+}
+
+/** Merge all variant rows that belong to the same logical card (catalog grid rows). */
+export function groupCatalogListItems(items: CardListItem[]): CardListItem[] {
+  const groups = new Map<
+    string,
+    { printings: CardListPrinting[]; rows: CardListItem[] }
+  >();
+
+  for (const item of items) {
+    const existing = groups.get(item.cardId);
+    if (!existing) {
+      groups.set(item.cardId, {
+        printings: [...item.printings],
+        rows: [item],
+      });
+      continue;
+    }
+
+    existing.rows.push(item);
+    for (const row of item.printings) {
+      const already = existing.printings.some(
+        (p) => p.variantNumber === row.variantNumber
+      );
+      if (!already) existing.printings.push(row);
+    }
+  }
+
+  return Array.from(groups.values()).map(({ printings, rows }) => {
+    const sorted = sortPrintings(printings);
+    const primary = pickPrimaryPrinting(sorted);
+    const base =
+      rows.find((r) => r.variantNumber === primary.variantNumber) ?? rows[0];
+    return {
+      ...base,
+      variantNumber: primary.variantNumber,
+      priceEur: primary.priceEur,
+      printings: sorted,
+    };
+  });
+}
+
 export function paCardHash(card: PaLogicalCard): string {
   return entityHash(card);
 }

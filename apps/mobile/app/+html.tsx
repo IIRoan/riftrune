@@ -31,11 +31,26 @@ export default function Root({ children }: { children: React.ReactNode }) {
 }
 
 const responsiveBackground = `
+html,
 body {
-  background-color: #eceae6;
+  height: 100%;
 }
+
+body {
+  background-color: oklch(0.97 0 0);
+}
+
+body > div,
+#root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100%;
+  height: 100%;
+}
+
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #141413;
+    background-color: oklch(0.13 0 0);
   }
 }`;

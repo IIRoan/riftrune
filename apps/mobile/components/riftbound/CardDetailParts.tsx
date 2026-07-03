@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { Badge, BadgeText } from '@/components/ui/badge';
-import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
@@ -19,18 +18,11 @@ export function CardStat({
     <Stack
       className={cn(
         'flex-1 items-center',
-        compact ? 'gap-1 px-2 py-2' : 'gap-2 px-5 py-4'
+        compact ? 'gap-1 px-2 py-2' : 'gap-1 px-3 py-3'
       )}
     >
-      <Text
-        className={cn(
-          'font-semibold uppercase tracking-widest text-muted-foreground',
-          compact ? 'text-[9px] tracking-wide' : 'text-[10px]'
-        )}
-      >
-        {label}
-      </Text>
-      {children}
+      <Text className="text-xs font-medium text-muted-foreground">{label}</Text>
+      <View className="items-center">{children}</View>
     </Stack>
   );
 }
@@ -62,13 +54,15 @@ export function CardTag({ label }: { label: string }) {
 
 export function CardPriceRow({ finish, price }: { finish: string; price: string }) {
   return (
-    <View className="flex-row items-baseline justify-between border-t border-border py-3">
-      <Text className="text-[13px] font-medium text-muted-foreground">{finish}</Text>
-      <Text className="text-xl font-black tabular-nums text-success">{price}</Text>
+    <View className="flex-row items-center justify-between rounded-xl border border-border bg-card p-3">
+      <Text className="text-sm font-semibold text-foreground">{finish}</Text>
+      <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+        {price}
+      </Text>
     </View>
   );
 }
 
 export function CardSectionLabel({ children }: { children: string }) {
-  return <SectionLabel className="mb-3">{children}</SectionLabel>;
+  return <Text className="mb-2 text-sm font-semibold text-foreground">{children}</Text>;
 }

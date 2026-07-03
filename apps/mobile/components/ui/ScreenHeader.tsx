@@ -16,7 +16,9 @@ export function ScreenHeader({ title, subtitle, className }: ScreenHeaderProps) 
       <Heading level="3" className="text-foreground">
         {title}
       </Heading>
-      {subtitle ? <Text className="text-muted-foreground">{subtitle}</Text> : null}
+      {subtitle ? (
+        <Text className="font-mono text-[13px] text-muted-foreground">{subtitle}</Text>
+      ) : null}
     </Stack>
   );
 }
