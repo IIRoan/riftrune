@@ -14,6 +14,7 @@ interface OwnershipStepperProps {
   compact?: boolean;
   busy?: boolean;
   printings?: CardListPrinting[];
+  fixedVariantNumber?: string;
   onAdd: (variantNumber?: string) => void;
   onRemove: (variantNumber?: string) => void;
 }
@@ -24,6 +25,7 @@ export function OwnershipStepper({
   compact = false,
   busy = false,
   printings,
+  fixedVariantNumber,
   onAdd,
   onRemove,
 }: OwnershipStepperProps) {
@@ -43,7 +45,7 @@ export function OwnershipStepper({
     [printings]
   );
 
-  const multiple = (printings?.length ?? 0) > 1;
+  const multiple = fixedVariantNumber == null && (printings?.length ?? 0) > 1;
 
   const btnSize = compact ? 'size-6' : 'size-8';
   const iconSize = compact ? 12 : 14;
@@ -59,7 +61,7 @@ export function OwnershipStepper({
         variant="outline"
         size="sm"
         className={addButtonClass}
-        onPress={multiple ? undefined : () => onAdd()}
+        onPress={multiple ? undefined : () => onAdd(fixedVariantNumber)}
         disabled={busy}
         busy={busy && !multiple}
         accessibilityLabel={`Add ${name} to collection`}
@@ -89,7 +91,7 @@ export function OwnershipStepper({
           btnSize,
           compact ? 'rounded-r-md' : 'rounded-r-lg'
         )}
-        onPress={multiple ? undefined : () => onAdd()}
+        onPress={multiple ? undefined : () => onAdd(fixedVariantNumber)}
         disabled={busy}
       >
         {busy && !multiple ? (
@@ -123,7 +125,7 @@ export function OwnershipStepper({
           btnSize,
           compact ? 'rounded-l-md' : 'rounded-l-lg'
         )}
-        onPress={showPicker ? undefined : () => onRemove()}
+        onPress={showPicker ? undefined : () => onRemove(fixedVariantNumber)}
         disabled={busy}
       >
         {busy && !showPicker ? (

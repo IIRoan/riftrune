@@ -34,7 +34,10 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
 import { formatCardPrice, formatStat } from '@/hooks/useCardDetail';
+import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
 import { cn } from '@/lib/utils';
+import type { CardOpenSource } from '@/utils/cardNavigation';
+import { isFoilVariant } from '@/utils/variants';
 
 const SHELL_MAX_WIDTH = 860;
 const CARD_WIDTH_DESKTOP = 300;
@@ -50,6 +53,8 @@ interface Props {
   card: CardDetail;
   activeVariant: VariantDetail;
   shellWidth: number;
+  source?: CardOpenSource;
+  wishlistItem?: WishlistPriceItem;
   collectionEntry: { quantity: number; isFoil: boolean } | null | undefined;
   printingPreviews: {
     id: string;
@@ -112,6 +117,8 @@ function ModalHeader({
   variantNumber,
   cardName,
   isWide,
+  source,
+  wishlistItem,
   collectionEntry,
   onAddToCollection,
   onQuantityChange,
@@ -122,12 +129,16 @@ function ModalHeader({
   variantNumber: string;
   cardName: string;
   isWide: boolean;
+  source?: CardOpenSource;
+  wishlistItem?: WishlistPriceItem;
   collectionEntry: Props['collectionEntry'];
   onAddToCollection: () => void;
   onQuantityChange: (delta: number) => void;
   onRemoveFromCollection: () => void;
   onClose: () => void;
 }) {
+  const wishlistContext = source === 'wishlist';
+
   return (
     <View className="flex-row items-start justify-between gap-4">
       <Stack gap="xs" className="min-w-0 flex-1">
@@ -145,7 +156,14 @@ function ModalHeader({
       </Stack>
 
       <View className="shrink-0 flex-row items-center justify-end gap-1.5 pt-0.5 min-w-[140px]">
-        {collectionEntry ? (
+        {wishlistContext ? (
+          <View className="flex-row items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1.5">
+            <Ionicons name="bookmark" size={14} className="text-primary" />
+            <Text className="text-xs font-semibold text-primary">
+              {wishlistItem ? 'Watchlisted' : 'Wishlist'}
+            </Text>
+          </View>
+        ) : collectionEntry ? (
           <CollectionQtyControls
             compact
             quantity={collectionEntry.quantity}
@@ -173,6 +191,8 @@ function ModalInfoPanel({
   card,
   activeVariant,
   printingPreviews,
+  source,
+  wishlistItem,
   collectionEntry,
   isWide,
   onAddToCollection,
@@ -182,8 +202,24 @@ function ModalInfoPanel({
   onSelectPrinting,
 }: Props & { isWide: boolean }) {
   const setCode = activeVariant.variantNumber.split('-')[0] ?? '';
+  const activeIsFoil = isFoilVariant(
+    activeVariant.variantNumber,
+    activeVariant.variantLabel,
+    activeVariant.variantType
+  );
+  const activeFinish = activeIsFoil ? 'Foil' : 'Normal';
+  const activePrice =
+    activeVariant.prices.find((price) => price.isFoil === activeIsFoil) ??
+    (activeVariant.prices.length === 1 ? activeVariant.prices[0] : undefined);
+  const activePriceText =
+    wishlistItem?.currentPrice != null
+      ? `€${wishlistItem.currentPrice.toFixed(2)}`
+      : activePrice
+        ? formatCardPrice([activePrice], activePrice.isFoil)
+        : null;
   const nonFoilPrice = formatCardPrice(activeVariant.prices, false);
   const foilPrice = formatCardPrice(activeVariant.prices, true);
+  const wishlistContext = source === 'wishlist';
 
   const panelPadding = isWide ? 'px-8 py-7' : 'px-5 py-5';
 
@@ -194,6 +230,8 @@ function ModalInfoPanel({
         variantNumber={activeVariant.variantNumber}
         cardName={card.name}
         isWide={isWide}
+        source={source}
+        wishlistItem={wishlistItem}
         collectionEntry={collectionEntry}
         onAddToCollection={onAddToCollection}
         onQuantityChange={onQuantityChange}
@@ -250,7 +288,47 @@ function ModalInfoPanel({
         </Card>
       ) : null}
 
-      {(nonFoilPrice ?? foilPrice) != null ? (
+      {wishlistContext ? (
+        <Stack gap="sm">
+          <SectionLabel>Wishlist tracking</SectionLabel>
+          <View className="rounded-xl border border-border bg-card p-3">
+            <Stack direction="row" className="items-start justify-between gap-4">
+              <Stack gap="xs" className="min-w-0 flex-1">
+                <Text className="text-sm font-semibold text-foreground">
+                  {activeFinish} printing
+                </Text>
+                <Text className="font-mono text-[11px] text-muted-foreground">
+                  {activeVariant.variantLabel} · {activeVariant.variantNumber}
+                </Text>
+              </Stack>
+              <Stack gap="xs" className="items-end">
+                <Text className="font-mono text-lg font-black tabular-nums text-foreground">
+                  {activePriceText ?? '—'}
+                </Text>
+                <Text className="text-xs font-semibold text-muted-foreground">
+                  {wishlistItem?.trend ?? 'Flat'}
+                </Text>
+              </Stack>
+            </Stack>
+            <View className="mt-3 flex-row flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3">
+              <Text className="font-mono text-[11px] text-muted-foreground">
+                7D baseline{' '}
+                <Text className="font-bold text-foreground">
+                  {wishlistItem?.baselinePrice != null
+                    ? `€${wishlistItem.baselinePrice.toFixed(2)}`
+                    : '—'}
+                </Text>
+              </Text>
+              <Text className="font-mono text-[11px] text-muted-foreground">
+                Stored points{' '}
+                <Text className="font-bold text-foreground">
+                  {String(wishlistItem?.points.length ?? 0)}
+                </Text>
+              </Text>
+            </View>
+          </View>
+        </Stack>
+      ) : (nonFoilPrice ?? foilPrice) != null ? (
         <Stack direction="row" gap="lg" className="flex-wrap items-center">
           {nonFoilPrice ? (
             <Text className="text-[13px] font-medium text-muted-foreground">

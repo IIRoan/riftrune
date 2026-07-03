@@ -1,7 +1,7 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray } from 'drizzle-orm';
 import type { PaPriceRow, PriceRow } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
-import { prices, syncState } from '../db/schema.js';
+import { priceHistory, prices, syncState } from '../db/schema.js';
 import { pricesFingerprint } from '../lib/hash.js';
 import type { RiftruneClient } from '../upstream/riftrune-client.js';
 import { paPriceHash } from './card-mapper.js';
@@ -27,6 +27,25 @@ function toPriceRow(row: typeof prices.$inferSelect): PriceRow {
     avg7Day: num(row.avg7Day),
     avg30Day: num(row.avg30Day),
     lastUpdated: row.upstreamLastUpdated.toISOString(),
+  };
+}
+
+function toHistoryRow(row: typeof priceHistory.$inferSelect) {
+  const num = (v: string | null) => (v === null ? null : Number(v));
+  return {
+    cardmarketId: row.cardmarketId,
+    isFoil: row.isFoil,
+    provider: 'cardmarket' as const,
+    currency: 'EUR' as const,
+    lowPrice: num(row.lowPrice),
+    marketPrice: num(row.marketPrice),
+    midPrice: num(row.midPrice),
+    highPrice: num(row.highPrice),
+    avg1Day: num(row.avg1Day),
+    avg7Day: num(row.avg7Day),
+    avg30Day: num(row.avg30Day),
+    lastUpdated: row.upstreamLastUpdated.toISOString(),
+    capturedAt: row.capturedAt.toISOString(),
   };
 }
 
@@ -125,6 +144,30 @@ export class PriceCacheService {
     };
   }
 
+  async history(filters: {
+    cardmarketId: number;
+    isFoil?: boolean;
+    days: number;
+  }): Promise<{ rows: ReturnType<typeof toHistoryRow>[] }> {
+    const since = new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000);
+    const conditions = [
+      eq(priceHistory.cardmarketId, filters.cardmarketId),
+      gte(priceHistory.capturedAt, since),
+    ];
+
+    if (filters.isFoil !== undefined) {
+      conditions.push(eq(priceHistory.isFoil, filters.isFoil));
+    }
+
+    const rows = await this.db
+      .select()
+      .from(priceHistory)
+      .where(and(...conditions))
+      .orderBy(desc(priceHistory.capturedAt));
+
+    return { rows: rows.map(toHistoryRow).reverse() };
+  }
+
   async syncFromUpstream(): Promise<{
     changed: boolean;
     rowCount: number;
@@ -144,15 +187,59 @@ export class PriceCacheService {
       where: eq(syncState.key, 'prices'),
     });
 
+    const now = new Date();
+
     if (existing?.contentHash === hash) {
+      await this.db.transaction(async (tx) => {
+        for (const row of upstream) {
+          await tx
+            .insert(priceHistory)
+            .values({
+              cardmarketId: row.cardmarketId,
+              isFoil: row.isFoil,
+              provider: row.provider,
+              currency: row.currency,
+              lowPrice: parseNum(row.lowPrice),
+              marketPrice: parseNum(row.marketPrice),
+              midPrice: parseNum(row.midPrice),
+              highPrice: parseNum(row.highPrice),
+              avg1Day: parseNum(row.avg1Day),
+              avg7Day: parseNum(row.avg7Day),
+              avg30Day: parseNum(row.avg30Day),
+              upstreamLastUpdated: new Date(row.lastUpdated),
+              contentHash: paPriceHash(row),
+              capturedAt: now,
+            })
+            .onConflictDoNothing();
+        }
+      });
+
       return { changed: false, rowCount: upstream.length, hash };
     }
-
-    const now = new Date();
 
     await this.db.transaction(async (tx) => {
       for (const row of upstream) {
         const rowHash = paPriceHash(row);
+        await tx
+          .insert(priceHistory)
+          .values({
+            cardmarketId: row.cardmarketId,
+            isFoil: row.isFoil,
+            provider: row.provider,
+            currency: row.currency,
+            lowPrice: parseNum(row.lowPrice),
+            marketPrice: parseNum(row.marketPrice),
+            midPrice: parseNum(row.midPrice),
+            highPrice: parseNum(row.highPrice),
+            avg1Day: parseNum(row.avg1Day),
+            avg7Day: parseNum(row.avg7Day),
+            avg30Day: parseNum(row.avg30Day),
+            upstreamLastUpdated: new Date(row.lastUpdated),
+            contentHash: rowHash,
+            capturedAt: now,
+          })
+          .onConflictDoNothing();
+
         await tx
           .insert(prices)
           .values({

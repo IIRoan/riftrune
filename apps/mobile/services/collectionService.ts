@@ -1,8 +1,11 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { CardListItem } from '@riftbound/contracts';
 import { getCardPrintings, isFoilVariant } from '@/utils/variants';
-
-const COLLECTION_KEY = 'riftbound_collection';
+import {
+  fetchRemoteCollection,
+  remoteAddToCollection,
+  remoteDeleteFromCollection,
+  remoteSetCollectionQuantity,
+} from '@/services/remoteCollectionService';
 
 export interface CollectionEntry {
   variantNumber: string;
@@ -14,40 +17,33 @@ export interface CollectionEntry {
   variantLabel: string;
   isFoil: boolean;
   quantity: number;
+  condition?: string;
+  language?: string;
   addedAt: number;
   updatedAt: number;
 }
 
-export async function getCollection(): Promise<CollectionEntry[]> {
-  try {
-    const raw = await AsyncStorage.getItem(COLLECTION_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Array<
-      Partial<CollectionEntry> & { variantNumber: string }
-    >;
-    return parsed.map((entry) => {
-      const isFoil =
-        entry.isFoil ?? isFoilVariant(entry.variantNumber, entry.variantLabel);
-      return {
-        variantNumber: entry.variantNumber,
-        name: entry.name ?? '',
-        imageUrl: entry.imageUrl ?? '',
-        setCode: entry.setCode ?? '',
-        rarity: entry.rarity ?? '',
-        variantLabel: entry.variantLabel ?? (isFoil ? 'Foil' : 'Standard'),
-        isFoil,
-        quantity: entry.quantity ?? 1,
-        addedAt: entry.addedAt ?? Date.now(),
-        updatedAt: entry.updatedAt ?? Date.now(),
-      };
-    });
-  } catch {
-    return [];
-  }
+function toEntry(item: Awaited<ReturnType<typeof fetchRemoteCollection>>[number]): CollectionEntry {
+  return {
+    variantNumber: item.variantNumber,
+    name: item.name,
+    imageUrl: item.imageUrl,
+    setCode: item.setCode,
+    rarity: item.rarity,
+    type: item.type ?? undefined,
+    variantLabel: item.variantLabel,
+    isFoil: item.isFoil,
+    quantity: item.quantity,
+    condition: item.condition,
+    language: item.language,
+    addedAt: new Date(item.addedAt).getTime(),
+    updatedAt: new Date(item.updatedAt).getTime(),
+  };
 }
 
-async function saveCollection(entries: CollectionEntry[]): Promise<void> {
-  await AsyncStorage.setItem(COLLECTION_KEY, JSON.stringify(entries));
+export async function getCollection(): Promise<CollectionEntry[]> {
+  const remote = await fetchRemoteCollection();
+  return remote.map(toEntry).sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 export async function isInCollection(variantNumber: string): Promise<boolean> {
@@ -73,37 +69,9 @@ export async function addToCollection(
     getCardPrintings(card)[0];
   if (!printing) return;
 
-  const entries = await getCollection();
-  const now = Date.now();
-  const existing = entries.find((e) => e.variantNumber === printing.variantNumber);
-
-  if (existing) {
-    existing.quantity += quantity;
-    existing.updatedAt = now;
-    existing.name = card.name;
-    existing.imageUrl = card.imageUrl;
-    existing.setCode = card.setCode;
-    existing.rarity = card.rarity;
-    existing.type = card.type;
-    existing.variantLabel = printing.variantLabel;
-    existing.isFoil = printing.isFoil;
-  } else {
-    entries.unshift({
-      variantNumber: printing.variantNumber,
-      name: card.name,
-      imageUrl: card.imageUrl,
-      setCode: card.setCode,
-      rarity: card.rarity,
-      type: card.type,
-      variantLabel: printing.variantLabel,
-      isFoil: printing.isFoil,
-      quantity,
-      addedAt: now,
-      updatedAt: now,
-    });
+  for (let i = 0; i < quantity; i += 1) {
+    await remoteAddToCollection(printing.variantNumber, 1);
   }
-
-  await saveCollection(entries);
 }
 
 export async function addDetailToCollection(
@@ -182,30 +150,27 @@ export async function updateCollectionQuantity(
   variantNumber: string,
   quantity: number
 ): Promise<void> {
-  const entries = await getCollection();
-  const entry = entries.find((e) => e.variantNumber === variantNumber);
-  if (!entry) return;
-
   if (quantity <= 0) {
-    await removeFromCollection(variantNumber);
+    await remoteDeleteFromCollection(variantNumber);
     return;
   }
-
-  entry.quantity = quantity;
-  entry.updatedAt = Date.now();
-  await saveCollection(entries);
+  await remoteSetCollectionQuantity(variantNumber, quantity);
 }
 
 export async function removeFromCollection(variantNumber: string): Promise<void> {
-  const entries = await getCollection();
-  await saveCollection(entries.filter((e) => e.variantNumber !== variantNumber));
+  await remoteDeleteFromCollection(variantNumber);
 }
 
 export async function removeManyFromCollection(variantNumbers: string[]): Promise<void> {
   if (variantNumbers.length === 0) return;
-  const drop = new Set(variantNumbers);
-  const entries = await getCollection();
-  await saveCollection(entries.filter((e) => !drop.has(e.variantNumber)));
+  for (const variantNumber of variantNumbers) {
+    await remoteDeleteFromCollection(variantNumber);
+  }
+}
+
+export async function migrateLocalCollectionToRemote(): Promise<void> {
+  // No-op: collection is now cloud-only.
+  // Kept for backward compatibility with AuthPanel's sign-in flow.
 }
 
 export function filterCollection(

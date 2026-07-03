@@ -44,7 +44,7 @@ interface Props {
 export function CardTile({
   card,
   layout = 'grid',
-  mode = 'search',
+  mode: _mode = 'search',
   style,
   compact = false,
   enableQuickAdd = false,
@@ -56,7 +56,6 @@ export function CardTile({
   const { addCard, setQuantity } = useCollectionMutations();
   const [busy, setBusy] = useState(false);
 
-  const isSearch = mode === 'search';
   const printings = getCardPrintings(card);
   const printingsLabel = printingSummary(card);
   const multiplePrintings = hasMultiplePrintings(printings);

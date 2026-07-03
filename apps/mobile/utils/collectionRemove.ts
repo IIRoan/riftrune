@@ -13,7 +13,7 @@ export function getCollectedPrintingsForListCard(
   byVariant: ReadonlyMap<string, CollectionEntry>
 ): CollectedPrintingRow[] {
   return getCardPrintings(card)
-    .filter((p) => byVariant.has(p.variantNumber))
+    .filter((p) => (byVariant.get(p.variantNumber)?.quantity ?? 0) > 0)
     .map((p) => {
       const entry = byVariant.get(p.variantNumber)!;
       return {
@@ -35,7 +35,7 @@ export function getCollectedPrintingsForDetailCard(
   byVariant: ReadonlyMap<string, CollectionEntry>
 ): CollectedPrintingRow[] {
   return card.variants
-    .filter((v) => byVariant.has(v.variantNumber))
+    .filter((v) => (byVariant.get(v.variantNumber)?.quantity ?? 0) > 0)
     .map((v) => {
       const entry = byVariant.get(v.variantNumber)!;
       const foil = isFoilVariant(v.variantNumber, v.variantLabel, v.variantType);

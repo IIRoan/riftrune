@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test';
-import { FiltersResponse, PricesListResponse } from '@riftbound/contracts';
-import { apiJson } from './support.js';
+import {
+  FiltersResponse,
+  PriceHistoryResponse,
+  PricesListResponse,
+} from '@riftbound/contracts';
+import { apiJson, syncPricesForE2E } from './support.js';
 
 describe('filters', () => {
   test('GET /v1/filters returns sets, colors, rarities', async () => {
@@ -40,4 +44,30 @@ describe('prices (Cardmarket EUR cache)', () => {
       true
     );
   }, 60_000);
+
+  test('GET /v1/prices/history returns stored snapshots for a cardmarket id', async () => {
+    await syncPricesForE2E();
+
+    const all = PricesListResponse.parse(await apiJson<unknown>('/v1/prices'));
+    const sample = all.data.find((r) => r.cardmarketId != null);
+    expect(sample?.cardmarketId).toBeTruthy();
+
+    const history = PriceHistoryResponse.parse(
+      await apiJson<unknown>(
+        `/v1/prices/history?cardmarketId=${String(sample!.cardmarketId)}&isFoil=${String(
+          sample!.isFoil
+        )}&days=365`
+      )
+    );
+
+    expect(history.meta.cardmarketId).toBe(sample!.cardmarketId);
+    expect(history.meta.isFoil).toBe(sample!.isFoil);
+    expect(history.meta.rowCount).toBeGreaterThan(0);
+    expect(history.data.length).toBeGreaterThan(0);
+    expect(history.data.every((row) => row.cardmarketId === sample!.cardmarketId)).toBe(
+      true
+    );
+    expect(history.data.every((row) => row.isFoil === sample!.isFoil)).toBe(true);
+    expect(history.data.at(-1)?.capturedAt).toBeTruthy();
+  }, 300_000);
 });

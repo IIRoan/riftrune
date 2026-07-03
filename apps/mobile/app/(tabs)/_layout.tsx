@@ -4,6 +4,7 @@ import { Dimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCSSVariable } from 'uniwind';
 import { AppShell } from '@/components/shell/AppShell';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
 
 export default function TabLayout() {
@@ -32,8 +33,9 @@ export default function TabLayout() {
 
   return (
     <AppShell>
-      <View className="flex-1 bg-background">
-        <Tabs
+      <AuthGate>
+        <View className="flex-1 bg-background">
+          <Tabs
           screenOptions={({ route }) => ({
             headerShown: false,
             tabBarActiveTintColor: primary,
@@ -81,6 +83,7 @@ export default function TabLayout() {
           <Tabs.Screen name="index" options={{ href: null }} />
           <Tabs.Screen name="search" options={{ title: 'Cards' }} />
           <Tabs.Screen name="collection" options={{ title: 'Collection' }} />
+          <Tabs.Screen name="wishlist" options={{ title: 'Wishlist', href: null }} />
           <Tabs.Screen name="decks" options={{ title: 'Decks' }} />
           <Tabs.Screen
             name="settings"
@@ -90,7 +93,8 @@ export default function TabLayout() {
             }}
           />
         </Tabs>
-      </View>
+        </View>
+      </AuthGate>
     </AppShell>
   );
 }

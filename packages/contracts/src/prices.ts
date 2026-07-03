@@ -16,6 +16,10 @@ export const PriceRow = z.object({
   lastUpdated: z.string().datetime(),
 });
 
+export const PriceHistoryPoint = PriceRow.omit({ id: true }).extend({
+  capturedAt: z.string().datetime(),
+});
+
 export const PricesListQuery = z.object({
   cardmarketId: z.coerce.number().int().optional(),
   variantNumber: z.string().optional(),
@@ -23,6 +27,16 @@ export const PricesListQuery = z.object({
     .union([z.literal('true'), z.literal('false')])
     .transform((v) => v === 'true')
     .optional(),
+});
+
+export const PriceHistoryQuery = z.object({
+  cardmarketId: z.coerce.number().int().optional(),
+  variantNumber: z.string().optional(),
+  isFoil: z
+    .union([z.literal('true'), z.literal('false')])
+    .transform((v) => v === 'true')
+    .optional(),
+  days: z.coerce.number().int().positive().max(365).default(30),
 });
 
 export const PricesListResponse = z.object({
@@ -34,4 +48,16 @@ export const PricesListResponse = z.object({
   }),
 });
 
+export const PriceHistoryResponse = z.object({
+  data: z.array(PriceHistoryPoint),
+  meta: z.object({
+    cardmarketId: z.number().int().nullable(),
+    isFoil: z.boolean().nullable(),
+    days: z.number().int(),
+    rowCount: z.number().int(),
+  }),
+});
+
 export type PriceRow = z.infer<typeof PriceRow>;
+export type PriceHistoryPoint = z.infer<typeof PriceHistoryPoint>;
+export type PriceHistoryQuery = z.infer<typeof PriceHistoryQuery>;

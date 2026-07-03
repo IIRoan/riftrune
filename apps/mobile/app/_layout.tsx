@@ -9,10 +9,12 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StatusBar, View } from 'react-native';
+import { Text } from '@/components/ui/text';
 import { TetraProvider } from '@/components/TetraProvider';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { hydrateSecureStorage } from '@/src/lib/secure-storage';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -29,10 +31,32 @@ const queryClient = new QueryClient({
 
 function RootNav() {
   const { actualTheme } = useTheme();
+  const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
-    void SplashScreen.hideAsync();
+    let mounted = true;
+    void (async () => {
+      try {
+        await hydrateSecureStorage();
+      } finally {
+        if (mounted) {
+          setStorageReady(true);
+        }
+        await SplashScreen.hideAsync();
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  if (!storageReady) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted-foreground">Loading…</Text>
+      </View>
+    );
+  }
 
   return (
     <NavThemeProvider value={actualTheme === 'dark' ? DarkTheme : DefaultTheme}>

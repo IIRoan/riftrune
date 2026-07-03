@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -17,9 +16,11 @@ import { CardRulesText } from '@/components/riftbound/CardRulesText';
 import { EnergyPip, MightIcon } from '@/components/riftbound/CardIcons';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { formatCardPrice, formatStat, useCardDetail } from '@/hooks/useCardDetail';
 import { useCollection, useCollectionMutations } from '@/hooks/useCollection';
 import { addToWishlist } from '@/services/wishlistService';
+import { wishlistQueryKeys } from '@/src/api/queryKeys';
 import {
   formatMarketTrend,
   formatPrintingPrice,
@@ -27,16 +28,19 @@ import {
   totalOwnedForCard,
 } from '@/utils/variants';
 import { hapticPress } from '@/utils/haptics';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CatalogDetailPanelProps {
   variantNumber: string;
 }
 
 export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
+  const queryClient = useQueryClient();
   const detail = useCardDetail(variantNumber);
   const { setQuantity } = useCollectionMutations();
   const { data: collection = [] } = useCollection();
   const [fullscreen, setFullscreen] = useState(false);
+  const [wishlistPickerVisible, setWishlistPickerVisible] = useState(false);
   const collectionByVariant = useMemo(
     () => new Map(collection.map((e) => [e.variantNumber, e])),
     [collection]
@@ -44,6 +48,7 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
 
   useEffect(() => {
     setFullscreen(false);
+    setWishlistPickerVisible(false);
   }, [variantNumber]);
 
   useEffect(() => {
@@ -65,6 +70,24 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
   const closeFullscreen = useCallback(() => {
     setFullscreen(false);
   }, []);
+
+  const addVariantToWishlist = useCallback(
+    async (targetVariantNumber: string) => {
+      if (!detail.card) return;
+      const variant =
+        detail.card.variants.find((item) => item.variantNumber === targetVariantNumber) ??
+        detail.activeVariant;
+      if (!variant) return;
+
+      await addToWishlist({
+        variantNumber: variant.variantNumber,
+        name: detail.card.name,
+        imageUrl: variant.imageUrl,
+      });
+      void queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all });
+    },
+    [detail.activeVariant, detail.card, queryClient]
+  );
 
   if (detail.isLoading || !detail.card || !detail.activeVariant) {
     return (
@@ -216,6 +239,7 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
                       name={`${card.name} ${printing.variantLabel}`}
                       compact
                       printings={listItem.printings}
+                      fixedVariantNumber={printing.variantNumber}
                       onAdd={() => {
                         void detail.onAddToCollection(printing.variantNumber);
                       }}
@@ -253,12 +277,13 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
 
           <Button
             className="mt-3 h-10 w-full bg-primary"
-            onPress={() => {
-              void addToWishlist({
-                variantNumber: activeVariant.variantNumber,
-                name: card.name,
-                imageUrl: activeVariant.imageUrl,
-              });
+            onPress={async () => {
+              await hapticPress();
+              if (card.variants.length > 1) {
+                setWishlistPickerVisible(true);
+                return;
+              }
+              await addVariantToWishlist(activeVariant.variantNumber);
             }}
           >
             <ButtonText className="text-primary-foreground">Watch this card</ButtonText>
@@ -272,6 +297,18 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
         imageUrl={activeVariant.imageUrl}
         name={card.name}
         onClose={closeFullscreen}
+      />
+      <VariantPickerSheet
+        visible={wishlistPickerVisible}
+        title="Add which printing?"
+        options={detail.pickerOptions}
+        onClose={() => {
+          setWishlistPickerVisible(false);
+        }}
+        onSelect={(id) => {
+          setWishlistPickerVisible(false);
+          void addVariantToWishlist(id);
+        }}
       />
     </>
   );

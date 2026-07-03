@@ -192,7 +192,10 @@ function sortPrintings(printings: CardListPrinting[]): CardListPrinting[] {
 }
 
 function pickPrimaryPrinting(printings: CardListPrinting[]): CardListPrinting {
-  return printings.find((p) => !p.isFoil) ?? printings[0];
+  if (printings.length === 0) {
+    throw new Error('Cannot pick primary printing from empty list');
+  }
+  return printings.find((p) => !p.isFoil) ?? printings[0]!;
 }
 
 /** Merge all variant rows that belong to the same logical card (catalog grid rows). */
@@ -225,9 +228,10 @@ export function groupCatalogListItems(items: CardListItem[]): CardListItem[] {
     const sorted = sortPrintings(printings);
     const primary = pickPrimaryPrinting(sorted);
     const base =
-      rows.find((r) => r.variantNumber === primary.variantNumber) ?? rows[0];
+      rows.find((r) => r.variantNumber === primary.variantNumber) ?? rows[0]!;
     return {
       ...base,
+      type: base.type,
       variantNumber: primary.variantNumber,
       priceEur: primary.priceEur,
       printings: sorted,

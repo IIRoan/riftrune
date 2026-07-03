@@ -5,6 +5,8 @@ import {
   CardsListResponse,
   FiltersResponse,
   HealthResponse,
+  PriceHistoryResponse,
+  PricesListResponse,
 } from '@riftbound/contracts';
 import type { z } from 'zod';
 
@@ -65,6 +67,33 @@ export const api = {
     }),
 
   getFilters: () => apiFetch('/v1/filters', FiltersResponse),
+
+  getPrices: (query: {
+    cardmarketId?: number;
+    variantNumber?: string;
+    isFoil?: boolean;
+  }) => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined) params.set(k, String(v));
+    }
+    const qs = params.toString();
+    return apiFetch(`/v1/prices${qs ? `?${qs}` : ''}`, PricesListResponse);
+  },
+
+  getPriceHistory: (query: {
+    cardmarketId?: number;
+    variantNumber?: string;
+    isFoil?: boolean;
+    days?: number;
+  }) => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined) params.set(k, String(v));
+    }
+    const qs = params.toString();
+    return apiFetch(`/v1/prices/history${qs ? `?${qs}` : ''}`, PriceHistoryResponse);
+  },
 };
 
 export type { CardDetail };
