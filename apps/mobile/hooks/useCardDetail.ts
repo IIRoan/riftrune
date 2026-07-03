@@ -7,7 +7,7 @@ import {
   useCollectionMutations,
 } from '@/hooks/useCollection';
 import { useCollectionRemove } from '@/hooks/useCollectionRemove';
-import { formatPrintingLabel, findVariantByNumber, isFoilVariant } from '@/utils/variants';
+import { formatPrintingLabel, findVariantByNumber, getSearchGroupVariants, isFoilVariant } from '@/utils/variants';
 import {
   getCollectedPrintingsForDetailCard,
 } from '@/utils/collectionRemove';
@@ -25,6 +25,8 @@ export function formatCardPrice(
   const amount = row.market ?? row.low;
   return amount != null ? `€${amount.toFixed(2)}` : null;
 }
+
+export { getVariantMarketPriceDisplays, type MarketPriceDisplay } from '@/utils/variants';
 
 export function formatStat(value: number): string {
   return value > 0 ? String(value) : '—';
@@ -62,9 +64,13 @@ export function useCardDetail(variantNumber: string) {
   );
 
   const collectedForCard = useMemo(() => {
-    if (!card) return [];
-    return getCollectedPrintingsForDetailCard(card, collectionByVariant);
-  }, [card, collectionByVariant]);
+    if (!card || !activeVariant) return [];
+    return getCollectedPrintingsForDetailCard(card, collectionByVariant, {
+      variantNumber: activeVariant.variantNumber,
+      variantLabel: activeVariant.variantLabel,
+      variantType: activeVariant.variantType,
+    });
+  }, [card, activeVariant, collectionByVariant]);
 
   const { data: collectionEntry } = useCollectionEntry(
     activeVariant?.variantNumber ?? ''
@@ -82,14 +88,17 @@ export function useCardDetail(variantNumber: string) {
     closeCard(router);
   }, [router]);
 
+  const groupVariants = useMemo(() => {
+    if (!card || !activeVariant) return [];
+    return getSearchGroupVariants(card.variants, activeVariant);
+  }, [card, activeVariant]);
+
   const needsPrintingPicker = useMemo(() => {
-    if (!card) return false;
-    return card.variants.length > 1;
-  }, [card]);
+    return groupVariants.length > 1;
+  }, [groupVariants]);
 
   const pickerOptions = useMemo(() => {
-    if (!card) return [];
-    return card.variants.map((variant) => {
+    return groupVariants.map((variant) => {
       const foil = isFoilVariant(
         variant.variantNumber,
         variant.variantLabel,
@@ -104,11 +113,10 @@ export function useCardDetail(variantNumber: string) {
         price: amount != null ? `€${amount.toFixed(2)}` : undefined,
       };
     });
-  }, [card]);
+  }, [groupVariants]);
 
   const printingPreviews = useMemo(() => {
-    if (!card) return [];
-    return card.variants.map((variant) => {
+    return groupVariants.map((variant) => {
       const foil = isFoilVariant(
         variant.variantNumber,
         variant.variantLabel,
@@ -123,7 +131,7 @@ export function useCardDetail(variantNumber: string) {
         price: formatCardPrice(variant.prices, foil),
       };
     });
-  }, [card]);
+  }, [groupVariants]);
 
   const onAddToCollection = useCallback(
     async (targetVariantNumber: string) => {

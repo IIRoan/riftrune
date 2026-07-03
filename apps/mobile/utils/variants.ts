@@ -107,6 +107,147 @@ export function getSearchGroupKey(
   return variantNumber.replace(/-Foil$/i, '');
 }
 
+export type VariantLike = {
+  variantNumber: string;
+  variantLabel: string;
+  variantType?: string;
+};
+
+/** Keep foil + non-foil of the same printing; exclude alternate art / promo / overnumbered rows. */
+export function getSearchGroupVariants<T extends VariantLike>(
+  variants: T[],
+  anchor: VariantLike
+): T[] {
+  const key = getSearchGroupKey(
+    anchor.variantNumber,
+    anchor.variantLabel,
+    anchor.variantType
+  );
+  return variants.filter(
+    (variant) =>
+      getSearchGroupKey(
+        variant.variantNumber,
+        variant.variantLabel,
+        variant.variantType
+      ) === key
+  );
+}
+
+export type VariantFamily<T extends VariantLike = VariantLike> = {
+  key: string;
+  label: string;
+  representativeVariantNumber: string;
+  variants: T[];
+};
+
+export function sortVariantFamilies<T extends { label: string }>(families: T[]): T[] {
+  return [...families].sort((a, b) => {
+    if (a.label === 'Standard') return -1;
+    if (b.label === 'Standard') return 1;
+    return a.label.localeCompare(b.label);
+  });
+}
+
+export function groupPrintingsBySearchGroup(
+  printings: CardListPrinting[]
+): CardListPrinting[][] {
+  const groups = new Map<string, CardListPrinting[]>();
+
+  for (const printing of printings) {
+    const key = getSearchGroupKey(printing.variantNumber, printing.variantLabel);
+    const group = groups.get(key) ?? [];
+    group.push(printing);
+    groups.set(key, group);
+  }
+
+  return [...groups.values()].map(sortPrintings);
+}
+
+export function getVariantFamiliesFromPrintings(
+  printings: CardListPrinting[]
+): VariantFamily<CardListPrinting>[] {
+  return sortVariantFamilies(
+    groupPrintingsBySearchGroup(printings).map((group) => {
+      const primary = group.find((p) => !p.isFoil) ?? group[0]!;
+      const label = primary.variantLabel !== 'Standard' ? primary.variantLabel : 'Standard';
+      return {
+        key: getSearchGroupKey(primary.variantNumber, primary.variantLabel),
+        label,
+        representativeVariantNumber: primary.variantNumber,
+        variants: group,
+      };
+    })
+  );
+}
+
+export function getVariantFamiliesFromCardVariants<T extends VariantLike>(
+  variants: T[]
+): VariantFamily<T>[] {
+  const groups = new Map<string, T[]>();
+
+  for (const variant of variants) {
+    const key = getSearchGroupKey(
+      variant.variantNumber,
+      variant.variantLabel,
+      variant.variantType
+    );
+    const group = groups.get(key) ?? [];
+    group.push(variant);
+    groups.set(key, group);
+  }
+
+  return sortVariantFamilies(
+    [...groups.entries()].map(([, group]) => {
+      const primary =
+        group.find(
+          (variant) =>
+            !isFoilVariant(
+              variant.variantNumber,
+              variant.variantLabel,
+              variant.variantType
+            )
+        ) ?? group[0]!;
+      const label =
+        primary.variantLabel !== 'Standard' ? primary.variantLabel : 'Standard';
+      return {
+        key: getSearchGroupKey(
+          primary.variantNumber,
+          primary.variantLabel,
+          primary.variantType
+        ),
+        label,
+        representativeVariantNumber: primary.variantNumber,
+        variants: group,
+      };
+    })
+  );
+}
+
+export function getPrintingsInSearchGroup(
+  printings: CardListPrinting[],
+  anchorVariantNumber: string
+): CardListPrinting[] {
+  const anchor = printings.find((p) =>
+    variantNumbersMatch(p.variantNumber, anchorVariantNumber)
+  );
+  if (!anchor) {
+    const families = getVariantFamiliesFromPrintings(printings);
+    return families[0]?.variants ?? printings;
+  }
+  return getSearchGroupVariants(printings, anchor);
+}
+
+export function cardListItemMatchesVariant(
+  card: Pick<CardListItem, 'variantNumber' | 'printings'>,
+  variantNumber: string | null | undefined
+): boolean {
+  if (!variantNumber) return false;
+  if (variantNumbersMatch(card.variantNumber, variantNumber)) return true;
+  return (card.printings ?? []).some((p) =>
+    variantNumbersMatch(p.variantNumber, variantNumber)
+  );
+}
+
 /** Merge foil + non-foil rows that share the same base printing. */
 export function groupCardListItems(items: CardListItem[]): CardListItem[] {
   const groups = new Map<string, CardListItem>();
@@ -237,6 +378,54 @@ export function formatPrintingPrice(
 ): string | null {
   const amount = priceAmount(price);
   return amount != null ? `€${amount.toFixed(2)}` : null;
+}
+
+export type MarketPriceDisplay = {
+  label: string;
+  price: string;
+};
+
+function formatPriceRowAmount(row: {
+  market: number | null;
+  low: number | null;
+}): string | null {
+  const amount = row.market ?? row.low;
+  return amount != null ? `€${amount.toFixed(2)}` : null;
+}
+
+/** Show only prices relevant to this printing — not every Cardmarket finish on the product id. */
+export function getVariantMarketPriceDisplays(variant: {
+  variantNumber: string;
+  variantLabel: string;
+  variantType: string;
+  prices: { market: number | null; low: number | null; isFoil: boolean }[];
+}): MarketPriceDisplay[] {
+  const isFoil = isFoilVariant(
+    variant.variantNumber,
+    variant.variantLabel,
+    variant.variantType
+  );
+  const label = formatPrintingLabel(
+    variant.variantLabel,
+    isFoil,
+    variant.variantNumber
+  );
+
+  const rowsWithAmount = variant.prices.filter((p) => (p.market ?? p.low) != null);
+  if (rowsWithAmount.length === 0) return [];
+
+  const matching = rowsWithAmount.find((p) => p.isFoil === isFoil);
+  if (matching) {
+    const price = formatPriceRowAmount(matching);
+    if (price) return [{ label, price }];
+  }
+
+  if (rowsWithAmount.length === 1) {
+    const price = formatPriceRowAmount(rowsWithAmount[0]!);
+    if (price) return [{ label, price }];
+  }
+
+  return [];
 }
 
 /** Derive a week-over-week style trend label from market vs avg7d. */

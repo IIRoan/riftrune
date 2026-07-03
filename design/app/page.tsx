@@ -1875,45 +1875,47 @@ function CardDetail({ card, handlers }: { card: CardRecord; handlers: CardHandle
             <p className="text-sm leading-6 text-archive-ink/90">{card.rulesText}</p>
           </section>
 
-          <section className="mt-3">
-            <h3 className="mb-2 text-sm font-semibold">Printings</h3>
-            <div className="space-y-2">
-              {card.printings.map((printing) => (
-                <div
-                  key={printing.variantNumber}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-archive-soft-line bg-archive-surface p-3"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-archive-ink">
-                        {printing.variantLabel}
-                      </span>
-                      {printing.isFoil && !printing.variantLabel.toLowerCase().includes("foil") && (
-                        <span className="rounded bg-archive-accent/15 px-1.5 py-0.5 text-[11px] font-semibold text-archive-accent-text">
-                          Foil
+          {card.printings.length > 1 ? (
+            <section className="mt-3">
+              <h3 className="mb-2 text-sm font-semibold">Printings</h3>
+              <div className="space-y-2">
+                {card.printings.map((printing) => (
+                  <div
+                    key={printing.variantNumber}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-archive-soft-line bg-archive-surface p-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-archive-ink">
+                          {printing.variantLabel}
                         </span>
-                      )}
-                    </div>
-                    <span className="font-mono text-[11px] text-archive-subtle">
-                      {printing.variantNumber}
-                    </span>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="font-mono text-[13px] font-semibold tabular-nums text-archive-ink">
-                        {printing.price}
+                        {printing.isFoil && !printing.variantLabel.toLowerCase().includes("foil") && (
+                          <span className="rounded bg-archive-accent/15 px-1.5 py-0.5 text-[11px] font-semibold text-archive-accent-text">
+                            Foil
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono text-[11px] text-archive-subtle">
+                        {printing.variantNumber}
                       </span>
-                      <TrendTag trend={printing.marketTrend} />
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="font-mono text-[13px] font-semibold tabular-nums text-archive-ink">
+                          {printing.price}
+                        </span>
+                        <TrendTag trend={printing.marketTrend} />
+                      </div>
                     </div>
+                    <OwnershipStepper
+                      owned={printing.owned}
+                      onAdd={() => handlers.onAdd(printing.variantNumber)}
+                      onRemove={() => handlers.onRemove(printing.variantNumber)}
+                      name={`${card.name} ${printing.variantLabel}`}
+                    />
                   </div>
-                  <OwnershipStepper
-                    owned={printing.owned}
-                    onAdd={() => handlers.onAdd(printing.variantNumber)}
-                    onRemove={() => handlers.onRemove(printing.variantNumber)}
-                    name={`${card.name} ${printing.variantLabel}`}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <button className="archive-focus archive-transition mt-3 h-10 w-full rounded-lg bg-archive-accent px-4 text-sm font-semibold text-archive-accent-ink hover:brightness-110 active:translate-y-px">
             Watch this card

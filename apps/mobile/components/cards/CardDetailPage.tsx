@@ -3,9 +3,9 @@ import { ScrollView, View } from 'react-native';
 import type { CardDetail, VariantDetail } from '@riftbound/contracts';
 import { PrintingPreviewStrip } from '@/components/cards/PrintingPreviewStrip';
 import { CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
+import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import {
   CardAttributeRow,
-  CardPriceRow,
   CardSectionLabel,
   CardStat,
   CardTag,
@@ -23,7 +23,12 @@ import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
-import { formatCardPrice, formatStat } from '@/hooks/useCardDetail';
+import { formatStat } from '@/hooks/useCardDetail';
+import {
+  formatMarketTrend,
+  getVariantMarketPriceDisplays,
+  isFoilVariant,
+} from '@/utils/variants';
 import { useIsDesktopLayout } from '@/hooks/useResponsiveColumns';
 
 const PAGE_CARD_WIDTH = 300;
@@ -60,8 +65,20 @@ export function CardDetailPage({
 }: Props) {
   const isDesktop = useIsDesktopLayout();
   const setCode = activeVariant.variantNumber.split('-')[0] ?? '';
-  const nonFoilPrice = formatCardPrice(activeVariant.prices, false);
-  const foilPrice = formatCardPrice(activeVariant.prices, true);
+  const marketPrices = getVariantMarketPriceDisplays(activeVariant);
+  const singleMarketPrice =
+    printingPreviews.length <= 1 && marketPrices.length === 1 ? marketPrices[0] : null;
+  const singlePriceTrend = (() => {
+    if (!singleMarketPrice) return 'Flat';
+    const isFoil = isFoilVariant(
+      activeVariant.variantNumber,
+      activeVariant.variantLabel,
+      activeVariant.variantType
+    );
+    const row =
+      activeVariant.prices.find((p) => p.isFoil === isFoil) ?? activeVariant.prices[0];
+    return formatMarketTrend(row ?? null);
+  })();
 
   const info = (
     <>
@@ -82,6 +99,14 @@ export function CardDetailPage({
         <Heading level="2" className="font-black leading-[1.1] tracking-tight">
           {card.name}
         </Heading>
+        {singleMarketPrice ? (
+          <VariantPriceSummary
+            label={singleMarketPrice.label}
+            price={singleMarketPrice.price}
+            trend={singlePriceTrend}
+            className="mt-3"
+          />
+        ) : null}
       </View>
 
       <View className="mx-8 mb-4 flex-row overflow-hidden rounded-xl bg-card">
@@ -132,21 +157,15 @@ export function CardDetailPage({
         </View>
       ) : null}
 
-      {(nonFoilPrice ?? foilPrice) != null ? (
-        <View className="px-8 pt-2">
-          <CardSectionLabel>Market prices</CardSectionLabel>
-          {nonFoilPrice ? <CardPriceRow finish="Normal" price={nonFoilPrice} /> : null}
-          {foilPrice ? <CardPriceRow finish="Foil" price={foilPrice} /> : null}
+      {printingPreviews.length > 1 ? (
+        <View className="px-8 pt-3">
+          <PrintingPreviewStrip
+            items={printingPreviews}
+            selectedId={activeVariant.variantNumber}
+            onSelect={onSelectPrinting}
+          />
         </View>
       ) : null}
-
-      <View className="px-8 pt-3">
-        <PrintingPreviewStrip
-          items={printingPreviews}
-          selectedId={activeVariant.variantNumber}
-          onSelect={onSelectPrinting}
-        />
-      </View>
 
       <View className="mx-8 mt-4 border-t border-border pt-4">
         {collectionEntry ? (

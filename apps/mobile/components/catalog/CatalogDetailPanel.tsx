@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -12,19 +13,27 @@ import {
 import type { CardListPrinting } from '@riftbound/contracts';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
+import { VariantFamilySwitcher } from '@/components/catalog/VariantFamilySwitcher';
+import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
 import { EnergyPip, MightIcon } from '@/components/riftbound/CardIcons';
-import { Button, ButtonText } from '@/components/ui/button';
+import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
-import { formatCardPrice, formatStat, useCardDetail } from '@/hooks/useCardDetail';
+import { formatStat, useCardDetail } from '@/hooks/useCardDetail';
 import { useCollection, useCollectionMutations } from '@/hooks/useCollection';
-import { addToWishlist } from '@/services/wishlistService';
+import { useWishlist } from '@/hooks/useWishlist';
+import { addToWishlist, removeFromWishlist } from '@/services/wishlistService';
 import { wishlistQueryKeys } from '@/src/api/queryKeys';
 import {
   formatMarketTrend,
   formatPrintingPrice,
   getCardPrintings,
+  getSearchGroupVariants,
+  getVariantFamiliesFromCardVariants,
+  getVariantMarketPriceDisplays,
+  hasMultiplePrintings,
+  isFoilVariant,
   totalOwnedForCard,
 } from '@/utils/variants';
 import { hapticPress } from '@/utils/haptics';
@@ -41,6 +50,12 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
   const { data: collection = [] } = useCollection();
   const [fullscreen, setFullscreen] = useState(false);
   const [wishlistPickerVisible, setWishlistPickerVisible] = useState(false);
+  const [watchBusy, setWatchBusy] = useState(false);
+  const { data: wishlist = [] } = useWishlist();
+  const wishlistVariants = useMemo(
+    () => new Set(wishlist.map((entry) => entry.variantNumber)),
+    [wishlist]
+  );
   const collectionByVariant = useMemo(
     () => new Map(collection.map((e) => [e.variantNumber, e])),
     [collection]
@@ -89,6 +104,14 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
     [detail.activeVariant, detail.card, queryClient]
   );
 
+  const removeVariantFromWishlist = useCallback(
+    async (targetVariantNumber: string) => {
+      await removeFromWishlist(targetVariantNumber);
+      void queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all });
+    },
+    [queryClient]
+  );
+
   if (detail.isLoading || !detail.card || !detail.activeVariant) {
     return (
       <View className="items-center justify-center rounded-xl border border-border bg-card p-8">
@@ -98,6 +121,23 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
   }
 
   const { card, activeVariant } = detail;
+  const variantFamilies = getVariantFamiliesFromCardVariants(card.variants);
+  const activeFamilyIndex = Math.max(
+    0,
+    variantFamilies.findIndex((family) =>
+      family.variants.some((variant) => variant.variantNumber === activeVariant.variantNumber)
+    )
+  );
+  const activeFamily = variantFamilies[activeFamilyIndex] ?? variantFamilies[0];
+
+  const switchFamily = (nextIndex: number) => {
+    const family = variantFamilies[nextIndex];
+    if (!family) return;
+    void hapticPress();
+    detail.onSelectPrinting(family.representativeVariantNumber);
+  };
+
+  const groupVariants = getSearchGroupVariants(card.variants, activeVariant);
   const listItem = {
     cardId: card.id,
     variantNumber: activeVariant.variantNumber,
@@ -112,8 +152,8 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
     imageUrl: activeVariant.imageUrl,
     cardmarketId: activeVariant.cardmarketId,
     priceEur: activeVariant.prices[0] ?? null,
-    printings: card.variants.map((v) => {
-      const foil = /foil/i.test(v.variantNumber) || /foil/i.test(v.variantLabel);
+    printings: groupVariants.map((v) => {
+      const foil = isFoilVariant(v.variantNumber, v.variantLabel, v.variantType);
       const prices = v.prices;
       const display = prices.find((p) => p.isFoil === foil) ?? prices[0] ?? null;
       return {
@@ -127,8 +167,44 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
   };
 
   const owned = totalOwnedForCard(listItem, collectionByVariant);
-  const nonFoilPrice = formatCardPrice(activeVariant.prices, false);
-  const foilPrice = formatCardPrice(activeVariant.prices, true);
+  const printings = getCardPrintings(listItem);
+  const showPrintingsSection = hasMultiplePrintings(printings);
+  const singlePrinting = printings[0];
+  const marketPrices = getVariantMarketPriceDisplays(activeVariant);
+  const singleMarketPrice =
+    !showPrintingsSection && marketPrices.length === 1 ? marketPrices[0] : null;
+  const singlePriceTrend = formatMarketTrend(singlePrinting?.priceEur ?? null);
+  const isWatchingActive = wishlistVariants.has(activeVariant.variantNumber);
+  const watchedElsewhereCount = card.variants.filter(
+    (variant) =>
+      wishlistVariants.has(variant.variantNumber) &&
+      !groupVariants.some((groupVariant) => groupVariant.variantNumber === variant.variantNumber)
+  ).length;
+
+  const handleWatchPress = async () => {
+    await hapticPress();
+    if (isWatchingActive) {
+      setWatchBusy(true);
+      try {
+        await removeVariantFromWishlist(activeVariant.variantNumber);
+      } finally {
+        setWatchBusy(false);
+      }
+      return;
+    }
+
+    if (groupVariants.length > 1) {
+      setWishlistPickerVisible(true);
+      return;
+    }
+
+    setWatchBusy(true);
+    try {
+      await addVariantToWishlist(activeVariant.variantNumber);
+    } finally {
+      setWatchBusy(false);
+    }
+  };
 
   return (
     <>
@@ -158,9 +234,37 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
           <Text className="text-xl font-semibold leading-tight tracking-tight text-foreground">
             {card.name}
           </Text>
+          {watchedElsewhereCount > 0 ? (
+            <Text className="mt-1 text-xs font-medium text-primary">
+              Also tracking {watchedElsewhereCount} other printing
+              {watchedElsewhereCount === 1 ? '' : 's'} of this card
+            </Text>
+          ) : null}
           <Text className="mt-0.5 font-mono text-[13px] text-muted-foreground">
             {activeVariant.variantNumber.split('-')[0]} · {activeVariant.rarity}
           </Text>
+          {variantFamilies.length > 1 && activeFamily ? (
+            <VariantFamilySwitcher
+              label={activeFamily.label}
+              currentIndex={activeFamilyIndex}
+              total={variantFamilies.length}
+              onPrevious={() => {
+                switchFamily(activeFamilyIndex - 1);
+              }}
+              onNext={() => {
+                switchFamily(activeFamilyIndex + 1);
+              }}
+            />
+          ) : null}
+          {singleMarketPrice ? (
+            <VariantPriceSummary
+              label={singleMarketPrice.label}
+              price={singleMarketPrice.price}
+              trend={singlePriceTrend}
+              className={variantFamilies.length > 1 ? 'mt-1' : undefined}
+              hideLabel={variantFamilies.length > 1}
+            />
+          ) : null}
 
           <View className="mt-3 flex-row overflow-hidden rounded-xl bg-card-panel">
             <Stat label="Cost">
@@ -177,9 +281,34 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
             </Stat>
             <View className="w-hairline bg-archive-soft-line" />
             <Stat label="Owned">
-              <Text className="font-mono text-base font-semibold tabular-nums text-foreground">
-                {owned}
-              </Text>
+              {showPrintingsSection ? (
+                <Text className="font-mono text-base font-semibold tabular-nums text-foreground">
+                  {owned}
+                </Text>
+              ) : singlePrinting ? (
+                <OwnershipStepper
+                  owned={owned}
+                  name={card.name}
+                  compact
+                  printings={listItem.printings}
+                  fixedVariantNumber={singlePrinting.variantNumber}
+                  onAdd={() => {
+                    void detail.onAddToCollection(singlePrinting.variantNumber);
+                  }}
+                  onRemove={() => {
+                    const entry = collectionByVariant.get(singlePrinting.variantNumber);
+                    if (!entry) return;
+                    void setQuantity.mutateAsync({
+                      variantNumber: singlePrinting.variantNumber,
+                      quantity: Math.max(0, entry.quantity - 1),
+                    });
+                  }}
+                />
+              ) : (
+                <Text className="font-mono text-base font-semibold tabular-nums text-foreground">
+                  {owned}
+                </Text>
+              )}
             </Stat>
           </View>
 
@@ -199,9 +328,10 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
             </View>
           ) : null}
 
-          <View className="mt-3">
-            <Text className="mb-2 text-sm font-semibold text-foreground">Printings</Text>
-            {getCardPrintings(listItem).map((printing) => {
+          {showPrintingsSection ? (
+            <View className="mt-3">
+              <Text className="mb-2 text-sm font-semibold text-foreground">Printings</Text>
+              {printings.map((printing) => {
               const qty = collectionByVariant.get(printing.variantNumber)?.quantity ?? 0;
               const foilTag =
                 printing.isFoil && !printing.variantLabel.toLowerCase().includes('foil');
@@ -256,37 +386,27 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
                 </View>
               );
             })}
-          </View>
-
-          {(nonFoilPrice ?? foilPrice) && (
-            <View className="mt-3 flex-row gap-2">
-              {nonFoilPrice ? (
-                <View className="flex-1 rounded-xl border border-archive-soft-line bg-card-panel p-3">
-                  <Text className="text-xs text-muted-foreground">Normal</Text>
-                  <Text className="font-mono text-sm font-semibold text-foreground">{nonFoilPrice}</Text>
-                </View>
-              ) : null}
-              {foilPrice ? (
-                <View className="flex-1 rounded-xl border border-archive-soft-line bg-card-panel p-3">
-                  <Text className="text-xs text-muted-foreground">Foil</Text>
-                  <Text className="font-mono text-sm font-semibold text-foreground">{foilPrice}</Text>
-                </View>
-              ) : null}
             </View>
-          )}
+          ) : null}
 
           <Button
-            className="mt-3 h-10 w-full bg-primary"
-            onPress={async () => {
-              await hapticPress();
-              if (card.variants.length > 1) {
-                setWishlistPickerVisible(true);
-                return;
-              }
-              await addVariantToWishlist(activeVariant.variantNumber);
+            variant={isWatchingActive ? 'outline' : 'default'}
+            className={
+              isWatchingActive
+                ? 'mt-3 h-10 w-full border-primary/30 bg-primary/10'
+                : 'mt-3 h-10 w-full bg-primary'
+            }
+            busy={watchBusy}
+            onPress={() => {
+              void handleWatchPress();
             }}
           >
-            <ButtonText className="text-primary-foreground">Watch this card</ButtonText>
+            <ButtonIcon className={isWatchingActive ? 'text-primary' : 'text-primary-foreground'}>
+              <Ionicons name={isWatchingActive ? 'bookmark' : 'bookmark-outline'} size={16} />
+            </ButtonIcon>
+            <ButtonText className={isWatchingActive ? 'text-primary' : 'text-primary-foreground'}>
+              {isWatchingActive ? 'Watching · Stop tracking' : 'Watch this card'}
+            </ButtonText>
           </Button>
         </View>
       </ScrollView>

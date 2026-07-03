@@ -15,6 +15,8 @@ import {
   formatMarketTrend,
   formatPrintingPrice,
   getCardPrintings,
+  getPrintingsInSearchGroup,
+  getVariantFamiliesFromPrintings,
   hasMultiplePrintings,
   printingSummary,
   totalOwnedForCard,
@@ -37,6 +39,10 @@ interface Props {
   compact?: boolean;
   enableQuickAdd?: boolean;
   selected?: boolean;
+  /** When set, quick-add popover only offers std/foil for this printing family. */
+  familyContextVariantNumber?: string | null;
+  /** Hide market price (e.g. search results — only the selected row shows a price). */
+  hidePrice?: boolean;
   onPress?: () => void;
   collectionByVariant?: ReadonlyMap<string, CollectionEntry>;
 }
@@ -49,6 +55,8 @@ export function CardTile({
   compact = false,
   enableQuickAdd = false,
   selected = false,
+  familyContextVariantNumber,
+  hidePrice = false,
   onPress,
   collectionByVariant,
 }: Props) {
@@ -56,12 +64,31 @@ export function CardTile({
   const { addCard, setQuantity } = useCollectionMutations();
   const [busy, setBusy] = useState(false);
 
-  const printings = getCardPrintings(card);
-  const printingsLabel = printingSummary(card);
+  const allPrintings = getCardPrintings(card);
+  const variantFamilies = useMemo(
+    () => getVariantFamiliesFromPrintings(allPrintings),
+    [allPrintings]
+  );
+  const stepperPrintings = useMemo(() => {
+    if (familyContextVariantNumber) {
+      return getPrintingsInSearchGroup(allPrintings, familyContextVariantNumber);
+    }
+    return variantFamilies[0]?.variants ?? allPrintings;
+  }, [allPrintings, familyContextVariantNumber, variantFamilies]);
+
+  const printings = stepperPrintings;
+  const scopedCard = useMemo(
+    () => ({ ...card, printings: stepperPrintings }),
+    [card, stepperPrintings]
+  );
+  const printingsLabel = printingSummary(scopedCard);
   const multiplePrintings = hasMultiplePrintings(printings);
   const primaryPrinting = printings[0];
-  const owned = totalOwnedForCard(card, collectionByVariant);
-  const priceLabel = formatListPrice(card);
+  const owned = useMemo(
+    () => totalOwnedForCard(scopedCard, collectionByVariant),
+    [scopedCard, collectionByVariant]
+  );
+  const priceLabel = formatListPrice(scopedCard);
 
   const printingsWithOwned = useMemo(
     () =>
@@ -214,21 +241,23 @@ export function CardTile({
           className="items-end gap-2"
           onStartShouldSetResponder={() => true}
         >
-          <View className="items-end gap-0.5">
-            {printings.map((p) => (
-              <View key={p.variantNumber} className="flex-row items-center gap-1.5">
-                {multiplePrintings ? (
-                  <Text className="font-mono text-[10px] text-muted-foreground">
-                    {p.isFoil ? 'Foil' : 'Std'}
+          {!hidePrice ? (
+            <View className="items-end gap-0.5">
+              {printings.map((p) => (
+                <View key={p.variantNumber} className="flex-row items-center gap-1.5">
+                  {multiplePrintings ? (
+                    <Text className="font-mono text-[10px] text-muted-foreground">
+                      {p.isFoil ? 'Foil' : 'Std'}
+                    </Text>
+                  ) : null}
+                  <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                    {formatPrintingPrice(p.priceEur) ?? '—'}
                   </Text>
-                ) : null}
-                <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                  {formatPrintingPrice(p.priceEur) ?? '—'}
-                </Text>
-                <TrendTag trend={formatMarketTrend(p.priceEur)} />
-              </View>
-            ))}
-          </View>
+                  <TrendTag trend={formatMarketTrend(p.priceEur)} />
+                </View>
+              ))}
+            </View>
+          ) : null}
           {stepper}
         </View>
       </Pressable>
@@ -270,9 +299,13 @@ export function CardTile({
         // Keep add/stepper taps from opening the card detail row.
         onStartShouldSetResponder={() => true}
       >
-        <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
-          {priceLabel ?? '—'}
-        </Text>
+        {!hidePrice ? (
+          <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+            {priceLabel ?? '—'}
+          </Text>
+        ) : (
+          <View className="min-w-0 flex-1" />
+        )}
         {stepper}
       </View>
     </Pressable>
