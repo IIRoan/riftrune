@@ -10,6 +10,7 @@ export interface CollectionEntry {
   imageUrl: string;
   setCode: string;
   rarity: string;
+  type?: string;
   variantLabel: string;
   isFoil: boolean;
   quantity: number;
@@ -83,6 +84,7 @@ export async function addToCollection(
     existing.imageUrl = card.imageUrl;
     existing.setCode = card.setCode;
     existing.rarity = card.rarity;
+    existing.type = card.type;
     existing.variantLabel = printing.variantLabel;
     existing.isFoil = printing.isFoil;
   } else {
@@ -92,6 +94,7 @@ export async function addToCollection(
       imageUrl: card.imageUrl,
       setCode: card.setCode,
       rarity: card.rarity,
+      type: card.type,
       variantLabel: printing.variantLabel,
       isFoil: printing.isFoil,
       quantity,
@@ -106,6 +109,7 @@ export async function addToCollection(
 export async function addDetailToCollection(
   card: {
     name: string;
+    type: string;
     variants: Array<{
       variantNumber: string;
       imageUrl: string;
@@ -138,7 +142,7 @@ export async function addDetailToCollection(
       imageUrl: variant.imageUrl,
       setCode,
       rarity: variant.rarity,
-      type: '',
+      type: card.type,
       energy: 0,
       might: 0,
       power: 0,

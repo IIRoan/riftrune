@@ -8,7 +8,7 @@ const EnvSchema = z.object({
   RIFTRUNE_BASE_URL: z
     .string()
     .url()
-    .default('https://riftrune.com/api/external'),
+    .default('https://piltoverarchive.com/api/external'),
   ADMIN_SYNC_TOKEN: z.string().min(16),
   SYNC_CRON_ENABLED: z
     .enum(['true', 'false'])

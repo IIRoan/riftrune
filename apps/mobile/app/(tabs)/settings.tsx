@@ -1,5 +1,5 @@
-import { Pressable, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable } from 'react-native';
+import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { Chip, ChipText } from '@/components/ui/chip';
 import {
   Choicebox,
@@ -14,7 +14,7 @@ import { Stack } from '@/components/ui/stack';
 import { useTheme, type ThemeType } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 
-const ACCENTS = ['#c89b3c', '#3d9e7a', '#5b6eae', '#b45309', '#16a34a'];
+const ACCENTS = ['#efffcc', '#5ecf8a', '#b8b8b8', '#c9a227', '#f5f5f5'];
 
 export default function SettingsScreen() {
   const {
@@ -25,7 +25,6 @@ export default function SettingsScreen() {
     defaultLayout,
     setDefaultLayout,
   } = useTheme();
-  const insets = useSafeAreaInsets();
 
   const themes: { label: string; value: ThemeType }[] = [
     { label: 'Light', value: 'light' },
@@ -34,11 +33,7 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="px-4 pb-24 pt-4"
-      contentContainerStyle={{ paddingTop: insets.top + 16 }}
-    >
+    <ScreenLayout>
       <ScreenHeader title="Settings" />
 
       <SectionLabel className="mt-6">Theme</SectionLabel>
@@ -96,6 +91,6 @@ export default function SettingsScreen() {
           </ChoiceboxItem>
         ))}
       </Choicebox>
-    </ScrollView>
+    </ScreenLayout>
   );
 }

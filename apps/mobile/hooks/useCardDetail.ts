@@ -84,13 +84,7 @@ export function useCardDetail(variantNumber: string) {
 
   const needsPrintingPicker = useMemo(() => {
     if (!card) return false;
-    const hasFoil = card.variants.some((v) =>
-      isFoilVariant(v.variantNumber, v.variantLabel, v.variantType)
-    );
-    const hasStandard = card.variants.some(
-      (v) => !isFoilVariant(v.variantNumber, v.variantLabel, v.variantType)
-    );
-    return hasFoil && hasStandard;
+    return card.variants.length > 1;
   }, [card]);
 
   const pickerOptions = useMemo(() => {

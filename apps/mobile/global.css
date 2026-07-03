@@ -5,65 +5,96 @@
 
 @layer theme {
   :root {
-    --radius: 8px;
+    --radius: 0.75rem;
+
+    @variant dark {
+      /* riftrune archive — matches design/app/globals.css */
+      --archive-bg: oklch(0.130 0 0);
+      --archive-surface: oklch(0.175 0 0);
+      --archive-panel: oklch(0.215 0 0);
+      --archive-raised: oklch(0.258 0 0);
+      --archive-ink: oklch(0.960 0 0);
+      --archive-muted: oklch(0.720 0 0);
+      --archive-subtle: oklch(0.580 0 0);
+      --archive-line: oklch(0.292 0 0);
+      --archive-soft-line: oklch(0.228 0 0);
+      --archive-accent: oklch(0.976 0.063 111);
+      --archive-accent-ink: oklch(0.14 0 0);
+      --archive-accent-text: oklch(0.940 0.055 111);
+      --archive-success: oklch(0.74 0.18 152);
+      --archive-warning: oklch(0.70 0.08 55);
+
+      --background: var(--archive-bg);
+      --foreground: var(--archive-ink);
+      --card: var(--archive-surface);
+      --card-foreground: var(--archive-ink);
+      --card-panel: var(--archive-panel);
+      --popover: var(--archive-raised);
+      --popover-foreground: var(--archive-ink);
+      --primary: var(--archive-accent);
+      --primary-foreground: var(--archive-accent-ink);
+      --secondary: var(--archive-panel);
+      --secondary-foreground: var(--archive-ink);
+      --muted: var(--archive-panel);
+      --muted-foreground: var(--archive-muted);
+      --accent: var(--archive-panel);
+      --accent-foreground: var(--archive-ink);
+      --destructive: oklch(0.60 0.12 50);
+      --success: var(--archive-success);
+      --warning: var(--archive-warning);
+      --info: var(--archive-muted);
+      --border: var(--archive-line);
+      --input: var(--archive-line);
+      --ring: var(--archive-accent);
+      --keyword-accelerate: var(--archive-success);
+      --keyword-combat: var(--archive-warning);
+      --keyword-ability: var(--archive-muted);
+      --keyword-default: var(--archive-subtle);
+    }
 
     @variant light {
-      --background: #eceae6;
-      --foreground: #1a1918;
-      --card: #ffffff;
-      --card-foreground: #1a1918;
-      --card-panel: #e8e6e2;
-      --popover: #ffffff;
-      --popover-foreground: #1a1918;
-      --primary: #c89b3c;
-      --primary-foreground: #010a13;
-      --secondary: #f5f3f0;
-      --secondary-foreground: #1a1918;
-      --muted: #f5f3f0;
-      --muted-foreground: #6b6866;
-      --accent: #f5f3f0;
-      --accent-foreground: #1a1918;
-      --destructive: #dc2626;
-      --success: #16a34a;
-      --warning: #b45309;
-      --info: #5b6eae;
-      --border: #d8d4cd;
-      --input: #d8d4cd;
-      --ring: #c89b3c;
-      --keyword-accelerate: #3d9e7a;
-      --keyword-combat: #b45309;
-      --keyword-ability: #5b6eae;
-      --keyword-default: #4d4b48;
-    }
-  }
+      --archive-bg: oklch(0.97 0 0);
+      --archive-surface: oklch(1 0 0);
+      --archive-panel: oklch(0.94 0 0);
+      --archive-raised: oklch(0.91 0 0);
+      --archive-ink: oklch(0.18 0 0);
+      --archive-muted: oklch(0.48 0 0);
+      --archive-subtle: oklch(0.58 0 0);
+      --archive-line: oklch(0.86 0 0);
+      --archive-soft-line: oklch(0.90 0 0);
+      --archive-accent: oklch(0.82 0.20 112);
+      --archive-accent-ink: oklch(0.14 0 0);
+      --archive-accent-text: oklch(0.45 0.14 112);
+      --archive-success: oklch(0.55 0.16 152);
+      --archive-warning: oklch(0.58 0.10 55);
 
-  @variant dark {
-    --background: #141413;
-    --foreground: #f5f2ed;
-    --card: #1c1b1a;
-    --card-foreground: #f5f2ed;
-    --card-panel: #0d0d0c;
-    --popover: #1c1b1a;
-    --popover-foreground: #f5f2ed;
-    --primary: #c89b3c;
-    --primary-foreground: #141413;
-    --secondary: #1a1918;
-    --secondary-foreground: #f5f2ed;
-    --muted: #1a1918;
-    --muted-foreground: #6b6866;
-    --accent: #252422;
-    --accent-foreground: #f5f2ed;
-    --destructive: #ef4444;
-    --success: #4ade80;
-    --warning: #b45309;
-    --info: #5b6eae;
-    --border: #252422;
-    --input: #2a2927;
-    --ring: #c89b3c;
-    --keyword-accelerate: #3d9e7a;
-    --keyword-combat: #b45309;
-    --keyword-ability: #5b6eae;
-    --keyword-default: #4d4b48;
+      --background: var(--archive-bg);
+      --foreground: var(--archive-ink);
+      --card: var(--archive-surface);
+      --card-foreground: var(--archive-ink);
+      --card-panel: var(--archive-panel);
+      --popover: var(--archive-raised);
+      --popover-foreground: var(--archive-ink);
+      --primary: var(--archive-accent);
+      --primary-foreground: var(--archive-accent-ink);
+      --secondary: var(--archive-panel);
+      --secondary-foreground: var(--archive-ink);
+      --muted: var(--archive-panel);
+      --muted-foreground: var(--archive-muted);
+      --accent: var(--archive-panel);
+      --accent-foreground: var(--archive-ink);
+      --destructive: oklch(0.55 0.20 25);
+      --success: var(--archive-success);
+      --warning: var(--archive-warning);
+      --info: var(--archive-muted);
+      --border: var(--archive-line);
+      --input: var(--archive-line);
+      --ring: var(--archive-accent);
+      --keyword-accelerate: var(--archive-success);
+      --keyword-combat: var(--archive-warning);
+      --keyword-ability: var(--archive-muted);
+      --keyword-default: var(--archive-subtle);
+    }
   }
 }
 
@@ -72,7 +103,7 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-card-panel: var(--card-panel);
+  --color-card-panel: var(--archive-panel);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
@@ -90,14 +121,17 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-archive-accent-text: var(--archive-accent-text);
+  --color-archive-subtle: var(--archive-subtle);
+  --color-archive-soft-line: var(--archive-soft-line);
   --color-keyword-accelerate: var(--keyword-accelerate);
   --color-keyword-combat: var(--keyword-combat);
   --color-keyword-ability: var(--keyword-ability);
   --color-keyword-default: var(--keyword-default);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) * 1.4);
 }
 
 @layer utilities {
@@ -106,5 +140,8 @@
   }
   .w-hairline {
     width: hairlineWidth();
+  }
+  .font-mono {
+    font-variant-numeric: tabular-nums;
   }
 }
