@@ -7,8 +7,8 @@ import {
 import { apiJson } from './support.js';
 
 describe('cards (cached catalog)', () => {
-  test('GET /v1/cards lists cards with pagination', async () => {
-    const json = await apiJson<unknown>('/v1/cards?limit=10&page=1&q=vi');
+  test('GET /api/v1/cards lists cards with pagination', async () => {
+    const json = await apiJson<unknown>('/api/v1/cards?limit=10&page=1&q=vi');
     const parsed = CardsListResponse.parse(json);
 
     expect(parsed.data.length).toBeGreaterThan(0);
@@ -18,15 +18,15 @@ describe('cards (cached catalog)', () => {
     expect(parsed.data[0]?.imageUrl).toMatch(/^https?:\/\//);
   });
 
-  test('GET /v1/cards/:variantNumber returns card detail', async () => {
+  test('GET /api/v1/cards/:variantNumber returns card detail', async () => {
     const list = CardsListResponse.parse(
-      await apiJson<unknown>('/v1/cards?limit=1&page=1')
+      await apiJson<unknown>('/api/v1/cards?limit=1&page=1')
     );
     const variantNumber = list.data[0]?.variantNumber;
     expect(variantNumber).toBeTruthy();
 
     const json = await apiJson<unknown>(
-      `/v1/cards/${encodeURIComponent(variantNumber!)}`
+      `/api/v1/cards/${encodeURIComponent(variantNumber!)}`
     );
     const parsed = CardDetailResponse.parse(json);
 
@@ -35,13 +35,13 @@ describe('cards (cached catalog)', () => {
     expect(parsed.data.variants[0]?.variantNumber).toBe(variantNumber);
   });
 
-  test('POST /v1/cards/batch resolves multiple variant numbers', async () => {
+  test('POST /api/v1/cards/batch resolves multiple variant numbers', async () => {
     const list = CardsListResponse.parse(
-      await apiJson<unknown>('/v1/cards?limit=3&page=1')
+      await apiJson<unknown>('/api/v1/cards?limit=3&page=1')
     );
     const variantNumbers = list.data.map((c) => c.variantNumber);
 
-    const json = await apiJson<unknown>('/v1/cards/batch', {
+    const json = await apiJson<unknown>('/api/v1/cards/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ variantNumbers }),
@@ -53,8 +53,10 @@ describe('cards (cached catalog)', () => {
     expect(parsed.meta.notFound).toEqual([]);
   });
 
-  test('GET /v1/cards returns empty for nonsense query', async () => {
-    const json = await apiJson<unknown>('/v1/cards?q=zzzznotacardname99999&limit=10');
+  test('GET /api/v1/cards returns empty for nonsense query', async () => {
+    const json = await apiJson<unknown>(
+      '/api/v1/cards?q=zzzznotacardname99999&limit=10'
+    );
     const parsed = CardsListResponse.parse(json);
 
     expect(parsed.data).toEqual([]);

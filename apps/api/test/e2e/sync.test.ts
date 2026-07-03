@@ -2,12 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import { apiJson, getEnv } from './support.js';
 
 describe('upstream sync (live Riftrune API)', () => {
-  test('POST /v1/sync/catalog ingests cards into Postgres cache', async () => {
+  test('POST /api/v1/sync/catalog ingests cards into Postgres cache', async () => {
     const token = getEnv().ADMIN_SYNC_TOKEN;
 
     const result = await apiJson<{
       data: { changed: boolean; variantCount: number; hash: string };
-    }>('/v1/sync/catalog', {
+    }>('/api/v1/sync/catalog', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -17,16 +17,16 @@ describe('upstream sync (live Riftrune API)', () => {
 
     const after = await apiJson<{
       data: { catalog: { variantCount: number; hash: string } };
-    }>('/v1/sync/status');
+    }>('/api/v1/sync/status');
 
     expect(after.data.catalog.variantCount).toBe(result.data.variantCount);
   }, 300_000);
 
-  test('POST /v1/sync/prices ingests Cardmarket EUR rows', async () => {
+  test('POST /api/v1/sync/prices ingests Cardmarket EUR rows', async () => {
     const token = getEnv().ADMIN_SYNC_TOKEN;
     const result = await apiJson<{
       data: { changed: boolean; rowCount: number; hash: string };
-    }>('/v1/sync/prices', {
+    }>('/api/v1/sync/prices', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -36,7 +36,7 @@ describe('upstream sync (live Riftrune API)', () => {
 
     const status = await apiJson<{
       data: { prices: { rowCount: number } };
-    }>('/v1/sync/status');
+    }>('/api/v1/sync/status');
 
     expect(status.data.prices.rowCount).toBe(result.data.rowCount);
   }, 300_000);
@@ -44,7 +44,7 @@ describe('upstream sync (live Riftrune API)', () => {
   test('repeated catalog sync is idempotent (fingerprint skip or stable hash)', async () => {
     const token = getEnv().ADMIN_SYNC_TOKEN;
     const first = await apiJson<{ data: { changed: boolean; hash: string } }>(
-      '/v1/sync/catalog',
+      '/api/v1/sync/catalog',
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -52,7 +52,7 @@ describe('upstream sync (live Riftrune API)', () => {
     );
 
     const second = await apiJson<{ data: { changed: boolean; hash: string } }>(
-      '/v1/sync/catalog',
+      '/api/v1/sync/catalog',
       {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },

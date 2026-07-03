@@ -8,6 +8,8 @@ const FilterCount = z.object({
 
 const SetFilter = FilterCount.extend({
   code: z.string().optional(),
+  /** Expanded collectible printing count for the set (from upstream probe). */
+  printCount: z.number().int().optional(),
 });
 
 export const FilterSnapshot = z.object({
@@ -24,6 +26,7 @@ export const FiltersResponse = z.object({
   meta: z.object({
     cachedAt: z.string().datetime(),
     catalogHash: z.string(),
+    variantCount: z.number().int().nonnegative(),
   }),
 });
 

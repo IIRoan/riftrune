@@ -17,7 +17,7 @@ export function createSyncRoutes(
   prices: PriceCacheService,
   env: Env
 ) {
-  return new Elysia({ prefix: '/v1/sync' })
+  return new Elysia({ prefix: '/api/v1/sync' })
     .get('/status', async () => ({ data: await sync.getStatus() }))
     .post('/catalog', async ({ headers }) => {
       assertAdmin(env, headers.authorization);
@@ -32,7 +32,7 @@ export function createSyncRoutes(
 }
 
 export function createHealthRoutes(db: Database, sync: SyncEngine) {
-  return new Elysia({ prefix: '/v1' }).get('/health', async () => {
+  return new Elysia({ prefix: '/api/v1' }).get('/health', async () => {
     let dbStatus: 'ok' | 'error' = 'error';
     try {
       await db.execute(sql`select 1`);

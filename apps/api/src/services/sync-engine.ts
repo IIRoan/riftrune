@@ -1,15 +1,19 @@
 import { eq } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
-import { filterSnapshots, syncState } from '../db/schema.js';
-import { catalogFingerprint, entityHash } from '../lib/hash.js';
+import { syncState } from '../db/schema.js';
+import { catalogFingerprint } from '../lib/hash.js';
+import { computeCatalogTotal } from '../lib/catalog-total.js';
 import type { RiftruneClient } from '../upstream/riftrune-client.js';
 import type { CardCacheService } from './card-cache.js';
+import type { CatalogMetadataService } from './catalog-metadata.js';
+import { accumulatePrintCounts } from './catalog-probe.js';
 
 export class SyncEngine {
   constructor(
     private readonly db: Database,
     private readonly riftrune: RiftruneClient,
-    private readonly cards: CardCacheService
+    private readonly cards: CardCacheService,
+    private readonly catalogMetadata: CatalogMetadataService
   ) {}
 
   async syncCatalog(): Promise<{
@@ -32,26 +36,26 @@ export class SyncEngine {
         where: eq(syncState.key, 'catalog'),
       });
 
+      const enrichedFilters = await this.catalogMetadata.ensureExpandedPrintCounts(
+        existing?.contentHash !== fingerprint
+      );
+      const catalogPrintTotal = computeCatalogTotal(
+        enrichedFilters,
+        existing?.rowCount ?? 0
+      );
+
       if (existing?.contentHash === fingerprint && (existing.rowCount ?? 0) > 0) {
         await this.setSyncStatus('catalog', 'idle', {
           contentHash: fingerprint,
-          rowCount: existing.rowCount ?? 0,
+          rowCount: Math.max(existing.rowCount ?? 0, catalogPrintTotal),
           lastSuccessAt: existing.lastSuccessAt ?? now,
         });
         return {
           changed: false,
           pages: 0,
-          variantCount: existing.rowCount ?? 0,
+          variantCount: Math.max(existing.rowCount ?? 0, catalogPrintTotal),
           hash: fingerprint,
         };
-      }
-
-      if (probe.meta?.filters) {
-        const filterHash = entityHash(probe.meta.filters);
-        await this.db.insert(filterSnapshots).values({
-          snapshot: probe.meta.filters,
-          contentHash: filterHash,
-        });
       }
 
       let page = 1;
@@ -60,6 +64,13 @@ export class SyncEngine {
       let hasMore = true;
       const maxPages = Number(process.env.SYNC_MAX_PAGES ?? 0) || Infinity;
       const syncedCardIds = new Set<string>();
+      const setPrintTotals = new Map<string, number>();
+
+      for (const set of enrichedFilters.sets) {
+        if (set.printCount != null && set.code) {
+          setPrintTotals.set(set.code, set.printCount);
+        }
+      }
 
       while (hasMore) {
         const res = await this.riftrune.listCards({ limit, page });
@@ -70,6 +81,7 @@ export class SyncEngine {
             const logical = await this.riftrune.getCard(item.variantNumber);
             if (syncedCardIds.has(logical.id)) continue;
             await this.cards.upsertFromUpstream(logical);
+            accumulatePrintCounts(logical, setPrintTotals);
             syncedCardIds.add(logical.id);
           } catch (err) {
             console.warn(`Catalog sync skipped ${item.variantNumber}:`, err);
@@ -83,15 +95,22 @@ export class SyncEngine {
         page += 1;
       }
 
-      const variantCount = await this.cards.countVariants();
+      const syncedVariantRows = await this.cards.countVariants();
+      const finalPrintTotal = Math.max(
+        catalogPrintTotal,
+        computeCatalogTotal(enrichedFilters, 0),
+        syncedVariantRows
+      );
 
       await this.setSyncStatus('catalog', 'idle', {
         contentHash: fingerprint,
-        rowCount: variantCount,
+        rowCount: finalPrintTotal,
         lastSuccessAt: now,
       });
 
-      return { changed: true, pages, variantCount, hash: fingerprint };
+      this.cards.invalidateSearchCache();
+
+      return { changed: true, pages, variantCount: finalPrintTotal, hash: fingerprint };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await this.setSyncStatus('catalog', 'failed', { lastError: message });

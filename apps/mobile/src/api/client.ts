@@ -43,7 +43,7 @@ async function apiFetch<T>(
 }
 
 export const api = {
-  health: () => apiFetch('/v1/health', HealthResponse),
+  health: () => apiFetch('/api/v1/health', HealthResponse),
 
   listCards: (query: Partial<CardsListQuery>) => {
     const params = new URLSearchParams();
@@ -54,19 +54,19 @@ export const api = {
       params.set(k, String(v));
     }
     const qs = params.toString();
-    return apiFetch(`/v1/cards${qs ? `?${qs}` : ''}`, CardsListResponse);
+    return apiFetch(`/api/v1/cards${qs ? `?${qs}` : ''}`, CardsListResponse);
   },
 
   getCard: (variantNumber: string) =>
-    apiFetch(`/v1/cards/${encodeURIComponent(variantNumber)}`, CardDetailResponse),
+    apiFetch(`/api/v1/cards/${encodeURIComponent(variantNumber)}`, CardDetailResponse),
 
   batchCards: (variantNumbers: string[]) =>
-    apiFetch('/v1/cards/batch', CardsBatchResponse, {
+    apiFetch('/api/v1/cards/batch', CardsBatchResponse, {
       method: 'POST',
       body: JSON.stringify({ variantNumbers }),
     }),
 
-  getFilters: () => apiFetch('/v1/filters', FiltersResponse),
+  getFilters: () => apiFetch('/api/v1/filters', FiltersResponse),
 
   getPrices: (query: {
     cardmarketId?: number;
@@ -78,7 +78,7 @@ export const api = {
       if (v !== undefined) params.set(k, String(v));
     }
     const qs = params.toString();
-    return apiFetch(`/v1/prices${qs ? `?${qs}` : ''}`, PricesListResponse);
+    return apiFetch(`/api/v1/prices${qs ? `?${qs}` : ''}`, PricesListResponse);
   },
 
   getPriceHistory: (query: {
@@ -92,7 +92,10 @@ export const api = {
       if (v !== undefined) params.set(k, String(v));
     }
     const qs = params.toString();
-    return apiFetch(`/v1/prices/history${qs ? `?${qs}` : ''}`, PriceHistoryResponse);
+    return apiFetch(
+      `/api/v1/prices/history${qs ? `?${qs}` : ''}`,
+      PriceHistoryResponse
+    );
   },
 };
 

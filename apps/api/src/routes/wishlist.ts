@@ -12,7 +12,7 @@ import type { WishlistService } from '../services/wishlist-service.js';
 const _UpsertBody = WishlistUpsertRequest.omit({ variantNumber: true });
 
 export function createWishlistRoutes(wishlist: WishlistService, auth: Auth) {
-  return new Elysia({ prefix: '/v1/wishlist' })
+  return new Elysia({ prefix: '/api/v1/wishlist' })
     .get(
       '/',
       async ({ request, set }) => {

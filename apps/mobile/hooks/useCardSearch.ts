@@ -10,7 +10,7 @@ import {
 } from '@/services/searchHistoryService';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
-import { normalizeCardListItems, normalizeCardsListResponse, groupCatalogListItems } from '@/utils/variants';
+import { normalizeCardListItems, normalizeCardsListResponse, groupCardListItems } from '@/utils/variants';
 
 import type { CardsListQuery } from '@riftbound/contracts';
 import { DEFAULT_CATALOG_SORT, type CatalogSort } from '@/constants/catalogSort';
@@ -24,9 +24,15 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
   const [immediateTerm, setImmediateTerm] = useState<string | null>(null);
   const activeTerm = immediateTerm ?? debounced;
   const queryClient = useQueryClient();
-  const [instantCache, setInstantCache] = useState<CardsListResponse | null>(null);
+  const [instantCache, setInstantCache] = useState<{
+    term: string;
+    response: CardsListResponse;
+  } | null>(null);
 
   const enabled = activeTerm.length >= MIN_SEARCH_LENGTH;
+  const inputMatchesActive = trimmed === activeTerm;
+  const instantCacheForTerm =
+    instantCache?.term === activeTerm ? instantCache.response : null;
 
   useEffect(() => {
     if (immediateTerm && debounced === immediateTerm) {
@@ -43,7 +49,11 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
     let cancelled = false;
     void (async () => {
       const cached = await getCachedSearchResults(activeTerm);
-      if (!cancelled) setInstantCache(cached);
+      if (!cancelled) {
+        setInstantCache(
+          cached ? { term: activeTerm, response: cached } : null
+        );
+      }
     })();
 
     return () => {
@@ -72,13 +82,11 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
     gcTime: 30 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-    placeholderData: (previous) => {
-      if (previous) return previous;
-      if (instantCache) return instantCache;
-      return queryClient.getQueryData<CardsListResponse>(
+    placeholderData: () =>
+      instantCacheForTerm ??
+      queryClient.getQueryData<CardsListResponse>(
         cardQueryKeys.search(activeTerm, 40, sort.sortBy, sort.dir)
-      );
-    },
+      ),
     retry: 1,
   });
 
@@ -103,9 +111,15 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
     [trimmed]
   );
 
-  const rawItems = result.data?.data ?? instantCache?.data ?? [];
+  const awaitingResults =
+    !inputMatchesActive ||
+    (result.isFetching && result.data === undefined && instantCacheForTerm === null);
+
+  const rawItems = awaitingResults
+    ? []
+    : (result.data?.data ?? instantCacheForTerm?.data ?? []);
   const items = useMemo(
-    () => groupCatalogListItems(normalizeCardListItems(rawItems)),
+    () => groupCardListItems(normalizeCardListItems(rawItems)),
     [rawItems]
   );
 
@@ -114,9 +128,11 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
     minLength: MIN_SEARCH_LENGTH,
     debounceMs: DEBOUNCE_MS,
     items,
-    meta: result.data?.meta ?? instantCache?.meta,
-    isLoading: enabled && result.isLoading && !result.data && !instantCache,
-    isFetching: enabled && result.isFetching,
+    meta: awaitingResults ? undefined : (result.data?.meta ?? instantCacheForTerm?.meta),
+    isLoading:
+      enabled &&
+      (awaitingResults || (result.isLoading && !result.data && !instantCacheForTerm)),
+    isFetching: enabled && (awaitingResults || result.isFetching),
     isError: result.isError,
     error: result.error,
     refetch: result.refetch,

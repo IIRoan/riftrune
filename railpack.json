@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "steps": {
+    "build": {
+      "commands": ["bun run --filter @riftbound/contracts build"]
+    }
+  },
+  "deploy": {
+    "startCommand": "bun run --cwd apps/api start"
+  }
+}

@@ -94,6 +94,63 @@ function sortPrintings(printings: CardListPrinting[]): CardListPrinting[] {
   });
 }
 
+/** Search rows only merge a standard printing with its foil finish — not alternates or overnumbered art. */
+export function getSearchGroupKey(
+  variantNumber: string,
+  variantLabel: string,
+  variantType?: string
+): string {
+  const foil = isFoilVariant(variantNumber, variantLabel, variantType);
+  if (!foil && variantLabel !== 'Standard') {
+    return variantNumber;
+  }
+  return variantNumber.replace(/-Foil$/i, '');
+}
+
+/** Merge foil + non-foil rows that share the same base printing. */
+export function groupCardListItems(items: CardListItem[]): CardListItem[] {
+  const groups = new Map<string, CardListItem>();
+
+  for (const item of items) {
+    const printing = getCardPrintings(item)[0];
+    if (!printing) continue;
+
+    const key = `${item.cardId}:${getSearchGroupKey(
+      printing.variantNumber,
+      printing.variantLabel
+    )}`;
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, {
+        ...item,
+        printings: [...getCardPrintings(item)],
+      });
+      continue;
+    }
+
+    for (const row of getCardPrintings(item)) {
+      const already = existing.printings.some(
+        (p) => p.variantNumber === row.variantNumber
+      );
+      if (!already) existing.printings.push(row);
+    }
+  }
+
+  return Array.from(groups.values()).map((item) => {
+    const printings = sortPrintings(item.printings);
+    const primary = printings.find((p) => !p.isFoil) ?? printings[0];
+    if (!primary) return item;
+
+    return {
+      ...item,
+      variantNumber: primary.variantNumber,
+      cardmarketId: item.cardmarketId,
+      priceEur: primary.priceEur,
+      printings,
+    };
+  });
+}
+
 /** Merge all variant rows that belong to the same logical card. */
 export function groupCatalogListItems(items: CardListItem[]): CardListItem[] {
   const groups = new Map<
