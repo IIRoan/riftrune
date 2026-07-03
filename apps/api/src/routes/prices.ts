@@ -1,5 +1,9 @@
 import { Elysia } from 'elysia';
-import { PriceHistoryQuery, PriceHistoryResponse, PricesListQuery } from '@riftbound/contracts';
+import {
+  PriceHistoryQuery,
+  PriceHistoryResponse,
+  PricesListQuery,
+} from '@riftbound/contracts';
 import type { PriceCacheService } from '../services/price-cache.js';
 import { eq } from 'drizzle-orm';
 import { variants } from '../db/schema.js';
@@ -18,33 +22,33 @@ async function resolveCardmarketId(
 }
 
 export function createPricesRoutes(prices: PriceCacheService, db: Database) {
-  return new Elysia({ prefix: '/v1/prices' })
+  return new Elysia({ prefix: '/api/v1/prices' })
     .get(
       '/',
       async ({ query }) => {
-      const parsed = PricesListQuery.parse(query);
-      const cardmarketId = await resolveCardmarketId(
-        db,
-        parsed.variantNumber,
-        parsed.cardmarketId
-      );
+        const parsed = PricesListQuery.parse(query);
+        const cardmarketId = await resolveCardmarketId(
+          db,
+          parsed.variantNumber,
+          parsed.cardmarketId
+        );
 
-      const listQuery: { cardmarketId?: number; isFoil?: boolean } = {};
-      if (cardmarketId !== undefined) listQuery.cardmarketId = cardmarketId;
-      if (parsed.isFoil !== undefined) listQuery.isFoil = parsed.isFoil;
+        const listQuery: { cardmarketId?: number; isFoil?: boolean } = {};
+        if (cardmarketId !== undefined) listQuery.cardmarketId = cardmarketId;
+        if (parsed.isFoil !== undefined) listQuery.isFoil = parsed.isFoil;
 
-      const result = await prices.list(listQuery);
+        const result = await prices.list(listQuery);
 
-      return {
-        data: result.rows,
-        meta: {
-          pricesCatalogHash: result.catalogHash,
-          lastSyncedAt: result.lastSyncedAt,
-          rowCount: result.rows.length,
-        },
-      };
-    },
-    { detail: { tags: ['prices'] } }
+        return {
+          data: result.rows,
+          meta: {
+            pricesCatalogHash: result.catalogHash,
+            lastSyncedAt: result.lastSyncedAt,
+            rowCount: result.rows.length,
+          },
+        };
+      },
+      { detail: { tags: ['prices'] } }
     )
     .get(
       '/history',

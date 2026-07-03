@@ -20,7 +20,7 @@ const AdjustBody = z.object({
 const _UpsertBody = CollectionUpsertRequest.omit({ variantNumber: true });
 
 export function createCollectionRoutes(collection: CollectionService, auth: Auth) {
-  return new Elysia({ prefix: '/v1/collection' })
+  return new Elysia({ prefix: '/api/v1/collection' })
     .get(
       '/',
       async ({ request, set }) => {
@@ -78,13 +78,20 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
         }
         const parsed = AdjustBody.safeParse(body);
         const delta = parsed.success && parsed.data.delta ? parsed.data.delta : 1;
-        const condition = parsed.success ? (parsed.data.condition ?? 'near_mint') : 'near_mint';
+        const condition = parsed.success
+          ? (parsed.data.condition ?? 'near_mint')
+          : 'near_mint';
         const language = parsed.success ? (parsed.data.language ?? 'en') : 'en';
 
-        const item = await collection.adjustQuantity(user.id, params.variantNumber, delta, {
-          condition,
-          language,
-        });
+        const item = await collection.adjustQuantity(
+          user.id,
+          params.variantNumber,
+          delta,
+          {
+            condition,
+            language,
+          }
+        );
         if (!item) return { data: null };
         return CollectionItemResponse.parse({ data: item });
       },
@@ -100,13 +107,20 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
         }
         const parsed = AdjustBody.safeParse(body);
         const delta = parsed.success && parsed.data.delta ? parsed.data.delta : 1;
-        const condition = parsed.success ? (parsed.data.condition ?? 'near_mint') : 'near_mint';
+        const condition = parsed.success
+          ? (parsed.data.condition ?? 'near_mint')
+          : 'near_mint';
         const language = parsed.success ? (parsed.data.language ?? 'en') : 'en';
 
-        const item = await collection.adjustQuantity(user.id, params.variantNumber, -delta, {
-          condition,
-          language,
-        });
+        const item = await collection.adjustQuantity(
+          user.id,
+          params.variantNumber,
+          -delta,
+          {
+            condition,
+            language,
+          }
+        );
         if (!item) return { data: null };
         return CollectionItemResponse.parse({ data: item });
       },
@@ -123,7 +137,12 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
         const condition = CardCondition.safeParse(query.condition).success
           ? CardCondition.parse(query.condition)
           : 'near_mint';
-        await collection.remove(user.id, params.variantNumber, condition, query.language ?? 'en');
+        await collection.remove(
+          user.id,
+          params.variantNumber,
+          condition,
+          query.language ?? 'en'
+        );
         return { data: { ok: true } };
       },
       { detail: { tags: ['collection'] } }

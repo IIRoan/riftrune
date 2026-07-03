@@ -1,9 +1,13 @@
+import { FiltersResponse } from '@riftbound/contracts';
 import { join } from 'node:path';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { createApp, type AppContext } from '../../src/app.js';
 import { loadEnv, type Env } from '../../src/env.js';
+import { filterSnapshots, syncState } from '../../src/db/schema.js';
+import { entityHash } from '../../src/lib/hash.js';
+import { enrichedFilterSnapshot, expectedCatalogTotal } from '../fixtures/enriched-filters.js';
 
 const E2E_PORT = Number(process.env.E2E_PORT ?? 3099);
 
@@ -73,7 +77,7 @@ export async function setupE2E(): Promise<void> {
   const externalUrl = process.env.E2E_API_URL;
   if (externalUrl) {
     baseUrl = externalUrl.replace(/\/$/, '');
-    const health = await fetch(`${baseUrl}/v1/health`);
+    const health = await fetch(`${baseUrl}/api/v1/health`);
     if (!health.ok) {
       throw new Error(`E2E_API_URL is not reachable: ${baseUrl}`);
     }
@@ -88,7 +92,7 @@ export async function setupE2E(): Promise<void> {
   const deadline = Date.now() + 15_000;
   while (Date.now() < deadline) {
     try {
-      const res = await fetch(`${baseUrl}/v1/health`);
+      const res = await fetch(`${baseUrl}/api/v1/health`);
       if (res.ok) break;
     } catch {
       // retry
@@ -106,14 +110,53 @@ export async function teardownE2E(): Promise<void> {
 }
 
 export async function ensureCatalogSynced(): Promise<void> {
-  const status = await apiJson<{
-    data: { catalog: { variantCount: number; lastRun: string | null } };
-  }>('/v1/sync/status');
+  try {
+    const ctx = getContext();
+    const hash = entityHash(enrichedFilterSnapshot);
+    await ctx.db.insert(filterSnapshots).values({
+      snapshot: enrichedFilterSnapshot,
+      contentHash: hash,
+    });
+    await ctx.db
+      .insert(syncState)
+      .values({
+        key: 'catalog',
+        status: 'idle',
+        contentHash: hash,
+        rowCount: expectedCatalogTotal,
+        lastAttemptAt: new Date(),
+        lastSuccessAt: new Date(),
+        lastError: null,
+      })
+      .onConflictDoUpdate({
+        target: syncState.key,
+        set: {
+          status: 'idle',
+          contentHash: hash,
+          rowCount: expectedCatalogTotal,
+          lastAttemptAt: new Date(),
+          lastSuccessAt: new Date(),
+          lastError: null,
+        },
+      });
+    return;
+  } catch {
+    // External E2E_API_URL — fall back to admin sync.
+  }
 
-  if (status.data.catalog.variantCount > 10) return;
+  const filters = await apiJson<unknown>('/api/v1/filters').catch(() => null);
+  if (filters) {
+    const parsed = FiltersResponse.parse(filters);
+    if (
+      parsed.meta.variantCount === expectedCatalogTotal &&
+      parsed.data.sets.some((set) => set.printCount != null)
+    ) {
+      return;
+    }
+  }
 
   const token = getEnv().ADMIN_SYNC_TOKEN;
-  await apiJson('/v1/sync/catalog', {
+  await apiJson('/api/v1/sync/catalog', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -126,7 +169,7 @@ export async function syncPricesForE2E(): Promise<void> {
   }
 
   const token = getEnv().ADMIN_SYNC_TOKEN;
-  await apiJson('/v1/sync/prices', {
+  await apiJson('/api/v1/sync/prices', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -135,7 +178,7 @@ export async function syncPricesForE2E(): Promise<void> {
 export async function ensurePricesSynced(): Promise<void> {
   const status = await apiJson<{
     data: { prices: { rowCount: number } };
-  }>('/v1/sync/status');
+  }>('/api/v1/sync/status');
 
   if (status.data.prices.rowCount > 0) return;
 

@@ -3,8 +3,8 @@ import { HealthResponse, SyncStatusResponse } from '@riftbound/contracts';
 import { apiJson } from './support.js';
 
 describe('health', () => {
-  test('GET /v1/health returns ok with database connected', async () => {
-    const json = await apiJson<unknown>('/v1/health');
+  test('GET /api/v1/health returns ok with database connected', async () => {
+    const json = await apiJson<unknown>('/api/v1/health');
     const parsed = HealthResponse.parse(json);
 
     expect(parsed.data.status).toBe('ok');
@@ -13,8 +13,8 @@ describe('health', () => {
 });
 
 describe('sync status', () => {
-  test('GET /v1/sync/status returns catalog and prices metadata', async () => {
-    const json = await apiJson<unknown>('/v1/sync/status');
+  test('GET /api/v1/sync/status returns catalog and prices metadata', async () => {
+    const json = await apiJson<unknown>('/api/v1/sync/status');
     const parsed = SyncStatusResponse.parse(json);
 
     expect(parsed.data.catalog.status).toMatch(/^(idle|running|failed)$/);

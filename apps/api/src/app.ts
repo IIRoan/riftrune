@@ -14,6 +14,7 @@ import { createPricesRoutes } from './routes/prices.js';
 import { createHealthRoutes, createSyncRoutes } from './routes/sync.js';
 import { createWishlistRoutes } from './routes/wishlist.js';
 import { CardCacheService } from './services/card-cache.js';
+import { CatalogMetadataService } from './services/catalog-metadata.js';
 import { CollectionService } from './services/collection-service.js';
 import { PriceCacheService } from './services/price-cache.js';
 import { SyncEngine } from './services/sync-engine.js';
@@ -27,6 +28,7 @@ export interface AppContext {
   auth: Auth;
   riftrune: RiftruneClient;
   cardCache: CardCacheService;
+  catalogMetadata: CatalogMetadataService;
   priceCache: PriceCacheService;
   syncEngine: SyncEngine;
   collectionService: CollectionService;
@@ -40,7 +42,8 @@ function buildApp(env: Env): AppContext {
   const riftrune = new RiftruneClient(env);
   const priceCache = new PriceCacheService(db, riftrune);
   const cardCache = new CardCacheService(db, riftrune, priceCache);
-  const syncEngine = new SyncEngine(db, riftrune, cardCache);
+  const catalogMetadata = new CatalogMetadataService(db, riftrune);
+  const syncEngine = new SyncEngine(db, riftrune, cardCache, catalogMetadata);
   const collectionService = new CollectionService(db);
   const wishlistService = new WishlistService(db);
 
@@ -69,14 +72,14 @@ function buildApp(env: Env): AppContext {
     .use(createHealthRoutes(db, syncEngine))
     .use(createCardsRoutes(cardCache, env))
     .use(createPricesRoutes(priceCache, db))
-    .use(createFiltersRoutes(db))
+    .use(createFiltersRoutes(catalogMetadata))
     .use(createCollectionRoutes(collectionService, auth))
     .use(createWishlistRoutes(wishlistService, auth))
     .use(createSyncRoutes(syncEngine, priceCache, env))
     .get('/', () => ({
       name: 'riftrune-api',
       docs: '/swagger',
-      health: '/v1/health',
+      health: '/api/v1/health',
       auth: '/api/auth',
     }));
 
@@ -87,6 +90,7 @@ function buildApp(env: Env): AppContext {
     auth,
     riftrune,
     cardCache,
+    catalogMetadata,
     priceCache,
     syncEngine,
     collectionService,
@@ -96,6 +100,14 @@ function buildApp(env: Env): AppContext {
 
 export function createApp(env: Env): AppContext {
   return buildApp(env);
+}
+
+export function startCatalogMetadataWarmup(ctx: AppContext): void {
+  if (process.env.CATALOG_PROBE_DISABLED === 'true') return;
+
+  void ctx.catalogMetadata.ensureExpandedPrintCounts().catch((err: unknown) => {
+    console.error('Catalog metadata warmup failed:', err);
+  });
 }
 
 export function startSyncCrons(ctx: AppContext, env: Env): void {

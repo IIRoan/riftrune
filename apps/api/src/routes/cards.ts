@@ -4,13 +4,18 @@ import type { CardCacheService } from '../services/card-cache.js';
 import type { Env } from '../env.js';
 
 export function createCardsRoutes(cards: CardCacheService, _env: Env) {
-  return new Elysia({ prefix: '/v1/cards' })
+  return new Elysia({ prefix: '/api/v1/cards' })
     .get(
       '/',
-      async ({ query }) => {
+      async ({ query, set }) => {
         const parsed = CardsListQuery.parse(query);
         const result = await cards.search(parsed);
         const totalPages = Math.ceil(result.total / parsed.limit) || 1;
+
+        if (!parsed.refresh) {
+          set.headers['cache-control'] = 'public, max-age=300, stale-while-revalidate=60';
+        }
+
         return {
           data: result.items,
           meta: {

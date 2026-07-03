@@ -8,7 +8,7 @@ export type SetCatalogEntry = {
   logo?: ImageSourcePropType;
 };
 
-/** Static set metadata + artwork — merged with live counts from /v1/filters. */
+/** Static set metadata + artwork, merged with live counts from /api/v1/filters. */
 export const SET_CATALOG: SetCatalogEntry[] = [
   {
     code: 'OGN',

@@ -40,7 +40,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useCardSearch } from '@/hooks/useCardSearch';
 import { useCollection } from '@/hooks/useCollection';
 import { useFeaturedCatalog } from '@/hooks/useFeaturedCatalog';
-import { useFiltersData } from '@/hooks/useFiltersData';
 import {
   CATALOG_DETAIL_GAP,
   DETAIL_PANEL_WIDTH,
@@ -110,11 +109,9 @@ function SearchScreenBody() {
     isError,
     minLength,
     searchNow,
-    meta,
   } = useCardSearch(query, catalogSort);
   const featuredQuery = useFeaturedCatalog();
   const { data: collection = [] } = useCollection();
-  const filtersQuery = useFiltersData();
 
   const collectionByVariant = useMemo(
     () => new Map(collection.map((e) => [e.variantNumber, e])),
@@ -197,7 +194,6 @@ function SearchScreenBody() {
     (hasSearchInput && (searchPending || isLoading || isFetching));
   const isList = view === 'list';
   const filterActive = activeFilter !== ALL_CARDS_FILTER;
-  const catalogTotal = filtersQuery.data?.sets.reduce((s, set) => s + set.count, 0) ?? null;
 
   const loadHistory = useCallback(async () => {
     setHistory(await getSearchHistory());
@@ -297,18 +293,12 @@ function SearchScreenBody() {
 
   const listHeader = useMemo(() => {
     if (!hasCatalog) return null;
-    const countLabel = isSearching
-      ? searchPending
-        ? 'Searching…'
-        : `${String(filteredItems.length)}${catalogTotal != null ? ` of ${catalogTotal.toLocaleString()} cards` : ' cards'}${meta?.source ? ' · synced from Piltover Archive' : ''}`
-      : `${String(displayItems.length)} top cards${catalogTotal != null ? ` · ${catalogTotal.toLocaleString()} in catalog` : ''}`;
     return (
       <View className="mb-1 flex-row items-center justify-between pb-3">
         <View>
           <Text className="text-xl font-semibold tracking-tight text-foreground">
             Riftbound catalog
           </Text>
-          <Text className="mt-1 font-mono text-[13px] text-muted-foreground">{countLabel}</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <ViewToggle view={view} onViewChange={setView} />
@@ -321,17 +311,7 @@ function SearchScreenBody() {
         </View>
       </View>
     );
-  }, [
-    hasCatalog,
-    isSearching,
-    searchPending,
-    filteredItems.length,
-    displayItems.length,
-    catalogTotal,
-    meta?.source,
-    view,
-    setView,
-  ]);
+  }, [hasCatalog, view, setView]);
 
   const listEmpty = useMemo(() => {
     const trimmed = query.trim();

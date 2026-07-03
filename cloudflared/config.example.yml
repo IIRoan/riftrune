@@ -1,6 +1,6 @@
 # Cloudflare Tunnel — https://riftbounddev.roan.dev
 #
-#   /v1/*, /swagger*  →  local API      :3000
+#   /api/v1/*, /swagger*  →  local API      :3000
 #   everything else   →  Expo dev server :8081  (web + Metro)
 #
 # Already authenticated via ~/.cloudflared/cert.pem (no `cloudflared login` needed).
@@ -14,7 +14,7 @@ credentials-file: /var/home/roan/.cloudflared/1084f7e6-5104-4e04-a6f8-906e04fdd3
 
 ingress:
   - hostname: riftbounddev.roan.dev
-    path: ^/v1
+    path: ^/api/v1
     service: http://127.0.0.1:3000
   - hostname: riftbounddev.roan.dev
     path: ^/swagger

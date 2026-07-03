@@ -1,3 +1,2 @@
 [test]
-preload = ["./test/e2e/preload.ts"]
 timeout = 180000

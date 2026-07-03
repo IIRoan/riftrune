@@ -1,31 +1,17 @@
 import { Elysia } from 'elysia';
-import { desc, eq } from 'drizzle-orm';
-import { filterSnapshots, syncState } from '../db/schema.js';
-import type { Database } from '../db/client.js';
+import type { CatalogMetadataService } from '../services/catalog-metadata.js';
 
-export function createFiltersRoutes(db: Database) {
-  return new Elysia({ prefix: '/v1/filters' }).get(
+export function createFiltersRoutes(catalogMetadata: CatalogMetadataService) {
+  return new Elysia({ prefix: '/api/v1/filters' }).get(
     '/',
     async () => {
-      const latest = await db.query.filterSnapshots.findFirst({
-        orderBy: [desc(filterSnapshots.capturedAt)],
-      });
-      const catalog = await db.query.syncState.findFirst({
-        where: eq(syncState.key, 'catalog'),
-      });
-
+      const meta = await catalogMetadata.getFiltersMeta();
       return {
-        data: latest?.snapshot ?? {
-          colors: [],
-          sets: [],
-          types: [],
-          supertypes: [],
-          rarities: [],
-          variants: [],
-        },
+        data: meta.snapshot,
         meta: {
-          cachedAt: (latest?.capturedAt ?? new Date()).toISOString(),
-          catalogHash: catalog?.contentHash ?? '',
+          cachedAt: meta.cachedAt,
+          catalogHash: meta.catalogHash,
+          variantCount: meta.variantCount,
         },
       };
     },

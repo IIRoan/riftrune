@@ -36,12 +36,15 @@ async function authedFetch<T>(
 }
 
 export async function fetchRemoteCollection(): Promise<CollectionItem[]> {
-  const res = await authedFetch<{ data: CollectionItem[] }>('/v1/collection');
+  const res = await authedFetch<{ data: CollectionItem[] }>('/api/v1/collection');
   return CollectionListResponse.parse(res).data;
 }
 
-export async function remoteAddToCollection(variantNumber: string, delta = 1): Promise<void> {
-  await authedFetch(`/v1/collection/${encodeURIComponent(variantNumber)}/add`, {
+export async function remoteAddToCollection(
+  variantNumber: string,
+  delta = 1
+): Promise<void> {
+  await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/add`, {
     method: 'POST',
     body: { delta },
   });
@@ -51,7 +54,7 @@ export async function remoteRemoveFromCollection(
   variantNumber: string,
   delta = 1
 ): Promise<void> {
-  await authedFetch(`/v1/collection/${encodeURIComponent(variantNumber)}/remove`, {
+  await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/remove`, {
     method: 'POST',
     body: { delta },
   });
@@ -61,14 +64,14 @@ export async function remoteSetCollectionQuantity(
   variantNumber: string,
   quantity: number
 ): Promise<void> {
-  await authedFetch(`/v1/collection/${encodeURIComponent(variantNumber)}`, {
+  await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}`, {
     method: 'PUT',
     body: { variantNumber, quantity },
   });
 }
 
 export async function remoteDeleteFromCollection(variantNumber: string): Promise<void> {
-  await authedFetch(`/v1/collection/${encodeURIComponent(variantNumber)}`, {
+  await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}`, {
     method: 'DELETE',
   });
 }
@@ -76,7 +79,7 @@ export async function remoteDeleteFromCollection(variantNumber: string): Promise
 export async function remoteBatchSyncCollection(
   items: Array<{ variantNumber: string; quantity: number }>
 ): Promise<void> {
-  await authedFetch('/v1/collection/batch', {
+  await authedFetch('/api/v1/collection/batch', {
     method: 'POST',
     body: {
       items: items.map((item) => ({
@@ -90,19 +93,19 @@ export async function remoteBatchSyncCollection(
 }
 
 export async function fetchRemoteWishlist(): Promise<WishlistItem[]> {
-  const res = await authedFetch<{ data: WishlistItem[] }>('/v1/wishlist');
+  const res = await authedFetch<{ data: WishlistItem[] }>('/api/v1/wishlist');
   return WishlistListResponse.parse(res).data;
 }
 
 export async function remoteAddToWishlist(variantNumber: string): Promise<void> {
-  await authedFetch(`/v1/wishlist/${encodeURIComponent(variantNumber)}`, {
+  await authedFetch(`/api/v1/wishlist/${encodeURIComponent(variantNumber)}`, {
     method: 'PUT',
     body: { variantNumber },
   });
 }
 
 export async function remoteRemoveFromWishlist(variantNumber: string): Promise<void> {
-  await authedFetch(`/v1/wishlist/${encodeURIComponent(variantNumber)}`, {
+  await authedFetch(`/api/v1/wishlist/${encodeURIComponent(variantNumber)}`, {
     method: 'DELETE',
   });
 }

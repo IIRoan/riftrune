@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const API_PORT = process.env.PORT ?? '3000';
-const API_HEALTH = `http://127.0.0.1:${API_PORT}/v1/health`;
+const API_HEALTH = `http://127.0.0.1:${API_PORT}/api/v1/health`;
 const DEV_DIR = join(ROOT, '.dev');
 const TUNNEL_URL_FILE = join(DEV_DIR, 'tunnel-url');
 const MOBILE_ENV = join(ROOT, 'apps/mobile/.env');

@@ -1,7 +1,18 @@
-import { afterAll, beforeAll, describe, expect, test, setDefaultTimeout } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  test,
+  setDefaultTimeout,
+} from 'bun:test';
 import { eq, like } from 'drizzle-orm';
 import { setupE2E, getBaseUrl, apiFetch, getContext } from './support.js';
-import { user as userTable, session as sessionTable, account as accountTable } from '../../src/db/auth-schema.js';
+import {
+  user as userTable,
+  session as sessionTable,
+  account as accountTable,
+} from '../../src/db/auth-schema.js';
 
 setDefaultTimeout(60_000);
 
@@ -184,13 +195,13 @@ describe('auth: sign-in', () => {
 });
 
 describe('auth: protected routes require session', () => {
-  test('GET /v1/collection returns 401 without auth', async () => {
-    const res = await apiFetch('/v1/collection');
+  test('GET /api/v1/collection returns 401 without auth', async () => {
+    const res = await apiFetch('/api/v1/collection');
     expect(res.status).toBe(401);
   });
 
-  test('GET /v1/collection succeeds with session cookie', async () => {
-    const res = await authFetch('/v1/collection', {
+  test('GET /api/v1/collection succeeds with session cookie', async () => {
+    const res = await authFetch('/api/v1/collection', {
       cookie: cookieHeader,
     });
 
@@ -200,13 +211,13 @@ describe('auth: protected routes require session', () => {
     expect(Array.isArray(body.data)).toBe(true);
   });
 
-  test('GET /v1/wishlist returns 401 without auth', async () => {
-    const res = await apiFetch('/v1/wishlist');
+  test('GET /api/v1/wishlist returns 401 without auth', async () => {
+    const res = await apiFetch('/api/v1/wishlist');
     expect(res.status).toBe(401);
   });
 
-  test('GET /v1/wishlist succeeds with session cookie', async () => {
-    const res = await authFetch('/v1/wishlist', {
+  test('GET /api/v1/wishlist succeeds with session cookie', async () => {
+    const res = await authFetch('/api/v1/wishlist', {
       cookie: cookieHeader,
     });
 

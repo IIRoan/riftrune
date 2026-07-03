@@ -41,20 +41,25 @@ export default function CollectionScreen() {
       (filtersQuery.data?.sets ?? []).map((s) => ({
         code: s.code ?? s.id,
         name: s.name,
-        count: s.count,
+        count: s.printCount ?? s.count,
       })),
     [filtersQuery.data?.sets]
   );
   const apiTypes = filtersQuery.data?.types ?? [];
   const apiRarities = filtersQuery.data?.rarities ?? [];
-  const catalogTotal = apiSets.reduce((s, set) => s + set.count, 0);
+  const catalogTotal = filtersQuery.data?.variantCount ?? 0;
+  const catalogTotalLabel =
+    catalogTotal > 0
+      ? catalogTotal.toLocaleString()
+      : filtersQuery.isLoading
+        ? '…'
+        : '—';
 
   const mergedSets = useMemo(
     () => mergeSetStats(collection, apiSets),
     [collection, apiSets]
   );
 
-  const totalSetOwned = mergedSets.reduce((sum, s) => sum + s.owned, 0);
   const totalFoilOwned = mergedSets.reduce((sum, s) => sum + s.foilOwned, 0);
 
   const rarityStats = useMemo(() => {
@@ -85,8 +90,8 @@ export default function CollectionScreen() {
           Collection Dashboard
         </Text>
         <Text className="mt-1 font-mono text-[13px] text-muted-foreground">
-          {totalSetOwned} unique cards · {totalFoilOwned} foils · €
-          {estimatedValue.toFixed(2)} estimated value
+          {collection.length.toLocaleString()} of {catalogTotalLabel} cards available ·{' '}
+          {totalFoilOwned} foils · €{estimatedValue.toFixed(2)} estimated value
         </Text>
       </View>
 
@@ -99,7 +104,13 @@ export default function CollectionScreen() {
         <DashboardStat
           label="Cards Collected"
           value={collection.length.toLocaleString()}
-          sub={`of ${catalogTotal.toLocaleString()} available`}
+          sub={
+            catalogTotal > 0
+              ? `of ${catalogTotal.toLocaleString()} available`
+              : filtersQuery.isLoading
+                ? 'loading catalog…'
+                : 'catalog count unavailable'
+          }
         />
         <DashboardStat
           label="Total Cards"

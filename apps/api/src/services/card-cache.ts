@@ -8,18 +8,70 @@ import {
   mapCardDetail,
   mapListItem,
   groupCatalogListItems,
+  groupCardListItems,
   paCardHash,
   paVariantHash,
 } from './card-mapper.js';
 import type { PriceCacheService } from './price-cache.js';
 import { buildCardSearchCondition, buildSearchRelevanceOrder } from '../lib/search.js';
+import { TtlCache } from '../lib/ttl-cache.js';
+
+const SEARCH_RESULT_TTL_MS = 5 * 60 * 1000;
+const UPSTREAM_CHECK_TTL_MS = 15 * 60 * 1000;
+/** Cap variant rows loaded for text search before in-memory grouping. */
+const SEARCH_VARIANT_FETCH_CAP = 500;
+
+type SearchResult = {
+  items: CardListItem[];
+  total: number;
+  catalogHash: string;
+  source: 'cache' | 'upstream' | 'mixed';
+};
+
+function searchCacheKey(query: CardsListQuery, catalogHash: string): string {
+  return JSON.stringify({
+    catalogHash,
+    q: query.q?.trim().toLowerCase() ?? '',
+    sets: query.sets ?? '',
+    colors: query.colors ?? '',
+    types: query.types ?? '',
+    rarities: query.rarities ?? '',
+    energyMin: query.energyMin,
+    energyMax: query.energyMax,
+    powerMin: query.powerMin,
+    powerMax: query.powerMax,
+    mightMin: query.mightMin,
+    mightMax: query.mightMax,
+    page: query.page,
+    limit: query.limit,
+    sortBy: query.sortBy,
+    dir: query.dir,
+  });
+}
+
+function upstreamCheckKey(query: CardsListQuery): string {
+  return JSON.stringify({
+    q: query.q?.trim().toLowerCase() ?? '',
+    limit: query.limit,
+    page: query.page,
+    sortBy: query.sortBy,
+    dir: query.dir,
+  });
+}
 
 export class CardCacheService {
+  private readonly searchCache = new TtlCache<SearchResult>(SEARCH_RESULT_TTL_MS);
+  private readonly upstreamCheckCache = new TtlCache<true>(UPSTREAM_CHECK_TTL_MS);
+
   constructor(
     private readonly db: Database,
     private readonly riftrune: RiftruneClient,
     private readonly prices: PriceCacheService
   ) {}
+
+  invalidateSearchCache(): void {
+    this.searchCache.clear();
+  }
 
   async getCatalogHash(): Promise<string> {
     const row = await this.db.query.syncState.findFirst({
@@ -267,53 +319,105 @@ export class CardCacheService {
     };
   }
 
-  async search(query: CardsListQuery): Promise<{
-    items: CardListItem[];
-    total: number;
-    catalogHash: string;
-    source: 'cache' | 'upstream' | 'mixed';
-  }> {
+  async search(query: CardsListQuery): Promise<SearchResult> {
+    const catalogHash = await this.getCatalogHash();
+    const cacheKey = searchCacheKey(query, catalogHash);
+
+    if (!query.refresh) {
+      const cached = this.searchCache.get(cacheKey);
+      if (cached) return cached;
+    }
+
     let source: 'cache' | 'upstream' | 'mixed' = 'cache';
     let result = await this.searchLocal(query);
 
     const q = query.q?.trim();
-    if (q && q.length >= 2 && query.page === 1) {
-      try {
-        const upstream = await this.riftrune.listCards({
-          q,
-          limit: query.limit,
-          page: query.page,
-          sortBy: query.sortBy,
-          dir: query.dir,
-        });
+    const shouldReconcileUpstream =
+      q && q.length >= 2 && query.page === 1 && !this.upstreamCheckCache.has(upstreamCheckKey(query));
 
-        const localVariantNumbers = new Set(
-          result.items.map((item) => item.variantNumber)
-        );
-        const missing = upstream.data.filter(
-          (item) => !localVariantNumbers.has(item.variantNumber)
-        );
-
-        if (missing.length > 0) {
-          for (const item of missing) {
-            try {
-              const logical = await this.riftrune.getCard(item.variantNumber);
-              await this.upsertFromUpstream(logical);
-            } catch (err) {
-              console.warn(`Search backfill skipped ${item.variantNumber}:`, err);
-            }
-          }
-          result = await this.searchLocal(query);
-          source = 'mixed';
-        } else if (result.total === 0 && upstream.data.length === 0) {
-          source = 'upstream';
-        }
-      } catch (err) {
-        console.warn('Upstream search unavailable, using local cache only:', err);
+    if (shouldReconcileUpstream) {
+      if (query.refresh || result.total === 0) {
+        const reconciled = await this.reconcileSearchWithUpstream(query, result);
+        result = reconciled.result;
+        source = reconciled.source;
+      } else {
+        this.scheduleSearchReconciliation(query, cacheKey, result);
       }
     }
 
-    return { ...result, source };
+    const response: SearchResult = { ...result, source };
+    this.searchCache.set(cacheKey, response);
+    return response;
+  }
+
+  private scheduleSearchReconciliation(
+    query: CardsListQuery,
+    cacheKey: string,
+    localResult: { items: CardListItem[]; total: number }
+  ): void {
+    void this.reconcileSearchWithUpstream(query, localResult)
+      .then(async (reconciled) => {
+        if (reconciled.source === 'cache') return;
+        const refreshed = await this.searchLocal(query);
+        this.searchCache.set(cacheKey, { ...refreshed, source: reconciled.source });
+      })
+      .catch((err) => {
+        console.warn('Background search reconciliation failed:', err);
+      });
+  }
+
+  private async reconcileSearchWithUpstream(
+    query: CardsListQuery,
+    localResult?: { items: CardListItem[]; total: number }
+  ): Promise<{
+    result: { items: CardListItem[]; total: number; catalogHash: string };
+    source: 'cache' | 'upstream' | 'mixed';
+  }> {
+    const q = query.q?.trim();
+    if (!q || q.length < 2 || query.page !== 1) {
+      return { result: await this.searchLocal(query), source: 'cache' };
+    }
+
+    this.upstreamCheckCache.set(upstreamCheckKey(query), true);
+
+    try {
+      const upstream = await this.riftrune.listCards({
+        q,
+        limit: query.limit,
+        page: query.page,
+        sortBy: query.sortBy,
+        dir: query.dir,
+      });
+
+      const localVariantNumbers = new Set(
+        (localResult?.items ?? []).map((item) => item.variantNumber)
+      );
+      const missing = upstream.data.filter(
+        (item) => !localVariantNumbers.has(item.variantNumber)
+      );
+
+      if (missing.length > 0) {
+        for (const item of missing) {
+          try {
+            const logical = await this.riftrune.getCard(item.variantNumber);
+            await this.upsertFromUpstream(logical);
+          } catch (err) {
+            console.warn(`Search backfill skipped ${item.variantNumber}:`, err);
+          }
+        }
+        const result = await this.searchLocal(query);
+        return { result, source: 'mixed' };
+      }
+
+      if ((localResult?.total ?? 0) === 0 && upstream.data.length === 0) {
+        return { result: await this.searchLocal(query), source: 'upstream' };
+      }
+
+      return { result: await this.searchLocal(query), source: 'cache' };
+    } catch (err) {
+      console.warn('Upstream search unavailable, using local cache only:', err);
+      return { result: await this.searchLocal(query), source: 'cache' };
+    }
   }
 
   private async searchLocal(query: CardsListQuery): Promise<{
@@ -373,7 +477,7 @@ export class CardCacheService {
       .orderBy(...orderBy);
 
     const rows = hasSearch
-      ? await baseQuery
+      ? await baseQuery.limit(SEARCH_VARIANT_FETCH_CAP)
       : await baseQuery.limit(query.limit).offset(offset);
 
     const priceRows = await this.prices.getRowsForCardmarketIds(
@@ -388,10 +492,22 @@ export class CardCacheService {
     });
 
     if (hasSearch) {
-      const grouped = groupCatalogListItems(rawItems);
+      const grouped = groupCardListItems(rawItems);
+      let total = grouped.length;
+
+      if (rows.length >= SEARCH_VARIANT_FETCH_CAP) {
+        const [countRow] = await this.db
+          .select({ value: count() })
+          .from(variants)
+          .innerJoin(cards, eq(variants.cardId, cards.id))
+          .innerJoin(sets, eq(variants.setId, sets.id))
+          .where(where);
+        total = countRow?.value ?? grouped.length;
+      }
+
       return {
         items: grouped.slice(offset, offset + query.limit),
-        total: grouped.length,
+        total,
         catalogHash: await this.getCatalogHash(),
       };
     }

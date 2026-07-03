@@ -59,11 +59,8 @@ const { addDetailToCollection, addToCollection, updateCollectionQuantity } =
   await import('./collectionService');
 const { getCollectedPrintingsForDetailCard, getCollectedPrintingsForListCard } =
   await import('@/utils/collectionRemove');
-const {
-  remoteAddToCollection,
-  remoteAddToWishlist,
-  remoteRemoveFromWishlist,
-} = await import('./remoteCollectionService');
+const { remoteAddToCollection, remoteAddToWishlist, remoteRemoveFromWishlist } =
+  await import('./remoteCollectionService');
 
 const listCard: CardListItem = {
   cardId: '22222222-2222-2222-2222-222222222222',
@@ -104,7 +101,7 @@ beforeEach(() => {
 function expectPostToSelectedVariant(variantNumber: string) {
   expect(requests).toHaveLength(1);
   expect(requests[0]?.url).toBe(
-    `http://localhost:3000/v1/collection/${variantNumber}/add`
+    `http://localhost:3000/api/v1/collection/${variantNumber}/add`
   );
   expect(requests[0]?.init?.method).toBe('POST');
   expect(requests[0]?.init?.credentials).toBe('include');
@@ -152,7 +149,7 @@ describe('remote wishlist writes', () => {
 
     expect(getCookie).toHaveBeenCalled();
     expectWriteRequest({
-      url: '/v1/wishlist/SFD-R05a',
+      url: '/api/v1/wishlist/SFD-R05a',
       method: 'PUT',
       body: { variantNumber: 'SFD-R05a' },
     });
@@ -163,7 +160,7 @@ describe('remote wishlist writes', () => {
 
     expect(getCookie).toHaveBeenCalled();
     expectWriteRequest({
-      url: '/v1/wishlist/SFD-R05a',
+      url: '/api/v1/wishlist/SFD-R05a',
       method: 'DELETE',
     });
   });
@@ -212,7 +209,7 @@ describe('collection quantity floors', () => {
     await updateCollectionQuantity('SFD-R05a', -1);
 
     expectWriteRequest({
-      url: '/v1/collection/SFD-R05a',
+      url: '/api/v1/collection/SFD-R05a',
       method: 'DELETE',
     });
   });
