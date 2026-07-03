@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
   pgTable,
   uuid,
@@ -11,7 +12,9 @@ import {
   char,
   primaryKey,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { user } from './auth-schema.js';
 
 export const sets = pgTable('sets', {
   id: uuid('id').primaryKey(),
@@ -123,6 +126,42 @@ export const prices = pgTable(
   (t) => [index('prices_cardmarket_foil_idx').on(t.cardmarketId, t.isFoil)]
 );
 
+export const priceHistory = pgTable(
+  'price_history',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    cardmarketId: integer('cardmarket_id').notNull(),
+    isFoil: boolean('is_foil').notNull(),
+    provider: text('provider').notNull().default('cardmarket'),
+    currency: text('currency').notNull().default('EUR'),
+    lowPrice: numeric('low_price', { precision: 12, scale: 2 }),
+    marketPrice: numeric('market_price', { precision: 12, scale: 2 }),
+    midPrice: numeric('mid_price', { precision: 12, scale: 2 }),
+    highPrice: numeric('high_price', { precision: 12, scale: 2 }),
+    avg1Day: numeric('avg_1_day', { precision: 12, scale: 2 }),
+    avg7Day: numeric('avg_7_day', { precision: 12, scale: 2 }),
+    avg30Day: numeric('avg_30_day', { precision: 12, scale: 2 }),
+    upstreamLastUpdated: timestamp('upstream_last_updated', {
+      withTimezone: true,
+    }).notNull(),
+    contentHash: char('content_hash', { length: 64 }).notNull(),
+    capturedAt: timestamp('captured_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('price_history_unique_snapshot_idx').on(
+      t.cardmarketId,
+      t.isFoil,
+      t.upstreamLastUpdated,
+      t.contentHash
+    ),
+    index('price_history_cardmarket_foil_captured_idx').on(
+      t.cardmarketId,
+      t.isFoil,
+      t.capturedAt
+    ),
+  ]
+);
+
 export const syncState = pgTable('sync_state', {
   key: text('key').primaryKey(),
   contentHash: char('content_hash', { length: 64 }).notNull(),
@@ -139,3 +178,92 @@ export const filterSnapshots = pgTable('filter_snapshots', {
   contentHash: char('content_hash', { length: 64 }).notNull(),
   capturedAt: timestamp('captured_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Standard TCG card condition grades */
+export const CARD_CONDITIONS = [
+  'mint',
+  'near_mint',
+  'lightly_played',
+  'moderately_played',
+  'heavily_played',
+  'damaged',
+] as const;
+
+export type CardCondition = (typeof CARD_CONDITIONS)[number];
+
+/**
+ * A user's owned stack of a specific printing.
+ * Uniqueness is per user + variant + condition + language so you can track
+ * NM vs LP copies of the same card separately.
+ */
+export const collectionItems = pgTable(
+  'collection_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    variantNumber: text('variant_number')
+      .notNull()
+      .references(() => variants.variantNumber, { onDelete: 'restrict' }),
+    quantity: integer('quantity').notNull().default(1),
+    condition: text('condition').notNull().default('near_mint'),
+    language: text('language').notNull().default('en'),
+    isFoil: boolean('is_foil').notNull().default(false),
+    notes: text('notes'),
+    isGraded: boolean('is_graded').notNull().default(false),
+    gradeCompany: text('grade_company'),
+    gradeScore: text('grade_score'),
+    acquiredAt: timestamp('acquired_at', { withTimezone: true }),
+    acquiredPriceCents: integer('acquired_price_cents'),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('collection_items_user_variant_condition_lang_idx').on(
+      t.userId,
+      t.variantNumber,
+      t.condition,
+      t.language
+    ),
+    index('collection_items_user_id_idx').on(t.userId),
+    index('collection_items_variant_number_idx').on(t.variantNumber),
+  ]
+);
+
+export const wishlistItems = pgTable(
+  'wishlist_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    variantNumber: text('variant_number')
+      .notNull()
+      .references(() => variants.variantNumber, { onDelete: 'restrict' }),
+    priority: smallint('priority').notNull().default(0),
+    targetPriceCents: integer('target_price_cents'),
+    notes: text('notes'),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('wishlist_items_user_variant_idx').on(t.userId, t.variantNumber),
+    index('wishlist_items_user_id_idx').on(t.userId),
+  ]
+);
+
+export const collectionItemsRelations = relations(collectionItems, ({ one }) => ({
+  user: one(user, { fields: [collectionItems.userId], references: [user.id] }),
+  variant: one(variants, {
+    fields: [collectionItems.variantNumber],
+    references: [variants.variantNumber],
+  }),
+}));
+
+export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
+  user: one(user, { fields: [wishlistItems.userId], references: [user.id] }),
+  variant: one(variants, {
+    fields: [wishlistItems.variantNumber],
+    references: [variants.variantNumber],
+  }),
+}));

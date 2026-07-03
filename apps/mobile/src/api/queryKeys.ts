@@ -11,3 +11,7 @@ export const collectionQueryKeys = {
   all: ['collection'] as const,
   entry: (variantNumber: string) => ['collection', variantNumber] as const,
 };
+
+export const wishlistQueryKeys = {
+  all: ['wishlist'] as const,
+};

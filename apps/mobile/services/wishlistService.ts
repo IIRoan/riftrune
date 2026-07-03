@@ -1,6 +1,8 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const WISHLIST_KEY = 'riftbound_wishlist';
+import {
+  fetchRemoteWishlist,
+  remoteAddToWishlist,
+  remoteRemoveFromWishlist,
+} from '@/services/remoteCollectionService';
 
 export type WishlistEntry = {
   variantNumber: string;
@@ -10,30 +12,21 @@ export type WishlistEntry = {
 };
 
 export async function getWishlist(): Promise<WishlistEntry[]> {
-  try {
-    const raw = await AsyncStorage.getItem(WISHLIST_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as WishlistEntry[];
-  } catch {
-    return [];
-  }
+  const items = await fetchRemoteWishlist();
+  return items.map((item) => ({
+    variantNumber: item.variantNumber,
+    name: item.name,
+    imageUrl: item.imageUrl,
+    addedAt: new Date(item.addedAt).getTime(),
+  }));
 }
 
 export async function addToWishlist(entry: Omit<WishlistEntry, 'addedAt'>): Promise<void> {
-  const items = await getWishlist();
-  if (items.some((i) => i.variantNumber === entry.variantNumber)) return;
-  await AsyncStorage.setItem(
-    WISHLIST_KEY,
-    JSON.stringify([{ ...entry, addedAt: Date.now() }, ...items])
-  );
+  await remoteAddToWishlist(entry.variantNumber);
 }
 
 export async function removeFromWishlist(variantNumber: string): Promise<void> {
-  const items = await getWishlist();
-  await AsyncStorage.setItem(
-    WISHLIST_KEY,
-    JSON.stringify(items.filter((i) => i.variantNumber !== variantNumber))
-  );
+  await remoteRemoveFromWishlist(variantNumber);
 }
 
 export async function isOnWishlist(variantNumber: string): Promise<boolean> {

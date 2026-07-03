@@ -1,6 +1,0 @@
-packages:
-  - apps/*
-  - packages/*
-
-overrides:
-  '@expo/metro-runtime': ~6.1.2

@@ -17,10 +17,13 @@
     "test:e2e": "bun test test/e2e --concurrent 1"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.6.23",
+    "@better-auth/expo": "^1.6.23",
     "@elysiajs/cors": "^1.3.3",
     "@elysiajs/swagger": "^1.3.0",
     "@riftbound/contracts": "workspace:*",
-    "drizzle-orm": "^0.44.2",
+    "better-auth": "^1.6.23",
+    "drizzle-orm": "^0.45.2",
     "elysia": "^1.3.5",
     "postgres": "^3.4.7",
     "zod": "^3.25.51"
@@ -28,7 +31,7 @@
   "devDependencies": {
     "@riftbound/typescript-config": "workspace:*",
     "@types/bun": "^1.2.15",
-    "drizzle-kit": "^0.31.1",
+    "drizzle-kit": "^0.31.10",
     "typescript": "^5.8.3"
   }
 }

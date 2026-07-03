@@ -10,7 +10,9 @@ setDefaultTimeout(180_000);
 
 beforeAll(async () => {
   await setupE2E();
-  await ensureCatalogSynced();
+  if (process.env.E2E_SKIP_CATALOG_SYNC !== 'true') {
+    await ensureCatalogSynced();
+  }
   await ensurePricesSynced();
 }, 300_000);
 

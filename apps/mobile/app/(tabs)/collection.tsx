@@ -3,14 +3,11 @@ import { useCallback, useMemo } from 'react';
 import { View } from 'react-native';
 import {
   BreakdownSection,
-  CollectionListPanel,
-  CollectionMoverRow,
   DashboardStat,
   DashboardStatGrid,
   mergeSetStats,
   computeTypeStats,
   SetCardGrid,
-  WishlistRow,
   rarityIconFor,
   typeIconFor,
 } from '@/components/collection/CollectionDashboard';
@@ -20,9 +17,6 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { useCollection } from '@/hooks/useCollection';
 import { useCollectionInsights } from '@/hooks/useCollectionInsights';
 import { useFiltersData } from '@/hooks/useFiltersData';
-import { getWishlist } from '@/services/wishlistService';
-import { useQuery } from '@tanstack/react-query';
-import { openCard } from '@/utils/cardNavigation';
 
 export default function CollectionScreen() {
   const router = useRouter();
@@ -31,16 +25,10 @@ export default function CollectionScreen() {
   const filtersQuery = useFiltersData();
   const insightsQuery = useCollectionInsights(collection);
 
-  const wishlistQuery = useQuery({
-    queryKey: ['wishlist'],
-    queryFn: getWishlist,
-  });
-
   useFocusEffect(
     useCallback(() => {
       void refetch();
-      void wishlistQuery.refetch();
-    }, [refetch, wishlistQuery])
+    }, [refetch])
   );
 
   const totalCards = useMemo(
@@ -89,8 +77,6 @@ export default function CollectionScreen() {
 
   const completion = catalogTotal > 0 ? (collection.length / catalogTotal) * 100 : 0;
   const estimatedValue = insightsQuery.data?.estimatedValue ?? 0;
-  const movers = insightsQuery.data?.movers ?? [];
-  const wishlist = wishlistQuery.data ?? [];
 
   return (
     <ScreenLayout>
@@ -152,50 +138,6 @@ export default function CollectionScreen() {
             />
           </View>
         ) : null}
-      </View>
-
-      <View className="gap-6 md:flex-row">
-        <CollectionListPanel
-          title="Wishlist"
-          subtitle={`${wishlist.length} cards`}
-          className="flex-1"
-        >
-          {wishlist.length > 0 ? (
-            wishlist.map((item, i) => (
-              <View key={item.variantNumber}>
-                {i > 0 ? <View className="h-hairline bg-archive-soft-line" /> : null}
-                <WishlistRow
-                  name={item.name}
-                  variantNumber={item.variantNumber}
-                  price="—"
-                  trend="Flat"
-                  onPress={() => {
-                    openCard(router, item.variantNumber, 'modal');
-                  }}
-                />
-              </View>
-            ))
-          ) : (
-            <Text className="py-6 text-center text-sm text-muted-foreground">
-              No wishlist cards. Everything is in your collection.
-            </Text>
-          )}
-        </CollectionListPanel>
-
-        <CollectionListPanel title="Week movers" subtitle="7d" className="flex-1">
-          {movers.length > 0 ? (
-            movers.map(({ entry, trend }, i) => (
-              <View key={entry.variantNumber}>
-                {i > 0 ? <View className="h-hairline bg-archive-soft-line" /> : null}
-                <CollectionMoverRow entry={entry} trend={trend} />
-              </View>
-            ))
-          ) : (
-            <Text className="py-6 text-center text-sm text-muted-foreground">
-              No market movement in your collection this week.
-            </Text>
-          )}
-        </CollectionListPanel>
       </View>
 
       {collection.length === 0 && !isLoading ? (

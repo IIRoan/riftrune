@@ -146,7 +146,7 @@ function SearchScreenBody() {
     {
       reservedWidth: splitLayout ? catalogReservedWidth : showRail ? SIDE_RAIL_WIDTH : 0,
       measuredWidth: splitLayout ? catalogColumnWidth : layoutContentWidth,
-      fillAvailable: splitLayout && view === 'grid',
+      fillAvailable: view === 'grid',
     }
   );
 
@@ -245,7 +245,7 @@ function SearchScreenBody() {
         return (
           <View
             className={cn(
-              'border-x border-border bg-card',
+              'overflow-hidden border-x border-border bg-card',
               isFirst && 'rounded-t-xl border-t',
               isLast && 'rounded-b-xl border-b',
               !isLast && 'border-b border-border'

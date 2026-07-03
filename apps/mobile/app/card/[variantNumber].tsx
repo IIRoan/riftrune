@@ -12,6 +12,8 @@ import { RemoveCollectionSheet } from '@/components/collection/RemoveCollectionS
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { useCardDetail } from '@/hooks/useCardDetail';
 import { useCardPresentation } from '@/hooks/useCardPresentation';
+import { useWishlistPrices } from '@/hooks/useWishlistPrices';
+import type { CardOpenSource } from '@/utils/cardNavigation';
 
 function PageLoading() {
   return (
@@ -22,14 +24,25 @@ function PageLoading() {
 }
 
 export default function CardDetailScreen() {
-  const params = useLocalSearchParams<{ variantNumber: string | string[] }>();
+  const params = useLocalSearchParams<{
+    variantNumber: string | string[];
+    source?: string | string[];
+  }>();
   const present = useCardPresentation();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const raw = params.variantNumber;
+  const rawSource = params.source;
   const variantNumber = Array.isArray(raw) ? raw[0] : (raw || '');
+  const sourceParam = Array.isArray(rawSource) ? rawSource[0] : rawSource;
+  const source: CardOpenSource =
+    sourceParam === 'wishlist' || sourceParam === 'collection' ? sourceParam : 'catalog';
   const isModal = present === 'modal';
 
   const detail = useCardDetail(variantNumber);
+  const wishlistPrices = useWishlistPrices('7d', source === 'wishlist');
+  const wishlistItem = wishlistPrices.data?.find(
+    (item) => item.variantNumber === detail.activeVariant?.variantNumber
+  );
 
   const modalShell = (
     <>
@@ -45,6 +58,8 @@ export default function CardDetailScreen() {
             card={detail.card}
             activeVariant={detail.activeVariant}
             shellWidth={getModalShellWidth(windowWidth)}
+            source={source}
+            wishlistItem={wishlistItem}
             collectionEntry={detail.collectionEntry}
             printingPreviews={detail.printingPreviews}
             onClose={detail.handleClose}

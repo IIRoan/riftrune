@@ -1,13 +1,17 @@
 import type { Router } from 'expo-router';
 
 export type CardPresentMode = 'modal' | 'page';
+export type CardOpenSource = 'catalog' | 'collection' | 'wishlist';
 
 export function openCard(
   router: Router,
   variantNumber: string,
-  present: CardPresentMode = 'modal'
+  present: CardPresentMode = 'modal',
+  source?: CardOpenSource
 ) {
-  router.push(`/card/${encodeURIComponent(variantNumber)}?present=${present}`);
+  const params = new URLSearchParams({ present });
+  if (source) params.set('source', source);
+  router.push(`/card/${encodeURIComponent(variantNumber)}?${params.toString()}`);
 }
 
 export function closeCard(router: Router) {

@@ -2,7 +2,7 @@
   "name": "riftrune",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "bun@1.2.21",
   "scripts": {
     "dev": "turbo dev",
     "dev:backend": "bun run --cwd apps/api dev",
@@ -17,15 +17,15 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
     "check": "bun run typecheck && bun run lint && bun run format:check",
     "test": "turbo test",
-    "test:e2e": "pnpm --filter @riftbound/api test:e2e",
+    "test:e2e": "bun run --filter @riftbound/api test:e2e",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "db:migrate": "pnpm --filter @riftbound/api db:migrate",
-    "db:generate": "pnpm --filter @riftbound/api db:generate",
-    "db:studio": "pnpm --filter @riftbound/api db:studio",
+    "db:migrate": "bun run --filter @riftbound/api db:migrate",
+    "db:generate": "bun run --filter @riftbound/api db:generate",
+    "db:studio": "bun run --filter @riftbound/api db:studio",
     "sync:catalog": "curl -s -X POST http://localhost:3000/v1/sync/catalog -H \"Authorization: Bearer ${ADMIN_SYNC_TOKEN:-dev-sync-token-change-me}\"",
     "sync:prices": "curl -s -X POST http://localhost:3000/v1/sync/prices -H \"Authorization: Bearer ${ADMIN_SYNC_TOKEN:-dev-sync-token-change-me}\"",
-    "db:setup": "pnpm db:migrate"
+    "db:setup": "bun run db:migrate"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
@@ -34,5 +34,12 @@
     "turbo": "^2.5.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.33.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "overrides": {
+    "@expo/metro-runtime": "~6.1.2"
   }
 }

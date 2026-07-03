@@ -54,9 +54,11 @@ export function CollectionQtyControls({
   onDecrement,
   onRemove,
 }: Props) {
+  const displayQuantity = Math.max(0, quantity);
+
   const handleDecrement = () => {
     void hapticPress();
-    if (quantity <= 1) {
+    if (displayQuantity <= 1) {
       onRemove();
       return;
     }
@@ -84,7 +86,7 @@ export function CollectionQtyControls({
           </ButtonIcon>
         </Button>
         <Text className="min-w-6 text-center text-[13px] font-bold tabular-nums text-foreground">
-          {quantity}
+          {displayQuantity}
         </Text>
         <Button
           variant="outline"
@@ -142,7 +144,7 @@ export function CollectionQtyControls({
 
         <Stack className="min-w-12 items-center">
           <Text className="text-[28px] font-extrabold tabular-nums text-foreground">
-            {quantity}
+            {displayQuantity}
           </Text>
           <Text className="mt-0.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
             owned

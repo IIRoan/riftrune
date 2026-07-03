@@ -11,6 +11,12 @@ let ctx: AppContext | null = null;
 let ownsServer = false;
 let baseUrl = '';
 
+function applyTestDatabaseUrl(): void {
+  if (process.env.TEST_DB_URL) {
+    process.env.DATABASE_URL = process.env.TEST_DB_URL;
+  }
+}
+
 export function getBaseUrl(): string {
   if (!baseUrl) {
     throw new Error('E2E setup has not run yet');
@@ -19,6 +25,7 @@ export function getBaseUrl(): string {
 }
 
 export function getEnv(): Env {
+  applyTestDatabaseUrl();
   return loadEnv();
 }
 
@@ -58,6 +65,7 @@ export async function setupE2E(): Promise<void> {
   process.env.NODE_ENV ??= 'test';
   process.env.SYNC_CRON_ENABLED = 'false';
   process.env.SYNC_MAX_PAGES ??= '2';
+  applyTestDatabaseUrl();
 
   const env = loadEnv();
   await runMigrations(env.DATABASE_URL);
@@ -111,6 +119,19 @@ export async function ensureCatalogSynced(): Promise<void> {
   });
 }
 
+export async function syncPricesForE2E(): Promise<void> {
+  if (ctx) {
+    await ctx.priceCache.syncFromUpstream();
+    return;
+  }
+
+  const token = getEnv().ADMIN_SYNC_TOKEN;
+  await apiJson('/v1/sync/prices', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
 export async function ensurePricesSynced(): Promise<void> {
   const status = await apiJson<{
     data: { prices: { rowCount: number } };
@@ -118,9 +139,5 @@ export async function ensurePricesSynced(): Promise<void> {
 
   if (status.data.prices.rowCount > 0) return;
 
-  const token = getEnv().ADMIN_SYNC_TOKEN;
-  await apiJson('/v1/sync/prices', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  await syncPricesForE2E();
 }
