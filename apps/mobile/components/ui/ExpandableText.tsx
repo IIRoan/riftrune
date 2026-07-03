@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { TextStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { View } from 'react-native';
 import { Button, ButtonText } from '@/components/ui/button';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
@@ -7,7 +7,7 @@ import { CardRulesText } from '@/components/riftbound/CardRulesText';
 interface ExpandableTextProps {
   text: string;
   initialLines?: number;
-  style?: TextStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function ExpandableText({ text, initialLines = 4, style }: ExpandableTextProps) {

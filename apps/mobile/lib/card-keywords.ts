@@ -1,23 +1,123 @@
 const STAT_KEYWORDS = new Set(['might', 'power', 'energy']);
 
+export const DOMAIN_KEYWORD_NAMES = [
+  'Fury',
+  'Calm',
+  'Mind',
+  'Body',
+  'Chaos',
+  'Order',
+] as const;
+
+const KEYWORD_BASES = [
+  'QUICK-DRAW',
+  'WEAPONMASTER',
+  'DEATHKNELL',
+  'ACCELERATE',
+  'TEMPORARY',
+  'REACTION',
+  'ASSAULT',
+  'DEFLECT',
+  'LEGION',
+  'GANKING',
+  'MIGHTY',
+  'HIDDEN',
+  'REPEAT',
+  'VISION',
+  'ACTION',
+  'SHIELD',
+  'EQUIP',
+  'SLOW',
+  'FAST',
+  'TANK',
+  'ADD',
+] as const;
+
+const SORTED_KEYWORD_BASES = [...KEYWORD_BASES].sort((a, b) => b.length - a.length);
+
 const KEYWORD_BADGE_CLASSES: Record<string, string> = {
-  ACTION: 'bg-keyword-accelerate italic',
-  ACCELERATE: 'bg-keyword-accelerate italic',
-  GANKING: 'bg-keyword-combat italic',
-  ASSAULT: 'bg-keyword-combat italic',
-  SHIELD: 'bg-keyword-ability italic',
-  TANK: 'bg-keyword-ability italic',
-  LEGION: 'bg-keyword-ability italic',
-  TEMPORARY: 'bg-keyword-default italic',
-  SLOW: 'bg-keyword-default italic',
-  FAST: 'bg-keyword-default italic',
+  ACCELERATE: 'bg-keyword-accelerate',
+  ACTION: 'bg-keyword-accelerate',
+  REACTION: 'bg-keyword-reaction',
+  ASSAULT: 'bg-keyword-assault',
+  GANKING: 'bg-keyword-assault',
+  SHIELD: 'bg-keyword-ability',
+  TANK: 'bg-keyword-ability',
+  LEGION: 'bg-keyword-ability',
+  VISION: 'bg-keyword-vision',
+  WEAPONMASTER: 'bg-keyword-weaponmaster',
+  DEFLECT: 'bg-keyword-ability',
+  HIDDEN: 'bg-keyword-default',
+  REPEAT: 'bg-keyword-default',
+  DEATHKNELL: 'bg-keyword-deathknell',
+  'QUICK-DRAW': 'bg-keyword-combat',
+  MIGHTY: 'bg-keyword-default',
+  TEMPORARY: 'bg-keyword-default',
+  SLOW: 'bg-keyword-default',
+  FAST: 'bg-keyword-default',
+  EQUIP: 'bg-keyword-default',
+  ADD: 'bg-keyword-default',
 };
 
 export function isStatKeyword(label: string): boolean {
   return STAT_KEYWORDS.has(label.toLowerCase());
 }
 
-export function getKeywordBadgeClassName(label: string): string {
-  const key = label.toUpperCase();
-  return KEYWORD_BADGE_CLASSES[key] ?? 'bg-keyword-default italic';
+export function isDomainKeyword(label: string): boolean {
+  return DOMAIN_KEYWORD_NAMES.some((name) => name.toLowerCase() === label.toLowerCase());
+}
+
+export function isTapToken(label: string): boolean {
+  return label.toLowerCase() === 'tap';
+}
+
+export function isRuneToken(label: string): boolean {
+  return label.toLowerCase() === 'rune';
+}
+
+export function parseKeywordToken(
+  inner: string
+): { base: string; display: string } | null {
+  const trimmed = inner.trim();
+  const upper = trimmed.toUpperCase();
+
+  const shieldCompact = upper.match(/^SHIELD(\d+)$/);
+  if (shieldCompact) {
+    return { base: 'SHIELD', display: `SHIELD ${shieldCompact[1]}` };
+  }
+
+  for (const base of SORTED_KEYWORD_BASES) {
+    if (upper === base) {
+      return { base, display: base };
+    }
+
+    if (upper.startsWith(`${base} `)) {
+      const suffix = trimmed.slice(base.length).trim();
+      return { base, display: `${base} ${suffix}`.trim() };
+    }
+  }
+
+  return null;
+}
+
+export function getKeywordBadgeClassName(keywordBase: string): string {
+  const key = keywordBase.toUpperCase();
+  return KEYWORD_BADGE_CLASSES[key] ?? 'bg-keyword-default';
+}
+
+export function getKeywordInkClassName(keywordBase: string): string {
+  if (keywordBase.toUpperCase() === 'DEATHKNELL') {
+    return 'text-black';
+  }
+  return 'text-white';
+}
+
+export function getKeywordTextClassName(keywordBase: string): string {
+  const baseClasses =
+    'px-1.5 py-px font-extrabold uppercase italic tracking-wide';
+  return `${getKeywordBadgeClassName(keywordBase)} ${getKeywordInkClassName(keywordBase)} ${baseClasses}`;
+}
+
+export function isWeaponmasterKeyword(keywordBase: string): boolean {
+  return keywordBase.toUpperCase() === 'WEAPONMASTER';
 }
