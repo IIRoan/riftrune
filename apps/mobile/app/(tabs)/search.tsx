@@ -40,6 +40,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useCardSearch } from '@/hooks/useCardSearch';
 import { useCollection } from '@/hooks/useCollection';
 import { useFeaturedCatalog } from '@/hooks/useFeaturedCatalog';
+import { cardListItemMatchesVariant } from '@/utils/variants';
 import {
   CATALOG_DETAIL_GAP,
   DETAIL_PANEL_WIDTH,
@@ -172,7 +173,9 @@ function SearchScreenBody() {
       setSelectedVariant(null);
       return;
     }
-    const stillVisible = displayItems.some((c) => c.variantNumber === selectedVariant);
+    const stillVisible = displayItems.some((c) =>
+      cardListItemMatchesVariant(c, selectedVariant)
+    );
     if (!stillVisible) {
       setSelectedVariant(displayItems[0]?.variantNumber ?? null);
     }
@@ -235,6 +238,9 @@ function SearchScreenBody() {
 
   const renderItem = useCallback(
     ({ item, index }: { item: (typeof displayItems)[number]; index: number }) => {
+      const tileSelected = cardListItemMatchesVariant(item, selectedVariant);
+      const hideTilePrice = hasSearchInput && splitLayout && !tileSelected;
+
       if (isList) {
         const isFirst = index === 0;
         const isLast = index === displayItems.length - 1;
@@ -253,7 +259,11 @@ function SearchScreenBody() {
               mode="search"
               compact={compact}
               enableQuickAdd
-              selected={selectedVariant === item.variantNumber}
+              selected={tileSelected}
+              hidePrice={hideTilePrice}
+              familyContextVariantNumber={
+                splitLayout && tileSelected ? selectedVariant : undefined
+              }
               onPress={
                 splitLayout
                   ? () => {
@@ -275,7 +285,11 @@ function SearchScreenBody() {
             mode="search"
             compact={compact}
             enableQuickAdd
-            selected={selectedVariant === item.variantNumber}
+            selected={tileSelected}
+            hidePrice={hideTilePrice}
+            familyContextVariantNumber={
+              splitLayout && tileSelected ? selectedVariant : undefined
+            }
             onPress={
               splitLayout
                 ? () => {
@@ -288,7 +302,7 @@ function SearchScreenBody() {
         </View>
       );
     },
-    [isList, tileWidth, compact, collectionByVariant, displayItems.length, selectedVariant, splitLayout, handleSelectCard]
+    [isList, tileWidth, compact, collectionByVariant, displayItems.length, selectedVariant, splitLayout, handleSelectCard, hasSearchInput]
   );
 
   const listHeader = useMemo(() => {

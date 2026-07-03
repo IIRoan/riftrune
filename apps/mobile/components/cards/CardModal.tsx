@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { CardDetail, VariantDetail } from '@riftbound/contracts';
+import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { PrintingPreviewStrip } from '@/components/cards/PrintingPreviewStrip';
 import { CollectionAddButton, CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
@@ -34,10 +35,14 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
 import { formatCardPrice, formatStat } from '@/hooks/useCardDetail';
+import {
+  formatMarketTrend,
+  getVariantMarketPriceDisplays,
+  isFoilVariant,
+} from '@/utils/variants';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
 import { cn } from '@/lib/utils';
 import type { CardOpenSource } from '@/utils/cardNavigation';
-import { isFoilVariant } from '@/utils/variants';
 
 const SHELL_MAX_WIDTH = 860;
 const CARD_WIDTH_DESKTOP = 300;
@@ -217,9 +222,19 @@ function ModalInfoPanel({
       : activePrice
         ? formatCardPrice([activePrice], activePrice.isFoil)
         : null;
-  const nonFoilPrice = formatCardPrice(activeVariant.prices, false);
-  const foilPrice = formatCardPrice(activeVariant.prices, true);
   const wishlistContext = source === 'wishlist';
+  const marketPrices = getVariantMarketPriceDisplays(activeVariant);
+  const singleMarketPrice =
+    !wishlistContext && printingPreviews.length <= 1 && marketPrices.length === 1
+      ? marketPrices[0]
+      : null;
+  const singlePriceTrend = (() => {
+    if (!singleMarketPrice) return 'Flat';
+    const row =
+      activeVariant.prices.find((p) => p.isFoil === activeIsFoil) ??
+      activeVariant.prices[0];
+    return formatMarketTrend(row ?? null);
+  })();
 
   const panelPadding = isWide ? 'px-8 py-7' : 'px-5 py-5';
 
@@ -238,6 +253,15 @@ function ModalInfoPanel({
         onRemoveFromCollection={onRemoveFromCollection}
         onClose={onClose}
       />
+
+      {singleMarketPrice ? (
+        <VariantPriceSummary
+          label={singleMarketPrice.label}
+          price={singleMarketPrice.price}
+          trend={singlePriceTrend}
+          className="mt-0"
+        />
+      ) : null}
 
       <Stack gap="md">
         <Stack direction="row" className="flex-wrap items-center gap-x-4 gap-y-2">
@@ -327,19 +351,6 @@ function ModalInfoPanel({
               </Text>
             </View>
           </View>
-        </Stack>
-      ) : (nonFoilPrice ?? foilPrice) != null ? (
-        <Stack direction="row" gap="lg" className="flex-wrap items-center">
-          {nonFoilPrice ? (
-            <Text className="text-[13px] font-medium text-muted-foreground">
-              Normal <Text className="font-black text-success">{nonFoilPrice}</Text>
-            </Text>
-          ) : null}
-          {foilPrice ? (
-            <Text className="text-[13px] font-medium text-muted-foreground">
-              Foil <Text className="font-black text-success">{foilPrice}</Text>
-            </Text>
-          ) : null}
         </Stack>
       ) : null}
 
