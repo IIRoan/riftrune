@@ -1,31 +1,44 @@
-import { Badge, BadgeText } from '@/components/ui/badge';
-import { getKeywordBadgeClassName } from '@/lib/card-keywords';
+import { View } from 'react-native';
+import {
+  getKeywordBadgeClassName,
+  getKeywordInkClassName,
+} from '@/lib/card-keywords';
+import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
-/** Inline action-keyword badge — matches printed card keywords like ACCELERATE. */
+const KEYWORD_SKEW_DEG = -10;
+
+/** Inline action-keyword tag — slanted parallelogram matching printed cards. */
 export function KeywordBadge({
   label,
+  keywordBase,
   compact = false,
 }: {
   label: string;
+  keywordBase?: string;
   compact?: boolean;
 }) {
+  const base = keywordBase ?? label;
+
   return (
-    <Badge
-      className={cn(
-        'rounded-md border-0 px-2 py-0.5',
-        compact && 'rounded px-1.5 py-0.5',
-        getKeywordBadgeClassName(label)
-      )}
+    <View
+      className={cn('mx-0.5 justify-center', getKeywordBadgeClassName(base))}
+      style={{
+        transform: [{ skewX: `${KEYWORD_SKEW_DEG}deg` }],
+        paddingHorizontal: compact ? 5 : 6,
+        paddingVertical: compact ? 1 : 2,
+      }}
     >
-      <BadgeText
+      <Text
         className={cn(
-          'text-[11px] font-extrabold uppercase tracking-wide text-white',
-          compact && 'text-[9px]'
+          'font-extrabold uppercase italic tracking-wide',
+          getKeywordInkClassName(base),
+          compact ? 'text-[9px] leading-[12px]' : 'text-[10px] leading-[13px]'
         )}
+        style={{ transform: [{ skewX: `${-KEYWORD_SKEW_DEG}deg` }] }}
       >
         {label.toUpperCase()}
-      </BadgeText>
-    </Badge>
+      </Text>
+    </View>
   );
 }

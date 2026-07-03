@@ -24,7 +24,7 @@ import {
   RarityIcon,
   TypeIcon,
 } from '@/components/riftbound/CardIcons';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
+import { Button, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { formatStat, useCardDetail } from '@/hooks/useCardDetail';
@@ -43,6 +43,7 @@ import {
   isFoilVariant,
   totalOwnedForCard,
 } from '@/utils/variants';
+import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -246,9 +247,14 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
             >
               {card.name}
             </Text>
-            <Text className="font-mono text-xs text-muted-foreground">
-              {setCode} · {activeVariant.rarity}
-            </Text>
+            <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
+              <Text className="text-xs text-muted-foreground">·</Text>
+              <RarityIcon rarity={activeVariant.rarity} size={14} />
+              <Text className="text-xs font-medium text-muted-foreground">
+                {activeVariant.rarity}
+              </Text>
+            </View>
             {singleMarketPrice ? (
               <VariantPriceSummary
                 label={singleMarketPrice.label}
@@ -260,7 +266,7 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
             ) : null}
             {watchedElsewhereCount > 0 ? (
               <Text className="text-xs font-medium text-primary">
-                Also tracking {watchedElsewhereCount} other printing
+                Also on wishlist: {watchedElsewhereCount} other printing
                 {watchedElsewhereCount === 1 ? '' : 's'}
               </Text>
             ) : null}
@@ -280,156 +286,170 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
           </View>
         </View>
 
-      <ScrollView className="max-h-[calc(100vh-280px)]" showsVerticalScrollIndicator={false}>
-        <View className="gap-3 p-3">
-          <View className="flex-row overflow-hidden rounded-xl bg-card-panel">
-            <Stat label="Cost">
-              <EnergyPip value={card.energy} size={28} />
-            </Stat>
-            <View className="w-hairline bg-archive-soft-line" />
-            <Stat label="Might">
-              <View className="flex-row items-center gap-1">
-                <MightIcon size={16} />
+        <ScrollView className="max-h-[calc(100vh-280px)]" showsVerticalScrollIndicator={false}>
+          <View className="gap-3 p-3">
+            <View className="flex-row overflow-hidden rounded-xl bg-card-panel">
+              <Stat label="Cost">
+                <EnergyPip value={card.energy} size={28} />
+              </Stat>
+              <View className="w-hairline bg-archive-soft-line" />
+              <Stat label="Might">
+                <View className="flex-row items-center gap-1">
+                  <MightIcon size={16} />
+                  <Text className="font-mono text-base font-semibold text-foreground">
+                    {formatStat(card.might)}
+                  </Text>
+                </View>
+              </Stat>
+              <View className="w-hairline bg-archive-soft-line" />
+              <Stat label="Power">
                 <Text className="font-mono text-base font-semibold text-foreground">
-                  {formatStat(card.might)}
+                  {formatStat(card.power)}
                 </Text>
-              </View>
-            </Stat>
-            <View className="w-hairline bg-archive-soft-line" />
-            <Stat label="Power">
-              <Text className="font-mono text-base font-semibold text-foreground">
-                {formatStat(card.power)}
-              </Text>
-            </Stat>
-            <View className="w-hairline bg-archive-soft-line" />
-            <Stat label="Owned">
-              <Text className="font-mono text-base font-semibold tabular-nums text-foreground">
-                {owned}
-              </Text>
-            </Stat>
-          </View>
-
-          <View className="flex-row flex-wrap gap-x-4 gap-y-3 rounded-xl border border-archive-soft-line p-3">
-            <MetaPill label="Type" icon={<TypeIcon type={card.type} size={16} />}>
-              <Text className="text-sm font-semibold text-foreground">{card.type}</Text>
-            </MetaPill>
-            <MetaPill label="Domain">
-              {card.colors.length > 0 ? (
-                <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
-                  {card.colors.map((color) => (
-                    <View key={color.id} className="flex-row items-center gap-1">
-                      <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
-                      <Text className="text-sm font-semibold text-foreground">{color.name}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text className="text-sm font-semibold text-foreground">—</Text>
-              )}
-            </MetaPill>
-            <MetaPill label="Rarity" icon={<RarityIcon rarity={activeVariant.rarity} size={16} />}>
-              <Text className="text-sm font-semibold text-foreground">{activeVariant.rarity}</Text>
-            </MetaPill>
-            {card.tags.length > 0 ? (
-              <MetaPill label="Tags">
-                <View className="flex-row flex-wrap gap-1">
-                  {card.tags.map((tag) => (
-                    <CardTag key={tag} label={tag} />
-                  ))}
-                </View>
-              </MetaPill>
-            ) : null}
-          </View>
-
-          {card.description ? (
-            <View className="rounded-xl bg-card-panel p-3">
-              <Text className="mb-2 text-sm font-semibold text-foreground">Rules text</Text>
-              <CardRulesText text={card.description} />
-            </View>
-          ) : null}
-
-          {showPrintingsSection ? (
-            <View>
-              <Text className="mb-2 text-sm font-semibold text-foreground">Printings</Text>
-              {printings.map((printing) => {
-              const qty = collectionByVariant.get(printing.variantNumber)?.quantity ?? 0;
-              const foilTag =
-                printing.isFoil && !printing.variantLabel.toLowerCase().includes('foil');
-              return (
-                <View
-                  key={printing.variantNumber}
-                  className="mb-2 flex-row items-start justify-between gap-3 rounded-xl border border-archive-soft-line bg-card p-3"
+              </Stat>
+              <View className="w-hairline bg-archive-soft-line" />
+              <Stat label="Owned">
+                <Text
+                  className={cn(
+                    'font-mono text-base font-semibold tabular-nums',
+                    owned > 0 ? 'text-success' : 'text-foreground'
+                  )}
                 >
-                  <View className="min-w-0 shrink flex-1" style={{ flexBasis: 0 }}>
-                    <View className="flex-row flex-wrap items-center gap-2">
-                      <Text className="shrink text-sm font-semibold text-foreground" numberOfLines={2}>
-                        {printing.variantLabel}
-                      </Text>
-                      {foilTag ? (
-                        <View className="rounded bg-primary/15 px-1.5 py-0.5">
-                          <Text className="text-[11px] font-semibold text-archive-accent-text">
-                            Foil
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text className="font-mono text-[11px] text-archive-subtle" numberOfLines={1}>
-                      {printing.variantNumber}
-                    </Text>
-                    <View className="mt-1 flex-row flex-wrap items-center gap-2">
-                      <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
-                        {formatPrintingPrice(printing.priceEur) ?? '—'}
-                      </Text>
-                      <TrendTag trend={formatMarketTrend(printing.priceEur)} />
-                    </View>
-                  </View>
-                  <View className="shrink-0 self-center">
-                    <OwnershipStepper
-                      owned={qty}
-                      name={`${card.name} ${printing.variantLabel}`}
-                      compact
-                      printings={listItem.printings}
-                      fixedVariantNumber={printing.variantNumber}
-                      onAdd={() => {
-                        void detail.onAddToCollection(printing.variantNumber);
-                      }}
-                      onRemove={() => {
-                        const entry = collectionByVariant.get(printing.variantNumber);
-                        if (!entry) return;
-                        void setQuantity.mutateAsync({
-                          variantNumber: printing.variantNumber,
-                          quantity: Math.max(0, entry.quantity - 1),
-                        });
-                      }}
-                    />
-                  </View>
-                </View>
-              );
-            })}
+                  {owned}
+                </Text>
+              </Stat>
             </View>
-          ) : null}
 
-          <Button
-            variant={isWatchingActive ? 'outline' : 'default'}
-            className={
-              isWatchingActive
-                ? 'h-10 w-full border-primary/30 bg-primary/10'
-                : 'h-10 w-full bg-primary'
-            }
-            busy={watchBusy}
-            onPress={() => {
-              void handleWatchPress();
-            }}
-          >
-            <ButtonIcon className={isWatchingActive ? 'text-primary' : 'text-primary-foreground'}>
-              <Ionicons name={isWatchingActive ? 'bookmark' : 'bookmark-outline'} size={16} />
-            </ButtonIcon>
-            <ButtonText className={isWatchingActive ? 'text-primary' : 'text-primary-foreground'}>
-              {isWatchingActive ? 'Watching · Stop tracking' : 'Watch this card'}
-            </ButtonText>
-          </Button>
-        </View>
-      </ScrollView>
+            <View className="flex-row flex-wrap gap-x-4 gap-y-3 rounded-xl border border-archive-soft-line p-3">
+              <MetaPill label="Type" icon={<TypeIcon type={card.type} size={16} />}>
+                <Text className="text-sm font-semibold text-foreground">{card.type}</Text>
+              </MetaPill>
+              <MetaPill label="Domain">
+                {card.colors.length > 0 ? (
+                  <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
+                    {card.colors.map((color) => (
+                      <View key={color.id} className="flex-row items-center gap-1">
+                        <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
+                        <Text className="text-sm font-semibold text-foreground">{color.name}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Text className="text-sm font-semibold text-foreground">—</Text>
+                )}
+              </MetaPill>
+              <MetaPill label="Rarity" icon={<RarityIcon rarity={activeVariant.rarity} size={16} />}>
+                <Text className="text-sm font-semibold text-foreground">{activeVariant.rarity}</Text>
+              </MetaPill>
+              {card.tags.length > 0 ? (
+                <MetaPill label="Tags">
+                  <View className="flex-row flex-wrap gap-1">
+                    {card.tags.map((tag) => (
+                      <CardTag key={tag} label={tag} />
+                    ))}
+                  </View>
+                </MetaPill>
+              ) : null}
+            </View>
+
+            {card.description ? (
+              <View className="rounded-xl bg-card-panel p-3">
+                <CardRulesText text={card.description} />
+              </View>
+            ) : null}
+
+            {showPrintingsSection ? (
+              <View>
+                {printings.map((printing) => {
+                  const qty = collectionByVariant.get(printing.variantNumber)?.quantity ?? 0;
+                  const foilTag =
+                    printing.isFoil && !printing.variantLabel.toLowerCase().includes('foil');
+                  return (
+                    <View
+                      key={printing.variantNumber}
+                      className="mb-2 flex-row items-start justify-between gap-3 rounded-xl border border-archive-soft-line bg-card p-3"
+                    >
+                      <View className="min-w-0 shrink flex-1" style={{ flexBasis: 0 }}>
+                        <View className="flex-row flex-wrap items-center gap-2">
+                          <Text
+                            className="shrink text-sm font-semibold text-foreground"
+                            numberOfLines={2}
+                          >
+                            {printing.variantLabel}
+                          </Text>
+                          {foilTag ? (
+                            <View className="rounded bg-primary/15 px-1.5 py-0.5">
+                              <Text className="text-[11px] font-semibold text-archive-accent-text">
+                                Foil
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text className="font-mono text-[11px] text-archive-subtle" numberOfLines={1}>
+                          {printing.variantNumber}
+                        </Text>
+                        <View className="mt-1 flex-row flex-wrap items-center gap-2">
+                          <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                            {formatPrintingPrice(printing.priceEur) ?? '—'}
+                          </Text>
+                          <TrendTag trend={formatMarketTrend(printing.priceEur)} />
+                        </View>
+                      </View>
+                      <View className="shrink-0 self-center">
+                        <OwnershipStepper
+                          owned={qty}
+                          name={`${card.name} ${printing.variantLabel}`}
+                          compact
+                          printings={listItem.printings}
+                          fixedVariantNumber={printing.variantNumber}
+                          onAdd={() => {
+                            void detail.onAddToCollection(printing.variantNumber);
+                          }}
+                          onRemove={() => {
+                            const entry = collectionByVariant.get(printing.variantNumber);
+                            if (!entry) return;
+                            void setQuantity.mutateAsync({
+                              variantNumber: printing.variantNumber,
+                              quantity: Math.max(0, entry.quantity - 1),
+                            });
+                          }}
+                        />
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
+
+            <Button
+              variant={isWatchingActive ? 'outline' : 'default'}
+              size="sm"
+              className={
+                isWatchingActive
+                  ? 'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full border-primary/30 bg-primary/10'
+                  : 'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full bg-primary'
+              }
+              busy={watchBusy}
+              onPress={() => {
+                void handleWatchPress();
+              }}
+            >
+              <Ionicons
+                name={isWatchingActive ? 'bookmark' : 'bookmark-outline'}
+                size={16}
+                className={isWatchingActive ? 'text-primary' : 'text-primary-foreground'}
+              />
+              <ButtonText
+                className={cn(
+                  'text-sm',
+                  isWatchingActive ? 'text-primary' : 'text-primary-foreground'
+                )}
+              >
+                {isWatchingActive ? 'Wishlisted · tap to remove' : 'Wishlist card'}
+              </ButtonText>
+            </Button>
+          </View>
+        </ScrollView>
       </View>
 
       <CatalogCardFullscreen

@@ -1,11 +1,8 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
-import { furyIcon } from '@/assets/icons';
-import { typeIconFor, rarityIconFor } from '@/constants/gameAssets';
+import { typeIconFor, rarityIconFor, domainIconFor, mightIcon } from '@/constants/gameAssets';
 import { KeywordBadge } from '@/components/riftbound/KeywordBadge';
 import { Text } from '@/components/ui/text';
-import { cn } from '@/lib/utils';
 
 interface PipProps {
   value: number | string;
@@ -31,9 +28,11 @@ export function AccelerateBadge() {
 }
 
 export function FuryIcon({ size = 15 }: { size?: number }) {
+  const source = domainIconFor('Fury');
+  if (!source) return null;
   return (
     <Image
-      source={furyIcon}
+      source={source}
       style={{ width: size, height: size }}
       contentFit="contain"
       accessibilityIgnoresInvertColors
@@ -69,11 +68,15 @@ export function RarityCoin({ size = 15 }: { size?: number }) {
 
 export function MightIcon({ size = 20, className }: { size?: number; className?: string }) {
   return (
-    <MaterialCommunityIcons
-      name="sword-cross"
-      size={size}
-      className={cn('text-muted-foreground', className)}
-    />
+    <View className={className} style={{ width: size, height: size }}>
+      <Image
+        source={mightIcon}
+        style={{ width: size, height: size }}
+        contentFit="contain"
+        accessibilityIgnoresInvertColors
+        accessibilityLabel="Might"
+      />
+    </View>
   );
 }
 
@@ -93,13 +96,21 @@ export function DomainIcon({
         style={{ width: size, height: size }}
         contentFit="contain"
         accessibilityIgnoresInvertColors
+        accessibilityLabel={name}
       />
     );
   }
-  if (name.toLowerCase() === 'fury') {
-    return <FuryIcon size={size} />;
-  }
-  return null;
+  const source = domainIconFor(name);
+  if (!source) return null;
+  return (
+    <Image
+      source={source}
+      style={{ width: size, height: size }}
+      contentFit="contain"
+      accessibilityIgnoresInvertColors
+      accessibilityLabel={name}
+    />
+  );
 }
 
 export function TypeIcon({ type, size = 15 }: { type: string; size?: number }) {

@@ -1918,7 +1918,7 @@ function CardDetail({ card, handlers }: { card: CardRecord; handlers: CardHandle
           ) : null}
 
           <button className="archive-focus archive-transition mt-3 h-10 w-full rounded-lg bg-archive-accent px-4 text-sm font-semibold text-archive-accent-ink hover:brightness-110 active:translate-y-px">
-            Watch this card
+            Wishlist card
           </button>
         </div>
       </section>

@@ -149,7 +149,7 @@ export default function WishlistScreen() {
               Wishlist
             </Text>
             <Text className="mt-1 font-mono text-[13px] text-muted-foreground">
-              {items.length} watched cards · stored price history
+              {items.length} wishlisted cards · stored price history
             </Text>
           </View>
           <View className="flex-row rounded-lg border border-border bg-card p-0.5">

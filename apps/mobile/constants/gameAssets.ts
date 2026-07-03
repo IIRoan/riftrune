@@ -22,6 +22,15 @@ const RARITY_ICONS: Record<string, ImageSourcePropType> = {
   Showcase: require('@/assets/rarities/Showcase.webp'),
 };
 
+const DOMAIN_ICONS: Record<string, ImageSourcePropType> = {
+  Fury: require('@/assets/colors/Fury.webp'),
+  Calm: require('@/assets/colors/Calm.webp'),
+  Mind: require('@/assets/colors/Mind.webp'),
+  Body: require('@/assets/colors/Body.webp'),
+  Chaos: require('@/assets/colors/Chaos.webp'),
+  Order: require('@/assets/colors/Order.webp'),
+};
+
 export function typeIconFor(name: string): ImageSourcePropType | undefined {
   return TYPE_ICONS[name];
 }
@@ -29,3 +38,19 @@ export function typeIconFor(name: string): ImageSourcePropType | undefined {
 export function rarityIconFor(name: string): ImageSourcePropType | undefined {
   return RARITY_ICONS[name];
 }
+
+export function domainIconFor(name: string): ImageSourcePropType | undefined {
+  if (DOMAIN_ICONS[name]) return DOMAIN_ICONS[name];
+  const key = Object.keys(DOMAIN_ICONS).find(
+    (domain) => domain.toLowerCase() === name.toLowerCase()
+  );
+  return key ? DOMAIN_ICONS[key] : undefined;
+}
+
+export function isDomainName(name: string): boolean {
+  return domainIconFor(name) !== undefined;
+}
+
+export const mightIcon = require('@/assets/icons/might.webp') as ImageSourcePropType;
+export const tapIcon = require('@/assets/icons/tap.webp') as ImageSourcePropType;
+export const runeIcon = require('@/assets/icons/rune.webp') as ImageSourcePropType;

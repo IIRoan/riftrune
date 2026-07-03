@@ -165,7 +165,7 @@ function ModalHeader({
           <View className="flex-row items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1.5">
             <Ionicons name="bookmark" size={14} className="text-primary" />
             <Text className="text-xs font-semibold text-primary">
-              {wishlistItem ? 'Watchlisted' : 'Wishlist'}
+              {wishlistItem ? 'Wishlisted' : 'Wishlist'}
             </Text>
           </View>
         ) : collectionEntry ? (

@@ -46,8 +46,13 @@
       --border: var(--archive-line);
       --input: var(--archive-line);
       --ring: var(--archive-accent);
-      --keyword-accelerate: var(--archive-success);
+      --keyword-accelerate: oklch(0.50 0.14 160);
+      --keyword-deathknell: oklch(0.78 0.17 115);
       --keyword-combat: var(--archive-warning);
+      --keyword-assault: oklch(0.62 0.24 350);
+      --keyword-weaponmaster: oklch(0.42 0 0);
+      --keyword-reaction: oklch(0.58 0.14 250);
+      --keyword-vision: oklch(0.62 0.12 280);
       --keyword-ability: var(--archive-muted);
       --keyword-default: var(--archive-subtle);
     }
@@ -90,8 +95,13 @@
       --border: var(--archive-line);
       --input: var(--archive-line);
       --ring: var(--archive-accent);
-      --keyword-accelerate: var(--archive-success);
+      --keyword-accelerate: oklch(0.50 0.14 160);
+      --keyword-deathknell: oklch(0.78 0.17 115);
       --keyword-combat: var(--archive-warning);
+      --keyword-assault: oklch(0.62 0.24 350);
+      --keyword-weaponmaster: oklch(0.42 0 0);
+      --keyword-reaction: oklch(0.58 0.14 250);
+      --keyword-vision: oklch(0.62 0.12 280);
       --keyword-ability: var(--archive-muted);
       --keyword-default: var(--archive-subtle);
     }
@@ -125,7 +135,12 @@
   --color-archive-subtle: var(--archive-subtle);
   --color-archive-soft-line: var(--archive-soft-line);
   --color-keyword-accelerate: var(--keyword-accelerate);
+  --color-keyword-deathknell: var(--keyword-deathknell);
   --color-keyword-combat: var(--keyword-combat);
+  --color-keyword-assault: var(--keyword-assault);
+  --color-keyword-weaponmaster: var(--keyword-weaponmaster);
+  --color-keyword-reaction: var(--keyword-reaction);
+  --color-keyword-vision: var(--keyword-vision);
   --color-keyword-ability: var(--keyword-ability);
   --color-keyword-default: var(--keyword-default);
   --radius-sm: calc(var(--radius) * 0.6);
