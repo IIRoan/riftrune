@@ -19,6 +19,9 @@
   --color-archive-soft-line: var(--archive-soft-line);
   --color-archive-accent: var(--archive-accent);
   --color-archive-accent-ink: var(--archive-accent-ink);
+  --color-archive-accent-text: var(--archive-accent-text);
+  --color-archive-brass: var(--archive-brass);
+  --color-archive-brass-text: var(--archive-brass-text);
   --color-archive-success: var(--archive-success);
   --color-archive-info: var(--archive-info);
   --color-archive-warning: var(--archive-warning);
@@ -72,39 +75,44 @@
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  /* riftrune.com product system */
-  --archive-bg: oklch(0.982 0 0);
-  --archive-surface: oklch(1 0 0);
-  --archive-panel: oklch(0.963 0.004 260);
-  --archive-raised: oklch(0.995 0 0);
-  --archive-ink: oklch(0.19 0.015 260);
-  --archive-muted: oklch(0.43 0.018 260);
-  --archive-subtle: oklch(0.57 0.015 260);
-  --archive-line: oklch(0.86 0.011 260);
-  --archive-soft-line: oklch(0.92 0.008 260);
-  --archive-accent: oklch(0.54 0.18 29);
-  --archive-accent-ink: oklch(0.99 0 0);
-  --archive-success: oklch(0.58 0.14 150);
-  --archive-info: oklch(0.55 0.14 246);
-  --archive-warning: oklch(0.68 0.14 78);
+  /* riftrune.com — minimal dark catalog. Near-neutral cool charcoal, one
+     restrained tech-blue accent. Card artwork carries the color; the UI
+     stays out of the way. */
+  --archive-bg: oklch(0.145 0.002 250);
+  --archive-surface: oklch(0.185 0.002 250);
+  --archive-panel: oklch(0.225 0.003 250);
+  --archive-raised: oklch(0.265 0.003 250);
+  --archive-ink: oklch(0.965 0.002 250);
+  --archive-muted: oklch(0.715 0.004 250);
+  --archive-subtle: oklch(0.575 0.004 250);
+  --archive-line: oklch(0.295 0.003 250);
+  --archive-soft-line: oklch(0.235 0.002 250);
+  --archive-accent: oklch(0.62 0.10 255);
+  --archive-accent-ink: oklch(0.99 0.005 250);
+  --archive-accent-text: oklch(0.75 0.08 255);
+  --archive-brass: var(--archive-muted);
+  --archive-brass-text: var(--archive-muted);
+  --archive-success: oklch(0.72 0.08 160);
+  --archive-info: var(--archive-muted);
+  --archive-warning: oklch(0.70 0.08 55);
 
-  /* Legacy Riftbound tokens retained for shared components. */
-  --rift-bg: oklch(0.16 0.01 25);
-  --rift-surface: oklch(0.21 0.008 25);
-  --rift-elevated: oklch(0.26 0.01 25);
-  --rift-line: oklch(0.32 0.012 25);
-  --rift-text: oklch(0.97 0 0);
-  --rift-muted: oklch(0.7 0.01 25);
-  --fury: oklch(0.58 0.22 27);
-  --fury-foreground: oklch(0.99 0 0);
-  --accelerate: oklch(0.62 0.13 165);
+  /* Legacy Riftbound tokens aligned to the neutral ramp. */
+  --rift-bg: oklch(0.145 0.002 250);
+  --rift-surface: oklch(0.185 0.002 250);
+  --rift-elevated: oklch(0.225 0.003 250);
+  --rift-line: oklch(0.295 0.003 250);
+  --rift-text: oklch(0.965 0.002 250);
+  --rift-muted: oklch(0.715 0.004 250);
+  --fury: var(--archive-accent);
+  --fury-foreground: var(--archive-accent-ink);
+  --accelerate: var(--archive-success);
   --background: var(--archive-bg);
   --foreground: var(--archive-ink);
   --card: var(--archive-surface);
   --card-foreground: var(--archive-ink);
-  --popover: oklch(1 0 0);
+  --popover: var(--archive-raised);
   --popover-foreground: var(--archive-ink);
   --primary: var(--archive-accent);
   --primary-foreground: var(--archive-accent-ink);
@@ -112,98 +120,26 @@
   --secondary-foreground: var(--archive-ink);
   --muted: var(--archive-panel);
   --muted-foreground: var(--archive-muted);
-  --accent: oklch(0.94 0.023 29);
+  --accent: var(--archive-panel);
   --accent-foreground: var(--archive-ink);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.60 0.12 50);
   --border: var(--archive-line);
   --input: var(--archive-line);
-  --ring: oklch(0.61 0.13 29);
+  --ring: oklch(0.62 0.10 255);
   --chart-1: var(--archive-accent);
-  --chart-2: var(--archive-info);
+  --chart-2: var(--archive-muted);
   --chart-3: var(--archive-success);
-  --chart-4: var(--archive-warning);
-  --chart-5: oklch(0.38 0.04 260);
+  --chart-4: var(--archive-muted);
+  --chart-5: var(--archive-subtle);
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    color-scheme: dark;
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
-  }
+  --sidebar: var(--archive-surface);
+  --sidebar-foreground: var(--archive-ink);
+  --sidebar-primary: var(--archive-accent);
+  --sidebar-primary-foreground: var(--archive-accent-ink);
+  --sidebar-accent: var(--archive-panel);
+  --sidebar-accent-foreground: var(--archive-ink);
+  --sidebar-border: var(--archive-line);
+  --sidebar-ring: oklch(0.62 0.10 255);
 }
 
 @layer base {
@@ -239,12 +175,28 @@
 
 @layer utilities {
   .archive-focus {
-    @apply focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-archive-accent/28;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[oklch(0.62_0.10_255)] focus-visible:ring-offset-2 focus-visible:ring-offset-archive-bg;
   }
 
   .archive-transition {
     transition-duration: 180ms;
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Detail panel crossfade when the selected card changes. */
+  .archive-detail-enter {
+    animation: archive-detail-enter 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes archive-detail-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
