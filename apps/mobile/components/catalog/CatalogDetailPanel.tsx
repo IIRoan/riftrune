@@ -16,7 +16,14 @@ import { TrendTag } from '@/components/catalog/TrendTag';
 import { VariantFamilySwitcher } from '@/components/catalog/VariantFamilySwitcher';
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
-import { EnergyPip, MightIcon } from '@/components/riftbound/CardIcons';
+import { CardTag } from '@/components/riftbound/CardDetailParts';
+import {
+  DomainIcon,
+  EnergyPip,
+  MightIcon,
+  RarityIcon,
+  TypeIcon,
+} from '@/components/riftbound/CardIcons';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
@@ -206,67 +213,76 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
     }
   };
 
+  const setCode = activeVariant.variantNumber.split('-')[0] ?? '';
+
   return (
     <>
-      <View className="rounded-xl border border-border bg-card">
-        <Pressable
-          className="items-center justify-center rounded-t-xl bg-card-panel p-3.5 active:opacity-90 web:cursor-pointer web:hover:brightness-110"
-          onPress={openFullscreen}
-          accessibilityRole="button"
-          accessibilityLabel={`View ${card.name} full size`}
-        >
-          <View className="aspect-[5/7] w-full max-h-[165px] max-w-[118px]">
-            <Image
-              source={{ uri: activeVariant.imageUrl }}
-              className="size-full rounded-lg"
-              contentFit="contain"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
+      <View className="overflow-hidden rounded-xl border border-border bg-card">
+        <View className="flex-row gap-3 bg-card-panel p-3">
+          <Pressable
+            className="shrink-0 active:opacity-90 web:cursor-pointer"
+            onPress={openFullscreen}
+            accessibilityRole="button"
+            accessibilityLabel={`View ${card.name} full size`}
+          >
+            <View className="aspect-[5/7] w-[128px]">
+              <Image
+                source={{ uri: activeVariant.imageUrl }}
+                className="size-full rounded-lg"
+                contentFit="contain"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <Text className="mt-1 text-center font-mono text-[10px] text-archive-subtle">
+              {activeVariant.variantNumber}
+            </Text>
+          </Pressable>
+
+          <View className="min-w-0 flex-1 justify-center gap-1.5">
+            <Text
+              className="text-xl font-semibold leading-tight tracking-tight text-foreground"
+              numberOfLines={2}
+            >
+              {card.name}
+            </Text>
+            <Text className="font-mono text-xs text-muted-foreground">
+              {setCode} · {activeVariant.rarity}
+            </Text>
+            {singleMarketPrice ? (
+              <VariantPriceSummary
+                label={singleMarketPrice.label}
+                price={singleMarketPrice.price}
+                trend={singlePriceTrend}
+                className="mt-0"
+                hideLabel={variantFamilies.length > 1}
+              />
+            ) : null}
+            {watchedElsewhereCount > 0 ? (
+              <Text className="text-xs font-medium text-primary">
+                Also tracking {watchedElsewhereCount} other printing
+                {watchedElsewhereCount === 1 ? '' : 's'}
+              </Text>
+            ) : null}
+            {variantFamilies.length > 1 && activeFamily ? (
+              <VariantFamilySwitcher
+                label={activeFamily.label}
+                currentIndex={activeFamilyIndex}
+                total={variantFamilies.length}
+                onPrevious={() => {
+                  switchFamily(activeFamilyIndex - 1);
+                }}
+                onNext={() => {
+                  switchFamily(activeFamilyIndex + 1);
+                }}
+              />
+            ) : null}
           </View>
-          <Text className="absolute right-4 top-3 font-mono text-xs text-archive-subtle">
-            {activeVariant.variantNumber}
-          </Text>
-        </Pressable>
+        </View>
 
       <ScrollView className="max-h-[calc(100vh-280px)]" showsVerticalScrollIndicator={false}>
-        <View className="p-4">
-          <Text className="text-xl font-semibold leading-tight tracking-tight text-foreground">
-            {card.name}
-          </Text>
-          {watchedElsewhereCount > 0 ? (
-            <Text className="mt-1 text-xs font-medium text-primary">
-              Also tracking {watchedElsewhereCount} other printing
-              {watchedElsewhereCount === 1 ? '' : 's'} of this card
-            </Text>
-          ) : null}
-          <Text className="mt-0.5 font-mono text-[13px] text-muted-foreground">
-            {activeVariant.variantNumber.split('-')[0]} · {activeVariant.rarity}
-          </Text>
-          {variantFamilies.length > 1 && activeFamily ? (
-            <VariantFamilySwitcher
-              label={activeFamily.label}
-              currentIndex={activeFamilyIndex}
-              total={variantFamilies.length}
-              onPrevious={() => {
-                switchFamily(activeFamilyIndex - 1);
-              }}
-              onNext={() => {
-                switchFamily(activeFamilyIndex + 1);
-              }}
-            />
-          ) : null}
-          {singleMarketPrice ? (
-            <VariantPriceSummary
-              label={singleMarketPrice.label}
-              price={singleMarketPrice.price}
-              trend={singlePriceTrend}
-              className={variantFamilies.length > 1 ? 'mt-1' : undefined}
-              hideLabel={variantFamilies.length > 1}
-            />
-          ) : null}
-
-          <View className="mt-3 flex-row overflow-hidden rounded-xl bg-card-panel">
+        <View className="gap-3 p-3">
+          <View className="flex-row overflow-hidden rounded-xl bg-card-panel">
             <Stat label="Cost">
               <EnergyPip value={card.energy} size={28} />
             </Stat>
@@ -280,56 +296,60 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
               </View>
             </Stat>
             <View className="w-hairline bg-archive-soft-line" />
+            <Stat label="Power">
+              <Text className="font-mono text-base font-semibold text-foreground">
+                {formatStat(card.power)}
+              </Text>
+            </Stat>
+            <View className="w-hairline bg-archive-soft-line" />
             <Stat label="Owned">
-              {showPrintingsSection ? (
-                <Text className="font-mono text-base font-semibold tabular-nums text-foreground">
-                  {owned}
-                </Text>
-              ) : singlePrinting ? (
-                <OwnershipStepper
-                  owned={owned}
-                  name={card.name}
-                  compact
-                  printings={listItem.printings}
-                  fixedVariantNumber={singlePrinting.variantNumber}
-                  onAdd={() => {
-                    void detail.onAddToCollection(singlePrinting.variantNumber);
-                  }}
-                  onRemove={() => {
-                    const entry = collectionByVariant.get(singlePrinting.variantNumber);
-                    if (!entry) return;
-                    void setQuantity.mutateAsync({
-                      variantNumber: singlePrinting.variantNumber,
-                      quantity: Math.max(0, entry.quantity - 1),
-                    });
-                  }}
-                />
-              ) : (
-                <Text className="font-mono text-base font-semibold tabular-nums text-foreground">
-                  {owned}
-                </Text>
-              )}
+              <Text className="font-mono text-base font-semibold tabular-nums text-foreground">
+                {owned}
+              </Text>
             </Stat>
           </View>
 
-          <View className="mt-3 rounded-xl border border-archive-soft-line p-3">
-            <MetaRow label="Type" value={card.type} />
-            <MetaRow label="Domain" value={card.colors.map((c) => c.name).join(' / ') || '—'} />
-            <MetaRow label="Rarity" value={activeVariant.rarity} />
+          <View className="flex-row flex-wrap gap-x-4 gap-y-3 rounded-xl border border-archive-soft-line p-3">
+            <MetaPill label="Type" icon={<TypeIcon type={card.type} size={16} />}>
+              <Text className="text-sm font-semibold text-foreground">{card.type}</Text>
+            </MetaPill>
+            <MetaPill label="Domain">
+              {card.colors.length > 0 ? (
+                <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
+                  {card.colors.map((color) => (
+                    <View key={color.id} className="flex-row items-center gap-1">
+                      <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
+                      <Text className="text-sm font-semibold text-foreground">{color.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text className="text-sm font-semibold text-foreground">—</Text>
+              )}
+            </MetaPill>
+            <MetaPill label="Rarity" icon={<RarityIcon rarity={activeVariant.rarity} size={16} />}>
+              <Text className="text-sm font-semibold text-foreground">{activeVariant.rarity}</Text>
+            </MetaPill>
             {card.tags.length > 0 ? (
-              <MetaRow label="Tags" value={card.tags.join(' · ')} />
+              <MetaPill label="Tags">
+                <View className="flex-row flex-wrap gap-1">
+                  {card.tags.map((tag) => (
+                    <CardTag key={tag} label={tag} />
+                  ))}
+                </View>
+              </MetaPill>
             ) : null}
           </View>
 
           {card.description ? (
-            <View className="mt-3 rounded-xl bg-card-panel p-3">
+            <View className="rounded-xl bg-card-panel p-3">
               <Text className="mb-2 text-sm font-semibold text-foreground">Rules text</Text>
               <CardRulesText text={card.description} />
             </View>
           ) : null}
 
           {showPrintingsSection ? (
-            <View className="mt-3">
+            <View>
               <Text className="mb-2 text-sm font-semibold text-foreground">Printings</Text>
               {printings.map((printing) => {
               const qty = collectionByVariant.get(printing.variantNumber)?.quantity ?? 0;
@@ -393,8 +413,8 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
             variant={isWatchingActive ? 'outline' : 'default'}
             className={
               isWatchingActive
-                ? 'mt-3 h-10 w-full border-primary/30 bg-primary/10'
-                : 'mt-3 h-10 w-full bg-primary'
+                ? 'h-10 w-full border-primary/30 bg-primary/10'
+                : 'h-10 w-full bg-primary'
             }
             busy={watchBusy}
             onPress={() => {
@@ -480,20 +500,29 @@ function CatalogCardFullscreen({
 
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <View className="min-h-[60px] flex-1 items-center justify-center gap-1 px-2 py-3">
-      <Text className="text-xs font-medium text-muted-foreground">{label}</Text>
+    <View className="min-h-[56px] flex-1 items-center justify-center gap-1 px-1 py-2.5">
+      <Text className="text-[11px] font-medium text-muted-foreground">{label}</Text>
       {children}
     </View>
   );
 }
 
-function MetaRow({ label, value }: { label: string; value: string }) {
+function MetaPill({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <View className="mb-2 min-w-0">
-      <Text className="text-xs font-medium text-muted-foreground">{label}</Text>
-      <Text className="mt-1 text-sm font-semibold text-foreground" numberOfLines={2}>
-        {value}
-      </Text>
+    <View className="min-w-[42%] flex-1">
+      <View className="flex-row items-center gap-1.5">
+        {icon}
+        <Text className="text-xs font-medium text-muted-foreground">{label}</Text>
+      </View>
+      <View className="mt-1">{children}</View>
     </View>
   );
 }

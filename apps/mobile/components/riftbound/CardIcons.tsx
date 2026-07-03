@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
-import { furyIcon, rarityCommonIcon, unitIcon } from '@/assets/icons';
+import { furyIcon } from '@/assets/icons';
+import { typeIconFor, rarityIconFor } from '@/constants/gameAssets';
 import { KeywordBadge } from '@/components/riftbound/KeywordBadge';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
@@ -41,9 +42,11 @@ export function FuryIcon({ size = 15 }: { size?: number }) {
 }
 
 export function UnitIcon({ size = 15 }: { size?: number }) {
+  const source = typeIconFor('Unit');
+  if (!source) return null;
   return (
     <Image
-      source={unitIcon}
+      source={source}
       style={{ width: size, height: size }}
       contentFit="contain"
       accessibilityIgnoresInvertColors
@@ -52,10 +55,12 @@ export function UnitIcon({ size = 15 }: { size?: number }) {
 }
 
 export function RarityCoin({ size = 15 }: { size?: number }) {
+  const source = rarityIconFor('Common');
+  if (!source) return null;
   return (
     <Image
-      source={rarityCommonIcon}
-      style={{ width: size, height: size, borderRadius: size / 2 }}
+      source={source}
+      style={{ width: size, height: size }}
       contentFit="contain"
       accessibilityIgnoresInvertColors
     />
@@ -98,15 +103,27 @@ export function DomainIcon({
 }
 
 export function TypeIcon({ type, size = 15 }: { type: string; size?: number }) {
-  if (type.toLowerCase() === 'unit') {
-    return <UnitIcon size={size} />;
-  }
-  return null;
+  const source = typeIconFor(type);
+  if (!source) return null;
+  return (
+    <Image
+      source={source}
+      style={{ width: size, height: size }}
+      contentFit="contain"
+      accessibilityIgnoresInvertColors
+    />
+  );
 }
 
 export function RarityIcon({ rarity, size = 15 }: { rarity: string; size?: number }) {
-  if (rarity.toLowerCase() === 'common') {
-    return <RarityCoin size={size} />;
-  }
-  return null;
+  const source = rarityIconFor(rarity);
+  if (!source) return null;
+  return (
+    <Image
+      source={source}
+      style={{ width: size, height: size }}
+      contentFit="contain"
+      accessibilityIgnoresInvertColors
+    />
+  );
 }
