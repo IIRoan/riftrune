@@ -2,20 +2,19 @@
 
 ## System
 
-riftrune.com is a task-first card catalog with a minimal, tech-company aesthetic: a cool near-neutral charcoal dark interface where card artwork and foils pop like sleeves under shop light. A single restrained tech-blue accent carries selection and primary actions, and Geist Mono carries every identifier and market figure like a collector's ledger. No gamer neon, no light SaaS dashboard, no loud color.
+riftrune.com is a task-first card catalog with a pure monochrome dark aesthetic: a zero-chroma neutral ramp where card artwork and foils pop against the flat black. A single chartreuse accent carries selection and primary actions only. Navigation lives in a floating side rail. No hue tints, no red, no decorative color.
 
 ## Color
 
 Use OKLCH tokens from `app/globals.css` (`--archive-*`).
 
-- Background: cool near-neutral charcoal (hue ~250, very low chroma), not navy or pure black.
-- Surface / panel / raised: three stepped cool-dark layers for cards, controls, and hover states.
-- Ink: cool near-white for body and headings.
-- Muted / subtle: cool grays kept at WCAG AA against their surfaces.
-- Accent: restrained tech blue for selection (active tab underline, selected thumbnail ring), primary actions, and progress fills. `--archive-accent-text` is the lighter blue used for blue text on dark.
+- Background / neutral ramp: zero-chroma pure gray (`oklch(L 0 0)`), five stepped layers from bg through raised.
+- Ink: near-white at chroma 0.
+- Muted / subtle: mid-gray steps, all chroma 0, WCAG AA on their surfaces.
+- Accent: chartreuse `oklch(0.82 0.20 112)` for primary actions, selection rings, active tab indicators, and progress fills. Used nowhere decorative. `--archive-accent-ink` is near-black (text on chartreuse bg). `--archive-accent-text` is the lighter chartreuse for text on dark surfaces.
 - Success: green for owned cues and positive market trends.
-- Warning: muted amber for negative market trends and destructive states. Never red.
-- Trends are color plus sign plus arrow, never color alone.
+- Warning: muted amber for negative market trends.
+- Trends carry sign + arrow, never color alone.
 
 ## Typography
 
