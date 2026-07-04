@@ -50,39 +50,10 @@ function toHistoryRow(row: typeof priceHistory.$inferSelect) {
 }
 
 export class PriceCacheService {
-  private rawCache: PaPriceRow[] | null = null;
-
   constructor(
     private readonly db: Database,
     private readonly riftrune: RiftruneClient
   ) {}
-
-  async getRawRows(): Promise<PaPriceRow[]> {
-    if (this.rawCache) return this.rawCache;
-    const rows = await this.db.select().from(prices);
-    this.rawCache = rows.map((r) => ({
-      id: r.id,
-      cardmarketId: r.cardmarketId,
-      tcgPlayerId: null,
-      provider: r.provider,
-      isFoil: r.isFoil,
-      currency: r.currency,
-      lowPrice: r.lowPrice,
-      marketPrice: r.marketPrice,
-      midPrice: r.midPrice,
-      highPrice: r.highPrice,
-      directLowPrice: null,
-      avg1Day: r.avg1Day,
-      avg7Day: r.avg7Day,
-      avg30Day: r.avg30Day,
-      lastUpdated: r.upstreamLastUpdated.toISOString(),
-    }));
-    return this.rawCache;
-  }
-
-  invalidateRawCache() {
-    this.rawCache = null;
-  }
 
   /** Fetch only prices for the cardmarket IDs in the current result page (fast path). */
   async getRowsForCardmarketIds(cardmarketIds: number[]): Promise<PaPriceRow[]> {
@@ -299,7 +270,6 @@ export class PriceCacheService {
         });
     });
 
-    this.invalidateRawCache();
     return { changed: true, rowCount: upstream.length, hash };
   }
 }

@@ -9,7 +9,7 @@ const host = ctx.app.server?.hostname ?? 'localhost';
 const port = ctx.app.server?.port ?? env.PORT;
 console.log(`Riftbound API running at http://${host}:${String(port)}`);
 
-startCatalogMetadataWarmup(ctx);
+startCatalogMetadataWarmup(ctx, env);
 startSyncCrons(ctx, env);
 
 process.on('SIGINT', () => {

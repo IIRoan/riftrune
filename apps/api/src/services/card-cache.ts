@@ -60,14 +60,21 @@ function upstreamCheckKey(query: CardsListQuery): string {
 }
 
 export class CardCacheService {
-  private readonly searchCache = new TtlCache<SearchResult>(SEARCH_RESULT_TTL_MS);
-  private readonly upstreamCheckCache = new TtlCache<true>(UPSTREAM_CHECK_TTL_MS);
+  private readonly searchCache = new TtlCache<SearchResult>(SEARCH_RESULT_TTL_MS, 100);
+  private readonly upstreamCheckCache = new TtlCache<true>(UPSTREAM_CHECK_TTL_MS, 200);
 
   constructor(
     private readonly db: Database,
     private readonly riftrune: RiftruneClient,
     private readonly prices: PriceCacheService
   ) {}
+
+  private async priceRowsForLogicalCard(card: PaLogicalCard) {
+    const cardmarketIds = card.variants
+      .map((variant) => variant.cardmarketId)
+      .filter((id): id is number => id != null);
+    return this.prices.getRowsForCardmarketIds(cardmarketIds);
+  }
 
   invalidateSearchCache(): void {
     this.searchCache.clear();
@@ -254,7 +261,7 @@ export class CardCacheService {
 
     const upstream = await this.riftrune.getCard(variantNumber);
     const changed = await this.upsertFromUpstream(upstream);
-    const priceRows = await this.prices.getRawRows();
+    const priceRows = await this.priceRowsForLogicalCard(upstream);
     const detail = mapCardDetail(upstream, priceRows);
 
     return {
@@ -276,7 +283,7 @@ export class CardCacheService {
     if (!cardRow) return null;
 
     const upstream = cardRow.upstreamRaw as PaLogicalCard;
-    const priceRows = await this.prices.getRawRows();
+    const priceRows = await this.priceRowsForLogicalCard(upstream);
     return {
       detail: mapCardDetail(upstream, priceRows),
       contentHash: cardRow.contentHash,
@@ -308,7 +315,7 @@ export class CardCacheService {
     for (const item of batch.data) {
       const logical = await this.riftrune.getCard(item.variantNumber);
       await this.upsertFromUpstream(logical);
-      const priceRows = await this.prices.getRawRows();
+      const priceRows = await this.priceRowsForLogicalCard(logical);
       found.push(mapCardDetail(logical, priceRows));
     }
 
