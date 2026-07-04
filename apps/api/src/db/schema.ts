@@ -187,6 +187,7 @@ export const CARD_CONDITIONS = [
   'moderately_played',
   'heavily_played',
   'damaged',
+  'unspecified',
 ] as const;
 
 export type CardCondition = (typeof CARD_CONDITIONS)[number];

@@ -45,7 +45,7 @@ function buildApp(env: Env): AppContext {
   const cardCache = new CardCacheService(db, riftrune, priceCache);
   const catalogMetadata = new CatalogMetadataService(db, riftrune);
   const syncEngine = new SyncEngine(db, riftrune, cardCache, catalogMetadata);
-  const collectionService = new CollectionService(db);
+  const collectionService = new CollectionService(db, cardCache, riftrune);
   const wishlistService = new WishlistService(db);
 
   const app = new Elysia()

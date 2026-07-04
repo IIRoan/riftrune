@@ -3,6 +3,8 @@ import { Elysia } from 'elysia';
 import {
   CardCondition,
   CollectionBatchSyncRequest,
+  CollectionImportRequest,
+  CollectionImportResponse,
   CollectionListResponse,
   CollectionItemResponse,
   CollectionUpsertRequest,
@@ -147,6 +149,23 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
       },
       { detail: { tags: ['collection'] } }
     )
+    .delete(
+      '/all',
+      async ({ request, set }) => {
+        if (process.env.NODE_ENV === 'production') {
+          set.status = 404;
+          return { error: 'Not found' };
+        }
+        const user = await getSessionUser(auth, request.headers);
+        if (!user) {
+          set.status = 401;
+          return unauthorized();
+        }
+        const result = await collection.clearAll(user.id);
+        return { data: result };
+      },
+      { detail: { tags: ['collection'] } }
+    )
     .post(
       '/batch',
       async ({ request, set, body }) => {
@@ -158,6 +177,56 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
         const { items } = CollectionBatchSyncRequest.parse(body);
         const result = await collection.batchSync(user.id, items);
         return { data: result };
+      },
+      { detail: { tags: ['collection'] } }
+    )
+    .get(
+      '/export',
+      async ({ request, set }) => {
+        const user = await getSessionUser(auth, request.headers);
+        if (!user) {
+          set.status = 401;
+          return unauthorized();
+        }
+        const csv = await collection.exportForUser(user.id);
+        set.headers['content-type'] = 'text/csv; charset=utf-8';
+        set.headers['content-disposition'] =
+          'attachment; filename="piltover-collection-export.csv"';
+        return csv;
+      },
+      { detail: { tags: ['collection'] } }
+    )
+    .post(
+      '/import',
+      async ({ request, set, body }) => {
+        const user = await getSessionUser(auth, request.headers);
+        if (!user) {
+          set.status = 401;
+          return unauthorized();
+        }
+        const parsed = CollectionImportRequest.parse(body);
+        if (parsed.items && parsed.items.length > 0) {
+          const result = await collection.importItems(
+            user.id,
+            parsed.items.map((item) => ({
+              variantNumber: item.variantNumber,
+              quantity: item.quantity,
+              condition: item.condition,
+              language: item.language,
+              notes: item.notes ?? null,
+              isGraded: item.isGraded ?? false,
+              gradeCompany: item.gradeCompany ?? null,
+              gradeScore: item.gradeScore ?? null,
+            }))
+          );
+          return CollectionImportResponse.parse({ data: result });
+        }
+        if (!parsed.csv) {
+          set.status = 400;
+          return { error: 'Provide csv or items' };
+        }
+        const result = await collection.importCsv(user.id, parsed.csv);
+        return CollectionImportResponse.parse({ data: result });
       },
       { detail: { tags: ['collection'] } }
     );
