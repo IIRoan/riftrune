@@ -25,6 +25,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useCSSVariable } from "uniwind";
+import { DEFAULT_SANS, fontFamilyForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import { Button, ButtonIcon, type ButtonProps, ButtonText } from "./button";
 
@@ -90,13 +91,16 @@ const useInputAddonButtonContext = () => {
 };
 
 // Components
-export const Input = ({ className, disabled, ...props }: InputProps) => {
+export const Input = ({ className, disabled, style, ...props }: InputProps) => {
+  const merged = cn(
+    "grow font-sans font-normal text-base text-foreground leading-tight",
+    className
+  );
+
   return (
     <RNTextInput
-      className={cn(
-        "grow font-normal text-base text-foreground leading-tight",
-        className
-      )}
+      className={merged}
+      style={[{ fontFamily: fontFamilyForClassName(merged) ?? DEFAULT_SANS }, style]}
       editable={!disabled}
       placeholderTextColorClassName="accent-muted-foreground"
       {...props}

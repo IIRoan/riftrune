@@ -15,6 +15,7 @@ import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import { VariantFamilySwitcher } from '@/components/catalog/VariantFamilySwitcher';
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
+import { CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
 import { CardTag } from '@/components/riftbound/CardDetailParts';
 import {
@@ -24,7 +25,7 @@ import {
   RarityIcon,
   TypeIcon,
 } from '@/components/riftbound/CardIcons';
-import { Button, ButtonText } from '@/components/ui/button';
+import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { formatStat, useCardDetail } from '@/hooks/useCardDetail';
@@ -212,6 +213,35 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
     } finally {
       setWatchBusy(false);
     }
+  };
+
+  const singlePrintingQty = singlePrinting
+    ? (collectionByVariant.get(singlePrinting.variantNumber)?.quantity ?? 0)
+    : 0;
+
+  const handleSinglePrintingAdd = () => {
+    if (!singlePrinting) return;
+    void detail.onAddToCollection(singlePrinting.variantNumber);
+  };
+
+  const handleSinglePrintingIncrement = () => {
+    if (!singlePrinting) return;
+    void setQuantity.mutateAsync({
+      variantNumber: singlePrinting.variantNumber,
+      quantity: singlePrintingQty + 1,
+    });
+  };
+
+  const handleSinglePrintingDecrement = () => {
+    if (!singlePrinting) return;
+    if (singlePrintingQty <= 1) {
+      detail.onRemovePress();
+      return;
+    }
+    void setQuantity.mutateAsync({
+      variantNumber: singlePrinting.variantNumber,
+      quantity: singlePrintingQty - 1,
+    });
   };
 
   const setCode = activeVariant.variantNumber.split('-')[0] ?? '';
@@ -421,7 +451,43 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
               </View>
             ) : null}
 
-            <Button
+            <View className="gap-2">
+              {!showPrintingsSection && singlePrinting ? (
+                singlePrintingQty > 0 ? (
+                  <View className="flex-row items-center justify-between gap-3 rounded-xl bg-card-panel px-3 py-2.5">
+                    <View className="min-w-0 flex-1">
+                      <Text className="text-sm font-semibold text-foreground">In collection</Text>
+                      <Text className="text-xs text-muted-foreground">
+                        {singlePrinting.variantLabel !== 'Standard'
+                          ? singlePrinting.variantLabel
+                          : 'This printing'}
+                      </Text>
+                    </View>
+                    <CollectionQtyControls
+                      compact
+                      quantity={singlePrintingQty}
+                      isFoil={singlePrinting.isFoil}
+                      onIncrement={handleSinglePrintingIncrement}
+                      onDecrement={handleSinglePrintingDecrement}
+                      onRemove={detail.onRemovePress}
+                    />
+                  </View>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full border-border"
+                    onPress={handleSinglePrintingAdd}
+                  >
+                    <ButtonIcon>
+                      <Ionicons name="add" size={16} className="text-foreground" />
+                    </ButtonIcon>
+                    <ButtonText className="text-sm text-foreground">Add to collection</ButtonText>
+                  </Button>
+                )
+              ) : null}
+
+              <Button
               variant={isWatchingActive ? 'outline' : 'default'}
               size="sm"
               className={
@@ -448,6 +514,7 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
                 {isWatchingActive ? 'Wishlisted · tap to remove' : 'Wishlist card'}
               </ButtonText>
             </Button>
+            </View>
           </View>
         </ScrollView>
       </View>

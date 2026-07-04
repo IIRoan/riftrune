@@ -14,6 +14,7 @@ import { StatusBar, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { TetraProvider } from '@/components/TetraProvider';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { useAppFonts } from '@/hooks/useAppFonts';
 import { hydrateSecureStorage } from '@/src/lib/secure-storage';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -31,6 +32,7 @@ const queryClient = new QueryClient({
 
 function RootNav() {
   const { actualTheme } = useTheme();
+  const fontsLoaded = useAppFonts();
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
@@ -42,7 +44,6 @@ function RootNav() {
         if (mounted) {
           setStorageReady(true);
         }
-        await SplashScreen.hideAsync();
       }
     })();
     return () => {
@@ -50,7 +51,13 @@ function RootNav() {
     };
   }, []);
 
-  if (!storageReady) {
+  useEffect(() => {
+    if (fontsLoaded && storageReady) {
+      void SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, storageReady]);
+
+  if (!storageReady || !fontsLoaded) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <Text className="text-muted-foreground">Loading…</Text>

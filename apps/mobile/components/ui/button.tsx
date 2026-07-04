@@ -7,6 +7,7 @@ import {
   useMemo,
 } from "react";
 import { ActivityIndicator, Pressable, Text } from "react-native";
+import { fontFamilyForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -18,6 +19,7 @@ type InternalButtonContextType = VariantProps<typeof buttonVariants> & {
 type ButtonChildProps = {
   children: React.ReactNode;
   className?: string;
+  style?: React.ComponentProps<typeof Text>['style'];
 };
 
 export type ButtonProps = React.ComponentProps<typeof Pressable> &
@@ -87,15 +89,17 @@ export const Button = ({
 
 export const ButtonText = (props: ButtonChildProps) => {
   const ctx = useButtonContext();
+  const merged = cn(
+    buttonTextVariants(ctx),
+    ctx.busy && "opacity-0",
+    props.className
+  );
 
   return (
     <Text
       {...props}
-      className={cn(
-        buttonTextVariants(ctx),
-        ctx.busy && "opacity-0",
-        props.className
-      )}
+      className={merged}
+      style={[{ fontFamily: fontFamilyForClassName(merged) }, props.style]}
     />
   );
 };

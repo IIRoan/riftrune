@@ -93,7 +93,7 @@ export function PrintingPickerMenu({
       <Popover>
         <PopoverTrigger asChild>{children}</PopoverTrigger>
         <PopoverPortal>
-          <PopoverOverlay closeOnPress />
+          <PopoverOverlay className="bg-transparent" closeOnPress />
           <PopoverContent
             side="bottom"
             align="end"

@@ -1,14 +1,22 @@
-import { Text as RNText } from "react-native";
+import { Text as RNText, type TextProps as RNTextProps } from "react-native";
+import { fontFamilyForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 // Components
 export const Text = ({
   children,
   className,
+  style,
   ...props
-}: React.ComponentProps<typeof RNText>) => {
+}: RNTextProps) => {
+  const merged = cn("font-sans font-normal text-base text-foreground", className);
+
   return (
-    <RNText className={cn("font-normal text-foreground", className)} {...props}>
+    <RNText
+      className={merged}
+      style={[{ fontFamily: fontFamilyForClassName(merged) }, style]}
+      {...props}
+    >
       {children}
     </RNText>
   );
