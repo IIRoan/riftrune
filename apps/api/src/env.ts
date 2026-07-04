@@ -30,6 +30,8 @@ const EnvSchema = z.object({
     .transform((v) => v === 'true'),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url().default('http://localhost:3000'),
+  /** Optional override; otherwise derived from BETTER_AUTH_URL + TRUSTED_ORIGINS in production. */
+  AUTH_COOKIE_DOMAIN: z.string().min(1).optional(),
   TRUSTED_ORIGINS: z
     .string()
     .optional()
