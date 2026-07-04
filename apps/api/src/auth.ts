@@ -1,7 +1,9 @@
 import { expo } from '@better-auth/expo';
+import { bearer } from 'better-auth/plugins';
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { betterAuth } from 'better-auth';
 import type { Database } from './db/client.js';
+import { resolveAuthCookieDomain } from './lib/auth-cookie-domain.js';
 import type { Env } from './env.js';
 import { resolveTrustedOrigins } from './lib/trusted-origins.js';
 
@@ -18,6 +20,8 @@ export interface AuthApi {
 export type Auth = AuthApi;
 
 export function createAuth(db: Database, env: Env): AuthApi {
+  const cookieDomain = resolveAuthCookieDomain(env);
+
   return betterAuth({
     database: drizzleAdapter(db, { provider: 'pg' }),
     secret: env.BETTER_AUTH_SECRET,
@@ -26,7 +30,22 @@ export function createAuth(db: Database, env: Env): AuthApi {
       enabled: true,
       minPasswordLength: 8,
     },
-    plugins: [expo()],
+    plugins: [expo(), bearer()],
     trustedOrigins: resolveTrustedOrigins(env),
+    ...(cookieDomain
+      ? {
+          advanced: {
+            crossSubDomainCookies: {
+              enabled: true,
+              domain: cookieDomain,
+            },
+            defaultCookieAttributes: {
+              secure: true,
+              httpOnly: true,
+              sameSite: 'lax',
+            },
+          },
+        }
+      : {}),
   }) as unknown as AuthApi;
 }

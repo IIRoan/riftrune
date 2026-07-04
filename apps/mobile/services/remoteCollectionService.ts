@@ -15,9 +15,13 @@ async function authedFetch<T>(
     ...(init?.body == null ? {} : { 'Content-Type': 'application/json' }),
     ...init?.headers,
   };
-  const cookie = authClient.getCookie();
-  if (!isBrowserRuntime && cookie) {
-    headers.cookie = cookie;
+
+  if (!isBrowserRuntime) {
+    const getCookie = (authClient as { getCookie?: () => string }).getCookie;
+    const cookie = typeof getCookie === 'function' ? getCookie.call(authClient) : '';
+    if (cookie) {
+      headers.cookie = cookie;
+    }
   }
 
   const res = await fetch(`${API_URL}${path}`, {
