@@ -3,7 +3,9 @@
   "provider": "node",
   "steps": {
     "build": {
-      "commands": ["bun run --filter @riftbound/contracts build"]
+      "commands": [
+        "bun run --filter @riftbound/contracts build"
+      ]
     }
   },
   "deploy": {
