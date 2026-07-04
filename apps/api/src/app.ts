@@ -5,6 +5,7 @@ import type postgres from 'postgres';
 import { createAuth, type Auth } from './auth.js';
 import { createDb, type Database } from './db/client.js';
 import type { Env } from './env.js';
+import { resolveCorsOrigins } from './lib/trusted-origins.js';
 import { createAuthPlugin } from './plugins/auth.js';
 import { errorPlugin } from './plugins/error-handler.js';
 import { createCardsRoutes } from './routes/cards.js';
@@ -50,13 +51,15 @@ function buildApp(env: Env): AppContext {
   const app = new Elysia()
     .use(
       cors({
-        origin: true,
+        origin: resolveCorsOrigins(env),
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
       })
-    )
-    .use(
+    );
+
+  if (env.SWAGGER_ENABLED) {
+    app.use(
       swagger({
         documentation: {
           info: {
@@ -66,7 +69,10 @@ function buildApp(env: Env): AppContext {
           },
         },
       })
-    )
+    );
+  }
+
+  app
     .use(errorPlugin)
     .use(authPlugin)
     .use(createHealthRoutes(db, syncEngine))
@@ -102,8 +108,10 @@ export function createApp(env: Env): AppContext {
   return buildApp(env);
 }
 
-export function startCatalogMetadataWarmup(ctx: AppContext): void {
-  if (process.env.CATALOG_PROBE_DISABLED === 'true') return;
+export function startCatalogMetadataWarmup(ctx: AppContext, env: Env): void {
+  if (!env.CATALOG_WARMUP_ON_START || process.env.CATALOG_PROBE_DISABLED === 'true') {
+    return;
+  }
 
   void ctx.catalogMetadata.ensureExpandedPrintCounts().catch((err: unknown) => {
     console.error('Catalog metadata warmup failed:', err);

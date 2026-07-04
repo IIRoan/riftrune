@@ -3,6 +3,7 @@ import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { betterAuth } from 'better-auth';
 import type { Database } from './db/client.js';
 import type { Env } from './env.js';
+import { resolveTrustedOrigins } from './lib/trusted-origins.js';
 
 export interface AuthApi {
   api: {
@@ -17,14 +18,6 @@ export interface AuthApi {
 export type Auth = AuthApi;
 
 export function createAuth(db: Database, env: Env): AuthApi {
-  const baseOrigin = (() => {
-    try {
-      return new URL(env.BETTER_AUTH_URL).origin;
-    } catch {
-      return null;
-    }
-  })();
-
   return betterAuth({
     database: drizzleAdapter(db, { provider: 'pg' }),
     secret: env.BETTER_AUTH_SECRET,
@@ -34,13 +27,6 @@ export function createAuth(db: Database, env: Env): AuthApi {
       minPasswordLength: 8,
     },
     plugins: [expo()],
-    trustedOrigins: [
-      'riftbound://',
-      'riftbound://*',
-      ...(baseOrigin ? [baseOrigin] : []),
-      ...(env.NODE_ENV === 'development'
-        ? ['exp://', 'exp://**', 'exp://192.168.*.*:*/**', 'http://localhost:3000']
-        : []),
-    ],
+    trustedOrigins: resolveTrustedOrigins(env),
   }) as unknown as AuthApi;
 }
