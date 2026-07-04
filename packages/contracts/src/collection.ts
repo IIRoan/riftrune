@@ -7,6 +7,7 @@ export const CardCondition = z.enum([
   'moderately_played',
   'heavily_played',
   'damaged',
+  'unspecified',
 ]);
 
 export type CardCondition = z.infer<typeof CardCondition>;
@@ -99,3 +100,41 @@ export const WishlistListResponse = z.object({
 export const WishlistItemResponse = z.object({
   data: WishlistItem,
 });
+
+export const CollectionImportRequest = z.object({
+  csv: z.string().min(1).optional(),
+  items: z
+    .array(
+      z.object({
+        variantNumber: z.string().min(1),
+        quantity: z.number().int().positive(),
+        condition: CardCondition.default('near_mint'),
+        language: z.string().default('en'),
+        notes: z.string().nullable().optional(),
+        isGraded: z.boolean().optional(),
+        gradeCompany: z.string().nullable().optional(),
+        gradeScore: z.string().nullable().optional(),
+      })
+    )
+    .optional(),
+});
+
+export type CollectionImportRequest = z.infer<typeof CollectionImportRequest>;
+
+export const CollectionImportResponse = z.object({
+  data: z.object({
+    imported: z.number().int().nonnegative(),
+    totalCopies: z.number().int().nonnegative(),
+    rowsProcessed: z.number().int().nonnegative().optional(),
+    resolvedFromUpstream: z.number().int().nonnegative().optional(),
+    failedRows: z.number().int().nonnegative(),
+    errors: z.array(
+      z.object({
+        row: z.number().int(),
+        message: z.string(),
+      })
+    ),
+  }),
+});
+
+export type CollectionImportResponse = z.infer<typeof CollectionImportResponse>;

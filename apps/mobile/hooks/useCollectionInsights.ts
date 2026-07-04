@@ -1,24 +1,29 @@
+import { chunkArray } from '@riftbound/contracts';
 import { useQuery } from '@tanstack/react-query';
 import type { CollectionEntry } from '@/services/collectionService';
 import { api } from '@/src/api/client';
 import { formatMarketTrend, isFoilVariant } from '@/utils/variants';
 
 export function useCollectionInsights(collection: CollectionEntry[]) {
-  const variantNumbers = collection.map((e) => e.variantNumber);
+  const variantNumbers = [
+    ...new Set(collection.map((entry) => entry.variantNumber)),
+  ].sort();
 
   return useQuery({
-    queryKey: ['collection', 'insights', variantNumbers.sort().join(',')],
+    queryKey: ['collection', 'insights', variantNumbers.join(',')],
     queryFn: async () => {
       if (variantNumbers.length === 0) {
         return { estimatedValue: 0, movers: [] as { entry: CollectionEntry; trend: string }[] };
       }
 
-      const batch = await api.batchCards(variantNumbers.slice(0, 100));
-      const detailByVariant = new Map<string, (typeof batch.data)[number]>();
+      const detailByVariant = new Map<string, Awaited<ReturnType<typeof api.batchCards>>['data'][number]>();
 
-      for (const card of batch.data) {
-        for (const v of card.variants) {
-          detailByVariant.set(v.variantNumber, card);
+      for (const batchVariantNumbers of chunkArray(variantNumbers, 100)) {
+        const batch = await api.batchCards(batchVariantNumbers);
+        for (const card of batch.data) {
+          for (const variant of card.variants) {
+            detailByVariant.set(variant.variantNumber, card);
+          }
         }
       }
 

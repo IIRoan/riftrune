@@ -347,25 +347,33 @@ export function mergeSetStats(
   apiSets: { code: string; name: string; count: number }[]
 ): MergedSetStat[] {
   const apiSetMap = new Map(apiSets.map((s) => [s.code, s]));
-  const ownedBySet = new Map<string, { owned: number; foilOwned: number }>();
+  const ownedBySet = new Map<string, { variants: Set<string>; foilVariants: Set<string> }>();
 
   for (const entry of collection) {
+    if (entry.quantity <= 0) continue;
     const code = entry.setCode || entry.variantNumber.split('-')[0] || 'UNK';
-    const current = ownedBySet.get(code) ?? { owned: 0, foilOwned: 0 };
-    current.owned += 1;
-    if (entry.isFoil) current.foilOwned += 1;
+    const current = ownedBySet.get(code) ?? {
+      variants: new Set<string>(),
+      foilVariants: new Set<string>(),
+    };
+    current.variants.add(entry.variantNumber);
+    if (entry.isFoil) {
+      current.foilVariants.add(entry.variantNumber);
+    }
     ownedBySet.set(code, current);
   }
 
   return SET_CATALOG.map((catalog) => {
     const apiSet = apiSetMap.get(catalog.code);
-    const stats = ownedBySet.get(catalog.code) ?? { owned: 0, foilOwned: 0 };
+    const stats = ownedBySet.get(catalog.code);
+    const owned = stats?.variants.size ?? 0;
+    const foilOwned = stats?.foilVariants.size ?? 0;
     return {
       ...catalog,
       name: apiSet?.name ?? catalog.name,
-      total: Math.max(apiSet?.count ?? 0, stats.owned),
-      owned: stats.owned,
-      foilOwned: stats.foilOwned,
+      total: Math.max(apiSet?.count ?? 0, owned),
+      owned,
+      foilOwned,
     };
   });
 }
@@ -374,17 +382,19 @@ export function computeTypeStats(
   collection: CollectionEntry[],
   apiTypes: { name: string; count: number }[]
 ) {
-  const counts = new Map<string, number>();
+  const namesByType = new Map<string, Set<string>>();
   for (const entry of collection) {
-    if (!entry.type) continue;
-    counts.set(entry.type, (counts.get(entry.type) ?? 0) + entry.quantity);
+    if (!entry.type || entry.quantity <= 0) continue;
+    const names = namesByType.get(entry.type) ?? new Set<string>();
+    names.add(entry.name);
+    namesByType.set(entry.type, names);
   }
 
   return apiTypes
     .filter((t) => t.name !== 'Card')
     .map((t) => ({
       name: t.name,
-      owned: counts.get(t.name) ?? 0,
+      owned: namesByType.get(t.name)?.size ?? 0,
       total: t.count,
     }));
 }

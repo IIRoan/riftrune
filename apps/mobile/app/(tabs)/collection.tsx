@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import {
   BreakdownSection,
@@ -11,15 +11,38 @@ import {
   rarityIconFor,
   typeIconFor,
 } from '@/components/collection/CollectionDashboard';
-import { ScreenLayout } from '@/components/shell/ScreenLayout';
+import { CollectionCardList } from '@/components/collection/CollectionCardList';
+import {
+  CollectionImportExportStatus,
+  CollectionImportExportToolbar,
+} from '@/components/collection/CollectionImportExportActions';
+import { ScreenLayout, ScreenLayoutBody, useScreenLayout } from '@/components/shell/ScreenLayout';
+import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
 import { Button, ButtonText } from '@/components/ui/button';
 import { useCollection } from '@/hooks/useCollection';
 import { useCollectionInsights } from '@/hooks/useCollectionInsights';
 import { useFiltersData } from '@/hooks/useFiltersData';
+import {
+  catalogCardTotalFromTypes,
+  computeRarityBreakdown,
+  countUniqueCardNames,
+  countUniqueVariants,
+  sumCollectionCopies,
+} from '@/utils/collectionStats';
 
 export default function CollectionScreen() {
+  return (
+    <ScreenLayout mode="flex" contentClassName="flex-1">
+      <CollectionScreenBody />
+    </ScreenLayout>
+  );
+}
+
+function CollectionScreenBody() {
   const router = useRouter();
+  const { contentWidth, paddingBottomInline } = useScreenLayout();
+  const [query, setQuery] = useState('');
 
   const { data: collection = [], isLoading, refetch } = useCollection();
   const filtersQuery = useFiltersData();
@@ -31,10 +54,9 @@ export default function CollectionScreen() {
     }, [refetch])
   );
 
-  const totalCards = useMemo(
-    () => collection.reduce((sum, e) => sum + e.quantity, 0),
-    [collection]
-  );
+  const totalCopies = useMemo(() => sumCollectionCopies(collection), [collection]);
+  const uniqueCards = useMemo(() => countUniqueCardNames(collection), [collection]);
+  const uniquePrintings = useMemo(() => countUniqueVariants(collection), [collection]);
 
   const apiSets = useMemo(
     () =>
@@ -47,10 +69,13 @@ export default function CollectionScreen() {
   );
   const apiTypes = filtersQuery.data?.types ?? [];
   const apiRarities = filtersQuery.data?.rarities ?? [];
-  const catalogTotal = filtersQuery.data?.variantCount ?? 0;
-  const catalogTotalLabel =
-    catalogTotal > 0
-      ? catalogTotal.toLocaleString()
+  const catalogCardTotal = useMemo(
+    () => catalogCardTotalFromTypes(apiTypes),
+    [apiTypes]
+  );
+  const catalogCardLabel =
+    catalogCardTotal > 0
+      ? catalogCardTotal.toLocaleString()
       : filtersQuery.isLoading
         ? '…'
         : '—';
@@ -60,38 +85,30 @@ export default function CollectionScreen() {
     [collection, apiSets]
   );
 
-  const totalFoilOwned = mergedSets.reduce((sum, s) => sum + s.foilOwned, 0);
-
-  const rarityStats = useMemo(() => {
-    const ownedByRarity = new Map<string, number>();
-    for (const entry of collection) {
-      const r = entry.rarity || 'Unknown';
-      ownedByRarity.set(r, (ownedByRarity.get(r) ?? 0) + entry.quantity);
-    }
-    return apiRarities.map((r) => ({
-      name: r.name,
-      owned: ownedByRarity.get(r.name) ?? 0,
-      total: r.count,
-    }));
-  }, [collection, apiRarities]);
+  const rarityStats = useMemo(
+    () => computeRarityBreakdown(collection, apiRarities),
+    [collection, apiRarities]
+  );
 
   const typeStats = useMemo(
     () => computeTypeStats(collection, apiTypes),
     [collection, apiTypes]
   );
 
-  const completion = catalogTotal > 0 ? (collection.length / catalogTotal) * 100 : 0;
+  const completion =
+    catalogCardTotal > 0 ? (uniqueCards / catalogCardTotal) * 100 : 0;
   const estimatedValue = insightsQuery.data?.estimatedValue ?? 0;
+  const valueLabel =
+    insightsQuery.isLoading && collection.length > 0 ? '…' : `€${estimatedValue.toFixed(2)}`;
 
-  return (
-    <ScreenLayout>
-      <View className="pb-6">
+  const dashboardHeader = (
+    <View className="pb-6">
+      <View className="mb-8">
         <Text className="text-xl font-semibold tracking-tight text-foreground">
           Collection Dashboard
         </Text>
         <Text className="mt-1 font-mono text-[13px] text-muted-foreground">
-          {collection.length.toLocaleString()} of {catalogTotalLabel} cards available ·{' '}
-          {totalFoilOwned} foils · €{estimatedValue.toFixed(2)} estimated value
+          {totalCopies.toLocaleString()} cards · {valueLabel} estimated value
         </Text>
       </View>
 
@@ -103,18 +120,19 @@ export default function CollectionScreen() {
       <DashboardStatGrid>
         <DashboardStat
           label="Cards Collected"
-          value={collection.length.toLocaleString()}
+          value={uniqueCards.toLocaleString()}
           sub={
-            catalogTotal > 0
-              ? `of ${catalogTotal.toLocaleString()} available`
+            catalogCardTotal > 0
+              ? `of ${catalogCardLabel} available`
               : filtersQuery.isLoading
                 ? 'loading catalog…'
                 : 'catalog count unavailable'
           }
+          progress={catalogCardTotal > 0 ? uniqueCards / catalogCardTotal : undefined}
         />
         <DashboardStat
           label="Total Cards"
-          value={totalCards.toLocaleString()}
+          value={totalCopies.toLocaleString()}
           sub="including duplicates"
         />
         <DashboardStat
@@ -125,7 +143,7 @@ export default function CollectionScreen() {
         />
         <DashboardStat
           label="Estimated Value"
-          value={`€${estimatedValue.toFixed(2)}`}
+          value={valueLabel}
           sub="based on Cardmarket"
         />
       </DashboardStatGrid>
@@ -151,9 +169,24 @@ export default function CollectionScreen() {
         ) : null}
       </View>
 
+      <View className="mb-8 gap-2">
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="text-sm font-semibold text-muted-foreground">Your collection</Text>
+          <CollectionImportExportToolbar disabled={isLoading} />
+        </View>
+        <SearchInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search by name or variant"
+          accessibilityLabel="Search your collection"
+          className="min-h-12 rounded-xl border-border bg-card"
+        />
+        <CollectionImportExportStatus disabled={isLoading} />
+      </View>
+
       {collection.length === 0 && !isLoading ? (
         <Button
-          className="mt-6"
+          className="mb-8"
           onPress={() => {
             router.push('/(tabs)/search');
           }}
@@ -161,6 +194,21 @@ export default function CollectionScreen() {
           <ButtonText>Search cards</ButtonText>
         </Button>
       ) : null}
-    </ScreenLayout>
+    </View>
+  );
+
+  return (
+    <ScreenLayoutBody>
+      <CollectionCardList
+        entries={collection}
+        query={query}
+        isLoading={isLoading}
+        contentWidth={contentWidth}
+        paddingBottom={paddingBottomInline}
+        uniquePrintings={uniquePrintings}
+        totalCopies={totalCopies}
+        listHeader={dashboardHeader}
+      />
+    </ScreenLayoutBody>
   );
 }
