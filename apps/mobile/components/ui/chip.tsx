@@ -7,6 +7,7 @@ import {
   useMemo,
 } from "react";
 import { Pressable, Text } from "react-native";
+import { fontFamilyForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -17,6 +18,7 @@ type InternalChipContextType = VariantProps<typeof chipVariants> & {
 type ChipChildProps = {
   children: React.ReactNode;
   className?: string;
+  style?: React.ComponentProps<typeof Text>['style'];
 };
 
 export type ChipProps = React.ComponentProps<typeof Pressable> &
@@ -73,9 +75,14 @@ export const Chip = ({
 
 export const ChipText = (props: ChipChildProps) => {
   const ctx = useChipContext();
+  const merged = cn(chipTextVariants(ctx), props.className);
 
   return (
-    <Text {...props} className={cn(chipTextVariants(ctx), props.className)} />
+    <Text
+      {...props}
+      className={merged}
+      style={[{ fontFamily: fontFamilyForClassName(merged) }, props.style]}
+    />
   );
 };
 

@@ -32,8 +32,8 @@ export default function TabLayout() {
   const showTabBar = !pathname.startsWith('/card/') && !showRail;
 
   return (
-    <AppShell>
-      <AuthGate>
+    <AuthGate>
+      <AppShell>
         <View className="flex-1 bg-background">
           <Tabs
           screenOptions={({ route }) => ({
@@ -94,7 +94,7 @@ export default function TabLayout() {
           />
         </Tabs>
         </View>
-      </AuthGate>
-    </AppShell>
+      </AppShell>
+    </AuthGate>
   );
 }

@@ -109,6 +109,8 @@
 }
 
 @theme inline {
+  --font-sans: Geist-Regular, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: GeistMono-Regular, ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
