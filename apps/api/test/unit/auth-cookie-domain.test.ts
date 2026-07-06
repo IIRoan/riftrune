@@ -5,7 +5,7 @@ import type { Env } from '../../src/env.js';
 function env(overrides: Partial<Env>): Env {
   return {
     NODE_ENV: 'production',
-    PORT: 3000,
+    PORT: 7000,
     DATABASE_URL: 'postgres://localhost/db',
     RIFTRUNE_API_KEY: 'ak_test',
     RIFTRUNE_BASE_URL: 'https://piltoverarchive.com/api/external',

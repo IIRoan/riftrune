@@ -23,8 +23,8 @@
     "db:migrate": "bun run --filter @riftbound/api db:migrate",
     "db:generate": "bun run --filter @riftbound/api db:generate",
     "db:studio": "bun run --filter @riftbound/api db:studio",
-    "sync:catalog": "curl -s -X POST http://localhost:3000/api/v1/sync/catalog -H \"Authorization: Bearer ${ADMIN_SYNC_TOKEN:-dev-sync-token-change-me}\"",
-    "sync:prices": "curl -s -X POST http://localhost:3000/api/v1/sync/prices -H \"Authorization: Bearer ${ADMIN_SYNC_TOKEN:-dev-sync-token-change-me}\"",
+    "sync:catalog": "curl -s -X POST http://localhost:7000/api/v1/sync/catalog -H \"Authorization: Bearer ${ADMIN_SYNC_TOKEN:-dev-sync-token-change-me}\"",
+    "sync:prices": "curl -s -X POST http://localhost:7000/api/v1/sync/prices -H \"Authorization: Bearer ${ADMIN_SYNC_TOKEN:-dev-sync-token-change-me}\"",
     "db:setup": "bun run db:migrate"
   },
   "devDependencies": {

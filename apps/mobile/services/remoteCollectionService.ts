@@ -6,7 +6,7 @@ import {
 } from '@riftbound/contracts';
 import { authClient } from '@/src/lib/auth-client';
 
-const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000');
+const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000');
 
 const isBrowserRuntime = typeof document !== 'undefined';
 

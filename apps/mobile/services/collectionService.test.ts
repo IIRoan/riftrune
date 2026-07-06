@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { CardListItem } from '@riftbound/contracts';
 
-process.env.EXPO_PUBLIC_API_URL = 'http://localhost:3000';
+process.env.EXPO_PUBLIC_API_URL = 'http://localhost:7000';
 
 const getCookie = mock(() => 'better-auth.session_token=test-session');
 
@@ -101,7 +101,7 @@ beforeEach(() => {
 function expectPostToSelectedVariant(variantNumber: string) {
   expect(requests).toHaveLength(1);
   expect(requests[0]?.url).toBe(
-    `http://localhost:3000/api/v1/collection/${variantNumber}/add`
+    `http://localhost:7000/api/v1/collection/${variantNumber}/add`
   );
   expect(requests[0]?.init?.method).toBe('POST');
   expect(requests[0]?.init?.credentials).toBe('include');
@@ -121,7 +121,7 @@ function expectWriteRequest({
   body?: unknown;
 }) {
   expect(requests).toHaveLength(1);
-  expect(requests[0]?.url).toBe(`http://localhost:3000${url}`);
+  expect(requests[0]?.url).toBe(`http://localhost:7000${url}`);
   expect(requests[0]?.init?.method).toBe(method);
   expect(requests[0]?.init?.credentials).toBe('include');
   expect(requests[0]?.init?.body).toBe(
