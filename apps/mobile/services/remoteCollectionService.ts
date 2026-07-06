@@ -4,11 +4,26 @@ import {
   CollectionListResponse,
   WishlistListResponse,
 } from '@riftbound/contracts';
-import { authClient } from '@/src/lib/auth-client';
+import { getAuthCookieHeader } from '@/lib/auth-cookie';
+import { logActionFailure } from '@/lib/logger';
 
-const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000');
+const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000').replace(
+  /\/$/,
+  ''
+);
 
 const isBrowserRuntime = typeof document !== 'undefined';
+
+export class RemoteApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly path: string,
+    readonly body: string
+  ) {
+    super(`API ${String(status)} ${path}: ${body}`);
+    this.name = 'RemoteApiError';
+  }
+}
 
 async function authedFetch<T>(
   path: string,
@@ -21,31 +36,64 @@ async function authedFetch<T>(
   };
 
   if (!isBrowserRuntime) {
-    const getCookie = (authClient as { getCookie?: () => string }).getCookie;
-    const cookie = typeof getCookie === 'function' ? getCookie.call(authClient) : '';
+    const cookie = getAuthCookieHeader();
     if (cookie) {
       headers.cookie = cookie;
     }
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    method: init?.method ?? 'GET',
-    credentials: 'include',
-    headers,
-    body: init?.body == null ? undefined : JSON.stringify(init.body),
-  });
+  const method = init?.method ?? 'GET';
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method,
+      credentials: 'include',
+      headers,
+      body: init?.body == null ? undefined : JSON.stringify(init.body),
+    });
+  } catch (error) {
+    logActionFailure('api.fetch', error, { path, method });
+    throw error;
+  }
 
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`API ${String(res.status)}: ${text}`);
+    const apiError = new RemoteApiError(res.status, path, text);
+    logActionFailure('api.request', apiError, {
+      path,
+      method,
+      status: res.status,
+      hasAuthCookie: Boolean(headers.cookie),
+    });
+    throw apiError;
   }
 
-  return (text ? JSON.parse(text) : undefined) as T;
+  try {
+    return (text ? JSON.parse(text) : undefined) as T;
+  } catch (error) {
+    logActionFailure('api.parse', error, { path, method });
+    throw error;
+  }
+}
+
+function parseOrThrow<T>(
+  action: string,
+  schema: { parse: (input: unknown) => T },
+  input: unknown,
+  context?: Record<string, unknown>
+): T {
+  try {
+    return schema.parse(input);
+  } catch (error) {
+    logActionFailure(action, error, context);
+    throw error;
+  }
 }
 
 export async function fetchRemoteCollection(): Promise<CollectionItem[]> {
   const res = await authedFetch<{ data: CollectionItem[] }>('/api/v1/collection');
-  return CollectionListResponse.parse(res).data;
+  return parseOrThrow('collection.list.parse', CollectionListResponse, res).data;
 }
 
 export async function remoteAddToCollection(
@@ -103,22 +151,30 @@ export async function remoteBatchSyncCollection(
 export async function remoteExportCollectionCsv(): Promise<string> {
   const headers: Record<string, string> = { Accept: 'text/csv' };
   if (!isBrowserRuntime) {
-    const getCookie = (authClient as { getCookie?: () => string }).getCookie;
-    const cookie = typeof getCookie === 'function' ? getCookie.call(authClient) : '';
+    const cookie = getAuthCookieHeader();
     if (cookie) {
       headers.cookie = cookie;
     }
   }
 
-  const res = await fetch(`${API_URL}/api/v1/collection/export`, {
-    method: 'GET',
-    credentials: 'include',
-    headers,
-  });
+  const path = '/api/v1/collection/export';
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers,
+    });
+  } catch (error) {
+    logActionFailure('collection.export.fetch', error, { path });
+    throw error;
+  }
 
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`API ${String(res.status)}: ${text}`);
+    const apiError = new RemoteApiError(res.status, path, text);
+    logActionFailure('collection.export', apiError, { status: res.status });
+    throw apiError;
   }
   return text;
 }
@@ -144,7 +200,7 @@ export async function remoteImportCollectionItems(
     method: 'POST',
     body: { items },
   });
-  const parsed = CollectionImportResponse.parse(res).data;
+  const parsed = parseOrThrow('collection.import.parse', CollectionImportResponse, res).data;
   return {
     imported: parsed.imported,
     totalCopies: parsed.totalCopies,
@@ -161,7 +217,7 @@ export async function remoteClearCollection(): Promise<void> {
 
 export async function fetchRemoteWishlist(): Promise<WishlistItem[]> {
   const res = await authedFetch<{ data: WishlistItem[] }>('/api/v1/wishlist');
-  return WishlistListResponse.parse(res).data;
+  return parseOrThrow('wishlist.list.parse', WishlistListResponse, res).data;
 }
 
 export async function remoteAddToWishlist(variantNumber: string): Promise<void> {

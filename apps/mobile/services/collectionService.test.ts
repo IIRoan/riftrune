@@ -4,11 +4,16 @@ import type { CardListItem } from '@riftbound/contracts';
 process.env.EXPO_PUBLIC_API_URL = 'http://localhost:7000';
 
 const getCookie = mock(() => 'better-auth.session_token=test-session');
+const getAuthCookieHeader = mock(() => 'better-auth.session_token=test-session');
 
 mock.module('@/src/lib/auth-client', () => ({
   authClient: {
     getCookie,
   },
+}));
+
+mock.module('@/lib/auth-cookie', () => ({
+  getAuthCookieHeader,
 }));
 
 interface RecordedRequest {
@@ -96,6 +101,7 @@ beforeEach(() => {
   requests.length = 0;
   fetchMock.mockClear();
   getCookie.mockClear();
+  getAuthCookieHeader.mockClear();
 });
 
 function expectPostToSelectedVariant(variantNumber: string) {
@@ -138,7 +144,7 @@ describe('remote collection writes', () => {
   test('adds a selected variant with an authenticated POST request', async () => {
     await remoteAddToCollection('SFD-R05a');
 
-    expect(getCookie).toHaveBeenCalled();
+    expect(getAuthCookieHeader).toHaveBeenCalled();
     expectPostToSelectedVariant('SFD-R05a');
   });
 });
@@ -147,7 +153,7 @@ describe('remote wishlist writes', () => {
   test('adds a wishlist item with an authenticated PUT request', async () => {
     await remoteAddToWishlist('SFD-R05a');
 
-    expect(getCookie).toHaveBeenCalled();
+    expect(getAuthCookieHeader).toHaveBeenCalled();
     expectWriteRequest({
       url: '/api/v1/wishlist/SFD-R05a',
       method: 'PUT',
@@ -158,7 +164,7 @@ describe('remote wishlist writes', () => {
   test('removes a wishlist item with an authenticated DELETE request', async () => {
     await remoteRemoveFromWishlist('SFD-R05a');
 
-    expect(getCookie).toHaveBeenCalled();
+    expect(getAuthCookieHeader).toHaveBeenCalled();
     expectWriteRequest({
       url: '/api/v1/wishlist/SFD-R05a',
       method: 'DELETE',
@@ -198,6 +204,28 @@ describe('collection add flows', () => {
         ],
       },
       'SFD-R05a'
+    );
+
+    expectPostToSelectedVariant('SFD-R05a');
+  });
+
+  test('detail add matches variant numbers case-insensitively', async () => {
+    await addDetailToCollection(
+      {
+        name: 'SFD Rune',
+        type: 'Rune',
+        variants: [
+          {
+            variantNumber: 'SFD-R05a',
+            imageUrl: 'https://example.com/sfd-r05a.webp',
+            rarity: 'Rare',
+            variantLabel: 'Foil',
+            variantType: 'foil',
+            prices: [],
+          },
+        ],
+      },
+      'sfd-r05a'
     );
 
     expectPostToSelectedVariant('SFD-R05a');

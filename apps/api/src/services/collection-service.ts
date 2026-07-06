@@ -10,6 +10,7 @@ import {
 import type { CollectionItem as CollectionItemDto, CardCondition } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { cards, collectionItems, sets, variants } from '../db/schema.js';
+import { logActionFailure } from '../lib/logger.js';
 
 import type { CardCacheService } from './card-cache.js';
 import type { ImageStoreService } from './image-store.js';
@@ -129,6 +130,10 @@ export class CollectionService {
       .limit(1);
 
     if (!variant) {
+      logActionFailure('collection.upsert.variant_not_found', new Error('Variant not found'), {
+        variantNumber: input.variantNumber,
+        userId,
+      });
       throw new Error(`Variant ${input.variantNumber} not found`);
     }
 

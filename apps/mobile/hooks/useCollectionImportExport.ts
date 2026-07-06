@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { logActionFailure } from '@/lib/logger';
 import {
   clearCollectionDevOnly,
   exportCollectionToFile,
@@ -35,16 +36,25 @@ export function useCollectionImportExport() {
     onSuccess: () => {
       invalidate();
     },
+    onError: (error) => {
+      logActionFailure('collection.import_csv', error);
+    },
   });
 
   const exportCsv = useMutation({
     mutationFn: exportCollectionToFile,
+    onError: (error) => {
+      logActionFailure('collection.export_csv', error);
+    },
   });
 
   const clearCollection = useMutation({
     mutationFn: clearCollectionDevOnly,
     onSuccess: () => {
       invalidate();
+    },
+    onError: (error) => {
+      logActionFailure('collection.clear', error);
     },
   });
 

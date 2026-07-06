@@ -32,10 +32,12 @@ export function CardDetailDrawer({ open, onClose, children }: CardDetailDrawerPr
           defaultSnapIndex={0}
           enablePanDownToClose
           enableOverDrag={!reduceMotion}
+          enableContentPanningGesture={false}
         >
           <BottomSheetScrollView
             className="flex-1"
             contentContainerClassName="pb-6"
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             {children}

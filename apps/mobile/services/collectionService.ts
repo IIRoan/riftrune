@@ -1,5 +1,10 @@
 import type { CardListItem } from '@riftbound/contracts';
-import { getCardPrintings, isFoilVariant } from '@/utils/variants';
+import {
+  findVariantByNumber,
+  getCardPrintings,
+  isFoilVariant,
+  variantNumbersMatch,
+} from '@/utils/variants';
 import {
   fetchRemoteCollection,
   remoteAddToCollection,
@@ -64,10 +69,13 @@ export async function addToCollection(
 ): Promise<void> {
   const quantity = options?.quantity ?? 1;
   const variantNumber = options?.variantNumber ?? card.variantNumber;
+  const printings = getCardPrintings(card);
   const printing =
-    getCardPrintings(card).find((p) => p.variantNumber === variantNumber) ??
-    getCardPrintings(card)[0];
-  if (!printing) return;
+    printings.find((p) => variantNumbersMatch(p.variantNumber, variantNumber)) ??
+    printings[0];
+  if (!printing) {
+    throw new Error(`No printing found for ${card.name} (${variantNumber})`);
+  }
 
   for (let i = 0; i < quantity; i += 1) {
     await remoteAddToCollection(printing.variantNumber, 1);
@@ -90,8 +98,10 @@ export async function addDetailToCollection(
   variantNumber: string,
   quantity = 1
 ): Promise<void> {
-  const variant = card.variants.find((v) => v.variantNumber === variantNumber);
-  if (!variant) return;
+  const variant = findVariantByNumber(card.variants, variantNumber);
+  if (!variant) {
+    throw new Error(`Variant ${variantNumber} not found on card ${card.name}`);
+  }
 
   const setCode = variant.variantNumber.split('-')[0] ?? '';
   const isFoil = isFoilVariant(
