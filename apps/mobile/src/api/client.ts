@@ -10,7 +10,7 @@ import {
 } from '@riftbound/contracts';
 import type { z } from 'zod';
 
-const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000');
+const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000');
 
 export class ApiError extends Error {
   constructor(

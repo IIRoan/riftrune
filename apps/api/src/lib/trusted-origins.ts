@@ -22,8 +22,8 @@ export function resolveTrustedOrigins(env: Env): string[] {
       'exp://',
       'exp://**',
       'exp://192.168.*.*:*/**',
-      'http://localhost:3000',
-      'http://localhost:8081',
+      'http://localhost:7000',
+      'http://localhost:7001',
     ]) {
       origins.add(origin);
     }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3000';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:7000';
 const REFRESH_INTERVAL = 60_000;
 
 type ApiSet = { id: string; code: string; name: string; count: number };

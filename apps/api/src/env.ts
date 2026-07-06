@@ -15,7 +15,7 @@ function parseBooleanFlag(value: string | undefined, fallback: boolean): boolean
 
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().int().positive().default(3000),
+  PORT: z.coerce.number().int().positive().default(7000),
   DATABASE_URL: z.string().min(1),
   DB_POOL_MAX: z.coerce.number().int().positive().max(50).optional(),
   RIFTRUNE_API_KEY: z.string().startsWith('ak_'),
@@ -29,7 +29,7 @@ const EnvSchema = z.object({
     .default('true')
     .transform((v) => v === 'true'),
   BETTER_AUTH_SECRET: z.string().min(32),
-  BETTER_AUTH_URL: z.string().url().default('http://localhost:3000'),
+  BETTER_AUTH_URL: z.string().url().default('http://localhost:7000'),
   /** Optional override; otherwise derived from BETTER_AUTH_URL + TRUSTED_ORIGINS in production. */
   AUTH_COOKIE_DOMAIN: z.string().min(1).optional(),
   TRUSTED_ORIGINS: z
