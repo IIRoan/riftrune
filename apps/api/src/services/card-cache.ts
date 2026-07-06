@@ -13,6 +13,7 @@ import {
   paVariantHash,
 } from './card-mapper.js';
 import type { PriceCacheService } from './price-cache.js';
+import type { ImageStoreService } from './image-store.js';
 import { buildCardSearchCondition, buildSearchRelevanceOrder } from '../lib/search.js';
 import { TtlCache } from '../lib/ttl-cache.js';
 
@@ -66,7 +67,8 @@ export class CardCacheService {
   constructor(
     private readonly db: Database,
     private readonly riftrune: RiftruneClient,
-    private readonly prices: PriceCacheService
+    private readonly prices: PriceCacheService,
+    private readonly images: ImageStoreService
   ) {}
 
   private async priceRowsForLogicalCard(card: PaLogicalCard) {
@@ -174,6 +176,25 @@ export class CardCacheService {
     return true;
   }
 
+  private mapDetail(card: PaLogicalCard, priceRows: Parameters<typeof mapCardDetail>[1]) {
+    return mapCardDetail(this.images.rewriteCard(card), priceRows);
+  }
+
+  private mapItem(
+    card: PaLogicalCard,
+    variant: PaVariant,
+    priceRows: Parameters<typeof mapListItem>[2]
+  ) {
+    const rewritten = this.images.rewriteCard(card);
+    const rewrittenVariant =
+      rewritten.variants.find((v) => v.variantNumber === variant.variantNumber) ??
+      {
+        ...variant,
+        imageUrl: this.images.rewriteImageUrl(variant.imageUrl),
+      };
+    return mapListItem(rewritten, rewrittenVariant, priceRows);
+  }
+
   private async upsertVariant(
     tx: Parameters<Parameters<Database['transaction']>[0]>[0],
     cardId: string,
@@ -232,6 +253,7 @@ export class CardCacheService {
           cardId,
           variantNumber: variant.variantNumber,
           rarity: variant.rarity,
+          imageUrl: variant.imageUrl,
           contentHash: vHash,
           upstreamRaw: variant,
           cardmarketId: variant.cardmarketId ?? null,
@@ -262,7 +284,7 @@ export class CardCacheService {
     const upstream = await this.riftrune.getCard(variantNumber);
     const changed = await this.upsertFromUpstream(upstream);
     const priceRows = await this.priceRowsForLogicalCard(upstream);
-    const detail = mapCardDetail(upstream, priceRows);
+    const detail = this.mapDetail(upstream, priceRows);
 
     return {
       detail,
@@ -285,7 +307,7 @@ export class CardCacheService {
     const upstream = cardRow.upstreamRaw as PaLogicalCard;
     const priceRows = await this.priceRowsForLogicalCard(upstream);
     return {
-      detail: mapCardDetail(upstream, priceRows),
+      detail: this.mapDetail(upstream, priceRows),
       contentHash: cardRow.contentHash,
     };
   }
@@ -316,7 +338,7 @@ export class CardCacheService {
       const logical = await this.riftrune.getCard(item.variantNumber);
       await this.upsertFromUpstream(logical);
       const priceRows = await this.priceRowsForLogicalCard(logical);
-      found.push(mapCardDetail(logical, priceRows));
+      found.push(this.mapDetail(logical, priceRows));
     }
 
     return {
@@ -492,10 +514,11 @@ export class CardCacheService {
         .map((row) => row.variant.cardmarketId)
         .filter((id): id is number => id != null)
     );
+
     const rawItems = rows.map((row) => {
       const logical = row.card.upstreamRaw as PaLogicalCard;
       const variant = row.variant.upstreamRaw as PaVariant;
-      return mapListItem(logical, variant, priceRows);
+      return this.mapItem(logical, variant, priceRows);
     });
 
     if (hasSearch) {

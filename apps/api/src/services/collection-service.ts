@@ -12,6 +12,7 @@ import type { Database } from '../db/client.js';
 import { cards, collectionItems, sets, variants } from '../db/schema.js';
 
 import type { CardCacheService } from './card-cache.js';
+import type { ImageStoreService } from './image-store.js';
 import { VariantResolver } from './variant-resolver.js';
 
 function isFoilFromVariant(foilMode: string, variantLabel: string): boolean {
@@ -29,6 +30,7 @@ export class CollectionService {
   constructor(
     private readonly db: Database,
     cardCache: CardCacheService,
+    private readonly images: ImageStoreService,
     riftrune: ConstructorParameters<typeof VariantResolver>[2]
   ) {
     this.variantResolver = new VariantResolver(db, cardCache, riftrune);
@@ -85,7 +87,7 @@ export class CollectionService {
       addedAt: row.addedAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       name: row.name,
-      imageUrl: row.imageUrl,
+      imageUrl: this.images.rewriteImageUrl(row.imageUrl),
       setCode: row.setCode,
       rarity: row.rarity,
       type: row.type,

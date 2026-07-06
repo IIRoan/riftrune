@@ -9,12 +9,14 @@ import { resolveCorsOrigins } from './lib/trusted-origins.js';
 import { createAuthPlugin } from './plugins/auth.js';
 import { errorPlugin } from './plugins/error-handler.js';
 import { createCardsRoutes } from './routes/cards.js';
+import { createImagesRoutes } from './routes/images.js';
 import { createCollectionRoutes } from './routes/collection.js';
 import { createFiltersRoutes } from './routes/filters.js';
 import { createPricesRoutes } from './routes/prices.js';
 import { createHealthRoutes, createSyncRoutes } from './routes/sync.js';
 import { createWishlistRoutes } from './routes/wishlist.js';
 import { CardCacheService } from './services/card-cache.js';
+import { ImageStoreService } from './services/image-store.js';
 import { CatalogMetadataService } from './services/catalog-metadata.js';
 import { CollectionService } from './services/collection-service.js';
 import { PriceCacheService } from './services/price-cache.js';
@@ -42,11 +44,12 @@ function buildApp(env: Env): AppContext {
   const authPlugin = createAuthPlugin(auth);
   const riftrune = new RiftruneClient(env);
   const priceCache = new PriceCacheService(db, riftrune);
-  const cardCache = new CardCacheService(db, riftrune, priceCache);
+  const imageStore = new ImageStoreService(env);
+  const cardCache = new CardCacheService(db, riftrune, priceCache, imageStore);
   const catalogMetadata = new CatalogMetadataService(db, riftrune);
   const syncEngine = new SyncEngine(db, riftrune, cardCache, catalogMetadata);
-  const collectionService = new CollectionService(db, cardCache, riftrune);
-  const wishlistService = new WishlistService(db);
+  const collectionService = new CollectionService(db, cardCache, imageStore, riftrune);
+  const wishlistService = new WishlistService(db, imageStore);
 
   const app = new Elysia()
     .use(
@@ -76,6 +79,7 @@ function buildApp(env: Env): AppContext {
     .use(errorPlugin)
     .use(authPlugin)
     .use(createHealthRoutes(db, syncEngine))
+    .use(createImagesRoutes(imageStore))
     .use(createCardsRoutes(cardCache, env))
     .use(createPricesRoutes(priceCache, db))
     .use(createFiltersRoutes(catalogMetadata))

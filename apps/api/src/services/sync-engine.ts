@@ -45,6 +45,9 @@ export class SyncEngine {
       );
 
       if (existing?.contentHash === fingerprint && (existing.rowCount ?? 0) > 0) {
+        console.log(
+          `[sync] Catalog unchanged (hash=${fingerprint}), skipping card upsert — image mirroring will not run`
+        );
         await this.setSyncStatus('catalog', 'idle', {
           contentHash: fingerprint,
           rowCount: Math.max(existing.rowCount ?? 0, catalogPrintTotal),
@@ -66,6 +69,10 @@ export class SyncEngine {
       const syncedCardIds = new Set<string>();
       const setPrintTotals = new Map<string, number>();
 
+      console.log(
+        `[sync] Starting catalog sync (fingerprint=${fingerprint}, maxPages=${maxPages === Infinity ? 'all' : String(maxPages)})`
+      );
+
       for (const set of enrichedFilters.sets) {
         if (set.printCount != null && set.code) {
           setPrintTotals.set(set.code, set.printCount);
@@ -75,6 +82,9 @@ export class SyncEngine {
       while (hasMore) {
         const res = await this.riftrune.listCards({ limit, page });
         pages += 1;
+        console.log(
+          `[sync] Processing page ${String(page)} (${String(res.data.length)} list items)`
+        );
 
         for (const item of res.data) {
           try {
@@ -109,6 +119,10 @@ export class SyncEngine {
       });
 
       this.cards.invalidateSearchCache();
+
+      console.log(
+        `[sync] Catalog sync complete: ${String(syncedCardIds.size)} logical cards, ${String(pages)} pages, ${String(finalPrintTotal)} printings`
+      );
 
       return { changed: true, pages, variantCount: finalPrintTotal, hash: fingerprint };
     } catch (err) {

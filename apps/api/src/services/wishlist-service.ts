@@ -2,9 +2,13 @@ import { and, eq } from 'drizzle-orm';
 import type { WishlistItem as WishlistItemDto } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { cards, sets, variants, wishlistItems } from '../db/schema.js';
+import type { ImageStoreService } from './image-store.js';
 
 export class WishlistService {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly images: ImageStoreService
+  ) {}
 
   async listForUser(userId: string): Promise<{ items: WishlistItemDto[]; total: number }> {
     const rows = await this.db
@@ -36,7 +40,7 @@ export class WishlistService {
       notes: row.notes,
       addedAt: row.addedAt.toISOString(),
       name: row.name,
-      imageUrl: row.imageUrl,
+      imageUrl: this.images.rewriteImageUrl(row.imageUrl),
       setCode: row.setCode,
       rarity: row.rarity,
       variantLabel: row.variantLabel,

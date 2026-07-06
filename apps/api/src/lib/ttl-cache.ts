@@ -34,6 +34,10 @@ export class TtlCache<V> {
     return this.get(key) !== undefined;
   }
 
+  delete(key: string): void {
+    this.store.delete(key);
+  }
+
   clear(): void {
     this.store.clear();
   }
