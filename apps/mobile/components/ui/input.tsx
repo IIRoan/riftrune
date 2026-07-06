@@ -50,6 +50,8 @@ export type InputPressableProps = React.ComponentProps<typeof Pressable> & {
   disabled?: boolean;
   invalid?: boolean;
   focused?: boolean;
+  /** Use a static border instead of the animated outline (toolbar fields). */
+  bordered?: boolean;
 };
 
 export type InputAddonProps = React.ComponentProps<typeof View> &
@@ -113,6 +115,7 @@ export const InputPressable = ({
   disabled,
   invalid,
   focused,
+  bordered = false,
   onPress,
   className,
   ...props
@@ -127,6 +130,8 @@ export const InputPressable = ({
   const outlineColorProgress = useSharedValue(0);
 
   useEffect(() => {
+    if (bordered) return;
+
     if (invalid) {
       outlineWidth.value = withTiming(2, { duration: ANIMATION_DURATION });
       outlineColorProgress.value = withTiming(2, {
@@ -143,9 +148,13 @@ export const InputPressable = ({
         duration: ANIMATION_DURATION,
       });
     }
-  }, [focused, invalid, outlineWidth, outlineColorProgress]);
+  }, [bordered, focused, invalid, outlineWidth, outlineColorProgress]);
 
   const animatedStyle = useAnimatedStyle(() => {
+    if (bordered) {
+      return {};
+    }
+
     const outlineColor = interpolateColor(
       outlineColorProgress.value,
       [0, 1, 2],

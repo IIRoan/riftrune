@@ -118,6 +118,23 @@ export class ImageStoreService {
       this.scheduleBackgroundStore(key, cdnUrl);
     }
 
+    try {
+      const res = await fetch(cdnUrl, { signal: AbortSignal.timeout(15_000) });
+      if (res.ok) {
+        const body = await res.arrayBuffer();
+        if (body.byteLength > 0) {
+          const contentType =
+            res.headers.get('content-type')?.split(';')[0]?.trim() ??
+            contentTypeForKey(key);
+          const etag = imageEtag(key, body.byteLength);
+          this.memoryCache.set(key, { body, contentType, etag });
+          return { kind: 'body', body, contentType, source: 'memory', etag };
+        }
+      }
+    } catch {
+      // Fall back to redirect when CDN is unreachable.
+    }
+
     return { kind: 'redirect', url: cdnUrl };
   }
 

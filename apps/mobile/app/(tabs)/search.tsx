@@ -1,18 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, View } from 'react-native';
+import { FlatList, Keyboard, View } from 'react-native';
 import { CardTile } from '@/components/cards/CardTile';
+import { CardDetailDrawer } from '@/components/catalog/CardDetailDrawer';
 import { CatalogDetailPanel } from '@/components/catalog/CatalogDetailPanel';
+import { CatalogActionBar } from '@/components/catalog/CatalogActionBar';
 import {
   ActiveFilterChip,
   ALL_CARDS_FILTER,
   FilterSheet,
-  FilterTrigger,
   matchesCatalogFilter,
 } from '@/components/catalog/FilterSheet';
-import { SortSheet, SortTrigger } from '@/components/catalog/SortSheet';
-import { ViewToggle } from '@/components/catalog/ViewToggle';
+import { SortSheet } from '@/components/catalog/SortSheet';
 import {
   DEFAULT_CATALOG_SORT,
   type CatalogSort,
@@ -35,6 +35,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Text } from '@/components/ui/text';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { Layout } from '@/constants/Layout';
 import { useTheme } from '@/context/ThemeContext';
 import { useCardSearch } from '@/hooks/useCardSearch';
@@ -70,7 +71,7 @@ function SearchEmptyState({
     <Empty className="mt-14 border-0">
       <EmptyHeader>
         <EmptyMedia variant="icon" className="mb-1 size-16">
-          <Ionicons name={icon} size={32} className="text-ring" />
+          <ThemedIonicon name={icon} size={32} color="ring" />
         </EmptyMedia>
         <EmptyTitle className="text-lg">{title}</EmptyTitle>
         {description ? <EmptyDescription>{description}</EmptyDescription> : null}
@@ -183,13 +184,9 @@ function SearchScreenBody() {
 
   const handleSelectCard = useCallback(
     (variantNumber: string) => {
-      if (splitLayout) {
-        setSelectedVariant(variantNumber);
-        return;
-      }
       setSelectedVariant(variantNumber);
     },
-    [splitLayout]
+    []
   );
 
   const hasCatalog =
@@ -215,6 +212,7 @@ function SearchScreenBody() {
 
   const onHistoryPress = useCallback(
     async (item: SearchHistoryItem) => {
+      Keyboard.dismiss();
       await hapticPress();
       setQuery(item.query);
       setShowHistory(false);
@@ -222,6 +220,10 @@ function SearchScreenBody() {
     },
     [searchNow]
   );
+
+  const dismissKeyboard = useCallback(() => {
+    Keyboard.dismiss();
+  }, []);
 
   const onHistoryDelete = useCallback(
     async (item: SearchHistoryItem) => {
@@ -237,22 +239,14 @@ function SearchScreenBody() {
   }, [loadHistory]);
 
   const renderItem = useCallback(
-    ({ item, index }: { item: (typeof displayItems)[number]; index: number }) => {
+    ({ item, index: _index }: { item: (typeof displayItems)[number]; index: number }) => {
       const tileSelected = cardListItemMatchesVariant(item, selectedVariant);
       const hideTilePrice = hasSearchInput && splitLayout && !tileSelected;
 
       if (isList) {
-        const isFirst = index === 0;
-        const isLast = index === displayItems.length - 1;
+        const isLast = _index === displayItems.length - 1;
         return (
-          <View
-            className={cn(
-              'overflow-hidden border-x border-border bg-card',
-              isFirst && 'rounded-t-xl border-t',
-              isLast && 'rounded-b-xl border-b',
-              !isLast && 'border-b border-border'
-            )}
-          >
+          <View className={cn(!isLast && 'border-b border-border')}>
             <CardTile
               card={item}
               layout="list"
@@ -264,13 +258,9 @@ function SearchScreenBody() {
               familyContextVariantNumber={
                 splitLayout && tileSelected ? selectedVariant : undefined
               }
-              onPress={
-                splitLayout
-                  ? () => {
-                      handleSelectCard(item.variantNumber);
-                    }
-                  : undefined
-              }
+              onPress={() => {
+                handleSelectCard(item.variantNumber);
+              }}
               collectionByVariant={collectionByVariant}
             />
           </View>
@@ -290,13 +280,9 @@ function SearchScreenBody() {
             familyContextVariantNumber={
               splitLayout && tileSelected ? selectedVariant : undefined
             }
-            onPress={
-              splitLayout
-                ? () => {
-                    handleSelectCard(item.variantNumber);
-                  }
-                : undefined
-            }
+            onPress={() => {
+              handleSelectCard(item.variantNumber);
+            }}
             collectionByVariant={collectionByVariant}
           />
         </View>
@@ -304,28 +290,6 @@ function SearchScreenBody() {
     },
     [isList, tileWidth, compact, collectionByVariant, displayItems.length, selectedVariant, splitLayout, handleSelectCard, hasSearchInput]
   );
-
-  const listHeader = useMemo(() => {
-    if (!hasCatalog) return null;
-    return (
-      <View className="mb-1 flex-row items-center justify-between pb-3">
-        <View>
-          <Text className="text-xl font-semibold tracking-tight text-foreground">
-            Riftbound catalog
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-2">
-          <ViewToggle view={view} onViewChange={setView} />
-          <SortTrigger
-            label="Sort"
-            onPress={() => {
-              setSortSheetOpen(true);
-            }}
-          />
-        </View>
-      </View>
-    );
-  }, [hasCatalog, view, setView]);
 
   const listEmpty = useMemo(() => {
     const trimmed = query.trim();
@@ -473,71 +437,83 @@ function SearchScreenBody() {
   const pageMaxWidth = splitLayout ? undefined : contentWidth;
 
   const searchPanel = (
-    <View className="w-full pb-3 pt-2" style={{ maxWidth: pageMaxWidth }}>
-      <View className="flex-col gap-3 lg:flex-row lg:items-center">
-        <View className="min-w-0 flex-1">
-          <SearchBar
-            value={query}
-            onChangeText={(text) => {
-              setQuery(text);
-              if (text.trim().length === 0) {
-                setShowHistory(true);
-              } else {
-                setShowHistory(false);
-              }
-            }}
-            onClear={clearSearch}
-            isLoading={hasSearchInput && (searchPending || isLoading || isFetching)}
-            placeholder="Search cards, artists, tags, or set numbers"
-            onSubmitEditing={() => {
-              searchNow();
-            }}
-          />
-        </View>
+    <View className="w-full gap-1.5 pb-2 pt-2" style={{ maxWidth: pageMaxWidth }}>
+      <SearchBar
+        value={query}
+        onChangeText={(text) => {
+          setQuery(text);
+          if (text.trim().length === 0) {
+            setShowHistory(true);
+          } else {
+            setShowHistory(false);
+          }
+        }}
+        onClear={clearSearch}
+        isLoading={hasSearchInput && (searchPending || isLoading || isFetching)}
+        placeholder="Search cards, artists, tags, or set numbers"
+        onSubmitEditing={() => {
+          searchNow();
+        }}
+      />
 
-        <View className="flex-row items-center gap-2">
-          <FilterTrigger
-            activeFilter={activeFilter}
-            onPress={() => {
-              setFilterSheetOpen(true);
+      {filterActive ? (
+        <View className="flex-row flex-wrap items-center gap-2">
+          <ActiveFilterChip
+            label={activeFilter}
+            onClear={() => {
+              setActiveFilter(ALL_CARDS_FILTER);
             }}
           />
-          {filterActive ? (
-            <ActiveFilterChip
-              label={activeFilter}
-              onClear={() => {
-                setActiveFilter(ALL_CARDS_FILTER);
-              }}
-            />
-          ) : null}
         </View>
-      </View>
+      ) : null}
+
+      <CatalogActionBar
+        view={view}
+        onViewChange={setView}
+        onSortPress={() => {
+          setSortSheetOpen(true);
+        }}
+        activeFilter={activeFilter}
+        onFilterPress={() => {
+          setFilterSheetOpen(true);
+        }}
+      />
     </View>
   );
 
   const catalogList = (
-    <FlatList
-      data={displayItems}
-      key={`${hasSearchInput ? 'search' : 'featured'}-${view}-${String(numColumns)}-${activeFilter}`}
-      numColumns={isList ? 1 : numColumns}
-      keyExtractor={(item) => item.variantNumber}
-      renderItem={renderItem}
-      ListHeaderComponent={listHeader}
-      contentContainerClassName={cn('flex-grow pt-1', !splitLayout && 'self-center')}
-      style={splitLayout ? { flex: 1, width: '100%', maxWidth: '100%' } : undefined}
-      contentContainerStyle={{
-        width: splitLayout ? '100%' : contentWidth,
-        maxWidth: '100%',
-        paddingBottom: paddingBottomInline,
-      }}
-      columnWrapperStyle={
-        isList ? undefined : { gap: Layout.gridGap, maxWidth: '100%' }
-      }
-      ListEmptyComponent={listEmpty}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      showsVerticalScrollIndicator={false}
-    />
+    <View className="min-h-0 flex-1">
+      <View
+        className={cn(
+          'min-h-0 flex-1',
+          isList && displayItems.length > 0 && 'overflow-hidden rounded-xl border border-border bg-card'
+        )}
+      >
+        <FlatList
+        data={displayItems}
+        key={`${hasSearchInput ? 'search' : 'featured'}-${view}-${String(numColumns)}-${activeFilter}`}
+        numColumns={isList ? 1 : numColumns}
+        keyExtractor={(item) => item.variantNumber}
+        renderItem={renderItem}
+        ListHeaderComponent={null}
+        contentContainerClassName={cn('flex-grow', !splitLayout && 'self-center')}
+        style={splitLayout ? { flex: 1, width: '100%', maxWidth: '100%' } : { flex: 1 }}
+        contentContainerStyle={{
+          width: splitLayout ? '100%' : contentWidth,
+          maxWidth: '100%',
+          paddingBottom: paddingBottomInline,
+        }}
+        columnWrapperStyle={
+          isList ? undefined : { gap: Layout.gridGap, maxWidth: '100%' }
+        }
+        ListEmptyComponent={listEmpty}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        onScrollBeginDrag={dismissKeyboard}
+        showsVerticalScrollIndicator={false}
+        />
+      </View>
+    </View>
   );
 
   return (
@@ -578,6 +554,19 @@ function SearchScreenBody() {
         }}
         onSortChange={setCatalogSort}
       />
+
+      {!splitLayout ? (
+        <CardDetailDrawer
+          open={selectedVariant != null}
+          onClose={() => {
+            setSelectedVariant(null);
+          }}
+        >
+          {selectedVariant ? (
+            <CatalogDetailPanel variantNumber={selectedVariant} embedded="drawer" />
+          ) : null}
+        </CardDetailDrawer>
+      ) : null}
     </>
   );
 }

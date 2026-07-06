@@ -1,20 +1,22 @@
-import { Pressable, ScrollView } from 'react-native';
+import { Pressable } from 'react-native';
+import { CatalogToolbarButton } from '@/components/catalog/CatalogToolbarButton';
 import {
   BottomSheet,
-  BottomSheetBody,
   BottomSheetContent,
   BottomSheetHeader,
   BottomSheetOverlay,
   BottomSheetPortal,
+  BottomSheetScrollView,
   BottomSheetTitle,
 } from '@/components/ui/bottom-sheet';
 import { Text } from '@/components/ui/text';
-import { Ionicons } from '@expo/vector-icons';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   CATALOG_SORT_OPTIONS,
   sortOptionKey,
   type CatalogSort,
 } from '@/constants/catalogSort';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 interface SortSheetProps {
   visible: boolean;
@@ -24,6 +26,9 @@ interface SortSheetProps {
 }
 
 export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSheetProps) {
+  const reduceMotion = useReduceMotion();
+  const snapPoints = reduceMotion ? ['92%'] : ['50%', '92%'];
+
   return (
     <BottomSheet
       open={visible}
@@ -31,34 +36,40 @@ export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSh
         if (!open) onClose();
       }}
     >
-      <BottomSheetPortal>
+      <BottomSheetPortal name="catalog-sort-sheet">
         <BottomSheetOverlay />
-        <BottomSheetContent>
+        <BottomSheetContent
+          snapPoints={snapPoints}
+          defaultSnapIndex={0}
+          enablePanDownToClose
+          enableOverDrag={!reduceMotion}
+        >
           <BottomSheetHeader>
             <BottomSheetTitle>Sort</BottomSheetTitle>
           </BottomSheetHeader>
-          <BottomSheetBody>
-            <ScrollView className="max-h-96" showsVerticalScrollIndicator={false}>
-              {CATALOG_SORT_OPTIONS.map((option) => {
-                const active = sortOptionKey(activeSort) === sortOptionKey(option);
-                return (
-                  <Pressable
-                    key={sortOptionKey(option)}
-                    className="flex-row items-center justify-between rounded-lg px-2.5 py-2.5 active:bg-accent"
-                    onPress={() => {
-                      onSortChange({ sortBy: option.sortBy, dir: option.dir });
-                      onClose();
-                    }}
-                  >
-                    <Text className="text-sm font-medium text-foreground">{option.label}</Text>
-                    {active ? (
-                      <Ionicons name="checkmark" size={18} className="text-archive-accent-text" />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </BottomSheetBody>
+          <BottomSheetScrollView
+            contentContainerClassName="px-4 pb-6"
+            showsVerticalScrollIndicator={false}
+          >
+            {CATALOG_SORT_OPTIONS.map((option) => {
+              const active = sortOptionKey(activeSort) === sortOptionKey(option);
+              return (
+                <Pressable
+                  key={sortOptionKey(option)}
+                  className="min-h-11 flex-row items-center justify-between rounded-lg px-3 py-2.5 active:bg-accent"
+                  onPress={() => {
+                    onSortChange({ sortBy: option.sortBy, dir: option.dir });
+                    onClose();
+                  }}
+                >
+                  <Text className="text-sm font-medium text-foreground">{option.label}</Text>
+                  {active ? (
+                    <ThemedIonicon name="checkmark" size={18} color="archive-accent-text" />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </BottomSheetScrollView>
         </BottomSheetContent>
       </BottomSheetPortal>
     </BottomSheet>
@@ -68,17 +79,21 @@ export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSh
 export function SortTrigger({
   label,
   onPress,
+  compact = false,
+  mobile = false,
 }: {
-  label: string;
+  label?: string;
   onPress: () => void;
+  compact?: boolean;
+  mobile?: boolean;
 }) {
   return (
-    <Pressable
-      className="h-9 items-center justify-center rounded-lg border border-border px-3 active:opacity-80"
+    <CatalogToolbarButton
+      icon="swap-vertical-outline"
       onPress={onPress}
       accessibilityLabel="Open sort options"
-    >
-      <Text className="text-sm font-medium text-foreground">{label}</Text>
-    </Pressable>
+      label={compact ? undefined : (label ?? 'Sort')}
+      mobile={mobile}
+    />
   );
 }

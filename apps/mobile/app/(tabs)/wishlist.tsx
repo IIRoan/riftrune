@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -16,8 +15,11 @@ import {
   type WishlistPriceItem,
   type WishlistRange,
 } from '@/hooks/useWishlistPrices';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
 import { openCard } from '@/utils/cardNavigation';
+import { resolveImageUrl } from '@/utils/resolveImageUrl';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 
 const RANGES: { value: WishlistRange; label: string }[] = [
   { value: '1d', label: '1D' },
@@ -84,7 +86,7 @@ function WishlistCard({
       <View className="flex-row gap-3">
         {item.imageUrl ? (
           <Image
-            source={{ uri: item.imageUrl }}
+            source={{ uri: resolveImageUrl(item.imageUrl) }}
             className="h-[92px] w-[66px] rounded-md"
             contentFit="cover"
             contentPosition="top"
@@ -92,7 +94,7 @@ function WishlistCard({
           />
         ) : (
           <View className="h-[92px] w-[66px] items-center justify-center rounded-md bg-card-panel">
-            <Ionicons name="bookmark-outline" size={20} className="text-muted-foreground" />
+            <ThemedIonicon name="bookmark-outline" size={20} color="muted-foreground" />
           </View>
         )}
 
@@ -133,6 +135,7 @@ function trendDelta(trend: string): number {
 
 export default function WishlistScreen() {
   const router = useRouter();
+  const isMobile = useMobileLayout();
   const [range, setRange] = useState<WishlistRange>('7d');
   const wishlist = useWishlistPrices(range);
   const items = wishlist.data ?? [];
@@ -143,16 +146,27 @@ export default function WishlistScreen() {
   return (
     <ScreenLayout>
       <View className="pb-6">
-        <View className="flex-row items-start justify-between gap-4">
+        <View className={isMobile ? 'gap-4' : 'flex-row items-start justify-between gap-4'}>
           <View className="min-w-0 flex-1">
-            <Text className="text-xl font-semibold tracking-tight text-foreground">
+            <Text
+              className={
+                isMobile
+                  ? 'text-lg font-semibold tracking-tight text-foreground'
+                  : 'text-xl font-semibold tracking-tight text-foreground'
+              }
+            >
               Wishlist
             </Text>
             <Text className="mt-1 font-mono text-[13px] text-muted-foreground">
               {items.length} wishlisted cards · stored price history
             </Text>
           </View>
-          <View className="flex-row rounded-lg border border-border bg-card p-0.5">
+          <View
+            className={cn(
+              'flex-row rounded-lg border border-border bg-card p-0.5',
+              isMobile ? 'self-start' : 'shrink-0'
+            )}
+          >
             {RANGES.map((option) => {
               const active = option.value === range;
               return (
@@ -161,7 +175,7 @@ export default function WishlistScreen() {
                   size="sm"
                   variant="ghost"
                   className={cn(
-                    'h-8 w-auto rounded-md px-3',
+                    'min-h-11 w-auto rounded-md px-4',
                     active ? 'bg-primary' : 'bg-transparent'
                   )}
                   onPress={() => {

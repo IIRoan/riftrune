@@ -2,7 +2,9 @@ import { Image } from 'expo-image';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Text } from '@/components/ui/text';
+import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { cn } from '@/lib/utils';
+import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { formatPrintingLabel, isFoilVariant } from '@/utils/variants';
 
 export interface PrintingPreviewItem {
@@ -61,10 +63,11 @@ export function PrintingPreviewStrip({
               <Image
                 key={item.variantNumber}
                 recyclingKey={item.variantNumber}
-                source={{ uri: item.imageUrl }}
+                source={{ uri: resolveImageUrl(item.imageUrl) }}
                 style={{ width: thumbWidth, height: thumbHeight }}
                 className={cn(
-                  'rounded-md border-2 bg-card',
+                  'border-2 bg-card',
+                  CARD_ART_RADIUS_CLASS,
                   selected ? 'border-primary' : 'border-transparent'
                 )}
                 contentFit="cover"

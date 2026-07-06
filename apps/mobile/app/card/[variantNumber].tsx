@@ -8,10 +8,13 @@ import {
   getModalShellWidth,
 } from '@/components/cards/CardModal';
 import { CardDetailPage } from '@/components/cards/CardDetailPage';
+import { CardDetailDrawer } from '@/components/catalog/CardDetailDrawer';
+import { CatalogDetailPanel } from '@/components/catalog/CatalogDetailPanel';
 import { RemoveCollectionSheet } from '@/components/collection/RemoveCollectionSheet';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { useCardDetail } from '@/hooks/useCardDetail';
 import { useCardPresentation } from '@/hooks/useCardPresentation';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useWishlistPrices } from '@/hooks/useWishlistPrices';
 import type { CardOpenSource } from '@/utils/cardNavigation';
 
@@ -23,12 +26,21 @@ function PageLoading() {
   );
 }
 
+function DrawerLoading() {
+  return (
+    <View className="items-center justify-center py-16">
+      <ActivityIndicator size="large" className="accent-primary" />
+    </View>
+  );
+}
+
 export default function CardDetailScreen() {
   const params = useLocalSearchParams<{
     variantNumber: string | string[];
     source?: string | string[];
   }>();
   const present = useCardPresentation();
+  const isMobile = useMobileLayout();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const raw = params.variantNumber;
   const rawSource = params.source;
@@ -37,6 +49,7 @@ export default function CardDetailScreen() {
   const source: CardOpenSource =
     sourceParam === 'wishlist' || sourceParam === 'collection' ? sourceParam : 'catalog';
   const isModal = present === 'modal';
+  const useDrawer = isModal && isMobile;
 
   const detail = useCardDetail(variantNumber);
   const wishlistPrices = useWishlistPrices('7d', source === 'wishlist');
@@ -77,18 +90,50 @@ export default function CardDetailScreen() {
     </>
   );
 
+  const drawerContent = (() => {
+    if (detail.isLoading) return <DrawerLoading />;
+    if (detail.isError || !detail.activeVariant) {
+      return (
+        <View className="items-center gap-3 py-12">
+          <ActivityIndicator size="small" className="accent-primary" />
+        </View>
+      );
+    }
+
+    return (
+      <CatalogDetailPanel
+        variantNumber={detail.activeVariant.variantNumber}
+        embedded="drawer"
+      />
+    );
+  })();
+
   return (
     <>
       <Stack.Screen
         options={{
           headerShown: false,
           presentation: isModal ? 'transparentModal' : 'card',
-          animation: isModal ? 'fade' : 'default',
+          animation: isModal ? (useDrawer ? 'none' : 'fade') : 'default',
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />
 
-      {isModal ? (
+      {useDrawer ? (
+        <View
+          className={Platform.OS === 'web' ? 'fixed inset-0' : 'flex-1'}
+          style={
+            Platform.OS === 'web'
+              ? undefined
+              : { width: windowWidth, height: windowHeight }
+          }
+          pointerEvents="box-none"
+        >
+          <CardDetailDrawer open onClose={detail.handleClose}>
+            {drawerContent}
+          </CardDetailDrawer>
+        </View>
+      ) : isModal ? (
         <View
           className={Platform.OS === 'web' ? 'fixed inset-0' : 'flex-1'}
           style={

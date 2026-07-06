@@ -1,3 +1,4 @@
+import { CATALOG_SEARCH_SHELL_CLASS } from "@/constants/CardArt";
 import { cn } from "@/lib/utils";
 import { SearchIcon } from "@/components/icons";
 import {
@@ -36,10 +37,8 @@ export const SearchInput = ({
 
   return (
     <InputPressable
-      className={cn(
-        pressableClassName,
-        "min-h-11 bg-input/40 py-1 pl-0 active:bg-input dark:active:bg-input"
-      )}
+      bordered
+      className={cn(pressableClassName, CATALOG_SEARCH_SHELL_CLASS)}
       disabled={disabled}
       focused={isFocused}
       onPress={handlePress}

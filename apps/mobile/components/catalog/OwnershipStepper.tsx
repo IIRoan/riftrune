@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import type { CardListPrinting } from '@riftbound/contracts';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
+import { Button, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { formatPrintingLabel, formatPrintingPrice } from '@/utils/variants';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
@@ -66,9 +66,7 @@ export function OwnershipStepper({
         busy={busy && !multiple}
         accessibilityLabel={`Add ${name} to collection`}
       >
-        <ButtonIcon className={compact ? 'size-3' : 'size-3.5'}>
-          <Ionicons name="add" size={iconSize} />
-        </ButtonIcon>
+        <ThemedIonicon name="add" size={iconSize} color="foreground" />
         <ButtonText className={compact ? 'text-[11px]' : 'text-[13px]'}>Add</ButtonText>
       </Button>
     );
@@ -97,7 +95,7 @@ export function OwnershipStepper({
         {busy && !multiple ? (
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
-          <Ionicons name="add" size={iconSize} className="text-muted-foreground" />
+          <ThemedIonicon name="add" size={iconSize} color="foreground" />
         )}
       </Pressable>
     );
@@ -131,7 +129,7 @@ export function OwnershipStepper({
         {busy && !showPicker ? (
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
-          <Ionicons name="remove" size={iconSize} className="text-muted-foreground" />
+          <ThemedIonicon name="remove" size={iconSize} color="foreground" />
         )}
       </Pressable>
     );

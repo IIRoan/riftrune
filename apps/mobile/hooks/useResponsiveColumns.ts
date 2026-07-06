@@ -10,8 +10,12 @@ const TARGET_GRID_COLUMNS = 8;
 const DESKTOP_MAX_WIDTH = 1600;
 const LIST_MAX_WIDTH = 640;
 
-function computeGridLayout(contentWidth: number, fillAvailable = false) {
-  const horizontalPad = Layout.screenPaddingHorizontal * 2;
+function computeGridLayout(
+  contentWidth: number,
+  fillAvailable = false,
+  subtractScreenPadding = true
+) {
+  const horizontalPad = subtractScreenPadding ? Layout.screenPaddingHorizontal * 2 : 0;
   const gap = Layout.gridGap;
   const available = contentWidth - horizontalPad;
 
@@ -68,23 +72,25 @@ export function useResponsiveColumns(
   const fillAvailable = options?.fillAvailable ?? false;
 
   return useMemo(() => {
-    const contentWidth =
-      measuredWidth != null && measuredWidth > 0
-        ? measuredWidth
-        : Math.max(320, Math.min(width, DESKTOP_MAX_WIDTH) - reservedWidth);
+    const isMeasured = measuredWidth != null && measuredWidth > 0;
+    const contentWidth = isMeasured
+      ? measuredWidth
+      : Math.max(320, Math.min(width, DESKTOP_MAX_WIDTH) - reservedWidth);
+    const subtractScreenPadding = !isMeasured;
 
     if (layout === 'list') {
+      const horizontalPad = subtractScreenPadding ? Layout.screenPaddingHorizontal * 2 : 0;
       return {
         numColumns: 1,
         contentWidth,
-        tileWidth: Math.min(contentWidth - Layout.screenPaddingHorizontal * 2, LIST_MAX_WIDTH),
+        tileWidth: Math.min(contentWidth - horizontalPad, LIST_MAX_WIDTH),
         gap: Layout.gridGap,
         listMaxWidth: LIST_MAX_WIDTH,
         compact: false,
       };
     }
 
-    const grid = computeGridLayout(contentWidth, fillAvailable);
+    const grid = computeGridLayout(contentWidth, fillAvailable, subtractScreenPadding);
     return {
       contentWidth,
       listMaxWidth: LIST_MAX_WIDTH,
