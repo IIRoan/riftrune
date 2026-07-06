@@ -54,6 +54,12 @@ const TAB_ITEMS: {
     iconActive: 'bookmark',
   },
   {
+    routeName: 'decks',
+    label: 'Decks',
+    icon: 'layers-outline',
+    iconActive: 'layers',
+  },
+  {
     routeName: 'settings',
     label: 'Settings',
     icon: 'settings-outline',

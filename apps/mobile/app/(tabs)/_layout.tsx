@@ -33,7 +33,7 @@ export default function TabLayout() {
             <Tabs.Screen name="search" options={{ title: 'Cards' }} />
             <Tabs.Screen name="collection" options={{ title: 'Collection' }} />
             <Tabs.Screen name="wishlist" options={{ title: 'Wishlist' }} />
-            <Tabs.Screen name="decks" options={{ title: 'Decks', href: null }} />
+            <Tabs.Screen name="decks" options={{ title: 'Decks' }} />
             <Tabs.Screen
               name="settings"
               options={{

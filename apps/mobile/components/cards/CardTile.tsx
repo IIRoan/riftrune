@@ -5,8 +5,10 @@ import { Keyboard, Pressable, View, type ViewStyle } from 'react-native';
 import type { CardListItem } from '@riftbound/contracts';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
+import { GridCollectionControl } from '@/components/collection/GridCollectionControl';
 import { Text } from '@/components/ui/text';
 import { rarityIconFor } from '@/constants/gameAssets';
+import { gridCardTitleStyle } from '@/lib/cardTileGridTitle';
 import { useCollectionMutations } from '@/hooks/useCollection';
 import type { CollectionEntry } from '@/services/collectionService';
 import { openCard } from '@/utils/cardNavigation';
@@ -44,9 +46,7 @@ interface Props {
   compact?: boolean;
   enableQuickAdd?: boolean;
   selected?: boolean;
-  /** When set, quick-add popover only offers std/foil for this printing family. */
   familyContextVariantNumber?: string | null;
-  /** Hide market price (e.g. search results — only the selected row shows a price). */
   hidePrice?: boolean;
   onPress?: () => void;
   collectionByVariant?: ReadonlyMap<string, CollectionEntry>;
@@ -94,6 +94,7 @@ export function CardTile({
     [scopedCard, collectionByVariant]
   );
   const priceLabel = formatListPrice(scopedCard);
+  const showPrice = !hidePrice && (!isMobile || layout === 'grid');
 
   const printingsWithOwned = useMemo(
     () =>
@@ -141,19 +142,36 @@ export function CardTile({
   const listCompact = isMobile && layout === 'list';
   const listThumbW = listCompact ? LIST_THUMB_W_MOBILE : LIST_THUMB_W;
   const listThumbH = listCompact ? LIST_THUMB_H_MOBILE : LIST_THUMB_H;
+  const mobileGridQuickAdd = isMobile && layout === 'grid' && enableQuickAdd;
+  const stepperCompact = compact && !listCompact;
+  const stepperRelaxed = listCompact && enableQuickAdd;
 
-  const stepper = enableQuickAdd ? (
+  const collectionCallbacks = {
+    onAdd: (vn?: string) => {
+      void onAdd(vn);
+    },
+    onRemove: (vn?: string) => {
+      void onRemove(vn);
+    },
+  };
+
+  const desktopStepper = enableQuickAdd && !mobileGridQuickAdd ? (
     <OwnershipStepper
       owned={owned}
       name={card.name}
-      compact={layout === 'grid' || compact || listCompact}
+      compact={stepperCompact}
+      relaxed={stepperRelaxed}
       printings={printingsWithOwned}
-      onAdd={(vn) => {
-        void onAdd(vn);
-      }}
-      onRemove={(vn) => {
-        void onRemove(vn);
-      }}
+      {...collectionCallbacks}
+    />
+  ) : null;
+
+  const gridControl = mobileGridQuickAdd ? (
+    <GridCollectionControl
+      owned={owned}
+      name={card.name}
+      printings={printingsWithOwned}
+      {...collectionCallbacks}
     />
   ) : null;
 
@@ -164,7 +182,7 @@ export function CardTile({
       <Pressable
         className={cn(
           'flex-row items-center active:opacity-90',
-          listCompact ? 'gap-3 px-3 py-2' : 'gap-4 px-4 py-3.5',
+          listCompact ? 'gap-3 px-3 py-2.5' : 'gap-4 px-4 py-3.5',
           selected ? 'bg-card-panel' : 'active:bg-card-panel/50'
         )}
         style={style}
@@ -261,7 +279,7 @@ export function CardTile({
                     listCompact ? 'text-[11px]' : 'text-xs'
                   )}
                 >
-                  Wishlist
+                  Not owned
                 </Text>
                 {printingsLabel ? (
                   <Text
@@ -279,7 +297,7 @@ export function CardTile({
         </View>
 
         <View className={cn('items-end', listCompact ? 'gap-1.5' : 'gap-2')}>
-          {!hidePrice ? (
+          {showPrice ? (
             <View className="items-end gap-0.5">
               {printings.map((p) => (
                 <View key={p.variantNumber} className="flex-row items-center gap-1.5">
@@ -301,9 +319,63 @@ export function CardTile({
               ))}
             </View>
           ) : null}
-          {stepper}
+          {desktopStepper}
         </View>
       </Pressable>
+    );
+  }
+
+  if (mobileGridQuickAdd) {
+    return (
+      <View
+        className={cn(
+          'overflow-hidden rounded-lg border',
+          selected ? 'border-ring bg-card-panel' : 'border-border bg-card'
+        )}
+        style={style}
+      >
+        <Pressable className="active:opacity-90" onPress={onOpenCard}>
+          <View
+            className={cn(
+              'relative aspect-[5/7] w-full overflow-hidden bg-background',
+              CARD_ART_RADIUS_CLASS
+            )}
+          >
+            <Image
+              source={imageUri ? { uri: imageUri } : undefined}
+              recyclingKey={card.variantNumber}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+              }}
+              contentFit="cover"
+              contentPosition="top"
+              transition={120}
+              cachePolicy="memory-disk"
+              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+            />
+          </View>
+          <Text
+            className="mt-1 px-1 font-semibold text-foreground"
+            ellipsizeMode="tail"
+            numberOfLines={2}
+            style={gridCardTitleStyle()}
+          >
+            {card.name}
+          </Text>
+          {showPrice ? (
+            <Text className="px-1 pb-0.5 font-mono text-[10px] font-semibold tabular-nums text-muted-foreground">
+              {priceLabel ?? '—'}
+            </Text>
+          ) : null}
+        </Pressable>
+        <View className="px-1 pb-1 pt-0">{gridControl}</View>
+      </View>
     );
   }
 
@@ -344,14 +416,14 @@ export function CardTile({
       </Text>
 
       <View className="mt-2 flex-row items-center justify-between gap-1.5 px-0.5">
-        {!hidePrice ? (
+        {showPrice ? (
           <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
             {priceLabel ?? '—'}
           </Text>
         ) : (
           <View className="min-w-0 flex-1" />
         )}
-        {stepper}
+        {desktopStepper}
       </View>
     </Pressable>
   );
@@ -395,6 +467,7 @@ export function CardTileSkeleton({
       />
       <Skeleton className="h-2.5 w-[85%] rounded" />
       <Skeleton className="h-2 w-[50%] rounded" />
+      {compact ? <Skeleton className="h-8 w-full rounded-lg" /> : null}
     </View>
   );
 }

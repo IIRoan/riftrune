@@ -10,6 +10,7 @@ import {
 } from '@/services/searchHistoryService';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
+import { prefetchCardDetail } from '@/lib/prefetchCardDetail';
 import { normalizeCardListItems, normalizeCardsListResponse, groupCardListItems } from '@/utils/variants';
 
 import type { CardsListQuery } from '@riftbound/contracts';
@@ -92,12 +93,8 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
 
   useEffect(() => {
     if (!result.data?.data.length) return;
-    for (const card of result.data.data.slice(0, 6)) {
-      void queryClient.prefetchQuery({
-        queryKey: cardQueryKeys.detail(card.variantNumber),
-        queryFn: () => api.getCard(card.variantNumber),
-        staleTime: STALE_MS,
-      });
+    for (const card of result.data.data.slice(0, 12)) {
+      prefetchCardDetail(queryClient, card);
     }
   }, [result.data, queryClient]);
 

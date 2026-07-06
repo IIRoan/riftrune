@@ -79,6 +79,13 @@ function RootNav() {
             contentStyle: { backgroundColor: 'transparent' },
           }}
         />
+        <Stack.Screen
+          name="deck/[id]"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
       </Stack>
     </NavThemeProvider>
   );

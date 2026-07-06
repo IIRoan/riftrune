@@ -1,17 +1,19 @@
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import type { CardListPrinting } from '@riftbound/contracts';
+import { useMemo } from 'react';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
-import { Button, ButtonText } from '@/components/ui/button';
+import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { formatPrintingLabel, formatPrintingPrice } from '@/utils/variants';
 import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
 
 interface OwnershipStepperProps {
   owned: number;
   name: string;
   compact?: boolean;
+  /** Slightly larger targets for mobile list rows. */
+  relaxed?: boolean;
   busy?: boolean;
   printings?: CardListPrinting[];
   fixedVariantNumber?: string;
@@ -23,6 +25,7 @@ export function OwnershipStepper({
   owned,
   name,
   compact = false,
+  relaxed = false,
   busy = false,
   printings,
   fixedVariantNumber,
@@ -47,12 +50,20 @@ export function OwnershipStepper({
 
   const multiple = fixedVariantNumber == null && (printings?.length ?? 0) > 1;
 
-  const btnSize = compact ? 'size-6' : 'size-8';
-  const iconSize = compact ? 12 : 14;
+  const iconSize = relaxed ? 14 : compact ? 12 : 14;
+  const controlHeight = relaxed ? 'h-9' : compact ? 'h-6' : 'h-8';
+  const stepSize = relaxed ? 'size-9' : compact ? 'size-6' : 'size-8';
+  const shellRadius = compact ? 'rounded-md' : 'rounded-lg';
 
-  const addButtonClass = cn(
-    'w-auto shrink-0 border-border active:border-ring',
-    compact ? 'h-6 px-1.5' : 'h-8 px-2.5'
+  const wrapWithPicker = (
+    title: string,
+    options: typeof pickerOptions,
+    onSelect: (id: string) => void,
+    node: React.ReactElement<{ onPress?: () => void; disabled?: boolean }>
+  ) => (
+    <PrintingPickerMenu title={title} options={options} onSelect={onSelect}>
+      {node}
+    </PrintingPickerMenu>
   );
 
   const renderAddButton = (title: string) => {
@@ -60,111 +71,107 @@ export function OwnershipStepper({
       <Button
         variant="outline"
         size="sm"
-        className={addButtonClass}
+        className={cn(
+          'w-auto shrink-0 border-border active:border-ring',
+          controlHeight,
+          relaxed ? 'px-3' : compact ? 'px-1.5' : 'px-2.5'
+        )}
         onPress={multiple ? undefined : () => onAdd(fixedVariantNumber)}
         disabled={busy}
         busy={busy && !multiple}
         accessibilityLabel={`Add ${name} to collection`}
       >
-        <ThemedIonicon name="add" size={iconSize} color="foreground" />
-        <ButtonText className={compact ? 'text-[11px]' : 'text-[13px]'}>Add</ButtonText>
+        <ButtonIcon>
+          <ThemedIonicon name="add" size={iconSize} color="foreground" />
+        </ButtonIcon>
+        <ButtonText className={relaxed ? 'text-[13px]' : compact ? 'text-[11px]' : 'text-[13px]'}>
+          Add
+        </ButtonText>
       </Button>
     );
 
-    if (!multiple) return button;
-
-    return (
-      <PrintingPickerMenu title={title} options={pickerOptions} onSelect={onAdd}>
-        {button}
-      </PrintingPickerMenu>
-    );
+    return multiple ? wrapWithPicker(title, pickerOptions, onAdd, button) : button;
   };
 
-  const renderPlusButton = () => {
-    const button = (
-      <Pressable
-        accessibilityLabel={`Add one ${name}`}
-        className={cn(
-          'items-center justify-center active:bg-accent',
-          btnSize,
-          compact ? 'rounded-r-md' : 'rounded-r-lg'
-        )}
-        onPress={multiple ? undefined : () => onAdd(fixedVariantNumber)}
-        disabled={busy}
-      >
-        {busy && !multiple ? (
-          <ActivityIndicator size="small" className="accent-primary" />
-        ) : (
-          <ThemedIonicon name="add" size={iconSize} color="foreground" />
-        )}
-      </Pressable>
-    );
-
-    if (!multiple) return button;
-
-    return (
-      <PrintingPickerMenu title="Add printing" options={pickerOptions} onSelect={onAdd}>
-        {button}
-      </PrintingPickerMenu>
-    );
-  };
-
-  const renderMinusButton = () => {
-    const showPicker = multiple && ownedPrintings.length > 1;
-    const removeOptions = pickerOptions.filter((o) =>
-      ownedPrintings.some((p) => p.variantNumber === o.id)
-    );
+  const renderStepButton = (
+    direction: 'add' | 'remove',
+    onPress: (() => void) | undefined,
+    showPicker: boolean,
+    pickerTitle: string,
+    pickerOptionsFiltered: typeof pickerOptions,
+    onSelect: (id: string) => void
+  ) => {
+    const icon = direction === 'add' ? 'add' : 'remove';
+    const label = direction === 'add' ? `Add one ${name}` : `Remove one ${name}`;
 
     const button = (
       <Pressable
-        accessibilityLabel={`Remove one ${name}`}
+        accessibilityLabel={label}
         className={cn(
           'items-center justify-center active:bg-accent',
-          btnSize,
-          compact ? 'rounded-l-md' : 'rounded-l-lg'
+          stepSize,
+          direction === 'add'
+            ? compact
+              ? 'rounded-r-md'
+              : 'rounded-r-lg'
+            : compact
+              ? 'rounded-l-md'
+              : 'rounded-l-lg'
         )}
-        onPress={showPicker ? undefined : () => onRemove(fixedVariantNumber)}
+        onPress={showPicker ? undefined : onPress}
         disabled={busy}
       >
         {busy && !showPicker ? (
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
-          <ThemedIonicon name="remove" size={iconSize} color="foreground" />
+          <ThemedIonicon name={icon} size={iconSize} color="foreground" />
         )}
       </Pressable>
     );
 
-    if (!showPicker) return button;
-
-    return (
-      <PrintingPickerMenu
-        title="Remove printing"
-        options={removeOptions}
-        onSelect={onRemove}
-      >
-        {button}
-      </PrintingPickerMenu>
-    );
+    return showPicker
+      ? wrapWithPicker(pickerTitle, pickerOptionsFiltered, onSelect, button)
+      : button;
   };
 
   if (owned > 0) {
+    const showRemovePicker = multiple && ownedPrintings.length > 1;
+    const removeOptions = pickerOptions.filter((o) =>
+      ownedPrintings.some((p) => p.variantNumber === o.id)
+    );
+
     return (
       <View
         className={cn(
-          'flex-row items-center border border-border bg-card',
-          compact ? 'rounded-md' : 'rounded-lg'
+          'flex-row items-center overflow-hidden border border-border bg-card',
+          shellRadius,
+          controlHeight
         )}
       >
-        {renderMinusButton()}
+        {renderStepButton(
+          'remove',
+          () => onRemove(fixedVariantNumber),
+          showRemovePicker,
+          'Remove printing',
+          removeOptions,
+          onRemove
+        )}
         <Text
           className={cn(
             'text-center font-mono font-semibold tabular-nums text-success',
-            compact ? 'min-w-5 text-[11px]' : 'min-w-7 text-[13px]'
+            compact ? 'min-w-5 text-[11px]' : relaxed ? 'min-w-6 text-[13px]' : 'min-w-7 text-[13px]'
           )}
         >
           {owned}
         </Text>
-        {renderPlusButton()}
+        {renderStepButton(
+          'add',
+          () => onAdd(fixedVariantNumber),
+          multiple,
+          'Add printing',
+          pickerOptions,
+          onAdd
+        )}
       </View>
     );
   }
