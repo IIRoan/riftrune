@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { FlatList, Pressable, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Keyboard, Pressable, View } from 'react-native';
 import { CardTile } from '@/components/cards/CardTile';
 import { Text } from '@/components/ui/text';
 import type { CollectionEntry } from '@/services/collectionService';
@@ -64,6 +64,10 @@ export function CollectionCardList({
     () => buildCollectionByVariant(entries),
     [entries]
   );
+
+  const dismissKeyboard = useCallback(() => {
+    Keyboard.dismiss();
+  }, []);
 
   return (
     <FlatList
@@ -136,6 +140,8 @@ export function CollectionCardList({
         paddingBottom,
       }}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      onScrollBeginDrag={dismissKeyboard}
       showsVerticalScrollIndicator={false}
     />
   );

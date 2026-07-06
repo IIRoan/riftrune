@@ -12,7 +12,7 @@ import type { CollectionEntry } from '@/services/collectionService';
 import { openCard } from '@/utils/cardNavigation';
 import { cn } from '@/lib/utils';
 
-const SET_CARD_MIN_WIDTH = 260;
+const SET_CARD_MIN_WIDTH = 280;
 const SET_CARD_MAX_COLUMNS = 4;
 const SET_GRID_GAP = 16;
 const STAT_MIN_WIDTH = 140;
@@ -297,7 +297,7 @@ export function WishlistRow({
 }) {
   return (
     <Pressable
-      className="flex-row items-center justify-between gap-3 rounded-lg py-2.5 active:opacity-80"
+      className="min-h-11 flex-row items-center justify-between gap-3 rounded-lg px-1 py-3 active:opacity-80"
       onPress={onPress}
     >
       <View className="min-w-0 flex-1">
@@ -326,7 +326,7 @@ export function CollectionMoverRow({
   const router = useRouter();
   return (
     <Pressable
-      className="flex-row items-center justify-between gap-3 rounded-lg py-2.5 active:opacity-80"
+      className="min-h-11 flex-row items-center justify-between gap-3 rounded-lg px-1 py-3 active:opacity-80"
       onPress={() => {
         openCard(router, entry.variantNumber, 'modal');
       }}

@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -27,6 +26,8 @@ import {
 } from '@/components/riftbound/CardIcons';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
+import { Layout } from '@/constants/Layout';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { formatStat, useCardDetail } from '@/hooks/useCardDetail';
 import { useCollection, useCollectionMutations } from '@/hooks/useCollection';
@@ -45,14 +46,21 @@ import {
   totalOwnedForCard,
 } from '@/utils/variants';
 import { cn } from '@/lib/utils';
+import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { hapticPress } from '@/utils/haptics';
+import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface CatalogDetailPanelProps {
   variantNumber: string;
+  /** `drawer` — inside mobile bottom sheet (no outer chrome / nested scroll). */
+  embedded?: 'panel' | 'drawer';
 }
 
-export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
+export function CatalogDetailPanel({
+  variantNumber,
+  embedded = 'panel',
+}: CatalogDetailPanelProps) {
   const queryClient = useQueryClient();
   const detail = useCardDetail(variantNumber);
   const { setQuantity } = useCollectionMutations();
@@ -245,79 +253,74 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
   };
 
   const setCode = activeVariant.variantNumber.split('-')[0] ?? '';
+  const detailImageUri = resolveImageUrl(activeVariant.imageUrl);
+  const isDrawer = embedded === 'drawer';
 
-  return (
-    <>
-      <View className="overflow-hidden rounded-xl border border-border bg-card">
-        <View className="flex-row gap-3 bg-card-panel p-3">
-          <Pressable
-            className="shrink-0 active:opacity-90 web:cursor-pointer"
-            onPress={openFullscreen}
-            accessibilityRole="button"
-            accessibilityLabel={`View ${card.name} full size`}
-          >
-            <View className="aspect-[5/7] w-[128px]">
-              <Image
-                source={{ uri: activeVariant.imageUrl }}
-                className="size-full rounded-lg"
-                contentFit="contain"
-                transition={200}
-                cachePolicy="memory-disk"
-              />
-            </View>
-            <Text className="mt-1 text-center font-mono text-[10px] text-archive-subtle">
-              {activeVariant.variantNumber}
-            </Text>
-          </Pressable>
+  const showVariantSwitcher = variantFamilies.length > 1 && activeFamily;
 
-          <View className="min-w-0 flex-1 justify-center gap-1.5">
-            <Text
-              className="text-xl font-semibold leading-tight tracking-tight text-foreground"
-              numberOfLines={2}
-            >
-              {card.name}
-            </Text>
-            <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-0.5">
-              <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
-              <Text className="text-xs text-muted-foreground">·</Text>
-              <RarityIcon rarity={activeVariant.rarity} size={14} />
-              <Text className="text-xs font-medium text-muted-foreground">
-                {activeVariant.rarity}
-              </Text>
-            </View>
-            {singleMarketPrice ? (
-              <VariantPriceSummary
-                label={singleMarketPrice.label}
-                price={singleMarketPrice.price}
-                trend={singlePriceTrend}
-                className="mt-0"
-                hideLabel={variantFamilies.length > 1}
-              />
-            ) : null}
-            {watchedElsewhereCount > 0 ? (
-              <Text className="text-xs font-medium text-primary">
-                Also on wishlist: {watchedElsewhereCount} other printing
-                {watchedElsewhereCount === 1 ? '' : 's'}
-              </Text>
-            ) : null}
-            {variantFamilies.length > 1 && activeFamily ? (
-              <VariantFamilySwitcher
-                label={activeFamily.label}
-                currentIndex={activeFamilyIndex}
-                total={variantFamilies.length}
-                onPrevious={() => {
-                  switchFamily(activeFamilyIndex - 1);
-                }}
-                onNext={() => {
-                  switchFamily(activeFamilyIndex + 1);
-                }}
-              />
-            ) : null}
-          </View>
+  const variantFamilySwitcher = showVariantSwitcher ? (
+    <VariantFamilySwitcher
+      label={activeFamily.label}
+      currentIndex={activeFamilyIndex}
+      total={variantFamilies.length}
+      prominent={isDrawer}
+      onPrevious={() => {
+        switchFamily(activeFamilyIndex - 1);
+      }}
+      onNext={() => {
+        switchFamily(activeFamilyIndex + 1);
+      }}
+    />
+  ) : null;
+
+  const collectionCta = !showPrintingsSection && singlePrinting ? (
+    singlePrintingQty > 0 ? (
+      <View
+        className={cn(
+          'flex-row items-center justify-between gap-3 rounded-xl bg-card-panel',
+          isDrawer ? 'px-3 py-3' : 'px-3 py-2.5'
+        )}
+      >
+        <View className="min-w-0 flex-1">
+          <Text className="text-sm font-semibold text-foreground">In collection</Text>
+          <Text className="text-xs text-muted-foreground">
+            {singlePrinting.variantLabel !== 'Standard'
+              ? singlePrinting.variantLabel
+              : 'This printing'}
+          </Text>
         </View>
+        <CollectionQtyControls
+          compact
+          quantity={singlePrintingQty}
+          isFoil={singlePrinting.isFoil}
+          onIncrement={handleSinglePrintingIncrement}
+          onDecrement={handleSinglePrintingDecrement}
+          onRemove={detail.onRemovePress}
+        />
+      </View>
+    ) : (
+      <Button
+        variant="outline"
+        size={isDrawer ? 'default' : 'sm'}
+        className={cn(
+          'w-full flex-row items-center justify-center gap-2 rounded-full border-border',
+          isDrawer ? 'min-h-[44px] h-11' : 'h-10'
+        )}
+        style={isDrawer ? { minHeight: Layout.minTouchTarget } : undefined}
+        onPress={handleSinglePrintingAdd}
+      >
+        <ButtonIcon>
+          <ThemedIonicon name="add" size={isDrawer ? 20 : 16} color="foreground" />
+        </ButtonIcon>
+        <ButtonText className={cn(isDrawer ? 'text-base' : 'text-sm', 'text-foreground')}>
+          Add to collection
+        </ButtonText>
+      </Button>
+    )
+  ) : null;
 
-        <ScrollView className="max-h-[calc(100vh-280px)]" showsVerticalScrollIndicator={false}>
-          <View className="gap-3 p-3">
+  const detailBody = (
+    <View className="gap-3 p-3">
             <View className="flex-row overflow-hidden rounded-xl bg-card-panel">
               <Stat label="Cost">
                 <EnergyPip value={card.energy} size={28} />
@@ -452,40 +455,7 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
             ) : null}
 
             <View className="gap-2">
-              {!showPrintingsSection && singlePrinting ? (
-                singlePrintingQty > 0 ? (
-                  <View className="flex-row items-center justify-between gap-3 rounded-xl bg-card-panel px-3 py-2.5">
-                    <View className="min-w-0 flex-1">
-                      <Text className="text-sm font-semibold text-foreground">In collection</Text>
-                      <Text className="text-xs text-muted-foreground">
-                        {singlePrinting.variantLabel !== 'Standard'
-                          ? singlePrinting.variantLabel
-                          : 'This printing'}
-                      </Text>
-                    </View>
-                    <CollectionQtyControls
-                      compact
-                      quantity={singlePrintingQty}
-                      isFoil={singlePrinting.isFoil}
-                      onIncrement={handleSinglePrintingIncrement}
-                      onDecrement={handleSinglePrintingDecrement}
-                      onRemove={detail.onRemovePress}
-                    />
-                  </View>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full border-border"
-                    onPress={handleSinglePrintingAdd}
-                  >
-                    <ButtonIcon>
-                      <Ionicons name="add" size={16} className="text-foreground" />
-                    </ButtonIcon>
-                    <ButtonText className="text-sm text-foreground">Add to collection</ButtonText>
-                  </Button>
-                )
-              ) : null}
+              {!isDrawer ? collectionCta : null}
 
               <Button
               variant={isWatchingActive ? 'outline' : 'default'}
@@ -500,10 +470,10 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
                 void handleWatchPress();
               }}
             >
-              <Ionicons
+              <ThemedIonicon
                 name={isWatchingActive ? 'bookmark' : 'bookmark-outline'}
                 size={16}
-                className={isWatchingActive ? 'text-primary' : 'text-primary-foreground'}
+                color={isWatchingActive ? 'primary' : 'primary-foreground'}
               />
               <ButtonText
                 className={cn(
@@ -515,8 +485,92 @@ export function CatalogDetailPanel({ variantNumber }: CatalogDetailPanelProps) {
               </ButtonText>
             </Button>
             </View>
+    </View>
+  );
+
+  return (
+    <>
+      <View
+        className={cn(
+          'overflow-hidden bg-card',
+          !isDrawer && 'rounded-xl border border-border'
+        )}
+      >
+        <View className={cn('flex-row gap-3 p-3', !isDrawer && 'bg-card-panel')}>
+          <Pressable
+            className="shrink-0 active:opacity-90 web:cursor-pointer"
+            onPress={openFullscreen}
+            accessibilityRole="button"
+            accessibilityLabel={`View ${card.name} full size`}
+          >
+            <View
+              className={cn(
+                'aspect-[5/7] w-[128px] overflow-hidden border border-white/10 bg-background',
+                CARD_ART_RADIUS_CLASS
+              )}
+            >
+              <Image
+                source={detailImageUri ? { uri: detailImageUri } : undefined}
+                recyclingKey={activeVariant.variantNumber}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="contain"
+                transition={200}
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <Text className="mt-1 text-center font-mono text-[10px] text-archive-subtle">
+              {activeVariant.variantNumber}
+            </Text>
+          </Pressable>
+
+          <View className="min-w-0 flex-1 justify-center gap-1.5">
+            <Text
+              className="text-xl font-semibold leading-tight tracking-tight text-foreground"
+              numberOfLines={2}
+            >
+              {card.name}
+            </Text>
+            <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
+              <Text className="text-xs text-muted-foreground">·</Text>
+              <RarityIcon rarity={activeVariant.rarity} size={14} />
+              <Text className="text-xs font-medium text-muted-foreground">
+                {activeVariant.rarity}
+              </Text>
+            </View>
+            {singleMarketPrice ? (
+              <VariantPriceSummary
+                label={singleMarketPrice.label}
+                price={singleMarketPrice.price}
+                trend={singlePriceTrend}
+                className="mt-0"
+                hideLabel={variantFamilies.length > 1}
+              />
+            ) : null}
+            {watchedElsewhereCount > 0 ? (
+              <Text className="text-xs font-medium text-primary">
+                Also on wishlist: {watchedElsewhereCount} other printing
+                {watchedElsewhereCount === 1 ? '' : 's'}
+              </Text>
+            ) : null}
+            {!isDrawer ? variantFamilySwitcher : null}
           </View>
-        </ScrollView>
+        </View>
+
+        {isDrawer && (variantFamilySwitcher || collectionCta) ? (
+          <View className="gap-2 px-3 pb-1 pt-0">
+            {variantFamilySwitcher}
+            {collectionCta}
+          </View>
+        ) : null}
+
+        {isDrawer ? (
+          detailBody
+        ) : (
+          <ScrollView className="max-h-[calc(100vh-280px)]" showsVerticalScrollIndicator={false}>
+            {detailBody}
+          </ScrollView>
+        )}
       </View>
 
       <CatalogCardFullscreen
@@ -568,12 +622,12 @@ function CatalogCardFullscreen({
           accessibilityLabel="Close full size card"
         />
         <View
-          className="relative z-10 overflow-hidden rounded-xl"
+          className={cn('relative z-10 overflow-hidden', CARD_ART_RADIUS_CLASS)}
           style={{ width: cardWidth, height: cardHeight }}
         >
           <Image
-            source={{ uri: imageUrl }}
-            className="size-full"
+            source={{ uri: resolveImageUrl(imageUrl) }}
+            style={{ width: '100%', height: '100%' }}
             contentFit="contain"
             transition={200}
             cachePolicy="memory-disk"

@@ -173,7 +173,7 @@ export function ScreenSplit({
 
   return (
     <View className={cn('w-full flex-1 flex-row', className)} style={{ gap }}>
-      <View className="min-w-0 flex-1" onLayout={onMainLayout}>
+      <View className="min-h-0 min-w-0 flex-1 flex-col" onLayout={onMainLayout}>
         <SplitMainContext.Provider value={mainWidth}>{children}</SplitMainContext.Provider>
       </View>
       {aside ? (

@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, View } from 'react-native';
 import { Badge, BadgeIcon, BadgeText } from '@/components/ui/badge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Chip, ChipText } from '@/components/ui/chip';
 import { Separator } from '@/components/ui/separator';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
@@ -82,7 +82,7 @@ export function CollectionQtyControls({
           accessibilityLabel="Decrease quantity"
         >
           <ButtonIcon className="size-4">
-            <Ionicons name="remove" size={16} />
+            <ThemedIonicon name="remove" size={16} color="foreground" />
           </ButtonIcon>
         </Button>
         <Text className="min-w-6 text-center text-[13px] font-bold tabular-nums text-foreground">
@@ -100,7 +100,7 @@ export function CollectionQtyControls({
           accessibilityLabel="Increase quantity"
         >
           <ButtonIcon className="size-4">
-            <Ionicons name="add" size={16} />
+            <ThemedIonicon name="add" size={16} color="foreground" />
           </ButtonIcon>
         </Button>
       </View>
@@ -112,7 +112,7 @@ export function CollectionQtyControls({
       <Stack direction="row" className="items-center justify-center gap-2.5">
         <Badge variant="outline" className="border-ring/30 bg-primary/5">
           <BadgeIcon>
-            <Ionicons name="checkmark-circle" size={14} className="text-ring" />
+            <ThemedIonicon name="checkmark-circle" size={14} color="ring" />
           </BadgeIcon>
           <BadgeText className="text-[11px] font-bold uppercase tracking-widest text-ring">
             In collection
@@ -137,7 +137,7 @@ export function CollectionQtyControls({
             <ActivityIndicator size="small" className="accent-primary" />
           ) : (
             <ButtonIcon className="size-5">
-              <Ionicons name="remove" size={20} />
+              <ThemedIonicon name="remove" size={20} color="foreground" />
             </ButtonIcon>
           )}
         </Button>
@@ -162,7 +162,7 @@ export function CollectionQtyControls({
           disabled={loading}
         >
           <ButtonIcon className="size-5">
-            <Ionicons name="add" size={20} />
+            <ThemedIonicon name="add" size={20} color="foreground" />
           </ButtonIcon>
         </Button>
       </View>
@@ -170,7 +170,7 @@ export function CollectionQtyControls({
       <Separator />
       <Button variant="ghost" onPress={handleRemove} disabled={loading}>
         <ButtonIcon>
-          <Ionicons name="trash-outline" size={15} className="text-muted-foreground" />
+          <ThemedIonicon name="trash-outline" size={15} color="muted-foreground" />
         </ButtonIcon>
         <ButtonText className="text-muted-foreground">Remove from collection</ButtonText>
       </Button>

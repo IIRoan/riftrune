@@ -1,6 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
+import { Layout } from '@/constants/Layout';
 import { cn } from '@/lib/utils';
 
 interface VariantFamilySwitcherProps {
@@ -9,6 +10,8 @@ interface VariantFamilySwitcherProps {
   total: number;
   onPrevious: () => void;
   onNext: () => void;
+  /** Larger chevron hit targets for mobile drawer (≥44px). */
+  prominent?: boolean;
 }
 
 export function VariantFamilySwitcher({
@@ -17,23 +20,28 @@ export function VariantFamilySwitcher({
   total,
   onPrevious,
   onNext,
+  prominent = false,
 }: VariantFamilySwitcherProps) {
   const canPrevious = currentIndex > 0;
   const canNext = currentIndex < total - 1;
+  const navSize = prominent ? Layout.minTouchTarget : 28;
+  const iconSize = prominent ? 18 : 16;
 
   return (
-    <View className="mt-2 flex-row items-center gap-2">
+    <View className={cn('flex-row items-center gap-2', !prominent && 'mt-2')}>
       <Pressable
         accessibilityLabel="Previous printing version"
         accessibilityRole="button"
         disabled={!canPrevious}
         onPress={onPrevious}
         className={cn(
-          'size-7 items-center justify-center rounded-md border border-border active:bg-accent',
+          'items-center justify-center rounded-md border border-border active:bg-accent',
+          prominent ? 'size-11' : 'size-7',
           !canPrevious && 'opacity-30'
         )}
+        style={prominent ? { minWidth: navSize, minHeight: navSize } : undefined}
       >
-        <Ionicons name="chevron-back" size={16} className="text-muted-foreground" />
+        <ThemedIonicon name="chevron-back" size={iconSize} color="muted-foreground" />
       </Pressable>
 
       <View className="min-w-0 flex-1 items-center px-1">
@@ -53,11 +61,13 @@ export function VariantFamilySwitcher({
         disabled={!canNext}
         onPress={onNext}
         className={cn(
-          'size-7 items-center justify-center rounded-md border border-border active:bg-accent',
+          'items-center justify-center rounded-md border border-border active:bg-accent',
+          prominent ? 'size-11' : 'size-7',
           !canNext && 'opacity-30'
         )}
+        style={prominent ? { minWidth: navSize, minHeight: navSize } : undefined}
       >
-        <Ionicons name="chevron-forward" size={16} className="text-muted-foreground" />
+        <ThemedIonicon name="chevron-forward" size={iconSize} color="muted-foreground" />
       </Pressable>
     </View>
   );

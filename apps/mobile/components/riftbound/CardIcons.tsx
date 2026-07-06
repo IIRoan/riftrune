@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { typeIconFor, rarityIconFor, domainIconFor, mightIcon } from '@/constants/gameAssets';
 import { KeywordBadge } from '@/components/riftbound/KeywordBadge';
 import { Text } from '@/components/ui/text';
+import { resolveImageUrl } from '@/utils/resolveImageUrl';
 
 interface PipProps {
   value: number | string;
@@ -92,7 +93,7 @@ export function DomainIcon({
   if (imageUrl) {
     return (
       <Image
-        source={{ uri: imageUrl }}
+        source={{ uri: resolveImageUrl(imageUrl) }}
         style={{ width: size, height: size }}
         contentFit="contain"
         accessibilityIgnoresInvertColors

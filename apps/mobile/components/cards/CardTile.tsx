@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, View, type ViewStyle } from 'react-native';
+import { Keyboard, Pressable, View, type ViewStyle } from 'react-native';
 import type { CardListItem } from '@riftbound/contracts';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
@@ -21,12 +21,17 @@ import {
   printingSummary,
   totalOwnedForCard,
 } from '@/utils/variants';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { hapticPress } from '@/utils/haptics';
+import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
+import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const LIST_THUMB_W = 56;
 const LIST_THUMB_H = 78;
+const LIST_THUMB_W_MOBILE = 44;
+const LIST_THUMB_H_MOBILE = 62;
 const PREMIUM_RARITIES = ['Rare', 'Epic', 'Showcase'];
 
 export type CardTileMode = 'search' | 'collection';
@@ -61,6 +66,7 @@ export function CardTile({
   collectionByVariant,
 }: Props) {
   const router = useRouter();
+  const isMobile = useMobileLayout();
   const { addCard, setQuantity } = useCollectionMutations();
   const [busy, setBusy] = useState(false);
 
@@ -100,6 +106,7 @@ export function CardTile({
   );
 
   const onOpenCard = useCallback(() => {
+    Keyboard.dismiss();
     if (onPress) {
       void hapticPress();
       onPress();
@@ -142,11 +149,15 @@ export function CardTile({
     [collectionByVariant, primaryPrinting?.variantNumber, setQuantity]
   );
 
+  const listCompact = isMobile && layout === 'list';
+  const listThumbW = listCompact ? LIST_THUMB_W_MOBILE : LIST_THUMB_W;
+  const listThumbH = listCompact ? LIST_THUMB_H_MOBILE : LIST_THUMB_H;
+
   const stepper = enableQuickAdd ? (
     <OwnershipStepper
       owned={owned}
       name={card.name}
-      compact={layout === 'grid' || compact}
+      compact={layout === 'grid' || compact || listCompact}
       busy={busy}
       printings={printingsWithOwned}
       onAdd={(vn) => {
@@ -158,11 +169,14 @@ export function CardTile({
     />
   ) : null;
 
+  const imageUri = resolveImageUrl(card.imageUrl);
+
   if (layout === 'list') {
     return (
       <Pressable
         className={cn(
-          'flex-row items-center gap-4 px-4 py-3.5 active:opacity-90',
+          'flex-row items-center active:opacity-90',
+          listCompact ? 'gap-3 px-3 py-2' : 'gap-4 px-4 py-3.5',
           selected ? 'bg-card-panel' : 'active:bg-card-panel/50'
         )}
         style={style}
@@ -170,41 +184,52 @@ export function CardTile({
         accessibilityRole="button"
         accessibilityState={{ selected }}
       >
-        <View
+        <Image
+          source={imageUri ? { uri: imageUri } : undefined}
+          recyclingKey={card.variantNumber}
+          style={{ width: listThumbW, height: listThumbH }}
           className={cn(
-            'overflow-hidden rounded-md bg-background',
+            'shrink-0 overflow-hidden bg-background',
+            CARD_ART_RADIUS_CLASS,
             selected ? 'border-2 border-ring' : 'border border-white/10'
           )}
-          style={{ width: LIST_THUMB_W, height: LIST_THUMB_H }}
-        >
-          <Image
-            source={{ uri: card.imageUrl }}
-            className="size-full"
-            contentFit="cover"
-            contentPosition="top"
-            transition={120}
-            cachePolicy="memory-disk"
-          />
-        </View>
+          contentFit="cover"
+          contentPosition="top"
+          transition={120}
+          cachePolicy="memory-disk"
+        />
 
         <View className="min-w-0 flex-1">
           <View className="flex-row items-baseline gap-2">
-            <Text className="flex-1 text-[15px] font-semibold text-foreground" numberOfLines={1}>
+            <Text
+              className={cn(
+                'flex-1 font-semibold text-foreground',
+                listCompact ? 'text-[14px]' : 'text-[15px]'
+              )}
+              numberOfLines={1}
+            >
               {card.name}
             </Text>
             <Text className="hidden font-mono text-xs text-muted-foreground sm:flex">
               {primaryPrinting?.variantNumber}
             </Text>
           </View>
-          <View className="mt-1 flex-row items-center gap-1.5">
+          <View className={cn('flex-row items-center gap-1.5', listCompact ? 'mt-0.5' : 'mt-1')}>
             {rarityIconFor(card.rarity) ? (
               <Image
                 source={rarityIconFor(card.rarity)!}
-                className="size-4 shrink-0"
+                style={{ width: listCompact ? 14 : 16, height: listCompact ? 14 : 16 }}
+                className="shrink-0"
                 contentFit="contain"
               />
             ) : null}
-            <Text className="min-w-0 flex-1 text-[13px] text-muted-foreground" numberOfLines={1}>
+            <Text
+              className={cn(
+                'min-w-0 flex-1 text-muted-foreground',
+                listCompact ? 'text-[12px]' : 'text-[13px]'
+              )}
+              numberOfLines={1}
+            >
               <Text
                 className={cn(
                   PREMIUM_RARITIES.includes(card.rarity) && 'font-semibold text-foreground'
@@ -216,21 +241,49 @@ export function CardTile({
               {card.setCode ? ` · ${card.setCode}` : ''}
             </Text>
           </View>
-          <View className="mt-1.5 flex-row items-center gap-1.5">
+          <View className={cn('flex-row items-center gap-1.5', listCompact ? 'mt-1' : 'mt-1.5')}>
             {owned > 0 ? (
               <>
                 <View className="size-1.5 rounded-full bg-success" />
-                <Text className="text-xs font-medium text-success">Owned ×{owned}</Text>
+                <Text
+                  className={cn(
+                    'font-medium text-success',
+                    listCompact ? 'text-[11px]' : 'text-xs'
+                  )}
+                >
+                  Owned ×{owned}
+                </Text>
                 {printingsLabel ? (
-                  <Text className="text-xs text-muted-foreground">· {printingsLabel}</Text>
+                  <Text
+                    className={cn(
+                      'text-muted-foreground',
+                      listCompact ? 'text-[11px]' : 'text-xs'
+                    )}
+                  >
+                    · {printingsLabel}
+                  </Text>
                 ) : null}
               </>
             ) : (
               <>
                 <View className="size-1.5 rounded-full border border-muted-foreground" />
-                <Text className="text-xs font-medium text-muted-foreground">Wishlist</Text>
+                <Text
+                  className={cn(
+                    'font-medium text-muted-foreground',
+                    listCompact ? 'text-[11px]' : 'text-xs'
+                  )}
+                >
+                  Wishlist
+                </Text>
                 {printingsLabel ? (
-                  <Text className="text-xs text-muted-foreground">· {printingsLabel}</Text>
+                  <Text
+                    className={cn(
+                      'text-muted-foreground',
+                      listCompact ? 'text-[11px]' : 'text-xs'
+                    )}
+                  >
+                    · {printingsLabel}
+                  </Text>
                 ) : null}
               </>
             )}
@@ -238,7 +291,7 @@ export function CardTile({
         </View>
 
         <View
-          className="items-end gap-2"
+          className={cn('items-end', listCompact ? 'gap-1.5' : 'gap-2')}
           onStartShouldSetResponder={() => true}
         >
           {!hidePrice ? (
@@ -250,7 +303,12 @@ export function CardTile({
                       {p.isFoil ? 'Foil' : 'Std'}
                     </Text>
                   ) : null}
-                  <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                  <Text
+                    className={cn(
+                      'font-mono font-semibold tabular-nums text-foreground',
+                      listCompact ? 'text-[13px]' : 'text-sm'
+                    )}
+                  >
                     {formatPrintingPrice(p.priceEur) ?? '—'}
                   </Text>
                   <TrendTag trend={formatMarketTrend(p.priceEur)} />
@@ -275,10 +333,16 @@ export function CardTile({
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >
-      <View className="relative aspect-[5/7] overflow-hidden rounded-lg bg-background ring-1 ring-white/10">
+      <View
+        className={cn(
+          'relative aspect-[5/7] w-full overflow-hidden bg-background ring-1 ring-white/10',
+          CARD_ART_RADIUS_CLASS
+        )}
+      >
         <Image
-          source={{ uri: card.imageUrl }}
-          className="size-full"
+          source={imageUri ? { uri: imageUri } : undefined}
+          recyclingKey={card.variantNumber}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' }}
           contentFit="cover"
           contentPosition="top"
           transition={120}
@@ -319,10 +383,20 @@ export function CardTileSkeleton({
   layout?: 'grid' | 'list';
   compact?: boolean;
 }) {
+  const isMobile = useMobileLayout();
+  const listCompact = isMobile && layout === 'list';
+  const listThumbW = listCompact ? LIST_THUMB_W_MOBILE : LIST_THUMB_W;
+  const listThumbH = listCompact ? LIST_THUMB_H_MOBILE : LIST_THUMB_H;
+
   if (layout === 'list') {
     return (
-      <View className="flex-row items-center gap-4 px-4 py-3.5 opacity-40">
-        <Skeleton className="rounded-md" style={{ width: LIST_THUMB_W, height: LIST_THUMB_H }} />
+      <View
+        className={cn(
+          'flex-row items-center opacity-40',
+          listCompact ? 'gap-3 px-3 py-2' : 'gap-4 px-4 py-3.5'
+        )}
+      >
+        <Skeleton className={CARD_ART_RADIUS_CLASS} style={{ width: listThumbW, height: listThumbH }} />
         <View className="min-w-0 flex-1 gap-1.5">
           <Skeleton className="h-3 w-[65%] rounded" />
           <Skeleton className="h-2.5 w-[40%] rounded" />
@@ -335,7 +409,7 @@ export function CardTileSkeleton({
   return (
     <View className="gap-2 opacity-40">
       <Skeleton
-        className={cn('w-full rounded-lg', compact && 'rounded')}
+        className={cn('w-full', CARD_ART_RADIUS_CLASS)}
         style={{ aspectRatio: 5 / 7 }}
       />
       <Skeleton className="h-2.5 w-[85%] rounded" />
