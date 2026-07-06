@@ -229,7 +229,7 @@ export function CatalogDetailPanel({
 
   const handleSinglePrintingAdd = () => {
     if (!singlePrinting) return;
-    void detail.onAddToCollection(singlePrinting.variantNumber);
+    void detail.onAddPress();
   };
 
   const handleSinglePrintingIncrement = () => {
@@ -589,6 +589,18 @@ export function CatalogDetailPanel({
         onSelect={(id) => {
           setWishlistPickerVisible(false);
           void addVariantToWishlist(id);
+        }}
+      />
+      <VariantPickerSheet
+        visible={detail.pickerVisible}
+        title="Which printing?"
+        options={detail.pickerOptions}
+        onClose={() => {
+          detail.setPickerVisible(false);
+        }}
+        onSelect={(id) => {
+          detail.setPickerVisible(false);
+          void detail.onAddToCollection(id);
         }}
       />
     </>

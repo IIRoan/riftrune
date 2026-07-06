@@ -9,7 +9,9 @@ import {
   CollectionItemResponse,
   CollectionUpsertRequest,
 } from '@riftbound/contracts';
+import type { CollectionItem as CollectionItemDto } from '@riftbound/contracts';
 import type { Auth } from '../auth.js';
+import { logActionFailure } from '../lib/logger.js';
 import { getSessionUser, unauthorized } from '../lib/session.js';
 import type { CollectionService } from '../services/collection-service.js';
 
@@ -20,6 +22,35 @@ const AdjustBody = z.object({
 });
 
 const _UpsertBody = CollectionUpsertRequest.omit({ variantNumber: true });
+
+function collectionItemResponse(
+  action: string,
+  item: CollectionItemDto | null,
+  context?: Record<string, unknown>
+) {
+  if (!item) return { data: null };
+  const parsed = CollectionItemResponse.safeParse({ data: item });
+  if (!parsed.success) {
+    logActionFailure(action, parsed.error, {
+      ...context,
+      variantNumber: item.variantNumber,
+    });
+    return { data: null };
+  }
+  return parsed.data;
+}
+
+function parseCollectionList(action: string, result: Awaited<ReturnType<CollectionService['listForUser']>>) {
+  const parsed = CollectionListResponse.safeParse({
+    data: result.items,
+    meta: { total: result.total, totalQuantity: result.totalQuantity },
+  });
+  if (!parsed.success) {
+    logActionFailure(action, parsed.error, { total: result.total });
+    throw new Error('Collection list response validation failed');
+  }
+  return parsed.data;
+}
 
 export function createCollectionRoutes(collection: CollectionService, auth: Auth) {
   return new Elysia({ prefix: '/api/v1/collection' })
@@ -32,10 +63,7 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
           return unauthorized();
         }
         const result = await collection.listForUser(user.id);
-        return CollectionListResponse.parse({
-          data: result.items,
-          meta: { total: result.total, totalQuantity: result.totalQuantity },
-        });
+        return parseCollectionList('collection.list', result);
       },
       { detail: { tags: ['collection'] } }
     )
@@ -66,7 +94,9 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
         if (!item) {
           return { data: null };
         }
-        return CollectionItemResponse.parse({ data: item });
+        return collectionItemResponse('collection.upsert', item, {
+          variantNumber: parsed.variantNumber,
+        });
       },
       { detail: { tags: ['collection'] } }
     )
@@ -95,7 +125,10 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
           }
         );
         if (!item) return { data: null };
-        return CollectionItemResponse.parse({ data: item });
+        return collectionItemResponse('collection.add', item, {
+          variantNumber: params.variantNumber,
+          delta,
+        });
       },
       { detail: { tags: ['collection'] } }
     )
@@ -124,7 +157,10 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
           }
         );
         if (!item) return { data: null };
-        return CollectionItemResponse.parse({ data: item });
+        return collectionItemResponse('collection.remove', item, {
+          variantNumber: params.variantNumber,
+          delta,
+        });
       },
       { detail: { tags: ['collection'] } }
     )

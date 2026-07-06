@@ -4,12 +4,27 @@ import {
   WishlistItemResponse,
   WishlistListResponse,
   WishlistUpsertRequest,
+  type WishlistItem,
 } from '@riftbound/contracts';
 import type { Auth } from '../auth.js';
+import { logActionFailure } from '../lib/logger.js';
 import { getSessionUser, unauthorized } from '../lib/session.js';
 import type { WishlistService } from '../services/wishlist-service.js';
 
 const _UpsertBody = WishlistUpsertRequest.omit({ variantNumber: true });
+
+function wishlistItemResponse(
+  action: string,
+  item: WishlistItem,
+  context?: Record<string, unknown>
+) {
+  const parsed = WishlistItemResponse.safeParse({ data: item });
+  if (!parsed.success) {
+    logActionFailure(action, parsed.error, context);
+    throw new Error('Wishlist response validation failed');
+  }
+  return parsed.data;
+}
 
 export function createWishlistRoutes(wishlist: WishlistService, auth: Auth) {
   return new Elysia({ prefix: '/api/v1/wishlist' })
@@ -22,10 +37,15 @@ export function createWishlistRoutes(wishlist: WishlistService, auth: Auth) {
           return unauthorized();
         }
         const result = await wishlist.listForUser(user.id);
-        return WishlistListResponse.parse({
+        const parsed = WishlistListResponse.safeParse({
           data: result.items,
           meta: { total: result.total },
         });
+        if (!parsed.success) {
+          logActionFailure('wishlist.list', parsed.error, { total: result.total });
+          throw new Error('Wishlist list response validation failed');
+        }
+        return parsed.data;
       },
       { detail: { tags: ['wishlist'] } }
     )
@@ -47,7 +67,9 @@ export function createWishlistRoutes(wishlist: WishlistService, auth: Auth) {
           targetPriceCents: parsed.targetPriceCents ?? null,
           notes: parsed.notes ?? null,
         });
-        return WishlistItemResponse.parse({ data: item });
+        return wishlistItemResponse('wishlist.upsert', item, {
+          variantNumber: parsed.variantNumber,
+        });
       },
       { detail: { tags: ['wishlist'] } }
     )

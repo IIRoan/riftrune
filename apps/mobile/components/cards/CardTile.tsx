@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Keyboard, Pressable, View, type ViewStyle } from 'react-native';
 import type { CardListItem } from '@riftbound/contracts';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
@@ -68,7 +68,6 @@ export function CardTile({
   const router = useRouter();
   const isMobile = useMobileLayout();
   const { addCard, setQuantity } = useCollectionMutations();
-  const [busy, setBusy] = useState(false);
 
   const allPrintings = getCardPrintings(card);
   const variantFamilies = useMemo(
@@ -117,34 +116,24 @@ export function CardTile({
   }, [router, card.variantNumber, onPress]);
 
   const onAdd = useCallback(
-    async (variantNumber?: string) => {
-      await hapticPress();
-      setBusy(true);
-      try {
-        await addCard.mutateAsync({ card, variantNumber });
-      } finally {
-        setBusy(false);
-      }
+    (variantNumber?: string) => {
+      void hapticPress();
+      addCard.mutate({ card, variantNumber });
     },
     [addCard, card]
   );
 
   const onRemove = useCallback(
-    async (variantNumber?: string) => {
-      await hapticPress();
+    (variantNumber?: string) => {
+      void hapticPress();
       const vn = variantNumber ?? primaryPrinting?.variantNumber;
       if (!vn) return;
       const entry = collectionByVariant?.get(vn);
       if (!entry) return;
-      setBusy(true);
-      try {
-        await setQuantity.mutateAsync({
-          variantNumber: vn,
-          quantity: Math.max(0, entry.quantity - 1),
-        });
-      } finally {
-        setBusy(false);
-      }
+      setQuantity.mutate({
+        variantNumber: vn,
+        quantity: Math.max(0, entry.quantity - 1),
+      });
     },
     [collectionByVariant, primaryPrinting?.variantNumber, setQuantity]
   );
@@ -158,7 +147,6 @@ export function CardTile({
       owned={owned}
       name={card.name}
       compact={layout === 'grid' || compact || listCompact}
-      busy={busy}
       printings={printingsWithOwned}
       onAdd={(vn) => {
         void onAdd(vn);
@@ -290,10 +278,7 @@ export function CardTile({
           </View>
         </View>
 
-        <View
-          className={cn('items-end', listCompact ? 'gap-1.5' : 'gap-2')}
-          onStartShouldSetResponder={() => true}
-        >
+        <View className={cn('items-end', listCompact ? 'gap-1.5' : 'gap-2')}>
           {!hidePrice ? (
             <View className="items-end gap-0.5">
               {printings.map((p) => (
@@ -358,11 +343,7 @@ export function CardTile({
         {primaryPrinting?.variantNumber}
       </Text>
 
-      <View
-        className="mt-2 flex-row items-center justify-between gap-1.5 px-0.5"
-        // Keep add/stepper taps from opening the card detail row.
-        onStartShouldSetResponder={() => true}
-      >
+      <View className="mt-2 flex-row items-center justify-between gap-1.5 px-0.5">
         {!hidePrice ? (
           <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
             {priceLabel ?? '—'}
