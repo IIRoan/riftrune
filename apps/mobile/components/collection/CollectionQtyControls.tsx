@@ -1,4 +1,4 @@
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Badge, BadgeIcon, BadgeText } from '@/components/ui/badge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Chip, ChipText } from '@/components/ui/chip';
@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
@@ -19,6 +20,10 @@ interface Props {
   onRemove: () => void;
 }
 
+function CompactStepDivider() {
+  return <View className="h-5 w-hairline self-center bg-archive-soft-line" />;
+}
+
 export function CollectionAddButton({
   onPress,
   disabled,
@@ -30,6 +35,34 @@ export function CollectionAddButton({
   loading?: boolean;
   className?: string;
 }) {
+  const isMobile = useMobileLayout();
+
+  if (isMobile) {
+    return (
+      <Pressable
+        accessibilityLabel="Add to collection"
+        className={cn(
+          'h-10 flex-row items-center justify-center gap-1.5 rounded-full border border-ring/30 bg-primary/5 px-3.5 active:opacity-80',
+          className
+        )}
+        onPress={() => {
+          void hapticPress();
+          onPress();
+        }}
+        disabled={disabled || loading}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" className="accent-primary" />
+        ) : (
+          <>
+            <ThemedIonicon name="add" size={16} color="ring" />
+            <Text className="text-[13px] font-semibold text-ring">Add</Text>
+          </>
+        )}
+      </Pressable>
+    );
+  }
+
   return (
     <Button
       variant="ghost"
@@ -55,6 +88,8 @@ export function CollectionQtyControls({
   onRemove,
 }: Props) {
   const displayQuantity = Math.max(0, quantity);
+  const isMobile = useMobileLayout();
+  const touchFriendly = isMobile && compact;
 
   const handleDecrement = () => {
     void hapticPress();
@@ -71,6 +106,41 @@ export function CollectionQtyControls({
   };
 
   if (compact) {
+    if (touchFriendly) {
+      return (
+        <View className="flex-row items-center overflow-hidden rounded-full bg-card-panel">
+          <Pressable
+            accessibilityLabel="Decrease quantity"
+            className="size-11 items-center justify-center rounded-l-full active:bg-accent/80"
+            onPress={handleDecrement}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" className="accent-primary" />
+            ) : (
+              <ThemedIonicon name="remove" size={18} color="foreground" />
+            )}
+          </Pressable>
+          <CompactStepDivider />
+          <Text className="min-w-9 px-1.5 text-center font-mono text-sm font-semibold tabular-nums text-foreground">
+            {displayQuantity}
+          </Text>
+          <CompactStepDivider />
+          <Pressable
+            accessibilityLabel="Increase quantity"
+            className="size-11 items-center justify-center rounded-r-full active:bg-accent/80"
+            onPress={() => {
+              void hapticPress();
+              onIncrement();
+            }}
+            disabled={loading}
+          >
+            <ThemedIonicon name="add" size={18} color="foreground" />
+          </Pressable>
+        </View>
+      );
+    }
+
     return (
       <View className="flex-row items-center gap-1">
         <Button

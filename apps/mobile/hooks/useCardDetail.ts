@@ -1,13 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { CardListItem } from '@riftbound/contracts';
 import {
   useCollection,
   useCollectionEntry,
   useCollectionMutations,
 } from '@/hooks/useCollection';
 import { useCollectionRemove } from '@/hooks/useCollectionRemove';
-import { formatPrintingLabel, findVariantByNumber, getSearchGroupVariants, isFoilVariant } from '@/utils/variants';
+import { cardListItemToDetailResponse } from '@/lib/cardDetailPlaceholder';
+import { formatPrintingLabel, findVariantByNumber, getSearchGroupVariants, isFoilVariant, cardListItemMatchesVariant } from '@/utils/variants';
 import {
   getCollectedPrintingsForDetailCard,
 } from '@/utils/collectionRemove';
@@ -32,17 +34,29 @@ export function formatStat(value: number): string {
   return value > 0 ? String(value) : '—';
 }
 
-export function useCardDetail(variantNumber: string) {
+export function useCardDetail(
+  variantNumber: string,
+  options?: { listItem?: CardListItem | null }
+) {
   const router = useRouter();
   const [selectedVariant, setSelectedVariant] = useState(variantNumber);
   const [pickerVisible, setPickerVisible] = useState(false);
+  const { listItem } = options ?? {};
 
-  const { data, isLoading, isError } = useQuery({
+  const listPlaceholder = useMemo(() => {
+    if (!listItem || !cardListItemMatchesVariant(listItem, variantNumber)) {
+      return undefined;
+    }
+    return cardListItemToDetailResponse(listItem);
+  }, [listItem, variantNumber]);
+
+  const { data, isLoading, isError, isPlaceholderData } = useQuery({
     queryKey: cardQueryKeys.detail(variantNumber),
     queryFn: () => api.getCard(variantNumber),
     enabled: Boolean(variantNumber),
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,
+    placeholderData: listPlaceholder,
   });
 
   useEffect(() => {
@@ -186,6 +200,7 @@ export function useCardDetail(variantNumber: string) {
     activeVariant,
     isLoading,
     isError,
+    isPlaceholderData,
     collectionEntry,
     collectedForCard,
     pickerVisible,

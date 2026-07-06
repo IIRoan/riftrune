@@ -9,7 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import type { CardListPrinting } from '@riftbound/contracts';
+import type { CardListItem, CardListPrinting } from '@riftbound/contracts';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import { VariantFamilySwitcher } from '@/components/catalog/VariantFamilySwitcher';
@@ -25,6 +25,7 @@ import {
   TypeIcon,
 } from '@/components/riftbound/CardIcons';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { Layout } from '@/constants/Layout';
@@ -53,16 +54,19 @@ import { useQueryClient } from '@tanstack/react-query';
 
 interface CatalogDetailPanelProps {
   variantNumber: string;
+  /** Catalog list row used to render instantly while full detail loads. */
+  catalogListItem?: CardListItem | null;
   /** `drawer` — inside mobile bottom sheet (no outer chrome / nested scroll). */
   embedded?: 'panel' | 'drawer';
 }
 
 export function CatalogDetailPanel({
   variantNumber,
+  catalogListItem = null,
   embedded = 'panel',
 }: CatalogDetailPanelProps) {
   const queryClient = useQueryClient();
-  const detail = useCardDetail(variantNumber);
+  const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { setQuantity } = useCollectionMutations();
   const { data: collection = [] } = useCollection();
   const [fullscreen, setFullscreen] = useState(false);
@@ -129,12 +133,15 @@ export function CatalogDetailPanel({
     [queryClient]
   );
 
-  if (detail.isLoading || !detail.card || !detail.activeVariant) {
-    return (
-      <View className="items-center justify-center rounded-xl border border-border bg-card p-8">
-        <ActivityIndicator size="large" className="accent-primary" />
-      </View>
-    );
+  if (!detail.card || !detail.activeVariant) {
+    if (detail.isLoading) {
+      return (
+        <View className="items-center justify-center rounded-xl border border-border bg-card p-8">
+          <ActivityIndicator size="large" className="accent-primary" />
+        </View>
+      );
+    }
+    return null;
   }
 
   const { card, activeVariant } = detail;
@@ -385,7 +392,13 @@ export function CatalogDetailPanel({
               ) : null}
             </View>
 
-            {card.description ? (
+            {detail.isPlaceholderData && !card.description ? (
+              <View className="gap-2 rounded-xl bg-card-panel p-3">
+                <Skeleton className="h-3 w-full rounded" />
+                <Skeleton className="h-3 w-[92%] rounded" />
+                <Skeleton className="h-3 w-[80%] rounded" />
+              </View>
+            ) : card.description ? (
               <View className="rounded-xl bg-card-panel p-3">
                 <CardRulesText text={card.description} />
               </View>
@@ -492,8 +505,8 @@ export function CatalogDetailPanel({
     <>
       <View
         className={cn(
-          'overflow-hidden bg-card',
-          !isDrawer && 'rounded-xl border border-border'
+          'bg-card',
+          isDrawer ? undefined : 'overflow-hidden rounded-xl border border-border'
         )}
       >
         <View className={cn('flex-row gap-3 p-3', !isDrawer && 'bg-card-panel')}>
@@ -514,7 +527,7 @@ export function CatalogDetailPanel({
                 recyclingKey={activeVariant.variantNumber}
                 style={{ width: '100%', height: '100%' }}
                 contentFit="contain"
-                transition={200}
+                transition={isDrawer ? 0 : 200}
                 cachePolicy="memory-disk"
               />
             </View>

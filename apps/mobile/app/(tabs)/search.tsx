@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Keyboard, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Keyboard, View, type ViewToken } from 'react-native';
+import type { CardListItem } from '@riftbound/contracts';
+import { useQueryClient } from '@tanstack/react-query';
 import { CardTile } from '@/components/cards/CardTile';
 import { CardDetailDrawer } from '@/components/catalog/CardDetailDrawer';
 import { CatalogDetailPanel } from '@/components/catalog/CatalogDetailPanel';
@@ -49,6 +51,7 @@ import {
   useCatalogSplitLayout,
 } from '@/hooks/useBreakpoint';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
+import { prefetchCardDetail } from '@/lib/prefetchCardDetail';
 import {
   clearSearchHistory,
   getSearchHistory,
@@ -102,6 +105,8 @@ function SearchScreenBody() {
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(DEFAULT_CATALOG_SORT);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 40 }).current;
 
   const {
     debouncedQuery,
@@ -168,6 +173,21 @@ function SearchScreenBody() {
   const displayItems = hasSearchInput ? filteredItems : featuredFiltered;
   const isSearching = hasSearchInput;
 
+  const selectedCard = useMemo(
+    () =>
+      selectedVariant
+        ? (displayItems.find((item) => cardListItemMatchesVariant(item, selectedVariant)) ??
+          null)
+        : null,
+    [displayItems, selectedVariant]
+  );
+
+  useEffect(() => {
+    for (const card of displayItems.slice(0, 12)) {
+      prefetchCardDetail(queryClient, card);
+    }
+  }, [displayItems, queryClient]);
+
   useEffect(() => {
     if (!splitLayout) return;
     if (displayItems.length === 0) {
@@ -184,9 +204,24 @@ function SearchScreenBody() {
 
   const handleSelectCard = useCallback(
     (variantNumber: string) => {
+      const item = displayItems.find((card) => cardListItemMatchesVariant(card, variantNumber));
+      if (item) {
+        prefetchCardDetail(queryClient, item);
+      }
       setSelectedVariant(variantNumber);
     },
-    []
+    [displayItems, queryClient]
+  );
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken<CardListItem>[] }) => {
+      for (const entry of viewableItems) {
+        if (entry.item) {
+          prefetchCardDetail(queryClient, entry.item);
+        }
+      }
+    },
+    [queryClient]
   );
 
   const hasCatalog =
@@ -510,6 +545,8 @@ function SearchScreenBody() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={dismissKeyboard}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         showsVerticalScrollIndicator={false}
         />
       </View>
@@ -524,7 +561,7 @@ function SearchScreenBody() {
           onMainWidthChange={setSplitMainWidth}
           aside={
             selectedVariant ? (
-              <CatalogDetailPanel variantNumber={selectedVariant} />
+              <CatalogDetailPanel variantNumber={selectedVariant} catalogListItem={selectedCard} />
             ) : undefined
           }
         >
@@ -557,13 +594,18 @@ function SearchScreenBody() {
 
       {!splitLayout ? (
         <CardDetailDrawer
+          key={selectedVariant ?? 'closed'}
           open={selectedVariant != null}
           onClose={() => {
             setSelectedVariant(null);
           }}
         >
           {selectedVariant ? (
-            <CatalogDetailPanel variantNumber={selectedVariant} embedded="drawer" />
+            <CatalogDetailPanel
+              variantNumber={selectedVariant}
+              catalogListItem={selectedCard}
+              embedded="drawer"
+            />
           ) : null}
         </CardDetailDrawer>
       ) : null}

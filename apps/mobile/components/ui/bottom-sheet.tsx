@@ -14,10 +14,12 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { onSheetIndexChange } from "@/lib/bottom-sheet-lifecycle";
 import {
   BackHandler,
   type BlurEvent,
@@ -562,18 +564,17 @@ export const BottomSheet = ({
     [isControlled, onOpenChangeProp]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (open) {
       setMounted(true);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (open) {
       return;
     }
 
     bottomSheetRef.current?.close();
+    const timer = setTimeout(() => {
+      setMounted(false);
+    }, 350);
+    return () => clearTimeout(timer);
   }, [open]);
 
   useEffect(() => {
@@ -717,7 +718,6 @@ export const BottomSheetContent = ({
   const {
     open,
     onOpenChange,
-    setMounted,
     bottomSheetRef,
     animatedIndex,
     setContentConfig,
@@ -784,13 +784,9 @@ export const BottomSheetContent = ({
   const handleSheetChange = useCallback(
     (index: number) => {
       setCurrentSnapIndex(index);
-
-      if (index === -1) {
-        onOpenChange(false);
-        setMounted(false);
-      }
+      onSheetIndexChange(index, () => onOpenChange(false));
     },
-    [onOpenChange, setCurrentSnapIndex, setMounted]
+    [onOpenChange, setCurrentSnapIndex]
   );
 
   useEffect(() => {
@@ -810,17 +806,21 @@ export const BottomSheetContent = ({
     return () => subscription.remove();
   }, [open, enablePanDownToClose, onOpenChange, bottomSheetRef]);
 
-  useEffect(() => {
-    if (!(open && enableDynamicSizing)) {
+  useLayoutEffect(() => {
+    if (!open) {
       return;
     }
 
     const frame = requestAnimationFrame(() => {
-      bottomSheetRef.current?.expand();
+      if (enableDynamicSizing) {
+        bottomSheetRef.current?.expand();
+        return;
+      }
+      bottomSheetRef.current?.snapToIndex(defaultSnapIndex);
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [open, bottomSheetRef, enableDynamicSizing]);
+  }, [open, bottomSheetRef, enableDynamicSizing, defaultSnapIndex]);
 
   const footerComponent = useCallback(
     (footerProps: { animatedFooterPosition: SharedValue<number> }) => (
