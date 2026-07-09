@@ -86,6 +86,7 @@ export const CardsListQuery = z.object({
   sets: z.string().optional(),
   colors: z.string().optional(),
   types: z.string().optional(),
+  super: z.string().optional(),
   rarities: z.string().optional(),
   energyMin: z.coerce.number().int().optional(),
   energyMax: z.coerce.number().int().optional(),
@@ -98,6 +99,10 @@ export const CardsListQuery = z.object({
   sortBy: z.enum(['name', 'energy', 'variantNumber', 'releaseDate']).default('name'),
   dir: z.enum(['asc', 'desc']).default('asc'),
   refresh: z
+    .union([z.literal('true'), z.literal('false')])
+    .transform((v) => v === 'true')
+    .optional(),
+  excludeTokens: z
     .union([z.literal('true'), z.literal('false')])
     .transform((v) => v === 'true')
     .optional(),

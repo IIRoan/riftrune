@@ -268,3 +268,27 @@ export const wishlistItemsRelations = relations(wishlistItems, ({ one }) => ({
     references: [variants.variantNumber],
   }),
 }));
+
+export const userDecks = pgTable(
+  'user_decks',
+  {
+    id: text('id').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.id] }),
+    index('user_decks_user_id_idx').on(t.userId),
+    index('user_decks_updated_at_idx').on(t.userId, t.updatedAt),
+  ]
+);
+
+export const userDecksRelations = relations(userDecks, ({ one }) => ({
+  user: one(user, { fields: [userDecks.userId], references: [user.id] }),
+}));

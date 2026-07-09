@@ -17,7 +17,7 @@ export default function TabLayout() {
   return (
     <AuthGate>
       <AppShell>
-        <View className="flex-1 bg-background">
+        <View className="min-h-0 min-w-0 flex-1 bg-background">
           <Tabs
             tabBar={
               showTabBar

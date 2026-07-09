@@ -3,6 +3,9 @@ import {
   CardDetailResponse,
   CardsBatchResponse,
   CardsListResponse,
+  DeckRulesResponse,
+  DeckValidateInput,
+  DeckValidateResponse,
   FiltersResponse,
   HealthResponse,
   PriceHistoryResponse,
@@ -51,6 +54,7 @@ export const api = {
       keyof CardsListQuery,
       CardsListQuery[keyof CardsListQuery],
     ][]) {
+      if (v === undefined || v === null || v === '') continue;
       params.set(k, String(v));
     }
     const qs = params.toString();
@@ -67,6 +71,14 @@ export const api = {
     }),
 
   getFilters: () => apiFetch('/api/v1/filters', FiltersResponse),
+
+  getDeckRules: () => apiFetch('/api/v1/deck-rules', DeckRulesResponse),
+
+  validateDeck: (deck: DeckValidateInput) =>
+    apiFetch('/api/v1/deck-rules/validate', DeckValidateResponse, {
+      method: 'POST',
+      body: JSON.stringify(deck),
+    }),
 
   getPrices: (query: {
     cardmarketId?: number;

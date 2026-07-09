@@ -30,6 +30,14 @@ const EnvSchema = z.object({
     .transform((v) => v === 'true'),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url().default('http://localhost:7000'),
+
+  /**
+   * Piltoverarchive deck writes appear to require partner identification.
+   * When set, these values are forwarded as an extra header on
+   * upstream deck create/delete requests.
+   */
+  UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME: z.string().min(1).optional(),
+  UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE: z.string().min(1).optional(),
   /** Optional override; otherwise derived from BETTER_AUTH_URL + TRUSTED_ORIGINS in production. */
   AUTH_COOKIE_DOMAIN: z.string().min(1).optional(),
   TRUSTED_ORIGINS: z

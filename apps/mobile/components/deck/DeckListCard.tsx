@@ -15,7 +15,9 @@ const PREVIEW_SIZE = 44;
 interface DeckListCardProps {
   deck: DeckState;
   onPress: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
+  onImport?: () => void;
+  importBusy?: boolean;
 }
 
 function DeckPreviewThumb({
@@ -42,7 +44,7 @@ function DeckPreviewThumb({
             style={{ width: '100%', height: '100%' }}
             contentFit="cover"
             contentPosition="top"
-            transition={120}
+            transition={0}
             cachePolicy="memory-disk"
           />
         ) : (
@@ -62,17 +64,25 @@ function DeckPreviewThumb({
   );
 }
 
-export function DeckListCard({ deck, onPress, onDelete }: DeckListCardProps) {
-  const variantNumbers = [
+export function DeckListCard({
+  deck,
+  onPress,
+  onDelete,
+  onImport,
+  importBusy = false,
+}: DeckListCardProps) {
+  const readOnly = deck.readOnly === true;
+  const previewVariants = [
     deck.legend?.variantNumber,
     deck.champion?.variantNumber,
     ...[...deck.mainDeck.values()].slice(0, 3).map((entry) => entry.card.variantNumber),
   ].filter((value): value is string => Boolean(value));
+  const variantKey = [...new Set(previewVariants)].sort().join('|');
 
-  const { data: imageByVariant = new Map<string, string>() } = useDeckCardImages(variantNumbers);
+  const { data: imageByVariant = new Map<string, string>() } = useDeckCardImages(variantKey);
   const messages = validateDeck(deck);
   const hasErrors = deckHasErrors(messages);
-  const mainCount = getSectionCount(deck, 'mainDeck');
+  const mainCount = getSectionCount(deck, 'mainDeck') + (deck.champion ? 1 : 0);
   const runeCount = getSectionCount(deck, 'runes');
   const battlefieldCount = getSectionCount(deck, 'battlefields');
 
@@ -99,6 +109,11 @@ export function DeckListCard({ deck, onPress, onDelete }: DeckListCardProps) {
               <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
                 {deck.name}
               </Text>
+              {deck.description ? (
+                <Text className="mt-0.5 text-[12px] text-muted-foreground" numberOfLines={2}>
+                  {deck.description}
+                </Text>
+              ) : null}
               <Text className="mt-0.5 font-mono text-[12px] text-muted-foreground">
                 Main {mainCount} · Runes {runeCount}/12 · Fields {battlefieldCount}/3
               </Text>
@@ -112,16 +127,24 @@ export function DeckListCard({ deck, onPress, onDelete }: DeckListCardProps) {
             <View
               className={cn(
                 'shrink-0 rounded-full px-2 py-1',
-                hasErrors ? 'bg-warning/15' : 'bg-success/15'
+                readOnly
+                  ? 'bg-muted'
+                  : hasErrors
+                    ? 'bg-warning/15'
+                    : 'bg-success/15'
               )}
             >
               <Text
                 className={cn(
                   'text-[11px] font-semibold',
-                  hasErrors ? 'text-warning' : 'text-success'
+                  readOnly
+                    ? 'text-muted-foreground'
+                    : hasErrors
+                      ? 'text-warning'
+                      : 'text-success'
                 )}
               >
-                {hasErrors ? 'Needs work' : 'Valid'}
+                {readOnly ? 'Imported' : hasErrors ? 'Needs work' : 'Valid'}
               </Text>
             </View>
           </View>
@@ -135,22 +158,46 @@ export function DeckListCard({ deck, onPress, onDelete }: DeckListCardProps) {
                 />
               ))}
             </View>
+          ) : readOnly ? (
+            <Text className="text-[12px] text-muted-foreground">
+              Open to view the full imported deck
+            </Text>
           ) : (
             <Text className="text-[12px] text-muted-foreground">No main deck cards yet</Text>
           )}
         </View>
       </View>
 
-      <Pressable
-        accessibilityLabel={`Delete ${deck.name}`}
-        className="border-t border-archive-soft-line px-4 py-2.5 active:bg-destructive/5"
-        onPress={(event) => {
-          event.stopPropagation?.();
-          void onDelete();
-        }}
-      >
-        <Text className="text-right text-sm font-medium text-destructive">Delete deck</Text>
-      </Pressable>
+      {onDelete ? (
+        <Pressable
+          accessibilityLabel={`Delete ${deck.name}`}
+          className="border-t border-archive-soft-line px-4 py-2.5 active:bg-destructive/5"
+          onPress={(event) => {
+            event.stopPropagation?.();
+            void onDelete();
+          }}
+        >
+          <Text className="text-right text-sm font-medium text-destructive">Delete deck</Text>
+        </Pressable>
+      ) : readOnly && onImport ? (
+        <Pressable
+          accessibilityLabel={`Import ${deck.name} to my decks`}
+          className="border-t border-archive-soft-line px-4 py-2.5 active:bg-primary/5"
+          disabled={importBusy}
+          onPress={(event) => {
+            event.stopPropagation?.();
+            onImport();
+          }}
+        >
+          <Text className="text-right text-sm font-medium text-primary">
+            {importBusy ? 'Importing…' : 'Import to my decks'}
+          </Text>
+        </Pressable>
+      ) : readOnly ? (
+        <View className="border-t border-archive-soft-line px-4 py-2.5">
+          <Text className="text-right text-sm text-muted-foreground">View only</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }

@@ -1,0 +1,185 @@
+import { useQuery } from '@tanstack/react-query';
+import { Image } from 'expo-image';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
+import { SearchInput } from '@/components/ui/search-input';
+import { Text } from '@/components/ui/text';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
+import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
+import { useScreenLayout } from '@/components/shell/ScreenLayout';
+import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
+import { deckCardFromDetail, isLegendCard } from '@/lib/deck-card';
+import type { DeckCard } from '@/lib/deck-types';
+import { api } from '@/src/api/client';
+import { cardQueryKeys } from '@/src/api/queryKeys';
+import { useDebounce } from '@/hooks/useDebounce';
+import { hapticPress } from '@/utils/haptics';
+import { resolveImageUrl } from '@/utils/resolveImageUrl';
+import { cn } from '@/lib/utils';
+
+interface LegendPickerProps {
+  onSelect: (legend: DeckCard) => void;
+  onBack?: () => void;
+  paddingBottom?: number;
+}
+
+export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPickerProps) {
+  const { contentWidth } = useScreenLayout();
+  const { tileWidth, gap, numColumns } = useResponsiveColumns('grid', {
+    measuredWidth: contentWidth,
+  });
+
+  const [query, setQuery] = useState('');
+  const debounced = useDebounce(query.trim(), 300);
+
+  const cardsQuery = useQuery({
+    queryKey: cardQueryKeys.search(debounced || 'type:legend', 60, 'name', 'asc'),
+    queryFn: () =>
+      api.listCards({
+        q: debounced || undefined,
+        types: 'Legend',
+        limit: 60,
+        page: 1,
+        sortBy: 'name',
+        dir: 'asc',
+      }),
+    staleTime: 60_000,
+  });
+
+  const listItems = useMemo(
+    () => (cardsQuery.data?.data ?? []).filter((item) => item.type.toLowerCase() === 'legend'),
+    [cardsQuery.data?.data]
+  );
+  const variantNumbers = useMemo(
+    () => listItems.map((item) => item.variantNumber),
+    [listItems]
+  );
+
+  const detailsQuery = useQuery({
+    queryKey: ['legend-picker-details', [...variantNumbers].sort().join(',')],
+    queryFn: () => api.batchCards(variantNumbers),
+    enabled: variantNumbers.length > 0,
+    staleTime: 60_000,
+  });
+
+  const legends = useMemo(() => {
+    const details = detailsQuery.data?.data ?? [];
+    if (!details.length) return [];
+
+    const detailByVariant = new Map<string, (typeof details)[number]>();
+    for (const card of details) {
+      for (const variant of card.variants) {
+        detailByVariant.set(variant.variantNumber, card);
+      }
+    }
+
+    const results: DeckCard[] = [];
+    for (const item of listItems) {
+      const detail = detailByVariant.get(item.variantNumber);
+      if (!detail) continue;
+      const card = deckCardFromDetail(detail, item.variantNumber);
+      if (!isLegendCard(card)) continue;
+      results.push(card);
+    }
+    return results;
+  }, [detailsQuery.data, listItems]);
+
+  const loading = cardsQuery.isLoading || (variantNumbers.length > 0 && detailsQuery.isLoading);
+
+  return (
+    <View className="min-h-0 flex-1 gap-4">
+      <View className="gap-2">
+        {onBack ? (
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              className="size-9 items-center justify-center rounded-lg active:bg-card-panel"
+              onPress={() => {
+                hapticPress();
+                onBack();
+              }}
+            >
+              <ThemedIonicon name="chevron-back" size={22} color="foreground" />
+            </Pressable>
+            <Text className="text-lg font-semibold text-foreground">Choose your Legend</Text>
+          </View>
+        ) : (
+          <Text className="text-lg font-semibold text-foreground">Choose your Legend</Text>
+        )}
+        <Text className="text-[13px] leading-snug text-muted-foreground">
+          Your Legend sets domain identity, rune colors, and signature rules for the entire deck.
+        </Text>
+        <SearchInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search legends"
+          autoFocus
+        />
+      </View>
+
+      {loading && legends.length === 0 ? (
+        <View className="flex-1 items-center justify-center py-16">
+          <ActivityIndicator />
+        </View>
+      ) : (
+        <FlatList
+          data={legends}
+          keyExtractor={(item) => item.variantNumber}
+          numColumns={numColumns}
+          columnWrapperStyle={{ gap, marginBottom: gap }}
+          contentContainerStyle={{ paddingBottom, flexGrow: legends.length === 0 ? 1 : undefined }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View className="items-center gap-2 py-16">
+              <ThemedIonicon name="search-outline" size={28} color="muted-foreground" />
+              <Text className="text-sm text-muted-foreground">No legends match your search</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Select ${item.name}`}
+              style={{ width: tileWidth }}
+              className="gap-1.5 active:opacity-90"
+              onPress={() => {
+                hapticPress();
+                onSelect(item);
+              }}
+            >
+              <View
+                className={cn(
+                  'aspect-[5/7] w-full overflow-hidden border border-white/10 bg-background',
+                  CARD_ART_RADIUS_CLASS
+                )}
+              >
+                {item.imageUrl ? (
+                  <Image
+                    source={{ uri: resolveImageUrl(item.imageUrl) }}
+                    recyclingKey={item.variantNumber}
+                    style={{ width: '100%', height: '100%' }}
+                    contentFit="cover"
+                    contentPosition="top"
+                    transition={120}
+                    cachePolicy="memory-disk"
+                  />
+                ) : (
+                  <View className="flex-1 items-center justify-center bg-card-panel">
+                    <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
+                  </View>
+                )}
+              </View>
+              <Text className="text-[12px] font-semibold text-foreground" numberOfLines={2}>
+                {item.name}
+              </Text>
+              {item.colors.length > 0 ? (
+                <Text className="text-[11px] text-muted-foreground">{item.colors.join(' · ')}</Text>
+              ) : null}
+            </Pressable>
+          )}
+        />
+      )}
+    </View>
+  );
+}

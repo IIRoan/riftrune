@@ -26,12 +26,13 @@ export class RiftruneClient {
     path: string,
     init?: RequestInit & { parse?: (data: unknown) => T }
   ): Promise<T> {
-    const { parse, method, body } = init ?? {};
+    const { parse, method, body, headers: extraHeaders } = init ?? {};
     const url = `${this.env.RIFTRUNE_BASE_URL}${path}`;
     const fetchInit: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': this.env.RIFTRUNE_API_KEY,
+        ...(extraHeaders ?? {}),
       },
       signal: AbortSignal.timeout(30_000),
     };
@@ -92,6 +93,45 @@ export class RiftruneClient {
   getAllPrices(): Promise<PaPriceRow[]> {
     return this.request('/v1/prices', {
       parse: (d) => PaPricesListResponse.parse(d).data,
+    });
+  }
+
+  /**
+   * Upstream deck endpoints (read + best-effort write).
+   *
+   * NOTE: Upstream auth rules for write can be stricter than for reads.
+   * We keep the client un-opinionated and let callers handle failures.
+   */
+  listDecks(params?: { limit?: number; page?: number }): Promise<unknown> {
+    const qs = new URLSearchParams();
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params?.page !== undefined) qs.set('page', String(params.page));
+    const q = qs.toString();
+    return this.request(`/v1/decks${q ? `?${q}` : ''}`, {
+      parse: (d) => d as unknown,
+    });
+  }
+
+  getDeck(deckId: string): Promise<unknown> {
+    return this.request(`/v1/decks/${encodeURIComponent(deckId)}`, {
+      parse: (d) => d as unknown,
+    });
+  }
+
+  createOrUpsertDeck(payload: unknown, extraHeaders?: Record<string, string>): Promise<unknown> {
+    return this.request('/v1/decks', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: extraHeaders,
+      parse: (d) => d as unknown,
+    });
+  }
+
+  deleteDeck(deckId: string, extraHeaders?: Record<string, string>): Promise<void> {
+    return this.request(`/v1/decks/${encodeURIComponent(deckId)}`, {
+      method: 'DELETE',
+      headers: extraHeaders,
+      parse: () => undefined,
     });
   }
 }

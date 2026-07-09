@@ -29,6 +29,7 @@ import {
   Platform,
   Pressable,
   type PressableProps,
+  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -82,6 +83,8 @@ type BottomSheetContentConfig = {
   detached?: boolean;
   bottomInset?: number;
 };
+
+type BottomSheetScrollViewProps = React.ComponentProps<typeof GorhomBottomSheetScrollView>;
 
 type BottomSheetContextValue = {
   open: boolean;
@@ -890,19 +893,21 @@ export const BottomSheetScrollView = ({
   headerInset = 0,
   style,
   ...props
-}: React.ComponentProps<typeof GorhomBottomSheetScrollView> & {
+}: BottomSheetScrollViewProps & {
   contentContainerClassName?: string;
   headerInset?: number;
 }) => (
   <GorhomBottomSheetScrollView
     className={cn("min-h-0 flex-1", className)}
-    contentContainerStyle={[
-      { paddingHorizontal: 16, paddingBottom: 16 },
-      headerInset > 0 ? { paddingTop: headerInset } : undefined,
-      contentContainerStyle,
-    ]}
+    contentContainerStyle={
+      StyleSheet.flatten([
+        { paddingHorizontal: 16, paddingBottom: 16 },
+        headerInset > 0 ? { paddingTop: headerInset } : null,
+        contentContainerStyle,
+      ]) as BottomSheetScrollViewProps["contentContainerStyle"]
+    }
     enableFooterMarginAdjustment
-    style={style}
+    style={StyleSheet.flatten(style) as BottomSheetScrollViewProps["style"]}
     {...props}
   />
 );
