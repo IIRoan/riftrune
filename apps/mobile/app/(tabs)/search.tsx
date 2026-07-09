@@ -41,8 +41,9 @@ import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { Layout } from '@/constants/Layout';
 import { useTheme } from '@/context/ThemeContext';
 import { useCardSearch } from '@/hooks/useCardSearch';
-import { useCollection } from '@/hooks/useCollection';
+import { useCollectionOwnership } from '@/hooks/useCollection';
 import { useFeaturedCatalog } from '@/hooks/useFeaturedCatalog';
+import { collectVariantNumbers } from '@/utils/collectionOwnership';
 import { cardListItemMatchesVariant } from '@/utils/variants';
 import {
   CATALOG_DETAIL_GAP,
@@ -118,12 +119,16 @@ function SearchScreenBody() {
     searchNow,
   } = useCardSearch(query, catalogSort);
   const featuredQuery = useFeaturedCatalog();
-  const { data: collection = [] } = useCollection();
 
-  const collectionByVariant = useMemo(
-    () => new Map(collection.map((e) => [e.variantNumber, e])),
-    [collection]
+  const trimmedQuery = query.trim();
+  const hasSearchInput = trimmedQuery.length >= minLength;
+  const searchPending = hasSearchInput && trimmedQuery !== debouncedQuery;
+  const catalogSource = hasSearchInput ? items : (featuredQuery.data ?? []);
+  const ownershipVariants = useMemo(
+    () => collectVariantNumbers(catalogSource, selectedVariant ? [selectedVariant] : []),
+    [catalogSource, selectedVariant]
   );
+  const { collectionByVariant } = useCollectionOwnership(ownershipVariants);
 
   const view = defaultLayout;
   const setView = setDefaultLayout;
@@ -160,9 +165,6 @@ function SearchScreenBody() {
     [items, activeFilter, collectionByVariant]
   );
 
-  const trimmedQuery = query.trim();
-  const hasSearchInput = trimmedQuery.length >= minLength;
-  const searchPending = hasSearchInput && trimmedQuery !== debouncedQuery;
   const featuredFiltered = useMemo(
     () =>
       (featuredQuery.data ?? []).filter((card) =>

@@ -7,6 +7,8 @@ import {
   CollectionImportResponse,
   CollectionListResponse,
   CollectionItemResponse,
+  CollectionQuantitiesRequest,
+  CollectionQuantitiesResponse,
   CollectionUpsertRequest,
 } from '@riftbound/contracts';
 import type { CollectionItem as CollectionItemDto } from '@riftbound/contracts';
@@ -64,6 +66,20 @@ export function createCollectionRoutes(collection: CollectionService, auth: Auth
         }
         const result = await collection.listForUser(user.id);
         return parseCollectionList('collection.list', result);
+      },
+      { detail: { tags: ['collection'] } }
+    )
+    .post(
+      '/quantities',
+      async ({ request, set, body }) => {
+        const user = await getSessionUser(auth, request.headers);
+        if (!user) {
+          set.status = 401;
+          return unauthorized();
+        }
+        const { variantNumbers } = CollectionQuantitiesRequest.parse(body);
+        const rows = await collection.quantitiesForVariants(user.id, variantNumbers);
+        return CollectionQuantitiesResponse.parse({ data: rows });
       },
       { detail: { tags: ['collection'] } }
     )

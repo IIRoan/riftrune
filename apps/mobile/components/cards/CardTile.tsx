@@ -12,7 +12,7 @@ import { Text } from '@/components/ui/text';
 import { rarityIconFor } from '@/constants/gameAssets';
 import { gridCardTitleStyle } from '@/lib/cardTileGridTitle';
 import { useCollectionMutations } from '@/hooks/useCollection';
-import type { CollectionEntry } from '@/services/collectionService';
+import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
 import { openCard } from '@/utils/cardNavigation';
 import {
   formatListPrice,
@@ -52,7 +52,7 @@ interface Props {
   familyContextVariantNumber?: string | null;
   hidePrice?: boolean;
   onPress?: () => void;
-  collectionByVariant?: ReadonlyMap<string, CollectionEntry>;
+  collectionByVariant?: CollectionOwnershipMap;
 }
 
 export function CardTile({

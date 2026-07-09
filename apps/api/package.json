@@ -13,10 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "test": "bun test test/e2e",
-    "test:unit": "bun test test/unit",
-    "test:upstream": "UPSTREAM_E2E=true bun test test/upstream",
-    "test:e2e": "bun test test/e2e --concurrent 1"
+    "test": "bun scripts/run-tests.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.23",

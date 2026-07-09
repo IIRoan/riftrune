@@ -35,6 +35,22 @@ export function createCardsRoutes(cards: CardCacheService, _env: Env) {
       { detail: { tags: ['cards'] } }
     )
     .get(
+      '/index',
+      async ({ set }) => {
+        const result = await cards.listIndex();
+        set.headers['cache-control'] = 'public, max-age=300, stale-while-revalidate=60';
+        return {
+          data: result.items,
+          meta: {
+            catalogHash: result.catalogHash,
+            total: result.total,
+            source: 'cache' as const,
+          },
+        };
+      },
+      { detail: { tags: ['cards'] } }
+    )
+    .get(
       '/:variantNumber',
       async ({ params, query }) => {
         const refresh = query.refresh === 'true';

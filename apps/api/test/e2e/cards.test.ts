@@ -3,6 +3,7 @@ import {
   CardDetailResponse,
   CardsBatchResponse,
   CardsListResponse,
+  CatalogIndexResponse,
 } from '@riftbound/contracts';
 import { apiJson } from './support.js';
 
@@ -16,6 +17,17 @@ describe('cards (cached catalog)', () => {
     expect(parsed.meta.source).toBe('cache');
     expect(parsed.data[0]?.variantNumber).toBeTruthy();
     expect(parsed.data[0]?.imageUrl).toMatch(/^https?:\/\//);
+  });
+
+  test('GET /api/v1/cards/index returns grouped catalog rows', async () => {
+    const json = await apiJson<unknown>('/api/v1/cards/index');
+    const parsed = CatalogIndexResponse.parse(json);
+
+    expect(parsed.data.length).toBeGreaterThan(0);
+    expect(parsed.meta.total).toBe(parsed.data.length);
+    expect(parsed.meta.catalogHash.length).toBeGreaterThan(0);
+    expect(parsed.meta.source).toBe('cache');
+    expect(parsed.data[0]?.printings.length).toBeGreaterThan(0);
   });
 
   test('GET /api/v1/cards/:variantNumber returns card detail', async () => {

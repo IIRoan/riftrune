@@ -140,6 +140,17 @@ export const CardsBatchResponse = z.object({
   }),
 });
 
+export const CatalogIndexResponse = z.object({
+  data: z.array(CardListItem),
+  meta: z.object({
+    catalogHash: z.string(),
+    total: z.number().int().nonnegative(),
+    source: z.enum(['cache']),
+  }),
+});
+
+export type CatalogIndexResponse = z.infer<typeof CatalogIndexResponse>;
+
 export type VariantNumber = z.infer<typeof VariantNumber>;
 export type PriceSummary = z.infer<typeof PriceSummary>;
 export type CardListPrinting = z.infer<typeof CardListPrinting>;

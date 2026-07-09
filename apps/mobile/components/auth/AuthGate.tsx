@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   View,
 } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthWideLayout } from '@/components/auth/AuthBackdrop';
 import { AuthPanel } from '@/components/auth/AuthPanel';
@@ -12,6 +13,8 @@ import { AuthWallpaperFrame } from '@/components/auth/AuthWallpaperFrame';
 import type { Mode } from '@/components/auth/auth-types';
 import { Text } from '@/components/ui/text';
 import { authClient } from '@/src/lib/auth-client';
+import { hydrateCollectionCache, prefetchCollection } from '@/hooks/useCollection';
+import { prefetchCatalogIndex } from '@/hooks/useCatalogIndex';
 
 function AuthBrandMark() {
   return (
@@ -86,7 +89,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const wide = useAuthWideLayout();
   const [mode, setMode] = useState<Mode>('sign-in');
+  const queryClient = useQueryClient();
   const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    if (!session?.user) return;
+    void (async () => {
+      await hydrateCollectionCache(queryClient);
+      await prefetchCatalogIndex(queryClient);
+      await prefetchCollection(queryClient);
+    })();
+  }, [session?.user, queryClient]);
 
   if (isPending) {
     return (

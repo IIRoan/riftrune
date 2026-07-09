@@ -2,6 +2,7 @@ import type { CollectionItem, WishlistItem } from '@riftbound/contracts';
 import {
   CollectionImportResponse,
   CollectionListResponse,
+  CollectionQuantitiesResponse,
   WishlistListResponse,
 } from '@riftbound/contracts';
 import { getAuthCookieHeader } from '@/lib/auth-cookie';
@@ -94,6 +95,20 @@ function parseOrThrow<T>(
 export async function fetchRemoteCollection(): Promise<CollectionItem[]> {
   const res = await authedFetch<{ data: CollectionItem[] }>('/api/v1/collection');
   return parseOrThrow('collection.list.parse', CollectionListResponse, res).data;
+}
+
+export async function fetchRemoteCollectionQuantities(
+  variantNumbers: string[]
+): Promise<Array<{ variantNumber: string; quantity: number }>> {
+  if (variantNumbers.length === 0) return [];
+  const res = await authedFetch<{ data: Array<{ variantNumber: string; quantity: number }> }>(
+    '/api/v1/collection/quantities',
+    {
+      method: 'POST',
+      body: { variantNumbers },
+    }
+  );
+  return parseOrThrow('collection.quantities.parse', CollectionQuantitiesResponse, res).data;
 }
 
 export async function remoteAddToCollection(

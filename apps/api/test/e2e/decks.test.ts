@@ -1,12 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test, setDefaultTimeout } from 'bun:test';
 import { DeckDetailResponse, DeckListResponse } from '@riftbound/contracts';
 import { eq, like } from 'drizzle-orm';
-import {
-  setupE2E,
-  getEnv,
-  getContext,
-  getBaseUrl,
-} from './support.js';
+import { getEnv, getContext, getBaseUrl } from './support.js';
 import { user as userTable, session as sessionTable, account as accountTable } from '../../src/db/auth-schema.js';
 import { userDecks } from '../../src/db/schema.js';
 
@@ -60,7 +55,6 @@ function asAnyDeckId(x: unknown): string {
 
 describe('decks: upstream transformation', () => {
   beforeAll(async () => {
-    await setupE2E();
     await cleanupTestUsers();
 
     const res = await authFetch('/api/auth/sign-up/email', {

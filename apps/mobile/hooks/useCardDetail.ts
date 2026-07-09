@@ -3,10 +3,10 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CardListItem } from '@riftbound/contracts';
 import {
-  useCollection,
-  useCollectionEntry,
   useCollectionMutations,
+  useCollectionOwnership,
 } from '@/hooks/useCollection';
+import { collectVariantNumbers } from '@/utils/collectionOwnership';
 import { useCollectionRemove } from '@/hooks/useCollectionRemove';
 import { cardListItemToDetailResponse } from '@/lib/cardDetailPlaceholder';
 import { formatPrintingLabel, findVariantByNumber, getSearchGroupVariants, isFoilVariant, cardListItemMatchesVariant } from '@/utils/variants';
@@ -71,11 +71,13 @@ export function useCardDetail(
     (card ? findVariantByNumber(card.variants, variantNumber) : undefined) ??
     card?.variants[0];
 
-  const { data: collection = [] } = useCollection();
-  const collectionByVariant = useMemo(
-    () => new Map(collection.map((e) => [e.variantNumber, e])),
-    [collection]
-  );
+  const detailVariants = useMemo(() => {
+    if (card) return card.variants.map((variant) => variant.variantNumber);
+    if (listItem) return collectVariantNumbers([listItem], [variantNumber]);
+    return variantNumber ? [variantNumber] : [];
+  }, [card, listItem, variantNumber]);
+
+  const { collectionByVariant } = useCollectionOwnership(detailVariants);
 
   const collectedForCard = useMemo(() => {
     if (!card || !activeVariant) return [];
@@ -86,9 +88,20 @@ export function useCardDetail(
     });
   }, [card, activeVariant, collectionByVariant]);
 
-  const { data: collectionEntry } = useCollectionEntry(
-    activeVariant?.variantNumber ?? ''
-  );
+  const ownedQuantity = activeVariant
+    ? (collectionByVariant.get(activeVariant.variantNumber)?.quantity ?? 0)
+    : 0;
+  const collectionEntry = useMemo(() => {
+    if (!activeVariant || ownedQuantity <= 0) return null;
+    return {
+      quantity: ownedQuantity,
+      isFoil: isFoilVariant(
+        activeVariant.variantNumber,
+        activeVariant.variantLabel,
+        activeVariant.variantType
+      ),
+    };
+  }, [activeVariant, ownedQuantity]);
   const { addFromDetail, setQuantity } = useCollectionMutations();
   const {
     sheet,
@@ -174,8 +187,8 @@ export function useCardDetail(
 
   const onQuantityChange = useCallback(
     async (delta: number) => {
-      if (!activeVariant || !collectionEntry) return;
-      const next = collectionEntry.quantity + delta;
+      if (!activeVariant || ownedQuantity <= 0) return;
+      const next = ownedQuantity + delta;
       if (next <= 0) {
         if (!card) return;
         void promptRemove(card.name, collectedForCard);
@@ -187,7 +200,7 @@ export function useCardDetail(
         quantity: next,
       });
     },
-    [activeVariant, collectionEntry, setQuantity, card, collectedForCard, promptRemove]
+    [activeVariant, ownedQuantity, setQuantity, card, collectedForCard, promptRemove]
   );
 
   const onSelectPrinting = useCallback((id: string) => {

@@ -33,7 +33,8 @@ import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { Layout } from '@/constants/Layout';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { formatStat, useCardDetail } from '@/hooks/useCardDetail';
-import { useCollection, useCollectionMutations } from '@/hooks/useCollection';
+import { useCollectionMutations, useCollectionOwnership } from '@/hooks/useCollection';
+import { collectVariantNumbers } from '@/utils/collectionOwnership';
 import { useWishlist } from '@/hooks/useWishlist';
 import { addToWishlist, removeFromWishlist } from '@/services/wishlistService';
 import { wishlistQueryKeys } from '@/src/api/queryKeys';
@@ -71,7 +72,11 @@ export function CatalogDetailPanel({
   const queryClient = useQueryClient();
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { setQuantity } = useCollectionMutations();
-  const { data: collection = [] } = useCollection();
+  const detailVariants = useMemo(() => {
+    if (catalogListItem) return collectVariantNumbers([catalogListItem], [variantNumber]);
+    return [variantNumber];
+  }, [catalogListItem, variantNumber]);
+  const { collectionByVariant } = useCollectionOwnership(detailVariants);
   const [fullscreen, setFullscreen] = useState(false);
   const [wishlistPickerVisible, setWishlistPickerVisible] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);
@@ -79,10 +84,6 @@ export function CatalogDetailPanel({
   const wishlistVariants = useMemo(
     () => new Set(wishlist.map((entry) => entry.variantNumber)),
     [wishlist]
-  );
-  const collectionByVariant = useMemo(
-    () => new Map(collection.map((e) => [e.variantNumber, e])),
-    [collection]
   );
 
   useEffect(() => {

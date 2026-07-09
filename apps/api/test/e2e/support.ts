@@ -1,15 +1,47 @@
 import { FiltersResponse } from '@riftbound/contracts';
+import { count } from 'drizzle-orm';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { createApp, type AppContext } from '../../src/app.js';
 import { loadEnv, type Env } from '../../src/env.js';
-import { filterSnapshots, syncState } from '../../src/db/schema.js';
+import { filterSnapshots, syncState, variants } from '../../src/db/schema.js';
 import { entityHash } from '../../src/lib/hash.js';
 import { enrichedFilterSnapshot, expectedCatalogTotal } from '../fixtures/enriched-filters.js';
 
 const E2E_PORT = Number(process.env.E2E_PORT ?? 3099);
+const API_ROOT = join(import.meta.dir, '../..');
+
+function loadDotEnvFile(): void {
+  const envPath = join(API_ROOT, '.env');
+  if (!existsSync(envPath)) return;
+
+  const content = readFileSync(envPath, 'utf8');
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const separator = trimmed.indexOf('=');
+    if (separator === -1) continue;
+
+    const key = trimmed.slice(0, separator).trim();
+    let value = trimmed.slice(separator + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+loadDotEnvFile();
 
 let ctx: AppContext | null = null;
 let ownsServer = false;
@@ -63,6 +95,19 @@ async function runMigrations(databaseUrl: string): Promise<void> {
   await migrationClient.end({ timeout: 5 });
 }
 
+async function runMigrationsWithRetry(databaseUrl: string): Promise<void> {
+  const attempts = 10;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await runMigrations(databaseUrl);
+      return;
+    } catch (error) {
+      if (attempt === attempts) throw error;
+      await Bun.sleep(1_000 * attempt);
+    }
+  }
+}
+
 export async function setupE2E(): Promise<void> {
   if (baseUrl) return;
 
@@ -71,10 +116,20 @@ export async function setupE2E(): Promise<void> {
   process.env.SYNC_MAX_PAGES ??= '2';
   applyTestDatabaseUrl();
 
-  const env = loadEnv();
-  await runMigrations(env.DATABASE_URL);
-
   const externalUrl = process.env.E2E_API_URL;
+  if (!externalUrl) {
+    const e2eOrigin = `http://localhost:${String(E2E_PORT)}`;
+    process.env.BETTER_AUTH_URL = e2eOrigin;
+    const existing = (process.env.TRUSTED_ORIGINS ?? '')
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    process.env.TRUSTED_ORIGINS = [...new Set([...existing, e2eOrigin])].join(',');
+  }
+
+  const env = loadEnv();
+  await runMigrationsWithRetry(env.DATABASE_URL);
+
   if (externalUrl) {
     baseUrl = externalUrl.replace(/\/$/, '');
     const health = await fetch(`${baseUrl}/api/v1/health`);
@@ -110,8 +165,12 @@ export async function teardownE2E(): Promise<void> {
 }
 
 export async function ensureCatalogSynced(): Promise<void> {
+  let hasCards = false;
   try {
     const ctx = getContext();
+    const [row] = await ctx.db.select({ value: count() }).from(variants);
+    hasCards = (row?.value ?? 0) > 0;
+
     const hash = entityHash(enrichedFilterSnapshot);
     await ctx.db.insert(filterSnapshots).values({
       snapshot: enrichedFilterSnapshot,
@@ -139,7 +198,8 @@ export async function ensureCatalogSynced(): Promise<void> {
           lastError: null,
         },
       });
-    return;
+
+    if (hasCards) return;
   } catch {
     // External E2E_API_URL — fall back to admin sync.
   }
@@ -151,7 +211,7 @@ export async function ensureCatalogSynced(): Promise<void> {
       parsed.meta.variantCount === expectedCatalogTotal &&
       parsed.data.sets.some((set) => set.printCount != null)
     ) {
-      return;
+      if (hasCards) return;
     }
   }
 
