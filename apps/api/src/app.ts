@@ -15,6 +15,8 @@ import { createFiltersRoutes } from './routes/filters.js';
 import { createPricesRoutes } from './routes/prices.js';
 import { createHealthRoutes, createSyncRoutes } from './routes/sync.js';
 import { createWishlistRoutes } from './routes/wishlist.js';
+import { createDeckRulesRoutes } from './routes/deck-rules.js';
+import { createDecksRoutes } from './routes/decks.js';
 import { CardCacheService } from './services/card-cache.js';
 import { ImageStoreService } from './services/image-store.js';
 import { CatalogMetadataService } from './services/catalog-metadata.js';
@@ -22,6 +24,7 @@ import { CollectionService } from './services/collection-service.js';
 import { PriceCacheService } from './services/price-cache.js';
 import { SyncEngine } from './services/sync-engine.js';
 import { WishlistService } from './services/wishlist-service.js';
+import { DeckService } from './services/deck-service.js';
 import { RiftruneClient } from './upstream/riftrune-client.js';
 
 export interface AppContext {
@@ -36,6 +39,7 @@ export interface AppContext {
   syncEngine: SyncEngine;
   collectionService: CollectionService;
   wishlistService: WishlistService;
+  deckService: DeckService;
 }
 
 function buildApp(env: Env): AppContext {
@@ -50,6 +54,15 @@ function buildApp(env: Env): AppContext {
   const syncEngine = new SyncEngine(db, riftrune, cardCache, catalogMetadata);
   const collectionService = new CollectionService(db, cardCache, imageStore, riftrune);
   const wishlistService = new WishlistService(db, imageStore);
+  const upstreamDeckWriteExtraHeader =
+    env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME && env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE
+      ? {
+          name: env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME,
+          value: env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE,
+        }
+      : undefined;
+
+  const deckService = new DeckService(db, riftrune, cardCache, upstreamDeckWriteExtraHeader);
 
   const app = new Elysia()
     .use(
@@ -85,6 +98,8 @@ function buildApp(env: Env): AppContext {
     .use(createFiltersRoutes(catalogMetadata))
     .use(createCollectionRoutes(collectionService, auth))
     .use(createWishlistRoutes(wishlistService, auth))
+    .use(createDeckRulesRoutes())
+    .use(createDecksRoutes(deckService, auth))
     .use(createSyncRoutes(syncEngine, priceCache, env))
     .get('/', () => ({
       name: 'riftrune-api',
@@ -105,6 +120,7 @@ function buildApp(env: Env): AppContext {
     syncEngine,
     collectionService,
     wishlistService,
+    deckService,
   } as unknown as AppContext;
 }
 

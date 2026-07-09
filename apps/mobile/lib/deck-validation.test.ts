@@ -84,6 +84,34 @@ describe('validateDeck', () => {
     expect(messages.some((m) => m.message.includes('share a champion tag'))).toBe(true);
   });
 
+  test('accepts Darius legend and champion by primary name', () => {
+    let deck = createEmptyDeck();
+    deck = addCardToDeck(
+      deck,
+      mockCard({
+        name: 'Darius, Hand of Noxus',
+        type: 'Legend',
+        tags: ['Noxus', 'Fury', 'Order'],
+        colors: ['Fury', 'Order'],
+      }),
+      { section: 'legend' }
+    );
+    deck = addCardToDeck(
+      deck,
+      mockCard({
+        name: 'Darius, Executioner',
+        type: 'Unit',
+        super: 'Champion',
+        tags: ['Noxus', 'Fury'],
+        colors: ['Fury'],
+      }),
+      { section: 'champion' }
+    );
+
+    const messages = validateDeck(deck);
+    expect(messages.some((m) => m.code === 'champion_tag_mismatch')).toBe(false);
+  });
+
   test('enforces domain identity on main deck cards', () => {
     let deck = createEmptyDeck();
     deck = addCardToDeck(deck, jinxLegend, { section: 'legend' });
@@ -178,7 +206,9 @@ describe('validateDeck', () => {
     );
 
     const messages = validateDeck(deck);
-    expect(messages).toEqual([{ type: 'valid', message: 'Deck is valid!' }]);
+    expect(messages).toEqual([
+      { type: 'valid', code: 'deck_valid', message: 'Deck is valid!' },
+    ]);
   });
 });
 

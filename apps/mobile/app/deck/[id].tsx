@@ -1,83 +1,53 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
-import { DeckCardPickerSheet } from '@/components/deck/DeckCardPickerSheet';
-import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
-import { DeckSectionList, DeckSectionTabs } from '@/components/deck/DeckSectionList';
-import { DeckValidationBanner } from '@/components/deck/DeckValidationBanner';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { DeckBuilderCanvas } from '@/components/deck/DeckBuilderCanvas';
+import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
+import { LegendPicker } from '@/components/deck/LegendPicker';
 import { AppShell } from '@/components/shell/AppShell';
 import { ScreenLayout, ScreenLayoutBody, useScreenLayout } from '@/components/shell/ScreenLayout';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
-import { useCollection } from '@/hooks/useCollection';
-import { useCollectionByCardName } from '@/hooks/useDeckCardResolver';
+import { Button, ButtonText } from '@/components/ui/button';
+import { useDeckAutoSave } from '@/hooks/useDeckAutoSave';
+import { useDeckDetail } from '@/hooks/useDeckDetail';
 import { useDeckMutations } from '@/hooks/useDecks';
-import type { CollectionEntry } from '@/services/collectionService';
-import {
-  addCardToDeck,
-  changeDeckCardQty,
-  removeDeckCard,
-} from '@/lib/deck-card';
-import type { DeckCard, DeckSectionKey, DeckState } from '@/lib/deck-types';
-import { validateDeck } from '@/lib/deck-validation';
-import { getDeck } from '@/services/deckStorageService';
-import { hapticPress } from '@/utils/haptics';
+import { addCardToDeck } from '@/lib/deck-card';
+import type { DeckCard, DeckState } from '@/lib/deck-types';
 
 type IoMode = 'import' | 'export';
 
 export default function DeckEditorScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [deck, setDeck] = useState<DeckState | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<DeckSectionKey>('legend');
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const { deck, isLoading, persist, flushSave } = useDeckDetail(id);
+  const { importDeck } = useDeckMutations();
+  const readOnly = deck?.readOnly === true;
   const [ioMode, setIoMode] = useState<IoMode | null>(null);
-  const { saveDeck } = useDeckMutations();
-  const { data: collection = [] } = useCollection();
-  const collectionByName = useCollectionByCardName(collection);
-  const collectionByVariant = useMemo(
-    () => new Map(collection.map((entry) => [entry.variantNumber, entry])),
-    [collection]
-  );
+  const [pickingLegend, setPickingLegend] = useState(false);
+  useDeckAutoSave(readOnly ? null : deck);
 
-  useEffect(() => {
-    let mounted = true;
-    void (async () => {
-      if (!id) return;
-      const loaded = await getDeck(id);
-      if (mounted) {
-        setDeck(loaded);
-        setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [id]);
-
-  const persist = useCallback(
-    (next: DeckState) => {
-      setDeck(next);
-      void saveDeck.mutateAsync(next);
-    },
-    [saveDeck]
-  );
-
-  const validation = useMemo(() => (deck ? validateDeck(deck) : []), [deck]);
-
-  const handleAddCard = useCallback(
-    (card: DeckCard) => {
+  const handleLegendSelect = useCallback(
+    (legend: DeckCard) => {
       if (!deck) return;
-      hapticPress();
-      persist(addCardToDeck(deck, card, { section: activeSection }));
+      const next = addCardToDeck(
+        { ...deck, legend: null, champion: null, runes: new Map() },
+        legend,
+        { section: 'legend' }
+      );
+      setPickingLegend(false);
+      persist(next);
     },
-    [activeSection, deck, persist]
+    [deck, persist]
   );
 
-  if (loading) {
+  const handleImport = useCallback(() => {
+    if (!deck?.id) return;
+    void importDeck.mutateAsync(deck.id).then((saved) => {
+      router.replace(`/deck/${saved.id}`);
+    });
+  }, [deck?.id, importDeck, router]);
+
+  if (isLoading) {
     return (
       <AppShell>
         <ScreenLayout mode="flex">
@@ -104,170 +74,92 @@ export default function DeckEditorScreen() {
     );
   }
 
+  if (pickingLegend || (!readOnly && !deck.legend)) {
+    return (
+      <AppShell>
+        <LegendPickerScreen
+          deck={deck}
+          onSelect={handleLegendSelect}
+          onBack={() => {
+            if (deck.legend) {
+              setPickingLegend(false);
+              return;
+            }
+            router.back();
+          }}
+        />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
-      <DeckEditorBody
-        deck={deck}
-        validation={validation}
-        activeSection={activeSection}
-        pickerOpen={pickerOpen}
-        ioMode={ioMode}
-        collectionByName={collectionByName}
-        collectionByVariant={collectionByVariant}
-        onSectionChange={setActiveSection}
-        onPickerOpenChange={setPickerOpen}
-        onIoModeChange={setIoMode}
-        onPersist={persist}
-        onAddCard={handleAddCard}
-        onBack={() => router.back()}
+      <DeckImportLoadingOverlay
+        visible={importDeck.isPending}
+        message="Importing deck to your collection…"
       />
+      <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
+        <ScreenLayoutBody className="min-h-0 flex-1">
+          <DeckBuilderCanvas
+            deck={deck}
+            readOnly={readOnly}
+            ioMode={ioMode}
+            onPersist={persist}
+            onIoModeChange={setIoMode}
+            onChangeLegend={() => setPickingLegend(true)}
+            onImportToMyDecks={readOnly ? handleImport : undefined}
+            importBusy={importDeck.isPending}
+            onBack={() => {
+              if (!readOnly) void flushSave();
+              router.back();
+            }}
+          />
+        </ScreenLayoutBody>
+      </ScreenLayout>
     </AppShell>
   );
 }
 
-function DeckEditorBody(props: {
+function LegendPickerScreen({
+  deck,
+  onSelect,
+  onBack,
+}: {
   deck: DeckState;
-  validation: ReturnType<typeof validateDeck>;
-  activeSection: DeckSectionKey;
-  pickerOpen: boolean;
-  ioMode: IoMode | null;
-  collectionByName: ReadonlyMap<string, number>;
-  collectionByVariant: ReadonlyMap<string, CollectionEntry>;
-  onSectionChange: (section: DeckSectionKey) => void;
-  onPickerOpenChange: (open: boolean) => void;
-  onIoModeChange: (mode: IoMode | null) => void;
-  onPersist: (deck: DeckState) => void;
-  onAddCard: (card: DeckCard) => void;
+  onSelect: (legend: DeckCard) => void;
   onBack: () => void;
 }) {
   return (
     <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
-      <DeckEditorContent {...props} />
+      <LegendPickerScreenBody deck={deck} onSelect={onSelect} onBack={onBack} />
     </ScreenLayout>
   );
 }
 
-function DeckEditorContent({
+function LegendPickerScreenBody({
   deck,
-  validation,
-  activeSection,
-  pickerOpen,
-  ioMode,
-  collectionByName,
-  collectionByVariant,
-  onSectionChange,
-  onPickerOpenChange,
-  onIoModeChange,
-  onPersist,
-  onAddCard,
+  onSelect,
   onBack,
 }: {
   deck: DeckState;
-  validation: ReturnType<typeof validateDeck>;
-  activeSection: DeckSectionKey;
-  pickerOpen: boolean;
-  ioMode: IoMode | null;
-  collectionByName: ReadonlyMap<string, number>;
-  collectionByVariant: ReadonlyMap<string, CollectionEntry>;
-  onSectionChange: (section: DeckSectionKey) => void;
-  onPickerOpenChange: (open: boolean) => void;
-  onIoModeChange: (mode: IoMode | null) => void;
-  onPersist: (deck: DeckState) => void;
-  onAddCard: (card: DeckCard) => void;
+  onSelect: (legend: DeckCard) => void;
   onBack: () => void;
 }) {
   const { paddingBottomInline } = useScreenLayout();
 
   return (
-    <>
-      <ScreenLayoutBody className="min-h-0 flex-1 gap-3">
-        <View className="gap-3">
-          <View className="flex-row items-center gap-2">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back to decks"
-              className="size-9 items-center justify-center rounded-lg active:bg-card-panel"
-              onPress={() => {
-                hapticPress();
-                onBack();
-              }}
-            >
-              <ThemedIonicon name="chevron-back" size={22} color="foreground" />
-            </Pressable>
-            <View className="min-w-0 flex-1">
-              <SearchInput
-                value={deck.name}
-                onChangeText={(name) =>
-                  onPersist({ ...deck, name, updatedAt: Date.now() })
-                }
-                placeholder="Deck name"
-              />
-            </View>
-          </View>
-
-          <View className="flex-row flex-wrap gap-2">
-            <Button size="sm" onPress={() => onPickerOpenChange(true)}>
-              <ButtonIcon>
-                <ThemedIonicon name="add" size={16} color="primary-foreground" />
-              </ButtonIcon>
-              <ButtonText>Add cards</ButtonText>
-            </Button>
-            <Button variant="outline" size="sm" onPress={() => onIoModeChange('import')}>
-              <ButtonText>Import</ButtonText>
-            </Button>
-            <Button variant="outline" size="sm" onPress={() => onIoModeChange('export')}>
-              <ButtonText>Export</ButtonText>
-            </Button>
-          </View>
-        </View>
-
-        <DeckValidationBanner messages={validation} />
-
-        <DeckSectionTabs
-          deck={deck}
-          activeSection={activeSection}
-          onSectionChange={onSectionChange}
-        />
-
-        <DeckSectionList
-          deck={deck}
-          activeSection={activeSection}
-          collectionByName={collectionByName}
-          paddingBottom={paddingBottomInline}
-          onBrowseCards={() => onPickerOpenChange(true)}
-          onToggleSideboard={() =>
-            onPersist({
-              ...deck,
-              addToSideboard: !deck.addToSideboard,
-              updatedAt: Date.now(),
-            })
-          }
-          onRemove={(section, name) => {
-            onPersist(removeDeckCard(deck, section, name));
-          }}
-          onChangeQty={(section, name, delta) => {
-            onPersist(changeDeckCardQty(deck, section, name, delta));
-          }}
-        />
-      </ScreenLayoutBody>
-
-      <DeckCardPickerSheet
-        open={pickerOpen}
-        section={activeSection}
-        onClose={() => onPickerOpenChange(false)}
-        onSelect={onAddCard}
-        collectionByVariant={collectionByVariant}
+    <ScreenLayoutBody className="min-h-0 flex-1 gap-3">
+      <View className="gap-1">
+        <Text className="text-base font-semibold text-foreground">{deck.name}</Text>
+        {deck.description ? (
+          <Text className="text-[13px] text-muted-foreground">{deck.description}</Text>
+        ) : null}
+      </View>
+      <LegendPicker
+        onSelect={onSelect}
+        onBack={onBack}
+        paddingBottom={paddingBottomInline}
       />
-
-      {ioMode ? (
-        <DeckImportExportSheet
-          open
-          mode={ioMode}
-          deck={deck}
-          onClose={() => onIoModeChange(null)}
-          onImport={(imported) => onPersist(imported)}
-        />
-      ) : null}
-    </>
+    </ScreenLayoutBody>
   );
 }

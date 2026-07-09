@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import {
@@ -24,7 +24,7 @@ import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import { useDeckCardImages } from '@/hooks/useDeckCardImages';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import {
-  getDeckVariantNumbers,
+  deckVariantNumbersKey,
   getSectionCount,
   resolveDeckCardImageUrl,
 } from '@/lib/deck-card';
@@ -153,16 +153,7 @@ function DeckFeaturedCard({
           style={{ width: 160, height: 224 }}
         >
           {imageUri ? (
-            <Image
-              source={{ uri: imageUri }}
-              recyclingKey={card.variantNumber}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-              contentPosition="top"
-              transition={120}
-              cachePolicy="memory-disk"
-              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-            />
+            <DeckCardArt uri={imageUri} variantNumber={card.variantNumber} />
           ) : (
             <View className="flex-1 items-center justify-center bg-card-panel">
               <ThemedIonicon name="image-outline" size={32} color="muted-foreground" />
@@ -244,16 +235,7 @@ function DeckGridCard({
           )}
         >
           {imageUri ? (
-            <Image
-              source={{ uri: imageUri }}
-              recyclingKey={card.variantNumber}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-              contentFit="cover"
-              contentPosition="top"
-              transition={120}
-              cachePolicy="memory-disk"
-              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-            />
+            <DeckCardArt uri={imageUri} variantNumber={card.variantNumber} />
           ) : (
             <View className="flex-1 items-center justify-center bg-card-panel">
               <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
@@ -311,8 +293,8 @@ export function DeckSectionList({
   const { contentWidth } = useScreenLayout();
   const { numColumns, tileWidth, gap } = useResponsiveColumns('grid', { measuredWidth: contentWidth });
 
-  const variantNumbers = useMemo(() => getDeckVariantNumbers(deck), [deck]);
-  const { data: imageByVariant = new Map<string, string>() } = useDeckCardImages(variantNumbers);
+  const variantKey = deckVariantNumbersKey(deck);
+  const { data: imageByVariant = new Map<string, string>() } = useDeckCardImages(variantKey);
 
   const sectionMeta = DECK_SECTIONS.find((section) => section.key === activeSection);
   const entries = useMemo((): SectionRow[] => {

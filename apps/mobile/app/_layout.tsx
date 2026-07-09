@@ -80,7 +80,7 @@ function RootNav() {
           }}
         />
         <Stack.Screen
-          name="deck/[id]"
+          name="deck"
           options={{
             headerShown: false,
             animation: 'slide_from_right',

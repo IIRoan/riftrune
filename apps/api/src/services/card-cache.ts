@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { CardsListQuery, CardDetail, CardListItem } from '@riftbound/contracts';
-import type { PaLogicalCard, PaVariant } from '@riftbound/contracts';
+import { PaCardsListResponse, type PaLogicalCard, type PaVariant } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { cardColors, cards, colors, sets, syncState, variants } from '../db/schema.js';
 import type { RiftruneClient } from '../upstream/riftrune-client.js';
@@ -15,10 +15,17 @@ import {
 import type { PriceCacheService } from './price-cache.js';
 import type { ImageStoreService } from './image-store.js';
 import { buildCardSearchCondition, buildSearchRelevanceOrder } from '../lib/search.js';
+import { buildCardColorsSubsetCondition } from '../lib/card-colors-filter.js';
 import { TtlCache } from '../lib/ttl-cache.js';
+import {
+  buildUpstreamListParams,
+  resolveUpstreamReconcileMode,
+  upstreamCheckKey,
+} from '../lib/upstream-list-params.js';
 
 const SEARCH_RESULT_TTL_MS = 5 * 60 * 1000;
 const UPSTREAM_CHECK_TTL_MS = 15 * 60 * 1000;
+const VARIANT_ID_RESOLVE_TTL_MS = 30 * 60 * 1000;
 /** Cap variant rows loaded for text search before in-memory grouping. */
 const SEARCH_VARIANT_FETCH_CAP = 500;
 
@@ -36,6 +43,7 @@ function searchCacheKey(query: CardsListQuery, catalogHash: string): string {
     sets: query.sets ?? '',
     colors: query.colors ?? '',
     types: query.types ?? '',
+    super: query.super ?? '',
     rarities: query.rarities ?? '',
     energyMin: query.energyMin,
     energyMax: query.energyMax,
@@ -43,18 +51,9 @@ function searchCacheKey(query: CardsListQuery, catalogHash: string): string {
     powerMax: query.powerMax,
     mightMin: query.mightMin,
     mightMax: query.mightMax,
+    excludeTokens: query.excludeTokens ?? '',
     page: query.page,
     limit: query.limit,
-    sortBy: query.sortBy,
-    dir: query.dir,
-  });
-}
-
-function upstreamCheckKey(query: CardsListQuery): string {
-  return JSON.stringify({
-    q: query.q?.trim().toLowerCase() ?? '',
-    limit: query.limit,
-    page: query.page,
     sortBy: query.sortBy,
     dir: query.dir,
   });
@@ -63,6 +62,7 @@ function upstreamCheckKey(query: CardsListQuery): string {
 export class CardCacheService {
   private readonly searchCache = new TtlCache<SearchResult>(SEARCH_RESULT_TTL_MS, 100);
   private readonly upstreamCheckCache = new TtlCache<true>(UPSTREAM_CHECK_TTL_MS, 200);
+  private readonly variantIdResolveCache = new TtlCache<string>(VARIANT_ID_RESOLVE_TTL_MS, 1000);
 
   constructor(
     private readonly db: Database,
@@ -293,6 +293,169 @@ export class CardCacheService {
     };
   }
 
+  /**
+   * Resolve an upstream variant UUID to a local variant number, refreshing the card cache when needed.
+   */
+  async resolveVariantNumbersFromUpstream(
+    refs: Array<{ variantId: string; cardId: string }>,
+    resolved: Map<string, string>
+  ): Promise<void> {
+    const pending = new Map<string, string>();
+
+    for (const ref of refs) {
+      if (resolved.has(ref.variantId)) continue;
+
+      const local = await this.resolveVariantNumberLocally(ref.variantId, ref.cardId);
+      if (local) {
+        resolved.set(ref.variantId, local);
+        continue;
+      }
+
+      pending.set(ref.variantId, ref.cardId);
+    }
+
+    if (pending.size > 0) {
+      await this.discoverPendingVariantsInUpstreamCatalog(pending, resolved);
+    }
+  }
+
+  async resolveVariantNumberByUpstreamId(
+    variantId: string,
+    cardId: string
+  ): Promise<string | null> {
+    const local = await this.resolveVariantNumberLocally(variantId, cardId);
+    if (local) return local;
+
+    const pending = new Map<string, string>([[variantId, cardId]]);
+    const resolved = new Map<string, string>();
+    await this.discoverPendingVariantsInUpstreamCatalog(pending, resolved);
+    return resolved.get(variantId) ?? null;
+  }
+
+  private async resolveVariantNumberLocally(
+    variantId: string,
+    cardId: string
+  ): Promise<string | null> {
+    const cached = this.variantIdResolveCache.get(variantId);
+    if (cached) return cached;
+
+    const byId = await this.db.query.variants.findFirst({
+      where: eq(variants.id, variantId),
+    });
+    if (byId) {
+      this.variantIdResolveCache.set(variantId, byId.variantNumber);
+      return byId.variantNumber;
+    }
+
+    const cardRow = await this.db.query.cards.findFirst({
+      where: eq(cards.id, cardId),
+    });
+    if (cardRow) {
+      const logical = cardRow.upstreamRaw as PaLogicalCard;
+      const fromRaw = logical.variants.find((variant) => variant.id === variantId);
+      if (fromRaw) {
+        await this.upsertFromUpstream(logical);
+        this.variantIdResolveCache.set(variantId, fromRaw.variantNumber);
+        return fromRaw.variantNumber;
+      }
+
+      const seedVariant = logical.variants[0];
+      if (seedVariant) {
+        try {
+          const refreshed = await this.getByVariantNumber(seedVariant.variantNumber, {
+            refresh: true,
+          });
+          const match = refreshed.detail.variants.find((variant) => variant.id === variantId);
+          if (match) {
+            this.variantIdResolveCache.set(variantId, match.variantNumber);
+            return match.variantNumber;
+          }
+        } catch {
+          // Fall through to sibling lookup.
+        }
+      }
+    }
+
+    const sibling = await this.db.query.variants.findFirst({
+      where: eq(variants.cardId, cardId),
+    });
+    if (sibling) {
+      try {
+        const refreshed = await this.getByVariantNumber(sibling.variantNumber, { refresh: true });
+        const match = refreshed.detail.variants.find((variant) => variant.id === variantId);
+        if (match) {
+          this.variantIdResolveCache.set(variantId, match.variantNumber);
+          return match.variantNumber;
+        }
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  private async discoverPendingVariantsInUpstreamCatalog(
+    pending: Map<string, string>,
+    resolved: Map<string, string>
+  ): Promise<void> {
+    if (pending.size === 0) return;
+
+    const pendingCardIds = new Set(pending.values());
+    const fetchedCardIds = new Set<string>();
+    let page = 1;
+    const maxPages = 500;
+
+    while (pending.size > 0 && page <= maxPages) {
+      const upstream = await this.riftrune.listCards({ page, limit: 100 });
+      const res = PaCardsListResponse.parse(upstream);
+
+      for (const item of res.data) {
+        if (pending.has(item.id)) {
+          try {
+            const logical = await this.riftrune.getCard(item.variantNumber);
+            await this.upsertFromUpstream(logical);
+            resolved.set(item.id, item.variantNumber);
+            this.variantIdResolveCache.set(item.id, item.variantNumber);
+            pending.delete(item.id);
+          } catch (err) {
+            console.warn(`Catalog discover skipped ${item.variantNumber}:`, err);
+          }
+          continue;
+        }
+
+        const listCardId =
+          item.card &&
+          typeof item.card === 'object' &&
+          item.card !== null &&
+          'id' in item.card &&
+          typeof (item.card as { id?: unknown }).id === 'string'
+            ? (item.card as { id: string }).id
+            : undefined;
+        if (!listCardId || !pendingCardIds.has(listCardId) || fetchedCardIds.has(listCardId)) {
+          continue;
+        }
+
+        fetchedCardIds.add(listCardId);
+        try {
+          const logical = await this.riftrune.getCard(item.variantNumber);
+          await this.upsertFromUpstream(logical);
+          for (const variant of logical.variants) {
+            if (!pending.has(variant.id)) continue;
+            resolved.set(variant.id, variant.variantNumber);
+            this.variantIdResolveCache.set(variant.id, variant.variantNumber);
+            pending.delete(variant.id);
+          }
+        } catch (err) {
+          console.warn(`Catalog discover skipped logical card ${listCardId}:`, err);
+        }
+      }
+
+      if (!res.pagination.hasNext || page >= res.pagination.totalPages) break;
+      page += 1;
+    }
+  }
+
   private async loadCardDetailFromDb(variantNumber: string) {
     const variantRow = await this.db.query.variants.findFirst({
       where: eq(variants.variantNumber, variantNumber),
@@ -360,18 +523,18 @@ export class CardCacheService {
     let source: 'cache' | 'upstream' | 'mixed' = 'cache';
     let result = await this.searchLocal(query);
 
-    const q = query.q?.trim();
-    const shouldReconcileUpstream =
-      q && q.length >= 2 && query.page === 1 && !this.upstreamCheckCache.has(upstreamCheckKey(query));
+    const reconcileMode = resolveUpstreamReconcileMode(
+      query,
+      result,
+      this.upstreamCheckCache.has(upstreamCheckKey(query)) && !query.refresh
+    );
 
-    if (shouldReconcileUpstream) {
-      if (query.refresh || result.total === 0) {
-        const reconciled = await this.reconcileSearchWithUpstream(query, result);
-        result = reconciled.result;
-        source = reconciled.source;
-      } else {
-        this.scheduleSearchReconciliation(query, cacheKey, result);
-      }
+    if (reconcileMode === 'sync') {
+      const reconciled = await this.reconcileSearchWithUpstream(query, result);
+      result = reconciled.result;
+      source = reconciled.source;
+    } else if (reconcileMode === 'background') {
+      this.scheduleSearchReconciliation(query, cacheKey, result);
     }
 
     const response: SearchResult = { ...result, source };
@@ -402,21 +565,15 @@ export class CardCacheService {
     result: { items: CardListItem[]; total: number; catalogHash: string };
     source: 'cache' | 'upstream' | 'mixed';
   }> {
-    const q = query.q?.trim();
-    if (!q || q.length < 2 || query.page !== 1) {
+    const checkKey = upstreamCheckKey(query);
+    if (this.upstreamCheckCache.has(checkKey) && !query.refresh) {
       return { result: await this.searchLocal(query), source: 'cache' };
     }
 
-    this.upstreamCheckCache.set(upstreamCheckKey(query), true);
+    this.upstreamCheckCache.set(checkKey, true);
 
     try {
-      const upstream = await this.riftrune.listCards({
-        q,
-        limit: query.limit,
-        page: query.page,
-        sortBy: query.sortBy,
-        dir: query.dir,
-      });
+      const upstream = await this.riftrune.listCards(buildUpstreamListParams(query));
 
       const localVariantNumbers = new Set(
         (localResult?.items ?? []).map((item) => item.variantNumber)
@@ -440,6 +597,11 @@ export class CardCacheService {
 
       if ((localResult?.total ?? 0) === 0 && upstream.data.length === 0) {
         return { result: await this.searchLocal(query), source: 'upstream' };
+      }
+
+      if ((localResult?.total ?? 0) === 0 && upstream.data.length > 0) {
+        const result = await this.searchLocal(query);
+        return { result, source: result.total > 0 ? 'mixed' : 'upstream' };
       }
 
       return { result: await this.searchLocal(query), source: 'cache' };
@@ -469,6 +631,31 @@ export class CardCacheService {
     }
     if (query.energyMax !== undefined) {
       conditions.push(sql`${cards.energy} <= ${query.energyMax}`);
+    }
+    if (query.types) {
+      const typeFilters = query.types
+        .split(',')
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+      if (typeFilters.length > 0) {
+        conditions.push(
+          sql`lower(${cards.type}) in (${sql.join(
+            typeFilters.map((value) => sql`${value}`),
+            sql`, `
+          )})`
+        );
+      }
+    }
+    if (query.super) {
+      conditions.push(sql`lower(${cards.super}) = ${query.super.trim().toLowerCase()}`);
+    }
+    if (query.colors) {
+      const colorNames = query.colors.split(',').map((value) => value.trim());
+      const colorCond = buildCardColorsSubsetCondition(colorNames);
+      if (colorCond) conditions.push(colorCond);
+    }
+    if (query.excludeTokens) {
+      conditions.push(sql`${variants.variantNumber} !~* '-T[0-9]+$'`);
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;

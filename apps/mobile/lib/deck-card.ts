@@ -1,4 +1,5 @@
 import type { CardDetail, CardListItem } from '@riftbound/contracts';
+import { isUnresolvedDeckVariant } from '@riftbound/contracts';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { findVariantByNumber } from '@/utils/variants';
 import type {
@@ -9,6 +10,9 @@ import type {
   SerializedDeck,
   SerializedDeckEntry,
 } from '@/lib/deck-types';
+import { battlefieldsAtCapacity } from '@/lib/deck-limits';
+
+const PILTOVER_CDN_HOST = 'cdn.piltoverarchive.com';
 
 export function isSignatureVariant(rarity: string, variantType: string): boolean {
   const combined = `${rarity} ${variantType}`.toLowerCase();
@@ -68,13 +72,28 @@ export function getDeckVariantNumbers(deck: DeckState): string[] {
   return numbers;
 }
 
+/** Stable cache key for deck card image queries — only changes when variant set changes. */
+export function deckVariantNumbersKey(deck: DeckState): string {
+  return [...new Set(getDeckVariantNumbers(deck))].sort().join('|');
+}
+
+function resolveDeckFallbackImageUrl(url: string): string {
+  try {
+    if (new URL(url).hostname === PILTOVER_CDN_HOST) return url;
+  } catch {
+    // Non-absolute paths still go through the configured API resolver.
+  }
+
+  return resolveImageUrl(url);
+}
+
 export function resolveDeckCardImageUrl(
   card: DeckCard,
   imageByVariant: ReadonlyMap<string, string>
 ): string {
-  if (card.imageUrl) return resolveImageUrl(card.imageUrl);
   const fetched = imageByVariant.get(card.variantNumber);
-  return fetched ? resolveImageUrl(fetched) : '';
+  if (fetched) return resolveImageUrl(fetched);
+  return card.imageUrl ? resolveDeckFallbackImageUrl(card.imageUrl) : '';
 }
 
 export function sectionForCardType(card: Pick<DeckCard, 'type' | 'super'>): DeckSectionKey {
@@ -87,15 +106,33 @@ export function sectionForCardType(card: Pick<DeckCard, 'type' | 'super'>): Deck
   return 'mainDeck';
 }
 
+export function isLegendCard(card: Pick<DeckCard, 'type'>): boolean {
+  return card.type.toLowerCase() === 'legend';
+}
+
+export function isChampionUnit(card: Pick<DeckCard, 'type' | 'super'>): boolean {
+  return (
+    card.type.toLowerCase() === 'unit' && (card.super ?? '').toLowerCase() === 'champion'
+  );
+}
+
+export function cardMatchesSectionType(
+  card: Pick<DeckCard, 'type' | 'super'>,
+  section: DeckSectionKey
+): boolean {
+  return sectionForCardType(card) === section;
+}
+
 export function createDeckId(): string {
   return `deck_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function createEmptyDeck(name = 'New Deck'): DeckState {
+export function createEmptyDeck(name = 'New Deck', description = ''): DeckState {
   const now = Date.now();
   return {
     id: createDeckId(),
     name,
+    description,
     createdAt: now,
     updatedAt: now,
     legend: null,
@@ -142,6 +179,12 @@ export function addCardToDeck(
   }
   if (targetSection === 'champion') {
     return { ...deck, champion: card, updatedAt };
+  }
+
+  if (targetSection === 'battlefields') {
+    if (battlefieldsAtCapacity(deck) && !deck.battlefields.has(card.name)) {
+      return deck;
+    }
   }
 
   const map = new Map(deck[targetSection]);
@@ -208,6 +251,7 @@ export function serializeDeck(deck: DeckState): SerializedDeck {
   return {
     id: deck.id,
     name: deck.name,
+    description: deck.description,
     createdAt: deck.createdAt,
     updatedAt: deck.updatedAt,
     legend: deck.legend,
@@ -216,6 +260,8 @@ export function serializeDeck(deck: DeckState): SerializedDeck {
     runes: toEntries(deck.runes),
     battlefields: toEntries(deck.battlefields),
     sideboard: toEntries(deck.sideboard),
+    upstreamId: deck.upstreamId,
+    syncWarnings: deck.syncWarnings,
   };
 }
 
@@ -223,7 +269,10 @@ export function deserializeDeck(data: SerializedDeck): DeckState {
   const toMap = (entries: SerializedDeckEntry[]): Map<string, DeckEntry> => {
     const map = new Map<string, DeckEntry>();
     for (const entry of entries) {
-      map.set(entry.card.name, entry);
+      const key = isUnresolvedDeckVariant(entry.card.variantNumber)
+        ? entry.card.variantNumber
+        : entry.card.name;
+      map.set(key, entry);
     }
     return map;
   };
@@ -231,6 +280,7 @@ export function deserializeDeck(data: SerializedDeck): DeckState {
   return {
     id: data.id,
     name: data.name,
+    description: data.description ?? '',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     legend: data.legend,
@@ -240,5 +290,9 @@ export function deserializeDeck(data: SerializedDeck): DeckState {
     battlefields: toMap(data.battlefields),
     sideboard: toMap(data.sideboard),
     addToSideboard: false,
+    upstreamId: data.upstreamId,
+    source: data.source,
+    readOnly: data.readOnly,
+    syncWarnings: data.syncWarnings,
   };
 }

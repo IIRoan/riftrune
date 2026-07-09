@@ -32,6 +32,7 @@ export type DeckSectionMap = Record<Exclude<DeckSectionKey, 'legend' | 'champion
 export interface DeckState {
   id: string;
   name: string;
+  description: string;
   createdAt: number;
   updatedAt: number;
   legend: DeckCard | null;
@@ -41,6 +42,12 @@ export interface DeckState {
   battlefields: Map<string, DeckEntry>;
   sideboard: Map<string, DeckEntry>;
   addToSideboard: boolean;
+  /** Present when loaded from the API. */
+  source?: 'owned' | 'imported';
+  readOnly?: boolean;
+  upstreamId?: string;
+  /** Warnings from upstream deck sync (missing catalog cards, etc.). */
+  syncWarnings?: string[];
 }
 
 export interface SerializedDeckEntry {
@@ -51,6 +58,7 @@ export interface SerializedDeckEntry {
 export interface SerializedDeck {
   id: string;
   name: string;
+  description?: string;
   createdAt: number;
   updatedAt: number;
   legend: DeckCard | null;
@@ -59,6 +67,10 @@ export interface SerializedDeck {
   runes: SerializedDeckEntry[];
   battlefields: SerializedDeckEntry[];
   sideboard: SerializedDeckEntry[];
+  upstreamId?: string;
+  source?: 'owned' | 'imported';
+  readOnly?: boolean;
+  syncWarnings?: string[];
 }
 
 export type ValidationSeverity = 'error' | 'warning' | 'valid';
@@ -66,6 +78,7 @@ export type ValidationSeverity = 'error' | 'warning' | 'valid';
 export interface DeckValidationMessage {
   type: ValidationSeverity;
   message: string;
+  code?: string;
 }
 
 export const DECK_SECTIONS: Array<{
