@@ -1,17 +1,14 @@
-import { join } from 'node:path';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { createApp, startCatalogMetadataWarmup, startSyncCrons } from './app.js';
+import { runStartupMigrations } from './db/migrate.js';
 import { loadEnv } from './env.js';
 
 async function main() {
   const env = loadEnv();
+
+  await runStartupMigrations(env);
+
   const ctx = createApp(env);
-
-  await migrate(ctx.db, {
-    migrationsFolder: join(import.meta.dir, '..', 'drizzle'),
-  });
-
-  ctx.app.listen(env.PORT);
+  ctx.app.listen({ port: env.PORT, hostname: '::' });
 
   const host = ctx.app.server?.hostname ?? 'localhost';
   const port = ctx.app.server?.port ?? env.PORT;
