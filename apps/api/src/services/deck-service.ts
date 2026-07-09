@@ -1,5 +1,5 @@
 import { and, desc, eq } from 'drizzle-orm';
-import type { DeckListItem, StoredDeckPayload } from '@riftbound/contracts';
+import type { DeckListItem, DecksListQuery, StoredDeckPayload } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { userDecks } from '../db/schema.js';
 import type { RiftruneClient } from '../upstream/riftrune-client.js';
@@ -15,10 +15,6 @@ export class DeckReadOnlyError extends Error {
 
 function toOwnedItem(payload: StoredDeckPayload): DeckListItem {
   return { ...payload, source: 'owned', readOnly: false };
-}
-
-function toImportedItem(payload: StoredDeckPayload): DeckListItem {
-  return { ...payload, source: 'imported', readOnly: true };
 }
 
 function matchesDeckQuery(deck: Pick<StoredDeckPayload, 'name' | 'description' | 'legend' | 'champion'>, q: string): boolean {
@@ -83,12 +79,20 @@ export class DeckService {
 
   async listForUser(
     userId: string,
-    options?: { q?: string; source?: 'owned' | 'imported' | 'all' }
+    options?: DecksListQuery
   ): Promise<{
     items: DeckListItem[];
     total: number;
     owned: number;
     imported: number;
+    pagination?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrevious: boolean;
+    };
   }> {
     const q = options?.q?.trim() ?? '';
     const source = options?.source ?? 'all';
@@ -100,16 +104,25 @@ export class DeckService {
 
     const skipUpstreamIds = this.ownedUpstreamIds(ownedPayloads);
     const importedItems: DeckListItem[] = [];
+    let pagination:
+      | {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrevious: boolean;
+        }
+      | undefined;
 
     if (this.deckSync && source !== 'owned') {
       try {
-        importedItems.push(
-          ...(await this.deckSync.listImportedDeckSummaries({
-            skipIds: skipUpstreamIds,
-            q,
-            limit: 25,
-          }))
-        );
+        const imported = await this.deckSync.listImportedDeckSummaries({
+          skipIds: skipUpstreamIds,
+          ...(options ? { query: options } : {}),
+        });
+        importedItems.push(...imported.items);
+        pagination = imported.pagination;
       } catch {
         // Imported section is best-effort when upstream is unavailable.
       }
@@ -118,9 +131,10 @@ export class DeckService {
     const items = [...ownedItems, ...importedItems];
     return {
       items,
-      total: items.length,
+      total: pagination?.total ?? items.length,
       owned: ownedItems.length,
       imported: importedItems.length,
+      ...(pagination ? { pagination } : {}),
     };
   }
 
@@ -156,9 +170,9 @@ export class DeckService {
     if (!this.deckSync) return null;
 
     try {
-      const imported = await this.deckSync.getStoredDeckPayload(deckId);
+      const imported = await this.deckSync.getImportedDeckListItem(deckId);
       if (!imported) return null;
-      return toImportedItem(imported);
+      return imported;
     } catch {
       return null;
     }

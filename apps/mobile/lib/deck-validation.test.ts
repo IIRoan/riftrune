@@ -226,6 +226,7 @@ describe('deckCardFromDetail', () => {
         power: 0,
         tags: ['Jinx'],
         colors: [{ id: 'c1', name: 'Fury' }],
+        banEffectiveDate: null,
         variants: [
           {
             id: 'v1',

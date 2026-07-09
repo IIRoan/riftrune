@@ -17,12 +17,14 @@ async function main() {
   startCatalogMetadataWarmup(ctx, env);
   startSyncCrons(ctx, env);
 
-  process.on('SIGINT', () => {
-    void (async () => {
-      await ctx.client.end();
-      process.exit(0);
-    })();
-  });
+  const shutdown = () => {
+    // Avoid calling client.end() during bun --watch reloads: a closing pool rejects
+    // every new query with CONNECTION_ENDED while the process may still be alive.
+    process.exit(0);
+  };
+
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
 }
 
 void main().catch((error: unknown) => {

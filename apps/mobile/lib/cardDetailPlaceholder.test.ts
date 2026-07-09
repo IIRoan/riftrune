@@ -49,6 +49,7 @@ const listCard: CardListItem = {
       },
     },
   ],
+  isBanned: false,
 };
 
 describe('cardListItemToDetail', () => {

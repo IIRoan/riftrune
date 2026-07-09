@@ -16,6 +16,8 @@ import { VariantFamilySwitcher } from '@/components/catalog/VariantFamilySwitche
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
+import { CardBannedOverlay } from '@/components/riftbound/CardBannedOverlay';
+import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { CardTag } from '@/components/riftbound/CardDetailParts';
 import {
   DomainIcon,
@@ -47,6 +49,7 @@ import {
   totalOwnedForCard,
 } from '@/utils/variants';
 import { cn } from '@/lib/utils';
+import { isCardBannedAt } from '@riftbound/contracts';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { hapticPress } from '@/utils/haptics';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
@@ -188,6 +191,7 @@ export function CatalogDetailPanel({
         owned: collectionByVariant.get(v.variantNumber)?.quantity ?? 0,
       } satisfies CardListPrinting & { owned: number };
     }),
+    isBanned: isCardBannedAt(card.banEffectiveDate),
   };
 
   const owned = totalOwnedForCard(listItem, collectionByVariant);
@@ -262,6 +266,7 @@ export function CatalogDetailPanel({
   const setCode = activeVariant.variantNumber.split('-')[0] ?? '';
   const detailImageUri = resolveImageUrl(activeVariant.imageUrl);
   const isDrawer = embedded === 'drawer';
+  const isBanned = isCardBannedAt(card.banEffectiveDate);
 
   const showVariantSwitcher = variantFamilies.length > 1 && activeFamily;
 
@@ -518,7 +523,8 @@ export function CatalogDetailPanel({
           >
             <View
               className={cn(
-                'aspect-[5/7] w-[128px] overflow-hidden border border-white/10 bg-background',
+                'relative aspect-[5/7] w-[128px] overflow-hidden border bg-background',
+                isBanned ? 'border-destructive/70' : 'border-white/10',
                 CARD_ART_RADIUS_CLASS
               )}
             >
@@ -530,6 +536,7 @@ export function CatalogDetailPanel({
                 transition={isDrawer ? 0 : 200}
                 cachePolicy="memory-disk"
               />
+              {isBanned ? <CardBannedOverlay /> : null}
             </View>
             <Text className="mt-1 text-center font-mono text-[10px] text-archive-subtle">
               {activeVariant.variantNumber}
@@ -537,12 +544,20 @@ export function CatalogDetailPanel({
           </Pressable>
 
           <View className="min-w-0 flex-1 justify-center gap-1.5">
-            <Text
-              className="text-xl font-semibold leading-tight tracking-tight text-foreground"
-              numberOfLines={2}
-            >
-              {card.name}
-            </Text>
+            <View className="flex-row flex-wrap items-center gap-2">
+              <Text
+                className="text-xl font-semibold leading-tight tracking-tight text-foreground"
+                numberOfLines={2}
+              >
+                {card.name}
+              </Text>
+              {isBanned ? <StatusKeywordBadge status="illegal" /> : null}
+            </View>
+            {isBanned ? (
+              <Text className="text-xs text-destructive">
+                Banned in tournament play.
+              </Text>
+            ) : null}
             <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-0.5">
               <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
               <Text className="text-xs text-muted-foreground">·</Text>

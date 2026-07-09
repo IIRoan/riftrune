@@ -1,13 +1,16 @@
 import { describe, expect, test } from 'bun:test';
-import type { DeckListItem } from '@riftbound/contracts';
 import { DeckSyncService } from '../../src/services/deck-sync.js';
 
-const upstreamListFixture = {
+    const upstreamListFixture = {
   data: [
     {
       id: 'deck-alpha',
       name: 'Alpha Deck',
       description: 'First test deck',
+      authorName: 'Test Author',
+      views: 1200,
+      likes: 14,
+      isLegal: true,
       createdAt: '2026-06-21T23:06:49.975Z',
       editedAt: '2026-06-25T01:22:05.612Z',
       legend: {
@@ -15,7 +18,10 @@ const upstreamListFixture = {
         name: 'Master Yi, Wuju Bladesman',
         variantNumber: 'OGS-019',
         tags: [],
+        colors: [{ name: 'Body' }],
       },
+      sets: [{ prefix: 'OGS', name: 'Proving Grounds' }],
+      contentFlags: { hasVideo: true, hasGuide: false, hasMatchups: true },
     },
     {
       id: 'deck-beta',
@@ -98,25 +104,105 @@ describe('DeckSyncService.listImportedDeckSummaries', () => {
 
     expect(metrics().listCalls).toBe(1);
     expect(metrics().detailCalls).toBe(0);
-    expect(items).toHaveLength(2);
-    expect(items.map((item) => item.id)).toEqual(['deck-alpha', 'deck-beta']);
-    expect(items.every((item) => item.source === 'imported' && item.readOnly)).toBe(true);
-    expect(items[0]?.legend?.variantNumber).toBe('OGS-019');
-    expect(items[0]?.mainDeck).toEqual([]);
+    expect(items.items).toHaveLength(2);
+    expect(items.items.map((item) => item.id)).toEqual(['deck-alpha', 'deck-beta']);
+    expect(items.items.every((item) => item.source === 'imported' && item.readOnly)).toBe(true);
+    expect(items.items[0]?.legend?.variantNumber).toBe('OGS-019');
+    expect(items.items[0]?.mainDeck).toEqual([]);
+    expect(items.items[0]?.authorName).toBe('Test Author');
+    expect(items.items[0]?.views).toBe(1200);
+    expect(items.items[0]?.likes).toBe(14);
+    expect(items.items[0]?.isLegal).toBe(true);
+    expect(items.items[0]?.setPrefixes).toEqual(['OGS']);
+    expect(items.items[0]?.hasVideo).toBe(true);
+    expect(items.items[0]?.hasMatchups).toBe(true);
   });
 
-  test('filters imported summaries by query before legend enrichment', async () => {
-    const { deckSync, metrics } = createDeckSyncForTest();
+  test('forwards search query to upstream list', async () => {
+    let upstreamQuery: Record<string, unknown> | undefined;
+    const riftrune = {
+      listDecks: async (params?: Record<string, unknown>) => {
+        upstreamQuery = params;
+        return upstreamListFixture;
+      },
+      getDeck: async () => {
+        throw new Error('getDeck should not be called for list summaries');
+      },
+    };
+    const cardCache = {
+      getByVariantNumber: async (variantNumber: string) => ({
+        detail: {
+          id: `card-${variantNumber}`,
+          name: `Legend ${variantNumber}`,
+          type: 'Unit',
+          super: 'Champion',
+          tags: [],
+          colors: [{ name: 'Body' }],
+          energy: 0,
+          variants: [{ variantNumber, rarity: 'Rare', variantType: 'Standard' }],
+        },
+      }),
+    };
+    const testSync = new DeckSyncService(
+      {} as never,
+      riftrune as never,
+      cardCache as never
+    );
 
-    const items = await deckSync.listImportedDeckSummaries({
+    const result = await testSync.listImportedDeckSummaries({
       skipIds: new Set(),
-      q: 'viktor',
+      query: {
+        q: 'viktor',
+        page: 1,
+        limit: 25,
+        sort: 'trending',
+        dir: 'desc',
+        source: 'imported',
+      },
     });
 
-    expect(metrics().listCalls).toBe(1);
-    expect(items).toHaveLength(1);
-    expect(items[0]?.name).toBe('Beta Deck');
-    expect(items[0]?.legend?.name).toBe('Legend OGN-265');
+    expect(upstreamQuery?.q).toBe('viktor');
+    expect(result.items).toHaveLength(3);
+  });
+
+  test('enriches browse previews when preview=true', async () => {
+    const { deckSync } = createDeckSyncForTest();
+    let detailCalls = 0;
+    const syncInternals = deckSync as unknown as {
+      getUpstreamDeckDetail: (deckId: string) => Promise<{ id: string }>;
+      transformUpstreamDeckDetailToStoredDeckPayload: (
+        upstream: { id: string }
+      ) => Promise<{
+        champion: null;
+        legend: null;
+        mainDeck: Array<{ card: { name: string }; count: number }>;
+      }>;
+    };
+    syncInternals.getUpstreamDeckDetail = async (deckId: string) => {
+      detailCalls += 1;
+      return { id: deckId };
+    };
+    syncInternals.transformUpstreamDeckDetailToStoredDeckPayload = async () => ({
+      champion: null,
+      legend: null,
+      mainDeck: [{ card: { name: 'Preview Card' }, count: 3 }],
+    });
+
+    const result = await deckSync.listImportedDeckSummaries({
+      skipIds: new Set(['deck-owned-skip']),
+      query: {
+        page: 1,
+        limit: 25,
+        sort: 'trending',
+        dir: 'desc',
+        source: 'imported',
+        preview: true,
+      },
+    });
+
+    expect(detailCalls).toBe(2);
+    expect(result.items[0]?.mainDeck).toHaveLength(1);
+    expect(result.items[0]?.mainDeck[0]?.card.name).toBe('Preview Card');
   });
 
   test('reuses legend card cache across list entries', async () => {
@@ -154,20 +240,20 @@ describe('DeckSyncService.listImportedDeckSummaries', () => {
       syncInternals.cardCache as never
     );
 
-    const items = await testSync.listImportedDeckSummaries({ skipIds: new Set() });
+    const result = await testSync.listImportedDeckSummaries({ skipIds: new Set() });
 
-    expect(items).toHaveLength(2);
+    expect(result.items).toHaveLength(2);
     expect(legendLookups).toBe(1);
-    expect(items[0]?.legend).toEqual(items[1]?.legend);
+    expect(result.items[0]?.legend).toEqual(result.items[1]?.legend);
   });
 });
 
 describe('imported deck list item shape', () => {
   test('summary items are valid list payloads without main deck cards', async () => {
     const { deckSync } = createDeckSyncForTest();
-    const items: DeckListItem[] = await deckSync.listImportedDeckSummaries({ skipIds: new Set() });
+    const result = await deckSync.listImportedDeckSummaries({ skipIds: new Set() });
 
-    for (const item of items) {
+    for (const item of result.items) {
       expect(item.mainDeck).toEqual([]);
       expect(item.runes).toEqual([]);
       expect(item.battlefields).toEqual([]);

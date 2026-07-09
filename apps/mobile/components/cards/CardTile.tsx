@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 import { Keyboard, Pressable, View, type ViewStyle } from 'react-native';
 import type { CardListItem } from '@riftbound/contracts';
+import { CardBannedOverlay } from '@/components/riftbound/CardBannedOverlay';
+import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import { GridCollectionControl } from '@/components/collection/GridCollectionControl';
@@ -28,6 +30,7 @@ import { hapticPress } from '@/utils/haptics';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { cn } from '@/lib/utils';
+import { isListItemBanned } from '@/lib/card-legality';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const LIST_THUMB_W = 56;
@@ -176,6 +179,7 @@ export function CardTile({
   ) : null;
 
   const imageUri = resolveImageUrl(card.imageUrl);
+  const banned = isListItemBanned(card);
 
   if (layout === 'list') {
     return (
@@ -190,20 +194,27 @@ export function CardTile({
         accessibilityRole="button"
         accessibilityState={{ selected }}
       >
-        <Image
-          source={imageUri ? { uri: imageUri } : undefined}
-          recyclingKey={card.variantNumber}
-          style={{ width: listThumbW, height: listThumbH }}
-          className={cn(
-            'shrink-0 overflow-hidden bg-background',
-            CARD_ART_RADIUS_CLASS,
-            selected ? 'border-2 border-ring' : 'border border-white/10'
-          )}
-          contentFit="cover"
-          contentPosition="top"
-          transition={120}
-          cachePolicy="memory-disk"
-        />
+        <View className="relative shrink-0">
+          <Image
+            source={imageUri ? { uri: imageUri } : undefined}
+            recyclingKey={card.variantNumber}
+            style={{ width: listThumbW, height: listThumbH }}
+            className={cn(
+              'overflow-hidden bg-background',
+              CARD_ART_RADIUS_CLASS,
+              banned
+                ? 'border-2 border-destructive/70'
+                : selected
+                  ? 'border-2 border-ring'
+                  : 'border border-white/10'
+            )}
+            contentFit="cover"
+            contentPosition="top"
+            transition={120}
+            cachePolicy="memory-disk"
+          />
+          {banned ? <CardBannedOverlay className="left-0.5 top-0.5" /> : null}
+        </View>
 
         <View className="min-w-0 flex-1">
           <View className="flex-row items-baseline gap-2">
@@ -216,6 +227,7 @@ export function CardTile({
             >
               {card.name}
             </Text>
+            {banned ? <StatusKeywordBadge status="illegal" compact /> : null}
             <Text className="hidden font-mono text-xs text-muted-foreground sm:flex">
               {primaryPrinting?.variantNumber}
             </Text>
@@ -330,7 +342,11 @@ export function CardTile({
       <View
         className={cn(
           'overflow-hidden rounded-lg border',
-          selected ? 'border-ring bg-card-panel' : 'border-border bg-card'
+          banned
+            ? 'border-destructive/70'
+            : selected
+              ? 'border-ring bg-card-panel'
+              : 'border-border bg-card'
         )}
         style={style}
       >
@@ -359,6 +375,7 @@ export function CardTile({
               cachePolicy="memory-disk"
               placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
             />
+            {banned ? <CardBannedOverlay /> : null}
           </View>
           <Text
             className="mt-1 px-1 font-semibold text-foreground"
@@ -383,7 +400,11 @@ export function CardTile({
     <Pressable
       className={cn(
         'rounded-xl border p-2 active:opacity-90',
-        selected ? 'border-ring bg-card-panel' : 'border-border bg-card active:border-muted-foreground'
+        banned
+          ? 'border-destructive/70 bg-card'
+          : selected
+            ? 'border-ring bg-card-panel'
+            : 'border-border bg-card active:border-muted-foreground'
       )}
       style={style}
       onPress={onOpenCard}
@@ -392,7 +413,8 @@ export function CardTile({
     >
       <View
         className={cn(
-          'relative aspect-[5/7] w-full overflow-hidden bg-background ring-1 ring-white/10',
+          'relative aspect-[5/7] w-full overflow-hidden bg-background ring-1',
+          banned ? 'ring-destructive/50' : 'ring-white/10',
           CARD_ART_RADIUS_CLASS
         )}
       >
@@ -406,6 +428,7 @@ export function CardTile({
           cachePolicy="memory-disk"
           placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
         />
+        {banned ? <CardBannedOverlay /> : null}
       </View>
 
       <Text className="mt-2 truncate px-0.5 text-[13px] font-semibold text-foreground" numberOfLines={1}>

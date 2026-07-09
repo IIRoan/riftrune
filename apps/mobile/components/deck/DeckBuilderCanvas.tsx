@@ -5,11 +5,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   DeckBattlefieldRow,
   DeckSectionGrid,
-  deckSectionSubtitle,
 } from '@/components/deck/DeckSectionGrid';
 import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
 import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
 import { DeckValidationBanner } from '@/components/deck/DeckValidationBanner';
+import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
+import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
@@ -29,6 +30,7 @@ import {
 import { adjustRuneCountForDomain, seedDefaultRuneSplit } from '@/lib/deck-runes';
 import type { DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { validateDeck } from '@/lib/deck-validation';
+import { deckHasBannedCards } from '@/lib/deck-browse';
 import { prefetchDeckAddCatalog } from '@/lib/prefetchDeckAddCatalog';
 import { hapticPress } from '@/utils/haptics';
 
@@ -167,17 +169,22 @@ export function DeckBuilderCanvas({
             </View>
 
             {readOnly ? (
-              deck.description ? (
-                <Text className="text-[13px] text-muted-foreground">{deck.description}</Text>
-              ) : null
+              <DeckViewInfoPanel deck={deck} />
             ) : (
-              <TextareaInput
-                value={deck.description}
-                onChangeText={(description) =>
-                  onPersist({ ...deck, description, updatedAt: Date.now() })
-                }
-                placeholder="Deck description (optional)"
-              />
+              <>
+                <TextareaInput
+                  value={deck.description}
+                  onChangeText={(description) =>
+                    onPersist({ ...deck, description, updatedAt: Date.now() })
+                  }
+                  placeholder="Deck description (optional)"
+                />
+                {deckHasBannedCards(deck) ? (
+                  <View className="self-start">
+                    <DeckLegalityBadge isLegal={false} />
+                  </View>
+                ) : null}
+              </>
             )}
 
             {readOnly ? null : (
@@ -250,7 +257,6 @@ export function DeckBuilderCanvas({
             section="mainDeck"
             readOnly={readOnly}
             title="Main deck"
-            subtitle={deckSectionSubtitle(deck, 'mainDeck')}
             tileWidth={sectionTileWidth}
             gap={gap}
             gridColumns={gridColumns}
@@ -273,7 +279,6 @@ export function DeckBuilderCanvas({
             section="sideboard"
             readOnly={readOnly}
             title="Sideboard"
-            subtitle={deckSectionSubtitle(deck, 'sideboard')}
             tileWidth={sectionTileWidth}
             gap={gap}
             gridColumns={gridColumns}

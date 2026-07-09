@@ -9,10 +9,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { CardDetail, VariantDetail } from '@riftbound/contracts';
+import { isCardBannedAt } from '@riftbound/contracts';
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { PrintingPreviewStrip } from '@/components/cards/PrintingPreviewStrip';
 import { CollectionAddButton, CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
+import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import {
   DomainIcon,
   EnergyPip,
@@ -121,6 +123,7 @@ function ModalHeader({
   setCode,
   variantNumber,
   cardName,
+  isBanned,
   isWide,
   source,
   wishlistItem,
@@ -133,6 +136,7 @@ function ModalHeader({
   setCode: string;
   variantNumber: string;
   cardName: string;
+  isBanned: boolean;
   isWide: boolean;
   source?: CardOpenSource;
   wishlistItem?: WishlistPriceItem;
@@ -158,6 +162,11 @@ function ModalHeader({
         >
           {cardName}
         </Heading>
+        {isBanned ? (
+          <View className="self-start">
+            <StatusKeywordBadge status="illegal" />
+          </View>
+        ) : null}
       </Stack>
 
       <View className="shrink-0 flex-row items-center justify-end gap-1.5 pt-0.5 min-w-[140px]">
@@ -237,6 +246,7 @@ function ModalInfoPanel({
   })();
 
   const panelPadding = isWide ? 'px-8 py-7' : 'px-5 py-5';
+  const isBanned = isCardBannedAt(card.banEffectiveDate);
 
   const content = (
     <Stack gap="lg" className={panelPadding}>
@@ -244,6 +254,7 @@ function ModalInfoPanel({
         setCode={setCode}
         variantNumber={activeVariant.variantNumber}
         cardName={card.name}
+        isBanned={isBanned}
         isWide={isWide}
         source={source}
         wishlistItem={wishlistItem}
@@ -253,6 +264,12 @@ function ModalInfoPanel({
         onRemoveFromCollection={onRemoveFromCollection}
         onClose={onClose}
       />
+
+      {isBanned ? (
+        <Text className="text-sm text-destructive">
+          This card is banned in tournament play.
+        </Text>
+      ) : null}
 
       {singleMarketPrice ? (
         <VariantPriceSummary

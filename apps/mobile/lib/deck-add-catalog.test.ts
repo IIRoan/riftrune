@@ -331,6 +331,7 @@ describe('deck-add-catalog', () => {
           priceEur: null,
         },
       ],
+      isBanned: false,
     };
 
     const candidates = buildDeckAddCandidates({
@@ -366,6 +367,7 @@ describe('deck-add-catalog', () => {
           priceEur: null,
         },
       ],
+      isBanned: false,
     };
 
     const candidates = buildDeckAddCandidates({

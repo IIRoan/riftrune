@@ -4,43 +4,9 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import type { Env } from '../env.js';
 import { createPostgresOptions } from './client.js';
+import { isTransientDbError } from './transient-errors.js';
 
-const TRANSIENT_ERROR_CODES = new Set([
-  'ETIMEDOUT',
-  'ECONNREFUSED',
-  'ECONNRESET',
-  'ENOTFOUND',
-  'EAI_AGAIN',
-]);
-
-export function isTransientDbError(error: unknown): boolean {
-  let current: unknown = error;
-  const seen = new Set<unknown>();
-
-  while (current && !seen.has(current)) {
-    seen.add(current);
-
-    if (current instanceof Error) {
-      const withCode = current as Error & { code?: string };
-      if (withCode.code && TRANSIENT_ERROR_CODES.has(withCode.code)) {
-        return true;
-      }
-      current = 'cause' in current ? current.cause : undefined;
-      continue;
-    }
-
-    if (typeof current === 'object' && current !== null && 'code' in current) {
-      const code = (current as { code?: unknown }).code;
-      if (typeof code === 'string' && TRANSIENT_ERROR_CODES.has(code)) {
-        return true;
-      }
-    }
-
-    break;
-  }
-
-  return false;
-}
+export { isTransientDbError } from './transient-errors.js';
 
 function formatDbError(error: unknown): string {
   if (error instanceof Error) {
@@ -52,7 +18,7 @@ function formatDbError(error: unknown): string {
 
 export async function runStartupMigrations(env: Env): Promise<void> {
   const migrationsFolder = join(import.meta.dir, '..', '..', 'drizzle');
-  const maxAttempts = env.NODE_ENV === 'production' ? 12 : 1;
+  const maxAttempts = env.NODE_ENV === 'production' ? 12 : 5;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const client = postgres(env.DATABASE_URL, {

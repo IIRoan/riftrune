@@ -1,3 +1,4 @@
+export * from './card-legality.js';
 export * from './cards.js';
 export * from './prices.js';
 export * from './filters.js';

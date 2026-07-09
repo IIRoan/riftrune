@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { DeckState } from '@/lib/deck-types';
 import { deckQueryKeys } from '@/hooks/useDecks';
+import { useDeckLiveLegality } from '@/hooks/useBanDatesByVariant';
 import { applyDeckStateIfNewerToCache, setDeckDetailCache } from '@/lib/deck-state';
 import {
   flushRemoteDeckSave,
@@ -33,6 +34,10 @@ export function useDeckDetail(deckId: string | undefined) {
       return queryClient.getQueryData<DeckState | null>(deckQueryKeys.detail(deckId)) ?? undefined;
     },
   });
+
+  const { deck: deckWithLegality, isRefreshing: isRefreshingLegality } = useDeckLiveLegality(
+    query.data ?? null
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -76,8 +81,9 @@ export function useDeckDetail(deckId: string | undefined) {
   }, [deckId, queryClient]);
 
   return {
-    deck: query.data ?? null,
+    deck: deckWithLegality ?? query.data ?? null,
     isLoading: query.isLoading,
+    isRefreshingLegality,
     persist,
     flushSave,
     refetch: query.refetch,
