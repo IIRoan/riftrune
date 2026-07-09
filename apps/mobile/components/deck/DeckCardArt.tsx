@@ -19,16 +19,18 @@ function DeckCardArtInner({ uri, variantNumber }: DeckCardArtProps) {
   }
 
   return (
-    <Image
-      source={{ uri }}
-      recyclingKey={variantNumber}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-      contentFit="cover"
-      contentPosition="top"
-      transition={0}
-      cachePolicy="memory-disk"
-      priority="high"
-    />
+    <View className="absolute inset-0 items-center justify-center p-1">
+      <Image
+        source={{ uri }}
+        recyclingKey={variantNumber}
+        style={{ width: '100%', height: '100%' }}
+        contentFit="contain"
+        contentPosition="center"
+        transition={0}
+        cachePolicy="memory-disk"
+        priority="high"
+      />
+    </View>
   );
 }
 

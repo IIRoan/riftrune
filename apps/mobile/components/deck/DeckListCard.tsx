@@ -1,5 +1,4 @@
-import { Image } from 'expo-image';
-import { Pressable, View } from 'react-native';
+import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
@@ -26,10 +25,12 @@ interface DeckListCardProps {
 
 function DeckPreviewThumb({
   imageUri,
+  variantNumber,
   label,
   showLegendFallback = false,
 }: {
   imageUri: string;
+  variantNumber?: string;
   label?: string;
   showLegendFallback?: boolean;
 }) {
@@ -43,14 +44,7 @@ function DeckPreviewThumb({
         style={{ width: PREVIEW_SIZE, height: Math.round(PREVIEW_SIZE * 1.4) }}
       >
         {imageUri ? (
-          <Image
-            source={{ uri: imageUri }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
-            contentPosition="top"
-            transition={0}
-            cachePolicy="memory-disk"
-          />
+          <DeckCardArt uri={imageUri} variantNumber={variantNumber ?? imageUri} />
         ) : (
           <View className="flex-1 items-center justify-center bg-card-panel">
             {showLegendFallback ? (
@@ -108,7 +102,12 @@ export function DeckListCard({
       className="overflow-hidden rounded-xl border border-archive-soft-line bg-card active:border-ring active:bg-card-panel"
     >
       <View className="flex-row gap-3 p-4">
-        <DeckPreviewThumb imageUri={legendUri} label="L" showLegendFallback />
+        <DeckPreviewThumb
+          imageUri={legendUri}
+          variantNumber={deck.legend?.variantNumber}
+          label="L"
+          showLegendFallback
+        />
 
         <View className="min-w-0 flex-1 gap-2">
           <View className="flex-row items-start justify-between gap-2">
@@ -150,6 +149,7 @@ export function DeckListCard({
                 <DeckPreviewThumb
                   key={entry.card.name}
                   imageUri={resolveDeckCardImageUrl(entry.card, imageByVariant)}
+                  variantNumber={entry.card.variantNumber}
                 />
               ))}
             </View>
