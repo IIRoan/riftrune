@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
 import { SearchInput } from '@/components/ui/search-input';
@@ -14,6 +13,7 @@ import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
 import { useDebounce } from '@/hooks/useDebounce';
 import { hapticPress } from '@/utils/haptics';
+import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { cn } from '@/lib/utils';
 
@@ -155,14 +155,9 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
                 )}
               >
                 {item.imageUrl ? (
-                  <Image
-                    source={{ uri: resolveImageUrl(item.imageUrl) }}
-                    recyclingKey={item.variantNumber}
-                    style={{ width: '100%', height: '100%' }}
-                    contentFit="cover"
-                    contentPosition="top"
-                    transition={120}
-                    cachePolicy="memory-disk"
+                  <DeckCardArt
+                    uri={resolveImageUrl(item.imageUrl)}
+                    variantNumber={item.variantNumber}
                   />
                 ) : (
                   <View className="flex-1 items-center justify-center bg-card-panel">
