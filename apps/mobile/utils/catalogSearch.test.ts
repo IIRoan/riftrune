@@ -1,0 +1,126 @@
+import { describe, expect, test } from 'bun:test';
+import type { CardListItem } from '@riftbound/contracts';
+import { DEFAULT_CATALOG_SORT } from '@/constants/catalogSort';
+import { featuredCatalogItems, searchCatalogItems, tokenizeSearchQuery } from '@/utils/catalogSearch';
+
+const vi = {
+  cardId: '00000000-0000-0000-0000-000000000001',
+  variantNumber: 'OGN-001',
+  name: 'Vi Destructive',
+  type: 'Unit',
+  energy: 2,
+  might: 2,
+  power: 2,
+  rarity: 'Rare',
+  setCode: 'OGN',
+  colors: ['Body'],
+  imageUrl: 'https://example.com/vi.jpg',
+  cardmarketId: null,
+  priceEur: { currency: 'EUR' as const, low: 1, market: 2, avg7d: null, isFoil: false },
+  printings: [
+    {
+      variantNumber: 'OGN-001',
+      variantLabel: 'Standard',
+      isFoil: false,
+      priceEur: { currency: 'EUR' as const, low: 1, market: 2, avg7d: null, isFoil: false },
+    },
+  ],
+  isBanned: false,
+} satisfies CardListItem;
+
+const jinx = {
+  ...vi,
+  cardId: '00000000-0000-0000-0000-000000000002',
+  variantNumber: 'OGN-002',
+  name: 'Jinx Rebel',
+  energy: 4,
+  priceEur: { currency: 'EUR' as const, low: 5, market: 10, avg7d: null, isFoil: false },
+  printings: [
+    {
+      variantNumber: 'OGN-002',
+      variantLabel: 'Standard',
+      isFoil: false,
+      priceEur: { currency: 'EUR' as const, low: 5, market: 10, avg7d: null, isFoil: false },
+    },
+  ],
+} satisfies CardListItem;
+
+const ekko = {
+  ...vi,
+  cardId: '00000000-0000-0000-0000-000000000003',
+  variantNumber: 'SFD-010',
+  name: 'Ekko Recurve',
+  setCode: 'SFD',
+  colors: ['Mind'],
+  printings: [
+    {
+      variantNumber: 'SFD-010',
+      variantLabel: 'Standard',
+      isFoil: false,
+      priceEur: null,
+    },
+  ],
+} satisfies CardListItem;
+
+const catalog = [vi, jinx, ekko];
+
+describe('catalogSearch', () => {
+  test('tokenizeSearchQuery splits on whitespace', () => {
+    expect(tokenizeSearchQuery('  vi   destruct  ')).toEqual(['vi', 'destruct']);
+  });
+
+  test('tokenizeSearchQuery returns empty for blank input', () => {
+    expect(tokenizeSearchQuery('   ')).toEqual([]);
+  });
+
+  test('searchCatalogItems prefers prefix name matches', () => {
+    const results = searchCatalogItems(catalog, 'vi', DEFAULT_CATALOG_SORT, 10);
+    expect(results.map((card) => card.name)).toEqual(['Vi Destructive']);
+  });
+
+  test('searchCatalogItems matches variant numbers and set codes', () => {
+    expect(searchCatalogItems(catalog, 'ogn-001', DEFAULT_CATALOG_SORT, 10)).toHaveLength(1);
+    expect(searchCatalogItems(catalog, 'sfd', DEFAULT_CATALOG_SORT, 10)).toHaveLength(1);
+  });
+
+  test('searchCatalogItems requires all tokens', () => {
+    expect(searchCatalogItems(catalog, 'vi rebel', DEFAULT_CATALOG_SORT, 10)).toEqual([]);
+    expect(searchCatalogItems(catalog, 'jinx rebel', DEFAULT_CATALOG_SORT, 10)).toHaveLength(1);
+  });
+
+  test('searchCatalogItems respects limit', () => {
+    expect(searchCatalogItems(catalog, 'o', DEFAULT_CATALOG_SORT, 2)).toHaveLength(2);
+  });
+
+  test('searchCatalogItems sorts by energy when requested', () => {
+    const results = searchCatalogItems(catalog, 'o', { sortBy: 'energy', dir: 'desc' }, 10);
+    expect(results.map((card) => card.name)).toEqual([
+      'Jinx Rebel',
+      'Vi Destructive',
+      'Ekko Recurve',
+    ]);
+  });
+
+  test('searchCatalogItems matches color names', () => {
+    expect(searchCatalogItems(catalog, 'mind', DEFAULT_CATALOG_SORT, 10)).toHaveLength(1);
+    expect(searchCatalogItems(catalog, 'mind', DEFAULT_CATALOG_SORT, 10)[0]?.name).toBe(
+      'Ekko Recurve'
+    );
+  });
+
+  test('searchCatalogItems returns empty for blank query', () => {
+    expect(searchCatalogItems(catalog, '   ', DEFAULT_CATALOG_SORT, 10)).toEqual([]);
+  });
+
+  test('featuredCatalogItems sorts by market price', () => {
+    expect(featuredCatalogItems(catalog).map((card) => card.name)).toEqual([
+      'Jinx Rebel',
+      'Vi Destructive',
+      'Ekko Recurve',
+    ]);
+  });
+
+  test('featuredCatalogItems respects limit', () => {
+    expect(featuredCatalogItems(catalog, 2)).toHaveLength(2);
+  });
+});

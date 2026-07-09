@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import { authClient } from '@/src/lib/auth-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { collectionQueryKeys } from '@/src/api/queryKeys';
+import { clearPersistedCollection } from '@/services/collectionCacheService';
+import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 
 type NavId = 'search' | 'collection' | 'wishlist' | 'decks' | 'settings';
 
@@ -37,7 +39,10 @@ export function SideRail() {
   const handleSignOut = async () => {
     await authClient.signOut();
     await sessionQuery.refetch();
+    await clearPersistedCollection();
+    await clearPersistedCatalogIndex();
     void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
+    void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
   };
 
   const userName = session?.user?.name ?? '';

@@ -3,6 +3,7 @@ import {
   CardDetailResponse,
   CardsBatchResponse,
   CardsListResponse,
+  CatalogIndexResponse,
   DeckRulesResponse,
   DeckValidateInput,
   DeckValidateResponse,
@@ -60,6 +61,8 @@ export const api = {
     const qs = params.toString();
     return apiFetch(`/api/v1/cards${qs ? `?${qs}` : ''}`, CardsListResponse);
   },
+
+  getCatalogIndex: () => apiFetch('/api/v1/cards/index', CatalogIndexResponse),
 
   getCard: (variantNumber: string) =>
     apiFetch(`/api/v1/cards/${encodeURIComponent(variantNumber)}`, CardDetailResponse),

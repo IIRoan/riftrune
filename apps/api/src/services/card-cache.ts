@@ -758,4 +758,40 @@ export class CardCacheService {
     const [row] = await this.db.select({ value: count() }).from(variants);
     return row?.value ?? 0;
   }
+
+  async listIndex(): Promise<{
+    items: CardListItem[];
+    total: number;
+    catalogHash: string;
+  }> {
+    const rows = await this.db
+      .select({
+        card: cards,
+        variant: variants,
+        setCode: sets.code,
+      })
+      .from(variants)
+      .innerJoin(cards, eq(variants.cardId, cards.id))
+      .innerJoin(sets, eq(variants.setId, sets.id))
+      .orderBy(asc(cards.name), asc(variants.variantNumber));
+
+    const priceRows = await this.prices.getRowsForCardmarketIds(
+      rows
+        .map((row) => row.variant.cardmarketId)
+        .filter((id): id is number => id != null)
+    );
+
+    const rawItems = rows.map((row) => {
+      const logical = row.card.upstreamRaw as PaLogicalCard;
+      const variant = row.variant.upstreamRaw as PaVariant;
+      return this.mapItem(logical, variant, priceRows);
+    });
+
+    const items = groupCardListItems(rawItems);
+    return {
+      items,
+      total: items.length,
+      catalogHash: await this.getCatalogHash(),
+    };
+  }
 }

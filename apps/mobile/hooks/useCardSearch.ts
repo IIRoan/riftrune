@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CardsListResponse } from '@riftbound/contracts';
 import { useDebounce } from '@/hooks/useDebounce';
+import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
 import {
   MIN_SEARCH_LENGTH,
   addSearchHistoryItem,
@@ -11,20 +12,31 @@ import {
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
 import { prefetchCardDetail } from '@/lib/prefetchCardDetail';
-import { normalizeCardListItems, normalizeCardsListResponse, groupCardListItems } from '@/utils/variants';
+import {
+  normalizeCardListItems,
+  normalizeCardsListResponse,
+  groupCardListItems,
+} from '@/utils/variants';
+import { searchCatalogItems } from '@/utils/catalogSearch';
 
 import type { CardsListQuery } from '@riftbound/contracts';
 import { DEFAULT_CATALOG_SORT, type CatalogSort } from '@/constants/catalogSort';
 
-const DEBOUNCE_MS = 400;
+const DEBOUNCE_MS = 250;
+const LOCAL_DEBOUNCE_MS = 80;
 const STALE_MS = 5 * 60 * 1000;
 
 export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG_SORT) {
   const trimmed = query.trim();
   const debounced = useDebounce(trimmed, DEBOUNCE_MS);
+  const localDebounced = useDebounce(trimmed, LOCAL_DEBOUNCE_MS);
   const [immediateTerm, setImmediateTerm] = useState<string | null>(null);
   const activeTerm = immediateTerm ?? debounced;
+  const localActiveTerm = immediateTerm ?? localDebounced;
   const queryClient = useQueryClient();
+  const catalogIndex = useCatalogIndex();
+  const catalogItems = getCatalogIndexItems(catalogIndex.data);
+  const indexReady = catalogItems.length > 0;
   const [instantCache, setInstantCache] = useState<{
     term: string;
     response: CardsListResponse;
@@ -34,6 +46,11 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
   const inputMatchesActive = trimmed === activeTerm;
   const instantCacheForTerm =
     instantCache?.term === activeTerm ? instantCache.response : null;
+
+  const localResults = useMemo(() => {
+    if (!indexReady || localActiveTerm.length < MIN_SEARCH_LENGTH) return null;
+    return searchCatalogItems(catalogItems, localActiveTerm, sort, 40);
+  }, [indexReady, catalogItems, localActiveTerm, sort]);
 
   useEffect(() => {
     if (immediateTerm && debounced === immediateTerm) {
@@ -92,11 +109,12 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
   });
 
   useEffect(() => {
-    if (!result.data?.data.length) return;
-    for (const card of result.data.data.slice(0, 12)) {
+    const cards = result.data?.data ?? localResults ?? [];
+    if (!cards.length) return;
+    for (const card of cards.slice(0, 12)) {
       prefetchCardDetail(queryClient, card);
     }
-  }, [result.data, queryClient]);
+  }, [result.data, localResults, queryClient]);
 
   const searchNow = useCallback(
     (override?: string) => {
@@ -108,31 +126,38 @@ export function useCardSearch(query: string, sort: CatalogSort = DEFAULT_CATALOG
     [trimmed]
   );
 
-  const awaitingResults =
+  const awaitingNetworkResults =
     !inputMatchesActive ||
     (result.isFetching && result.data === undefined && instantCacheForTerm === null);
 
-  const rawItems = awaitingResults
-    ? []
-    : (result.data?.data ?? instantCacheForTerm?.data ?? []);
+  const rawItems =
+    awaitingNetworkResults && !localResults
+      ? []
+      : (result.data?.data ?? localResults ?? instantCacheForTerm?.data ?? []);
   const items = useMemo(
     () => groupCardListItems(normalizeCardListItems(rawItems)),
     [rawItems]
   );
 
+  const hasInstantResults = localResults !== null || instantCacheForTerm !== null;
+
   return {
     debouncedQuery: activeTerm,
     minLength: MIN_SEARCH_LENGTH,
-    debounceMs: DEBOUNCE_MS,
+    debounceMs: indexReady ? LOCAL_DEBOUNCE_MS : DEBOUNCE_MS,
     items,
-    meta: awaitingResults ? undefined : (result.data?.meta ?? instantCacheForTerm?.meta),
+    meta: awaitingNetworkResults && !localResults
+      ? undefined
+      : (result.data?.meta ?? instantCacheForTerm?.meta),
     isLoading:
       enabled &&
-      (awaitingResults || (result.isLoading && !result.data && !instantCacheForTerm)),
-    isFetching: enabled && (awaitingResults || result.isFetching),
+      !hasInstantResults &&
+      (awaitingNetworkResults || (result.isLoading && !result.data && !instantCacheForTerm)),
+    isFetching: enabled && awaitingNetworkResults && result.isFetching,
     isError: result.isError,
     error: result.error,
     refetch: result.refetch,
     searchNow,
+    isLocalSearch: indexReady && Boolean(localResults),
   };
 }

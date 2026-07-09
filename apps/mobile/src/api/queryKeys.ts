@@ -10,6 +10,9 @@ export const cardQueryKeys = {
 export const collectionQueryKeys = {
   all: ['collection'] as const,
   entry: (variantNumber: string) => ['collection', variantNumber] as const,
+  ownership: (variantNumbers: string[]) =>
+    ['collection', 'ownership', [...variantNumbers].sort().join(',')] as const,
+  ownershipRoot: ['collection', 'ownership'] as const,
 };
 
 export const wishlistQueryKeys = {

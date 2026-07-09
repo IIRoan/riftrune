@@ -7,7 +7,7 @@ import {
   setDefaultTimeout,
 } from 'bun:test';
 import { eq, like } from 'drizzle-orm';
-import { setupE2E, getBaseUrl, apiFetch, getContext } from './support.js';
+import { getBaseUrl, apiFetch, getContext } from './support.js';
 import {
   user as userTable,
   session as sessionTable,
@@ -43,6 +43,9 @@ async function authFetch(
   if (init?.cookie) {
     headers.set('cookie', init.cookie);
   }
+  if (!headers.has('origin')) {
+    headers.set('origin', getBaseUrl());
+  }
   if (init?.body && !headers.has('content-type')) {
     headers.set('content-type', 'application/json');
   }
@@ -67,7 +70,6 @@ async function cleanupTestUsers(): Promise<void> {
 }
 
 beforeAll(async () => {
-  await setupE2E();
   testEmail = `test-auth-${Date.now()}@test.riftbound.dev`;
   await cleanupTestUsers();
 });

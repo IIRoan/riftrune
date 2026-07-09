@@ -1,5 +1,4 @@
 import type { CardListItem } from '@riftbound/contracts';
-import type { CollectionEntry } from '@/services/collectionService';
 import { formatPrintingLabel, getCardPrintings, getSearchGroupVariants, isFoilVariant } from '@/utils/variants';
 
 export interface CollectedPrintingRow {
@@ -10,7 +9,7 @@ export interface CollectedPrintingRow {
 
 export function getCollectedPrintingsForListCard(
   card: CardListItem,
-  byVariant: ReadonlyMap<string, CollectionEntry>
+  byVariant: ReadonlyMap<string, { quantity: number }>
 ): CollectedPrintingRow[] {
   return getCardPrintings(card)
     .filter((p) => (byVariant.get(p.variantNumber)?.quantity ?? 0) > 0)
@@ -32,7 +31,7 @@ export function getCollectedPrintingsForDetailCard(
       variantType: string;
     }>;
   },
-  byVariant: ReadonlyMap<string, CollectionEntry>,
+  byVariant: ReadonlyMap<string, { quantity: number }>,
   anchor?: {
     variantNumber: string;
     variantLabel: string;

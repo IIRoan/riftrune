@@ -15,6 +15,8 @@ import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Text } from '@/components/ui/text';
 import { migrateLocalCollectionToRemote } from '@/services/collectionService';
+import { clearPersistedCollection } from '@/services/collectionCacheService';
+import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 import { authClient } from '@/src/lib/auth-client';
 import { collectionQueryKeys } from '@/src/api/queryKeys';
 import { cn } from '@/lib/utils';
@@ -239,6 +241,7 @@ export function AuthPanel({
       await sessionQuery.refetch();
       await migrateLocalCollectionToRemote();
       void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
@@ -251,7 +254,10 @@ export function AuthPanel({
     try {
       await authClient.signOut();
       await sessionQuery.refetch();
+      await clearPersistedCollection();
+      await clearPersistedCatalogIndex();
       void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
     } finally {
       setBusy(false);
     }

@@ -99,6 +99,30 @@ export class CollectionService {
     return { items, total: items.length, totalQuantity };
   }
 
+  async quantitiesForVariants(
+    userId: string,
+    variantNumbers: string[]
+  ): Promise<Array<{ variantNumber: string; quantity: number }>> {
+    const unique = [...new Set(variantNumbers)];
+    if (unique.length === 0) return [];
+
+    const rows = await this.db
+      .select({
+        variantNumber: collectionItems.variantNumber,
+        quantity: collectionItems.quantity,
+      })
+      .from(collectionItems)
+      .where(
+        and(eq(collectionItems.userId, userId), inArray(collectionItems.variantNumber, unique))
+      );
+
+    const byVariant = new Map(rows.map((row) => [row.variantNumber, row.quantity]));
+    return unique.map((variantNumber) => ({
+      variantNumber,
+      quantity: byVariant.get(variantNumber) ?? 0,
+    }));
+  }
+
   async upsert(
     userId: string,
     input: {

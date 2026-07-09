@@ -5,6 +5,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query';
 import type { CardListItem } from '@riftbound/contracts';
+import { useMemo } from 'react';
 import { logActionFailure } from '@/lib/logger';
 import {
   addDetailToCollection,
@@ -16,6 +17,8 @@ import {
   updateCollectionQuantity,
   type CollectionEntry,
 } from '@/services/collectionService';
+import { persistCollection, readPersistedCollection } from '@/services/collectionCacheService';
+import { fetchRemoteCollectionQuantities } from '@/services/remoteCollectionService';
 import { collectionQueryKeys } from '@/src/api/queryKeys';
 import {
   findVariantByNumber,
@@ -23,20 +26,154 @@ import {
   isFoilVariant,
   variantNumbersMatch,
 } from '@/utils/variants';
+import {
+  mergeOwnershipRecords,
+  ownershipMapFromRecord,
+  ownershipRecordFromCollection,
+  type CollectionOwnershipMap,
+} from '@/utils/collectionOwnership';
 
-export function useCollection() {
-  return useQuery({
+const COLLECTION_STALE_MS = 5 * 60 * 1000;
+const OWNERSHIP_STALE_MS = 5 * 60 * 1000;
+
+type OwnershipRecord = Record<string, number>;
+
+export function getOwnershipRecord(queryClient: QueryClient): OwnershipRecord {
+  return queryClient.getQueryData<OwnershipRecord>(collectionQueryKeys.ownershipRoot) ?? {};
+}
+
+export function syncOwnershipFromCollection(
+  queryClient: QueryClient,
+  entries: readonly CollectionEntry[]
+) {
+  queryClient.setQueryData(
+    collectionQueryKeys.ownershipRoot,
+    ownershipRecordFromCollection(entries)
+  );
+}
+
+function setOwnershipQuantity(
+  queryClient: QueryClient,
+  variantNumber: string,
+  quantity: number
+) {
+  const current = getOwnershipRecord(queryClient);
+  const merged = mergeOwnershipRecords(current, { [variantNumber]: quantity });
+  queryClient.setQueryData(collectionQueryKeys.ownershipRoot, merged);
+  queryClient.setQueriesData<OwnershipRecord>(
+    { queryKey: ['collection', 'ownership'] },
+    () => merged
+  );
+}
+
+export async function hydrateCollectionCache(queryClient: QueryClient): Promise<void> {
+  const cached = await readPersistedCollection();
+  if (!cached?.length) return;
+  if (!queryClient.getQueryData<CollectionEntry[]>(collectionQueryKeys.all)) {
+    queryClient.setQueryData(collectionQueryKeys.all, cached);
+  }
+  syncOwnershipFromCollection(queryClient, cached);
+}
+
+export function prefetchCollection(queryClient: QueryClient): Promise<void> {
+  return queryClient.prefetchQuery({
     queryKey: collectionQueryKeys.all,
-    queryFn: getCollection,
-    staleTime: 30_000,
+    queryFn: async () => {
+      const entries = await getCollection();
+      syncOwnershipFromCollection(queryClient, entries);
+      await persistCollection(entries);
+      return entries;
+    },
+    staleTime: COLLECTION_STALE_MS,
   });
 }
 
+export function useCollection(options?: { enabled?: boolean }) {
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: collectionQueryKeys.all,
+    queryFn: async () => {
+      const entries = await getCollection();
+      syncOwnershipFromCollection(queryClient, entries);
+      await persistCollection(entries);
+      return entries;
+    },
+    staleTime: COLLECTION_STALE_MS,
+    refetchOnMount: false,
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useCollectionOwnership(
+  variantNumbers: readonly string[]
+): { collectionByVariant: CollectionOwnershipMap; isLoading: boolean } {
+  const queryClient = useQueryClient();
+  const normalized = useMemo(
+    () => [...new Set(variantNumbers.filter(Boolean))].sort(),
+    [variantNumbers]
+  );
+
+  const ownershipQuery = useQuery({
+    queryKey: collectionQueryKeys.ownership(normalized),
+    queryFn: async () => {
+      const cached = getOwnershipRecord(queryClient);
+      const missing = normalized.filter((variantNumber) => cached[variantNumber] === undefined);
+      if (missing.length === 0) return cached;
+
+      const rows = await fetchRemoteCollectionQuantities(missing);
+      const patch = Object.fromEntries(
+        rows.map((row) => [row.variantNumber, row.quantity])
+      ) as OwnershipRecord;
+      const merged = mergeOwnershipRecords(cached, patch);
+      queryClient.setQueryData(collectionQueryKeys.ownershipRoot, merged);
+      return merged;
+    },
+    placeholderData: () => {
+      const cached = getOwnershipRecord(queryClient);
+      const hasAll = normalized.every((variantNumber) => cached[variantNumber] !== undefined);
+      return hasAll ? cached : undefined;
+    },
+    enabled: normalized.length > 0,
+    staleTime: OWNERSHIP_STALE_MS,
+    refetchOnMount: false,
+  });
+
+  const ownership = ownershipQuery.data ?? getOwnershipRecord(queryClient);
+  const collectionByVariant = useMemo(
+    () => ownershipMapFromRecord(ownership),
+    [ownership]
+  );
+
+  return {
+    collectionByVariant,
+    isLoading: ownershipQuery.isLoading,
+  };
+}
+
 export function useCollectionEntry(variantNumber: string) {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: collectionQueryKeys.entry(variantNumber),
-    queryFn: () => getCollectionEntry(variantNumber),
+    queryFn: async () => {
+      const cached = queryClient
+        .getQueryData<CollectionEntry[]>(collectionQueryKeys.all)
+        ?.find((entry) => entry.variantNumber === variantNumber);
+      if (cached) return cached;
+
+      const ownership = getOwnershipRecord(queryClient);
+      if (ownership[variantNumber] !== undefined) {
+        return ownership[variantNumber] > 0 ? ({ variantNumber, quantity: ownership[variantNumber] } as CollectionEntry) : null;
+      }
+
+      const rows = await fetchRemoteCollectionQuantities([variantNumber]);
+      const quantity = rows[0]?.quantity ?? 0;
+      setOwnershipQuantity(queryClient, variantNumber, quantity);
+      return quantity > 0 ? ({ variantNumber, quantity } as CollectionEntry) : null;
+    },
     staleTime: 10_000,
+    enabled: Boolean(variantNumber),
   });
 }
 
@@ -53,6 +190,7 @@ interface CollectionMutationContext {
 
 function invalidateCollection(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
+  void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
 }
 
 function reconcileCollectionEntries(queryClient: QueryClient, variantNumbers: string[]) {
@@ -113,6 +251,7 @@ function applyCollectionQuantity(
       all.filter((entry) => entry.variantNumber !== variantNumber)
     );
     queryClient.setQueryData(collectionQueryKeys.entry(variantNumber), null);
+    setOwnershipQuantity(queryClient, variantNumber, 0);
     return;
   }
 
@@ -122,6 +261,7 @@ function applyCollectionQuantity(
     nextAll[index] = updated;
     queryClient.setQueryData(collectionQueryKeys.all, nextAll);
     queryClient.setQueryData(collectionQueryKeys.entry(variantNumber), updated);
+    setOwnershipQuantity(queryClient, variantNumber, quantity);
     return;
   }
 
@@ -136,6 +276,7 @@ function applyCollectionQuantity(
   };
   queryClient.setQueryData(collectionQueryKeys.all, [created, ...all]);
   queryClient.setQueryData(collectionQueryKeys.entry(variantNumber), created);
+  setOwnershipQuantity(queryClient, variantNumber, quantity);
 }
 
 function entrySeedFromListCard(
@@ -305,6 +446,7 @@ export function useCollectionMutations() {
       );
       for (const variantNumber of variantNumbers) {
         queryClient.setQueryData(collectionQueryKeys.entry(variantNumber), null);
+        setOwnershipQuantity(queryClient, variantNumber, 0);
       }
 
       return { previousAll, previousEntries };

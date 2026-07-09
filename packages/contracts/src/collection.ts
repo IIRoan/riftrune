@@ -69,6 +69,25 @@ export const CollectionItemResponse = z.object({
   data: CollectionItem,
 });
 
+export const CollectionQuantitiesRequest = z.object({
+  variantNumbers: z.array(z.string().min(1)).max(200),
+});
+
+export type CollectionQuantitiesRequest = z.infer<typeof CollectionQuantitiesRequest>;
+
+export const CollectionQuantityRow = z.object({
+  variantNumber: z.string(),
+  quantity: z.number().int().nonnegative(),
+});
+
+export type CollectionQuantityRow = z.infer<typeof CollectionQuantityRow>;
+
+export const CollectionQuantitiesResponse = z.object({
+  data: z.array(CollectionQuantityRow),
+});
+
+export type CollectionQuantitiesResponse = z.infer<typeof CollectionQuantitiesResponse>;
+
 export const WishlistItem = z.object({
   id: z.string().uuid(),
   variantNumber: z.string(),

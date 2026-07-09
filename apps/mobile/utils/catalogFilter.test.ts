@@ -37,4 +37,15 @@ describe('matchesCatalogFilter', () => {
     expect(matchesCatalogFilter(sampleCard, 'Owned', collection)).toBe(true);
     expect(matchesCatalogFilter(sampleCard, 'Wishlist', collection)).toBe(false);
   });
+
+  test('wishlist filter matches cards with zero owned copies', () => {
+    const collection = new Map([['OGN-001', { quantity: 0 }]]);
+    expect(matchesCatalogFilter(sampleCard, 'Wishlist', collection)).toBe(true);
+    expect(matchesCatalogFilter(sampleCard, 'Owned', collection)).toBe(false);
+  });
+
+  test('owned filter treats missing printings as zero quantity', () => {
+    expect(matchesCatalogFilter(sampleCard, 'Owned', new Map())).toBe(false);
+    expect(matchesCatalogFilter(sampleCard, 'Wishlist', new Map())).toBe(true);
+  });
 });

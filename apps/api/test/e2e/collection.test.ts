@@ -12,7 +12,7 @@ import {
   parseCollectionCsv,
 } from '@riftbound/contracts';
 import { eq, like } from 'drizzle-orm';
-import { setupE2E, getBaseUrl, apiFetch, getContext } from './support.js';
+import { getBaseUrl, apiFetch, getContext } from './support.js';
 import {
   user as userTable,
   session as sessionTable,
@@ -70,7 +70,6 @@ async function cleanupTestUsers(): Promise<void> {
 }
 
 beforeAll(async () => {
-  await setupE2E();
   await cleanupTestUsers();
 
   const res = await authFetch('/api/auth/sign-up/email', {
@@ -226,6 +225,26 @@ describe('collection import/export', () => {
     const importBody = CollectionImportResponse.parse(await importRes.json());
     expect(importBody.data.imported).toBe(1);
     expect(importBody.data.totalCopies).toBe(5);
+  });
+
+  test('POST /api/v1/collection/quantities returns owned counts for requested variants', async () => {
+    const res = await authFetch('/api/v1/collection/quantities', {
+      method: 'POST',
+      cookie: cookieHeader,
+      body: JSON.stringify({
+        variantNumbers: ['OGN-001', 'OGN-999', 'OGN-003'],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data).toEqual(
+      expect.arrayContaining([
+        { variantNumber: 'OGN-001', quantity: expect.any(Number) },
+        { variantNumber: 'OGN-999', quantity: 0 },
+        { variantNumber: 'OGN-003', quantity: expect.any(Number) },
+      ])
+    );
+    expect(body.data).toHaveLength(3);
   });
 
   test('DELETE /api/v1/collection/all clears the collection in non-production', async () => {
