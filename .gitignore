@@ -39,8 +39,5 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Drizzle
-apps/api/drizzle/meta
-
 # Legacy sibling app (separate project)
 manganess/node_modules
