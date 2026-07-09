@@ -1,3 +1,5 @@
+import type { DecksListQuery } from '@riftbound/contracts';
+import { enrichDeckWithBanDates } from '@/lib/enrich-deck-ban-dates';
 import { createEmptyDeck, deserializeDeck, serializeDeck } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
 import { logActionFailure } from '@/lib/logger';
@@ -12,17 +14,29 @@ import {
 
 export const DECK_AUTO_SAVE_MS = 800;
 
-export async function listDecks(options?: {
-  q?: string;
-  source?: 'owned' | 'imported' | 'all';
-}): Promise<DeckState[]> {
+export async function listDecks(options?: Partial<DecksListQuery>): Promise<DeckState[]> {
   const remote = await fetchRemoteDecks(options);
-  return remote.map(deserializeDeck);
+  return remote.data.map(deserializeDeck);
+}
+
+export async function listDecksPage(
+  options?: Partial<DecksListQuery>
+): Promise<{
+  data: DeckState[];
+  pagination?: Awaited<ReturnType<typeof fetchRemoteDecks>>['pagination'];
+}> {
+  const remote = await fetchRemoteDecks(options);
+  return {
+    data: remote.data.map(deserializeDeck),
+    pagination: remote.pagination,
+  };
 }
 
 export async function getDeck(id: string): Promise<DeckState | null> {
   const remote = await fetchRemoteDeck(id);
-  return remote ? deserializeDeck(remote) : null;
+  if (!remote) return null;
+  const deck = deserializeDeck(remote);
+  return enrichDeckWithBanDates(deck);
 }
 
 export async function createDeck(name = 'New Deck', description = ''): Promise<DeckState> {

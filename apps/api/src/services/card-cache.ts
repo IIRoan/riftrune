@@ -155,6 +155,13 @@ export class CardCacheService {
             might: card.might,
             power: card.power,
             tags: card.tags,
+            attachText: card.attachText ?? null,
+            effect: card.effect ?? null,
+            mightBonus: card.mightBonus ?? 0,
+            maxCopies: card.maxCopies ?? null,
+            banEffectiveDate: card.banEffectiveDate
+              ? new Date(card.banEffectiveDate)
+              : null,
             contentHash: hash,
             upstreamRaw: card,
             fetchedAt: now,

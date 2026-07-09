@@ -38,6 +38,7 @@ export function deckCardFromDetail(card: CardDetail, variantNumber: string): Dec
     variantType: variant.variantType,
     isSignature: isSignatureVariant(variant.rarity, variant.variantType),
     imageUrl: variant.imageUrl ?? null,
+    banEffectiveDate: card.banEffectiveDate ?? null,
   };
 }
 
@@ -57,6 +58,7 @@ export function deckCardFromListItem(card: CardListItem): DeckCard {
     variantType: 'Standard',
     isSignature: isSignatureVariant(card.rarity, ''),
     imageUrl: card.imageUrl ?? null,
+    banEffectiveDate: card.isBanned ? '1970-01-01T00:00:00.000Z' : null,
   };
 }
 
@@ -262,6 +264,18 @@ export function serializeDeck(deck: DeckState): SerializedDeck {
     sideboard: toEntries(deck.sideboard),
     upstreamId: deck.upstreamId,
     syncWarnings: deck.syncWarnings,
+    source: deck.source,
+    readOnly: deck.readOnly,
+    authorName: deck.authorName,
+    views: deck.views,
+    likes: deck.likes,
+    isLegal: deck.isLegal,
+    setPrefixes: deck.setPrefixes,
+    hasGuide: deck.hasGuide,
+    hasVideo: deck.hasVideo,
+    hasMatchups: deck.hasMatchups,
+    videoUrl: deck.videoUrl,
+    bannedCardNames: deck.bannedCardNames,
   };
 }
 
@@ -294,5 +308,15 @@ export function deserializeDeck(data: SerializedDeck): DeckState {
     source: data.source,
     readOnly: data.readOnly,
     syncWarnings: data.syncWarnings,
+    authorName: data.authorName,
+    views: data.views,
+    likes: data.likes,
+    isLegal: data.isLegal,
+    setPrefixes: data.setPrefixes,
+    hasGuide: data.hasGuide,
+    hasVideo: data.hasVideo,
+    hasMatchups: data.hasMatchups,
+    videoUrl: data.videoUrl,
+    bannedCardNames: data.bannedCardNames,
   };
 }

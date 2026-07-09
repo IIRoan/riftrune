@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia';
-import { DeckDetailResponse, DeckListResponse, DeckUpsertRequest } from '@riftbound/contracts';
+import { DeckDetailResponse, DeckListResponse, DeckUpsertRequest, DecksListQuery } from '@riftbound/contracts';
 import type { Auth } from '../auth.js';
 import { logActionFailure } from '../lib/logger.js';
 import { getSessionUser, unauthorized } from '../lib/session.js';
@@ -23,21 +23,18 @@ export function createDecksRoutes(decks: DeckService, auth: Auth) {
           return unauthorized();
         }
         try {
-          const q = typeof query.q === 'string' ? query.q : undefined;
-          const sourceRaw = typeof query.source === 'string' ? query.source : 'all';
-          const source =
-            sourceRaw === 'owned' || sourceRaw === 'imported' || sourceRaw === 'all'
-              ? sourceRaw
-              : 'all';
-          const listOptions: { q?: string; source: typeof source } = { source };
-          if (q !== undefined) listOptions.q = q;
-          const result = await decks.listForUser(user.id, listOptions);
+          const parsed = DecksListQuery.parse({
+            ...query,
+            source: typeof query.source === 'string' ? query.source : 'all',
+          });
+          const result = await decks.listForUser(user.id, parsed);
           return DeckListResponse.parse({
             data: result.items,
             meta: {
               total: result.total,
               owned: result.owned,
               imported: result.imported,
+              ...(result.pagination ? { pagination: result.pagination } : {}),
             },
           });
         } catch (error) {

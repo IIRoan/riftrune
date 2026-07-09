@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import type { DeckValidationMessage } from '@/lib/deck-types';
@@ -28,38 +29,18 @@ export function DeckValidationBanner({ messages }: DeckValidationBannerProps) {
       ? `${errors.length} issue${errors.length === 1 ? '' : 's'} to fix`
       : `${warnings.length} warning${warnings.length === 1 ? '' : 's'}`;
 
-  const tone = isValidOnly ? 'success' : errors.length > 0 ? 'error' : 'warning';
+  const status = isValidOnly ? 'valid' : errors.length > 0 ? 'error' : 'warning';
 
   return (
-    <View
-      className={cn(
-        'overflow-hidden rounded-xl border',
-        tone === 'success' && 'border-success/40 bg-success/10',
-        tone === 'warning' && 'border-warning/40 bg-warning/10',
-        tone === 'error' && 'border-destructive/40 bg-destructive/10'
-      )}
-    >
+    <View className="overflow-hidden rounded-xl border border-border bg-card-panel">
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
-        className="flex-row items-center gap-2 px-3 py-2.5 active:opacity-90"
+        className="flex-row items-center gap-2.5 px-3 py-2.5 active:opacity-90"
         onPress={() => setExpanded((value) => !value)}
       >
-        <ThemedIonicon
-          name={tone === 'success' ? 'checkmark-circle' : tone === 'error' ? 'alert-circle' : 'warning'}
-          size={18}
-          color="foreground"
-        />
-        <Text
-          className={cn(
-            'flex-1 text-sm font-semibold',
-            tone === 'success' && 'text-success',
-            tone === 'warning' && 'text-warning',
-            tone === 'error' && 'text-destructive'
-          )}
-        >
-          {headline}
-        </Text>
+        <StatusKeywordBadge status={status} compact />
+        <Text className="min-w-0 flex-1 text-sm font-medium text-foreground">{headline}</Text>
         <ThemedIonicon
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={16}
@@ -68,7 +49,7 @@ export function DeckValidationBanner({ messages }: DeckValidationBannerProps) {
       </Pressable>
 
       {expanded ? (
-        <View className="gap-1.5 border-t border-archive-soft-line px-3 py-2.5">
+        <View className="gap-1.5 border-t border-border px-3 py-2.5">
           {messages.map((message) => (
             <View key={message.message} className="flex-row items-start gap-2">
               <Text
@@ -83,10 +64,9 @@ export function DeckValidationBanner({ messages }: DeckValidationBannerProps) {
               </Text>
               <Text
                 className={cn(
-                  'flex-1 text-[13px] leading-snug',
+                  'min-w-0 flex-1 text-[13px] leading-snug text-foreground',
                   message.type === 'error' && 'text-destructive',
-                  message.type === 'warning' && 'text-warning',
-                  message.type === 'valid' && 'text-success'
+                  message.type === 'warning' && 'text-warning'
                 )}
               >
                 {message.message}

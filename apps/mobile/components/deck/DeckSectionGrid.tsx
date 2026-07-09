@@ -1,11 +1,11 @@
 import { View } from 'react-native';
 import { DeckCardSlot, resolveSlotImage } from '@/components/deck/DeckCardSlot';
-import { Text } from '@/components/ui/text';
-import {
-  buildDeckGridRows,
-} from '@/lib/deck-builder';
+import { DeckSectionHeader } from '@/components/deck/DeckSectionHeader';
+import { buildDeckGridRows } from '@/lib/deck-builder';
 import { getSectionCount } from '@/lib/deck-card';
+import { deckSectionProgress } from '@/lib/deck-display';
 import type { DeckEntry, DeckSectionKey, DeckState } from '@/lib/deck-types';
+import { isCardTournamentIllegal } from '@/lib/card-legality';
 import { ownedCountForCardName } from '@/lib/deck-validation';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +14,6 @@ interface DeckSectionGridProps {
   section: Exclude<DeckSectionKey, 'legend' | 'champion' | 'runes'>;
   readOnly?: boolean;
   title: string;
-  subtitle: string;
   tileWidth: number;
   gap: number;
   gridColumns: number;
@@ -33,6 +32,7 @@ function DeckGridRow({
   imageByVariant,
   collectionByName,
   readOnly,
+  deck,
   onAdd,
   onMinus,
   onPlus,
@@ -44,6 +44,7 @@ function DeckGridRow({
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
   readOnly?: boolean;
+  deck: DeckState;
   onAdd: () => void;
   onMinus: (name: string) => void;
   onPlus: (name: string) => void;
@@ -62,6 +63,7 @@ function DeckGridRow({
 
         const { entry } = cell;
         const owned = ownedCountForCardName(entry.card.name, collectionByName);
+        const illegal = isCardTournamentIllegal(entry.card, deck);
         return (
           <DeckCardSlot
             key={entry.card.name}
@@ -71,6 +73,7 @@ function DeckGridRow({
             entry={entry}
             imageUri={resolveSlotImage(entry.card, imageByVariant)}
             owned={owned}
+            illegal={illegal}
             onMinus={() => onMinus(entry.card.name)}
             onPlus={() => onPlus(entry.card.name)}
             onRemove={readOnly ? undefined : () => onRemove(entry.card.name)}
@@ -86,7 +89,6 @@ export function DeckSectionGrid({
   section,
   readOnly = false,
   title,
-  subtitle,
   tileWidth,
   gap,
   gridColumns,
@@ -107,14 +109,17 @@ export function DeckSectionGrid({
     includeAdd: !readOnly,
   });
 
+  const progress = deckSectionProgress(deck, section);
+
   return (
     <View className="gap-3">
-      <View className="flex-row items-end justify-between gap-3">
-        <View className="min-w-0 flex-1">
-          <Text className="text-sm font-semibold text-foreground">{title}</Text>
-          <Text className="mt-0.5 font-mono text-[11px] text-muted-foreground">{subtitle}</Text>
-        </View>
-      </View>
+      <DeckSectionHeader
+        title={title}
+        current={progress.current}
+        target={progress.target}
+        hint={progress.hint}
+        readOnly={readOnly}
+      />
 
       <View>
         {rows.map((row, index) => (
@@ -126,6 +131,7 @@ export function DeckSectionGrid({
             imageByVariant={imageByVariant}
             collectionByName={collectionByName}
             readOnly={readOnly}
+            deck={deck}
             onAdd={onAdd}
             onMinus={onMinus}
             onPlus={onPlus}

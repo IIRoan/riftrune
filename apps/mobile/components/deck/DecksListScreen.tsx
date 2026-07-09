@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { useMemo, useState, type ReactNode } from 'react';
+import { ActivityIndicator, FlatList, View } from 'react-native';
+import { DeckBrowseCard } from '@/components/deck/DeckBrowseCard';
 import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
 import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
 import { DeckListCard } from '@/components/deck/DeckListCard';
@@ -21,13 +22,21 @@ import { CalendarPlusIcon } from '@/components/icons';
 import { useDeckMutations } from '@/hooks/useDecks';
 import { createEmptyDeck } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
+import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
 type DeckListQuery = {
   data?: DeckState[];
   isLoading: boolean;
+  isFetching?: boolean;
   isError: boolean;
   refetch: () => void;
+};
+
+type DeckInfiniteScroll = {
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => void;
 };
 
 interface DecksListScreenProps {
@@ -42,6 +51,9 @@ interface DecksListScreenProps {
   showCreate?: boolean;
   showImport?: boolean;
   showSubNav?: boolean;
+  browseToolbar?: ReactNode;
+  infiniteScroll?: DeckInfiniteScroll;
+  variant?: 'default' | 'browse';
 }
 
 export function DecksListScreen({
@@ -56,18 +68,71 @@ export function DecksListScreen({
   showCreate = false,
   showImport = false,
   showSubNav = true,
+  browseToolbar,
+  infiniteScroll,
+  variant = 'default',
 }: DecksListScreenProps) {
   const router = useRouter();
   const { removeDeck, importDeck, saveDeckNow } = useDeckMutations();
-  const { data: decks = [], isLoading, isError, refetch } = decksQuery;
+  const { data: decks = [], isLoading, isFetching = false, isError, refetch } = decksQuery;
   const [importOpen, setImportOpen] = useState(false);
   const [importSaving, setImportSaving] = useState(false);
   const importPlaceholderDeck = useMemo(() => createEmptyDeck(), []);
 
   const archiveImportBusy = importDeck.isPending;
+  const showBlockingLoader = isLoading && decks.length === 0;
+  const showRefreshing = isFetching && decks.length > 0;
+
+  const listFooter =
+    infiniteScroll?.isFetchingNextPage || showRefreshing ? (
+      <View className="items-center py-4">
+        <ActivityIndicator />
+      </View>
+    ) : null;
+
+  const renderDeckCard = (deck: DeckState) =>
+    variant === 'browse' ? (
+      <DeckBrowseCard
+        key={deck.id}
+        deck={deck}
+        onPress={() => router.push(`/deck/${deck.id}`)}
+        onImport={() => {
+          void importDeck.mutateAsync(deck.id).then((saved) => {
+            router.push(`/deck/${saved.id}`);
+          });
+        }}
+        importBusy={importDeck.isPending && importDeck.variables === deck.id}
+      />
+    ) : (
+      <DeckListCard
+        key={deck.id}
+        deck={deck}
+        onPress={() => router.push(`/deck/${deck.id}`)}
+        onDelete={
+          deck.readOnly
+            ? undefined
+            : () => {
+                void removeDeck.mutateAsync(deck.id);
+              }
+        }
+        onImport={
+          deck.readOnly
+            ? () => {
+                void importDeck.mutateAsync(deck.id).then((saved) => {
+                  router.push(`/deck/${saved.id}`);
+                });
+              }
+            : undefined
+        }
+        importBusy={importDeck.isPending && importDeck.variables === deck.id}
+      />
+    );
 
   return (
-    <ScreenLayout>
+    <ScreenLayout
+      mode={infiniteScroll ? 'flex' : 'scroll'}
+      contentClassName={infiniteScroll ? 'min-h-0 flex-1' : undefined}
+    >
       <DeckImportLoadingOverlay
         visible={importSaving || archiveImportBusy}
         message={
@@ -76,8 +141,8 @@ export function DecksListScreen({
             : 'Saving imported deck…'
         }
       />
-      <ScreenLayoutBody>
-        <View className="mb-4 w-full gap-3">
+      <ScreenLayoutBody className={infiniteScroll ? 'min-h-0 flex-1 flex-col' : undefined}>
+        <View className={cn('mb-4 w-full gap-3', infiniteScroll && 'shrink-0')}>
           <View className="w-full flex-row items-start justify-between gap-3">
             <View className="min-w-0 flex-1 shrink" style={{ minWidth: 0 }}>
               <Text className="text-2xl font-bold tracking-tight text-foreground">{title}</Text>
@@ -123,10 +188,15 @@ export function DecksListScreen({
             placeholder={searchPlaceholder}
             accessibilityLabel={searchPlaceholder}
             className="min-h-12 rounded-xl border-border bg-card"
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
           />
+
+          {browseToolbar}
         </View>
 
-        {isLoading ? (
+        {showBlockingLoader ? (
           <View className="items-center py-16">
             <ActivityIndicator />
           </View>
@@ -175,32 +245,28 @@ export function DecksListScreen({
               </View>
             ) : null}
           </Empty>
+        ) : infiniteScroll ? (
+          <FlatList
+            data={decks}
+            keyExtractor={(deck) => deck.id}
+            renderItem={({ item }) => renderDeckCard(item)}
+            ItemSeparatorComponent={() => <View className="h-4" />}
+            ListFooterComponent={listFooter}
+            onEndReached={() => {
+              if (infiniteScroll.hasNextPage && !infiniteScroll.isFetchingNextPage) {
+                infiniteScroll.fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.25}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            className="min-h-0 flex-1"
+            contentContainerStyle={{ paddingBottom: 8 }}
+          />
         ) : (
           <View className="gap-3">
-            {decks.map((deck) => (
-              <DeckListCard
-                key={deck.id}
-                deck={deck}
-                onPress={() => router.push(`/deck/${deck.id}`)}
-                onDelete={
-                  deck.readOnly
-                    ? undefined
-                    : () => {
-                        void removeDeck.mutateAsync(deck.id);
-                      }
-                }
-                onImport={
-                  deck.readOnly
-                    ? () => {
-                        void importDeck.mutateAsync(deck.id).then((saved) => {
-                          router.push(`/deck/${saved.id}`);
-                        });
-                      }
-                    : undefined
-                }
-                importBusy={importDeck.isPending && importDeck.variables === deck.id}
-              />
-            ))}
+            {decks.map((deck) => renderDeckCard(deck))}
           </View>
         )}
       </ScreenLayoutBody>

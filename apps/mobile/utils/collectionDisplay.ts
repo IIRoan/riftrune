@@ -2,7 +2,10 @@ import type { CardCondition, CardListItem } from '@riftbound/contracts';
 import { formatConditionLabel, formatLanguageLabel } from '@riftbound/contracts';
 import type { CollectionEntry } from '@/services/collectionService';
 
-export function collectionEntryToCardListItem(entry: CollectionEntry): CardListItem {
+export function collectionEntryToCardListItem(
+  entry: CollectionEntry,
+  options?: { isBanned?: boolean }
+): CardListItem {
   return {
     cardId: '00000000-0000-0000-0000-000000000000',
     variantNumber: entry.variantNumber,
@@ -25,6 +28,7 @@ export function collectionEntryToCardListItem(entry: CollectionEntry): CardListI
         priceEur: null,
       },
     ],
+    isBanned: options?.isBanned ?? false,
   };
 }
 

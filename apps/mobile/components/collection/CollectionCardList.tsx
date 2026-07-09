@@ -13,6 +13,7 @@ import {
   formatGroupedCollectionMeta,
   groupCollectionByVariant,
 } from '@/utils/collectionDisplay';
+import { useCardBanByVariant } from '@/hooks/useBanDatesByVariant';
 import { cn } from '@/lib/utils';
 
 type SortMode = 'recent' | 'name' | 'set';
@@ -65,6 +66,13 @@ export function CollectionCardList({
     [entries]
   );
 
+  const variantNumbers = useMemo(
+    () => groupedEntries.map((entry) => entry.variantNumber),
+    [groupedEntries]
+  );
+  const banByVariantQuery = useCardBanByVariant(variantNumbers);
+  const banByVariant = banByVariantQuery.data;
+
   const dismissKeyboard = useCallback(() => {
     Keyboard.dismiss();
   }, []);
@@ -114,7 +122,9 @@ export function CollectionCardList({
         return (
           <View className="mb-3">
             <CardTile
-              card={collectionEntryToCardListItem(item)}
+              card={collectionEntryToCardListItem(item, {
+                isBanned: banByVariant?.get(item.variantNumber) ?? false,
+              })}
               layout="list"
               mode="collection"
               compact

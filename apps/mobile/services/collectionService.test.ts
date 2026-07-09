@@ -95,6 +95,7 @@ const listCard: CardListItem = {
       priceEur: null,
     },
   ],
+  isBanned: false,
 };
 
 beforeEach(() => {

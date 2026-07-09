@@ -3,6 +3,7 @@ import postgres from 'postgres';
 import type { Options } from 'postgres';
 import type { Env } from '../env.js';
 import * as authSchema from './auth-schema.js';
+import { withPostgresRetry } from './postgres-retry.js';
 import * as schema from './schema.js';
 
 const fullSchema = { ...authSchema, ...schema };
@@ -24,16 +25,20 @@ export function createPostgresOptions(env: Env): Options<Record<string, never>> 
   const ssl = resolveSsl(env.DATABASE_URL);
 
   return {
-    max: env.DB_POOL_MAX ?? (isProduction ? 5 : 20),
+    max: env.DB_POOL_MAX ?? (isProduction ? 5 : 10),
     idle_timeout: 20,
-    connect_timeout: isProduction ? 30 : 10,
+    max_lifetime: isProduction ? 60 * 30 : 60 * 5,
+    connect_timeout: 30,
+    keep_alive: 30,
     prepare: false,
     ...(ssl ? { ssl } : {}),
   };
 }
 
 export function createDb(env: Env) {
-  const client = postgres(env.DATABASE_URL, createPostgresOptions(env));
+  const client = withPostgresRetry(
+    postgres(env.DATABASE_URL, createPostgresOptions(env))
+  );
   const db = drizzle(client, { schema: fullSchema });
   return { db, client };
 }

@@ -102,10 +102,15 @@ export class RiftruneClient {
    * NOTE: Upstream auth rules for write can be stricter than for reads.
    * We keep the client un-opinionated and let callers handle failures.
    */
-  listDecks(params?: { limit?: number; page?: number }): Promise<unknown> {
+  listDecks(
+    params?: Record<string, string | number | boolean | undefined>
+  ): Promise<unknown> {
     const qs = new URLSearchParams();
-    if (params?.limit !== undefined) qs.set('limit', String(params.limit));
-    if (params?.page !== undefined) qs.set('page', String(params.page));
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== '') qs.set(key, String(value));
+      }
+    }
     const q = qs.toString();
     return this.request(`/v1/decks${q ? `?${q}` : ''}`, {
       parse: (d) => d as unknown,

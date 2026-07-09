@@ -51,6 +51,7 @@ export const CardListItem = z.object({
   cardmarketId: z.number().int().nullable(),
   priceEur: PriceSummary.nullable(),
   printings: z.array(CardListPrinting).min(1),
+  isBanned: z.boolean(),
 });
 
 export const VariantDetail = z.object({
@@ -79,6 +80,7 @@ export const CardDetail = z.object({
   tags: z.array(z.string()),
   colors: z.array(ColorRef),
   variants: z.array(VariantDetail),
+  banEffectiveDate: z.string().nullable(),
 });
 
 export const CardsListQuery = z.object({

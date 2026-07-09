@@ -3,6 +3,7 @@ import { DeckCardSlot, resolveSlotImage } from '@/components/deck/DeckCardSlot';
 import { DeckRunePanel } from '@/components/deck/DeckRunePanel';
 import { Text } from '@/components/ui/text';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
+import { isCardTournamentIllegal } from '@/lib/card-legality';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 import { ownedCountForCardName } from '@/lib/deck-validation';
 import { cn } from '@/lib/utils';
@@ -55,6 +56,7 @@ export function DeckIdentityHeader({
               card={legend}
               imageUri={resolveSlotImage(legend, imageByVariant)}
               owned={ownedCountForCardName(legend.name, collectionByName)}
+              illegal={isCardTournamentIllegal(legend, deck)}
               single
               onPress={readOnly ? undefined : onChangeLegend}
               onRemove={readOnly ? undefined : onChangeLegend}
@@ -99,6 +101,7 @@ export function DeckIdentityHeader({
                 card={deck.champion}
                 imageUri={resolveSlotImage(deck.champion, imageByVariant)}
                 owned={ownedCountForCardName(deck.champion.name, collectionByName)}
+                illegal={isCardTournamentIllegal(deck.champion, deck)}
                 single
                 onAdd={readOnly ? undefined : onAddChampion}
                 onRemove={readOnly ? undefined : onRemoveChampion}

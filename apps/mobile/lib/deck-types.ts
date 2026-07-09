@@ -20,6 +20,7 @@ export interface DeckCard {
   variantType: string;
   isSignature: boolean;
   imageUrl?: string | null;
+  banEffectiveDate?: string | null;
 }
 
 export interface DeckEntry {
@@ -48,6 +49,17 @@ export interface DeckState {
   upstreamId?: string;
   /** Warnings from upstream deck sync (missing catalog cards, etc.). */
   syncWarnings?: string[];
+  /** Piltover Archive browse metadata (imported public decks). */
+  authorName?: string;
+  views?: number;
+  likes?: number;
+  isLegal?: boolean;
+  setPrefixes?: string[];
+  hasGuide?: boolean;
+  hasVideo?: boolean;
+  hasMatchups?: boolean;
+  videoUrl?: string;
+  bannedCardNames?: string[];
 }
 
 export interface SerializedDeckEntry {
@@ -71,6 +83,16 @@ export interface SerializedDeck {
   source?: 'owned' | 'imported';
   readOnly?: boolean;
   syncWarnings?: string[];
+  authorName?: string;
+  views?: number;
+  likes?: number;
+  isLegal?: boolean;
+  setPrefixes?: string[];
+  hasGuide?: boolean;
+  hasVideo?: boolean;
+  hasMatchups?: boolean;
+  videoUrl?: string;
+  bannedCardNames?: string[];
 }
 
 export type ValidationSeverity = 'error' | 'warning' | 'valid';

@@ -1,6 +1,6 @@
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import type { DeckListItem, StoredDeckPayload } from '@riftbound/contracts';
+import type { DeckListItem, DecksListQuery, StoredDeckPayload } from '@riftbound/contracts';
 import {
   DeckCardInput as DeckCardInputSchema,
   DeckEntryInput as DeckEntryInputSchema,
@@ -13,6 +13,7 @@ import type { CardCacheService } from './card-cache.js';
 import { variants } from '../db/schema.js';
 import type { Database } from '../db/client.js';
 import { cdnImageUrl, isSafeImageKey } from '../lib/s3.js';
+import { buildUpstreamDeckListParams } from '../lib/upstream-deck-list-params.js';
 
 const API_IMAGES_PREFIX = '/api/v1/images/';
 const PILTOVER_CDN_HOST = 'cdn.piltoverarchive.com';
@@ -44,6 +45,14 @@ const UpstreamDeckDetail = z.object({
   id: DeckUpstreamDeckId,
   name: z.string(),
   description: z.string().nullable().optional(),
+  authorName: z.string().optional().nullable(),
+  views: z.number().int().nonnegative().optional(),
+  likes: z.number().int().nonnegative().optional(),
+  videoUrl: z.string().nullable().optional(),
+  hasGuide: z.boolean().optional(),
+  hasMatchups: z.boolean().optional(),
+  isLegal: z.boolean().optional(),
+  bannedCardNames: z.array(z.string()).optional(),
   createdAt: z.string(),
   editedAt: z.string().optional().nullable(),
   updatedAt: z.string().optional().nullable(),
@@ -61,18 +70,74 @@ const UpstreamDeckListResponse = z.object({
       id: DeckUpstreamDeckId,
       name: z.string(),
       description: z.string().nullable().optional(),
+      authorName: z.string().optional().nullable(),
+      views: z.number().int().nonnegative().optional(),
+      likes: z.number().int().nonnegative().optional(),
+      isLegal: z.boolean().optional(),
+      videoUrl: z.string().nullable().optional(),
       createdAt: z.string(),
       editedAt: z.string().optional().nullable(),
       updatedAt: z.string().optional().nullable(),
       legend: UpstreamDeckLegend.optional().nullable(),
+      bannedCardNames: z.array(z.string()).optional(),
+      sets: z
+        .array(
+          z.object({
+            prefix: z.string(),
+            name: z.string().optional(),
+          })
+        )
+        .optional(),
+      contentFlags: z
+        .object({
+          hasVideo: z.boolean().optional(),
+          hasGuide: z.boolean().optional(),
+          hasMatchups: z.boolean().optional(),
+        })
+        .optional(),
     })
   ),
+  pagination: z
+    .object({
+      page: z.number().int().positive(),
+      pageSize: z.number().int().positive(),
+      total: z.number().int().nonnegative(),
+      totalPages: z.number().int().nonnegative(),
+    })
+    .optional(),
 });
 
 function parseMs(iso: string | null | undefined): number {
   if (!iso) return 0;
   const ms = Date.parse(iso);
   return Number.isFinite(ms) ? ms : 0;
+}
+
+const BROWSE_PREVIEW_CONCURRENCY = 6;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return [];
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(items[index]!, index);
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => worker()
+  );
+  await Promise.all(workers);
+  return results;
 }
 
 function isSignatureVariant(rarity: string, variantType: string): boolean {
@@ -112,6 +177,18 @@ function legendCardFromUpstreamListEntry(
   legend: z.infer<typeof UpstreamDeckLegend>
 ): DeckCardInput {
   const setCode = legend.variantNumber.split('-')[0] ?? '';
+  const upstreamColors = Array.isArray(legend.colors)
+    ? legend.colors
+        .map((color) => {
+          if (typeof color === 'object' && color !== null && 'name' in color) {
+            const name = (color as { name?: unknown }).name;
+            return typeof name === 'string' ? name : null;
+          }
+          return null;
+        })
+        .filter((name): name is string => Boolean(name))
+    : [];
+
   return DeckCardInputSchema.parse({
     cardId: legend.id,
     variantNumber: legend.variantNumber,
@@ -119,7 +196,7 @@ function legendCardFromUpstreamListEntry(
     type: 'Unit',
     super: 'Champion',
     tags: legend.tags ?? [],
-    colors: [],
+    colors: upstreamColors,
     energy: 0,
     setCode,
     rarity: 'Rare',
@@ -169,6 +246,7 @@ async function deckCardFromVariantNumber(cardCache: CardCacheService, variantNum
     variantType: variant.variantType,
     isSignature: isSignatureVariant(variant.rarity, variant.variantType),
     imageUrl: deckDisplayImageUrl(variant.imageUrl),
+    banEffectiveDate: detail.banEffectiveDate ?? null,
   } satisfies DeckCardInput;
 
   return DeckCardInputSchema.parse(card);
@@ -238,6 +316,45 @@ async function resolveDeckCardForUpstreamEntry(
   return placeholderDeckCard(entry.variantId, entry.cardId);
 }
 
+function browseMetaFromDetail(
+  detail: z.infer<typeof UpstreamDeckDetail>
+): Partial<DeckListItem> {
+  const meta: Partial<DeckListItem> = {};
+  if (detail.authorName) meta.authorName = detail.authorName;
+  if (detail.views !== undefined) meta.views = detail.views;
+  if (detail.likes !== undefined) meta.likes = detail.likes;
+  if (detail.videoUrl) {
+    meta.videoUrl = detail.videoUrl;
+    meta.hasVideo = true;
+  }
+  if (detail.hasGuide !== undefined) meta.hasGuide = detail.hasGuide;
+  if (detail.hasMatchups !== undefined) meta.hasMatchups = detail.hasMatchups;
+  if (detail.isLegal !== undefined) meta.isLegal = detail.isLegal;
+  if (detail.bannedCardNames?.length) meta.bannedCardNames = detail.bannedCardNames;
+  return meta;
+}
+
+type UpstreamListEntry = z.infer<typeof UpstreamDeckListResponse>['data'][number];
+
+function browseMetaFromListEntry(entry: UpstreamListEntry): Partial<DeckListItem> {
+  const meta: Partial<DeckListItem> = {};
+  if (entry.authorName) meta.authorName = entry.authorName;
+  if (entry.views !== undefined) meta.views = entry.views;
+  if (entry.likes !== undefined) meta.likes = entry.likes;
+  if (entry.videoUrl) {
+    meta.videoUrl = entry.videoUrl;
+    meta.hasVideo = true;
+  }
+  if (entry.isLegal !== undefined) meta.isLegal = entry.isLegal;
+  if (entry.bannedCardNames?.length) meta.bannedCardNames = entry.bannedCardNames;
+  if (entry.contentFlags?.hasGuide !== undefined) meta.hasGuide = entry.contentFlags.hasGuide;
+  if (entry.contentFlags?.hasVideo !== undefined) meta.hasVideo = entry.contentFlags.hasVideo;
+  if (entry.contentFlags?.hasMatchups !== undefined) {
+    meta.hasMatchups = entry.contentFlags.hasMatchups;
+  }
+  return meta;
+}
+
 export class DeckSyncService {
   constructor(
     private readonly db: Database,
@@ -255,26 +372,32 @@ export class DeckSyncService {
   /** Lightweight imported decks for list views — one upstream list call, no per-deck detail fetches. */
   async listImportedDeckSummaries(options: {
     skipIds: Set<string>;
-    q?: string;
-    limit?: number;
-  }): Promise<DeckListItem[]> {
-    const res = await this.riftrune.listDecks({ limit: options.limit ?? 25 });
+    query?: DecksListQuery;
+  }): Promise<{
+    items: DeckListItem[];
+    pagination?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrevious: boolean;
+    };
+  }> {
+    const query = options.query ?? {
+      page: 1,
+      limit: 25,
+      sort: 'trending' as const,
+      dir: 'desc' as const,
+      source: 'imported' as const,
+    };
+    const res = await this.riftrune.listDecks(buildUpstreamDeckListParams(query));
     const parsed = UpstreamDeckListResponse.parse(res);
-    const needle = options.q?.trim().toLowerCase() ?? '';
     const legendByVariantNumber = new Map<string, DeckCardInput>();
     const items: DeckListItem[] = [];
 
     for (const entry of parsed.data) {
       if (options.skipIds.has(entry.id)) continue;
-
-      const haystack = [
-        entry.name,
-        entry.description ?? '',
-        entry.legend?.name ?? '',
-      ]
-        .join(' ')
-        .toLowerCase();
-      if (needle && !haystack.includes(needle)) continue;
 
       let legendCard: DeckCardInput | null = null;
       const legendVariantNumber = entry.legend?.variantNumber;
@@ -311,10 +434,70 @@ export class DeckSyncService {
         sideboard: [],
       });
 
-      items.push({ ...payload, source: 'imported', readOnly: true });
+      items.push({
+        ...payload,
+        source: 'imported',
+        readOnly: true,
+        ...(entry.authorName ? { authorName: entry.authorName } : {}),
+        ...(entry.views !== undefined ? { views: entry.views } : {}),
+        ...(entry.likes !== undefined ? { likes: entry.likes } : {}),
+        ...(entry.isLegal !== undefined ? { isLegal: entry.isLegal } : {}),
+        ...(entry.bannedCardNames?.length ? { bannedCardNames: entry.bannedCardNames } : {}),
+        ...(entry.videoUrl ? { videoUrl: entry.videoUrl } : {}),
+        ...(entry.sets?.length
+          ? { setPrefixes: entry.sets.map((set) => set.prefix) }
+          : {}),
+        ...(entry.contentFlags?.hasGuide !== undefined
+          ? { hasGuide: entry.contentFlags.hasGuide }
+          : {}),
+        ...(entry.contentFlags?.hasVideo !== undefined
+          ? { hasVideo: entry.contentFlags.hasVideo }
+          : {}),
+        ...(entry.contentFlags?.hasMatchups !== undefined
+          ? { hasMatchups: entry.contentFlags.hasMatchups }
+          : {}),
+      });
     }
 
-    return items;
+    const enrichedItems =
+      query.preview === true
+        ? await this.enrichImportedDeckPreviews(items)
+        : items;
+
+    const upstreamPagination = parsed.pagination;
+    const pagination = upstreamPagination
+      ? {
+          total: upstreamPagination.total,
+          page: upstreamPagination.page,
+          limit: upstreamPagination.pageSize,
+          totalPages: upstreamPagination.totalPages,
+          hasNext: upstreamPagination.page < upstreamPagination.totalPages,
+          hasPrevious: upstreamPagination.page > 1,
+        }
+      : undefined;
+
+    return {
+      items: enrichedItems,
+      ...(pagination ? { pagination } : {}),
+    };
+  }
+
+  /** Fetch upstream deck details to populate browse preview card lists. */
+  async enrichImportedDeckPreviews(items: DeckListItem[]): Promise<DeckListItem[]> {
+    return mapWithConcurrency(items, BROWSE_PREVIEW_CONCURRENCY, async (item) => {
+      try {
+        const upstream = await this.getUpstreamDeckDetail(item.id);
+        const payload = await this.transformUpstreamDeckDetailToStoredDeckPayload(upstream);
+        return {
+          ...item,
+          legend: payload.legend ?? item.legend,
+          champion: payload.champion,
+          mainDeck: payload.mainDeck,
+        };
+      } catch {
+        return item;
+      }
+    });
   }
 
   async getUpstreamDeckDetail(deckId: string): Promise<z.infer<typeof UpstreamDeckDetail>> {
@@ -446,6 +629,45 @@ export class DeckSyncService {
       results.push(await this.transformUpstreamDeckDetailToStoredDeckPayload(detail));
     }
     return results;
+  }
+
+  async fetchListBrowseMeta(
+    deckId: string,
+    deckName: string
+  ): Promise<Partial<DeckListItem>> {
+    try {
+      const res = await this.riftrune.listDecks({ q: deckName, limit: 50 });
+      const parsed = UpstreamDeckListResponse.parse(res);
+      const entry = parsed.data.find((item) => item.id === deckId);
+      return entry ? browseMetaFromListEntry(entry) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  async getImportedDeckListItem(deckId: string): Promise<DeckListItem | null> {
+    try {
+      const detail = await this.getUpstreamDeckDetail(deckId);
+      const payload = await this.transformUpstreamDeckDetailToStoredDeckPayload(detail);
+      const detailMeta = browseMetaFromDetail(detail);
+      const listMeta = await this.fetchListBrowseMeta(deckId, detail.name);
+
+      return {
+        ...payload,
+        source: 'imported',
+        readOnly: true,
+        ...detailMeta,
+        ...listMeta,
+        isLegal: listMeta.isLegal ?? detailMeta.isLegal,
+        bannedCardNames: listMeta.bannedCardNames ?? detailMeta.bannedCardNames,
+        videoUrl: detailMeta.videoUrl ?? listMeta.videoUrl,
+        hasVideo: listMeta.hasVideo ?? detailMeta.hasVideo,
+        hasGuide: listMeta.hasGuide ?? detailMeta.hasGuide,
+        hasMatchups: listMeta.hasMatchups ?? detailMeta.hasMatchups,
+      };
+    } catch {
+      return null;
+    }
   }
 
   async getStoredDeckPayload(deckId: string): Promise<StoredDeckPayload | null> {

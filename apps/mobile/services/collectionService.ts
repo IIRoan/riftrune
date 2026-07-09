@@ -1,4 +1,5 @@
 import type { CardListItem } from '@riftbound/contracts';
+import { isCardBannedAt } from '@riftbound/contracts';
 import {
   findVariantByNumber,
   getCardPrintings,
@@ -86,6 +87,7 @@ export async function addDetailToCollection(
   card: {
     name: string;
     type: string;
+    banEffectiveDate?: string | null;
     variants: Array<{
       variantNumber: string;
       imageUrl: string;
@@ -151,6 +153,7 @@ export async function addDetailToCollection(
             : null,
         },
       ],
+      isBanned: isCardBannedAt(card.banEffectiveDate),
     },
     { variantNumber: variant.variantNumber, quantity }
   );

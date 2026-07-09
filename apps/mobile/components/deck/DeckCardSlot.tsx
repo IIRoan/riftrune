@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
+import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
+import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
@@ -22,6 +24,7 @@ interface DeckCardSlotProps {
   entry?: DeckEntry;
   imageUri?: string;
   owned?: number | null;
+  illegal?: boolean;
   single?: boolean;
   onPress?: () => void;
   onAdd?: () => void;
@@ -38,6 +41,7 @@ function DeckCardSlotInner({
   entry,
   imageUri = '',
   owned = null,
+  illegal = false,
   single = false,
   onPress,
   onAdd,
@@ -143,26 +147,35 @@ function DeckCardSlotInner({
       >
         <View
           className={cn(
-            'relative aspect-[5/7] w-full overflow-hidden border border-white/10 bg-background',
+            'relative aspect-[5/7] w-full overflow-hidden border bg-background',
             CARD_ART_RADIUS_CLASS,
-            shortfall && 'border-warning/50'
+            illegal ? 'border-destructive' : 'border-white/10',
+            shortfall && !illegal && 'border-warning/50'
           )}
         >
           <DeckCardArt uri={imageUri} variantNumber={card.variantNumber} />
-          {card.energy > 0 ? (
-            <View className="absolute left-1 top-1 rounded bg-background/90 px-1.5 py-0.5">
-              <Text className="font-mono text-[10px] font-bold text-foreground">{card.energy}</Text>
+          {illegal ? (
+            <View className="absolute left-1 top-1">
+              <StatusKeywordBadge status="illegal" compact />
+            </View>
+          ) : card.energy > 0 ? (
+            <View className="absolute right-1 top-1 rounded-md border border-white/10 bg-background/92 px-1.5 py-0.5">
+              <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
+                {card.energy}
+              </Text>
             </View>
           ) : null}
-          {count > 1 ? (
-            <View className="absolute right-1 top-1 rounded bg-background/90 px-1.5 py-0.5">
-              <Text className="font-mono text-[10px] font-bold text-foreground">×{count}</Text>
-            </View>
-          ) : null}
+          <DeckCardCountBadge count={count} />
         </View>
       </Pressable>
 
-      <Text className="px-0.5 text-[12px] font-semibold text-foreground" numberOfLines={2}>
+      <Text
+        className={cn(
+          'px-0.5 text-[12px] font-semibold',
+          illegal ? 'text-destructive' : 'text-foreground'
+        )}
+        numberOfLines={2}
+      >
         {card.name}
       </Text>
 
@@ -198,6 +211,7 @@ function deckCardSlotPropsEqual(prev: DeckCardSlotProps, next: DeckCardSlotProps
     prev.label === next.label &&
     prev.imageUri === next.imageUri &&
     prev.owned === next.owned &&
+    prev.illegal === next.illegal &&
     prev.single === next.single &&
     prev.card?.variantNumber === next.card?.variantNumber &&
     prev.entry?.count === next.entry?.count

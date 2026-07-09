@@ -1,4 +1,5 @@
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
+import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import {
@@ -242,15 +243,13 @@ function DeckGridCard({
             </View>
           )}
           {card.energy > 0 ? (
-            <View className="absolute left-1 top-1 rounded bg-background/90 px-1.5 py-0.5">
-              <Text className="font-mono text-[10px] font-bold text-foreground">{card.energy}</Text>
+            <View className="absolute right-1 top-1 rounded-md border border-white/10 bg-background/92 px-1.5 py-0.5">
+              <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
+                {card.energy}
+              </Text>
             </View>
           ) : null}
-          {count > 1 ? (
-            <View className="absolute right-1 top-1 rounded bg-background/90 px-1.5 py-0.5">
-              <Text className="font-mono text-[10px] font-bold text-foreground">×{count}</Text>
-            </View>
-          ) : null}
+          <DeckCardCountBadge count={count} />
         </View>
       </Pressable>
 

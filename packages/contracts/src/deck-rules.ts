@@ -111,6 +111,7 @@ export const DeckCardInput = z.object({
   variantType: z.string(),
   isSignature: z.boolean(),
   imageUrl: z.string().url().nullable().optional(),
+  banEffectiveDate: z.string().nullable().optional(),
 });
 
 export const DeckEntryInput = z.object({

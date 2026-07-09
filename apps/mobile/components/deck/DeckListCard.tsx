@@ -1,12 +1,16 @@
 import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
+import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
+import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { getSectionCount, resolveDeckCardImageUrl } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
+import { deckHasBannedCards } from '@/lib/deck-browse';
 import { deckHasErrors, validateDeck } from '@/lib/deck-validation';
 import { useDeckCardImages } from '@/hooks/useDeckCardImages';
+import { useDeckLiveLegality } from '@/hooks/useBanDatesByVariant';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
@@ -80,8 +84,11 @@ export function DeckListCard({
   const variantKey = [...new Set(previewVariants)].sort().join('|');
 
   const { data: imageByVariant = new Map<string, string>() } = useDeckCardImages(variantKey);
-  const messages = validateDeck(deck);
+  const { deck: liveDeck } = useDeckLiveLegality(deck);
+  const displayDeck = liveDeck ?? deck;
+  const messages = validateDeck(displayDeck);
   const hasErrors = deckHasErrors(messages);
+  const hasBannedCards = deckHasBannedCards(displayDeck);
   const mainCount = getSectionCount(deck, 'mainDeck') + (deck.champion ? 1 : 0);
   const runeCount = getSectionCount(deck, 'runes');
   const battlefieldCount = getSectionCount(deck, 'battlefields');
@@ -124,28 +131,16 @@ export function DeckListCard({
                 </Text>
               ) : null}
             </View>
-            <View
-              className={cn(
-                'shrink-0 rounded-full px-2 py-1',
-                readOnly
-                  ? 'bg-muted'
-                  : hasErrors
-                    ? 'bg-warning/15'
-                    : 'bg-success/15'
-              )}
-            >
-              <Text
-                className={cn(
-                  'text-[11px] font-semibold',
-                  readOnly
-                    ? 'text-muted-foreground'
-                    : hasErrors
-                      ? 'text-warning'
-                      : 'text-success'
-                )}
-              >
-                {readOnly ? 'Imported' : hasErrors ? 'Needs work' : 'Valid'}
-              </Text>
+            <View className="shrink-0 items-end gap-1.5">
+              {hasBannedCards ? (
+                <DeckLegalityBadge isLegal={false} compact />
+              ) : null}
+              <StatusKeywordBadge
+                status={
+                  readOnly ? 'imported' : hasErrors ? 'warning' : 'valid'
+                }
+                compact
+              />
             </View>
           </View>
 

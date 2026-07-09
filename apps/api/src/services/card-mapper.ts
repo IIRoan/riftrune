@@ -5,6 +5,7 @@ import type {
   PriceSummary,
   VariantDetail,
 } from '@riftbound/contracts';
+import { isCardBannedAt } from '@riftbound/contracts';
 import type { PaLogicalCard, PaPriceRow, PaVariant } from '@riftbound/contracts';
 import { entityHash } from '../lib/hash.js';
 
@@ -62,6 +63,7 @@ export function mapCardDetail(
       imageUrl: c.imageUrl,
     })),
     variants: card.variants.map((v) => mapVariantDetail(v, priceRows)),
+    banEffectiveDate: card.banEffectiveDate ?? null,
   };
 }
 
@@ -121,6 +123,7 @@ export function mapListItem(
     cardmarketId: cmId,
     priceEur: displayPrice,
     printings: [printing],
+    isBanned: isCardBannedAt(card.banEffectiveDate ?? null),
   };
 }
 
@@ -158,6 +161,8 @@ export function groupCardListItems(items: CardListItem[]): CardListItem[] {
       continue;
     }
 
+    existing.isBanned = existing.isBanned || item.isBanned;
+
     for (const row of item.printings) {
       const already = existing.printings.some(
         (p) => p.variantNumber === row.variantNumber
@@ -180,6 +185,7 @@ export function groupCardListItems(items: CardListItem[]): CardListItem[] {
       cardmarketId: item.cardmarketId,
       priceEur: primary.priceEur,
       printings,
+      isBanned: item.isBanned,
     };
   });
 }
