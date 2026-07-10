@@ -43,9 +43,20 @@ export const CATALOG_TOOLBAR_SEGMENT_CLASS_MOBILE =
 
 export const CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS_MOBILE = 'bg-card-panel';
 
-/** Search field shell — aligned with catalog toolbar controls. */
-export const CATALOG_SEARCH_SHELL_CLASS =
+/** Shared bordered input shell — matches catalog toolbar controls. */
+export const INPUT_SHELL_CLASS =
+  'h-11 min-h-11 rounded-lg border border-border bg-card px-3 py-0 active:bg-card-panel dark:active:bg-card';
+
+/** Search inputs with a leading icon addon. */
+export const INPUT_SEARCH_SHELL_CLASS =
   'h-11 min-h-11 rounded-lg border border-border bg-card py-0 pl-0 pr-1 active:bg-card-panel dark:active:bg-card';
+
+/** Multiline input shell. */
+export const INPUT_TEXTAREA_SHELL_CLASS =
+  'min-h-28 rounded-lg border border-border bg-card px-3 py-2 items-start active:bg-card-panel dark:active:bg-card';
+
+/** @deprecated Use INPUT_SEARCH_SHELL_CLASS */
+export const CATALOG_SEARCH_SHELL_CLASS = INPUT_SEARCH_SHELL_CLASS;
 
 export type ToolbarIconTone = 'active' | 'inactive' | 'primary';
 

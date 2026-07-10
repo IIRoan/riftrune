@@ -95,7 +95,7 @@ const useInputAddonButtonContext = () => {
 // Components
 export const Input = ({ className, disabled, style, ...props }: InputProps) => {
   const merged = cn(
-    "grow font-sans font-normal text-base text-foreground leading-tight",
+    "grow font-sans font-normal text-base text-foreground leading-tight outline-none focus:outline-none",
     className
   );
 
@@ -173,11 +173,15 @@ export const InputPressable = ({
       accessibilityState={{ disabled }}
       className={cn(
         "flex min-h-12 w-full flex-row items-center gap-2 rounded-lg bg-background px-3 py-2 active:bg-accent/90 disabled:opacity-50 dark:active:bg-accent/50",
-        className
+        bordered && "border",
+        className,
+        bordered && !invalid && !focused && "border-border",
+        bordered && !invalid && focused && "border-ring/50",
+        bordered && invalid && "border-destructive"
       )}
       disabled={disabled}
       onPress={onPress}
-      style={animatedStyle}
+      style={bordered ? undefined : animatedStyle}
     >
       {children}
     </AnimatedPressable>

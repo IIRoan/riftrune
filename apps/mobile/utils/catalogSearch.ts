@@ -62,7 +62,7 @@ export function searchCatalogItems(
   items: readonly CardListItem[],
   query: string,
   sort: CatalogSort,
-  limit = 40
+  limit?: number
 ): CardListItem[] {
   const trimmed = query.trim();
   if (!trimmed) return [];
@@ -70,14 +70,15 @@ export function searchCatalogItems(
   const tokens = tokenizeSearchQuery(trimmed);
   const matches = items.filter((card) => matchesAllTokens(card, tokens));
 
-  return matches
+  const sorted = matches
     .slice()
     .sort((a, b) => {
       const relevance = relevanceScore(a, trimmed) - relevanceScore(b, trimmed);
       if (relevance !== 0) return relevance;
       return compareBySort(a, b, sort);
-    })
-    .slice(0, limit);
+    });
+
+  return limit === undefined ? sorted : sorted.slice(0, limit);
 }
 
 function priceScore(card: CardListItem): number {

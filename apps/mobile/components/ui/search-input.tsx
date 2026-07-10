@@ -1,4 +1,4 @@
-import { CATALOG_SEARCH_SHELL_CLASS } from "@/constants/CardArt";
+import { INPUT_SEARCH_SHELL_CLASS } from "@/constants/catalogToolbar";
 import { cn } from "@/lib/utils";
 import { SearchIcon } from "@/components/icons";
 import {
@@ -26,6 +26,7 @@ export const SearchInput = ({
   onBlur,
   disabled,
   children,
+  className,
   accessibilityRole = "search",
   ...props
 }: SearchInputProps) => {
@@ -38,7 +39,7 @@ export const SearchInput = ({
   return (
     <InputPressable
       bordered
-      className={cn(pressableClassName, CATALOG_SEARCH_SHELL_CLASS)}
+      className={cn(pressableClassName, INPUT_SEARCH_SHELL_CLASS, className)}
       disabled={disabled}
       focused={isFocused}
       onPress={handlePress}

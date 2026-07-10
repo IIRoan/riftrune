@@ -1,5 +1,5 @@
-import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { CardArtImage } from '@/components/cards/CardArtImage';
 import {
   ActivityIndicator,
   Modal,
@@ -524,18 +524,18 @@ export function CatalogDetailPanel({
           >
             <View
               className={cn(
-                'relative aspect-[5/7] w-[128px] overflow-hidden border bg-background',
+                'relative aspect-[5/7] w-[128px] overflow-hidden border',
                 isBanned ? 'border-destructive/70' : 'border-white/10',
                 CARD_ART_RADIUS_CLASS
               )}
             >
-              <Image
-                source={detailImageUri ? { uri: detailImageUri } : undefined}
+              <CardArtImage
+                uri={detailImageUri}
                 recyclingKey={activeVariant.variantNumber}
-                style={{ width: '100%', height: '100%' }}
+                className="absolute inset-0"
                 contentFit="contain"
+                contentPosition="center"
                 transition={isDrawer ? 0 : 200}
-                cachePolicy="memory-disk"
               />
               {isBanned ? <CardBannedOverlay /> : null}
             </View>
@@ -662,19 +662,14 @@ function CatalogCardFullscreen({
           onPress={onClose}
           accessibilityLabel="Close full size card"
         />
-        <View
-          className={cn('relative z-10 overflow-hidden', CARD_ART_RADIUS_CLASS)}
+        <CardArtImage
+          uri={resolveImageUrl(imageUrl)}
+          recyclingKey={imageUrl}
+          className={cn('relative z-10', CARD_ART_RADIUS_CLASS)}
           style={{ width: cardWidth, height: cardHeight }}
-        >
-          <Image
-            source={{ uri: resolveImageUrl(imageUrl) }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-            transition={200}
-            cachePolicy="memory-disk"
-            accessibilityLabel={name}
-          />
-        </View>
+          contentFit="contain"
+          contentPosition="center"
+        />
       </View>
     </Modal>
   );

@@ -57,4 +57,9 @@ body > div,
   body {
     background-color: oklch(0.13 0 0);
   }
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
 }`;

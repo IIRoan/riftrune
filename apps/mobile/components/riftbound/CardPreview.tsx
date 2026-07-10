@@ -1,5 +1,5 @@
-import { Image } from 'expo-image';
 import { View } from 'react-native';
+import { CardArtImage } from '@/components/cards/CardArtImage';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { cn } from '@/lib/utils';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
@@ -21,8 +21,10 @@ export function CardPreview({ imageUrl, width, minHeight = 188 }: Props) {
       className="relative w-full items-center justify-center overflow-hidden rounded-t-xl bg-card-panel p-3.5"
       style={{ minHeight, width, height: minHeight }}
     >
-      <View
-        className={cn('overflow-hidden bg-background', CARD_ART_RADIUS_CLASS)}
+      <CardArtImage
+        uri={resolvedUrl}
+        recyclingKey={resolvedUrl ?? imageUrl}
+        className={cn(CARD_ART_RADIUS_CLASS)}
         style={{
           aspectRatio: 5 / 7,
           width: imageMaxWidth ?? '100%',
@@ -30,18 +32,9 @@ export function CardPreview({ imageUrl, width, minHeight = 188 }: Props) {
           maxWidth: imageMaxWidth,
           height: imageMaxHeight,
         }}
-      >
-        <Image
-          key={resolvedUrl}
-          recyclingKey={resolvedUrl}
-          source={resolvedUrl ? { uri: resolvedUrl } : undefined}
-          style={{ width: '100%', height: '100%' }}
-          contentFit="contain"
-          transition={200}
-          cachePolicy="memory-disk"
-          placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
-        />
-      </View>
+        contentFit="contain"
+        contentPosition="center"
+      />
     </View>
   );
 }

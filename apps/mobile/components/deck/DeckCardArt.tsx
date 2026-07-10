@@ -1,33 +1,23 @@
-import { Image } from 'expo-image';
 import { memo } from 'react';
 import { View } from 'react-native';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
+import { CardArtImage } from '@/components/cards/CardArtImage';
 
 type DeckCardArtProps = {
   uri: string;
   variantNumber: string;
 };
 
-/** Static deck-builder card art — no fade transition, disk+memory cache. */
+/** Static deck-builder card art with shimmer loading and disk+memory cache. */
 function DeckCardArtInner({ uri, variantNumber }: DeckCardArtProps) {
-  if (!uri) {
-    return (
-      <View className="flex-1 items-center justify-center bg-card-panel">
-        <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
-      </View>
-    );
-  }
-
   return (
     <View className="absolute inset-0 items-center justify-center p-1">
-      <Image
-        source={{ uri }}
+      <CardArtImage
+        uri={uri}
         recyclingKey={variantNumber}
-        style={{ width: '100%', height: '100%' }}
+        className="h-full w-full"
         contentFit="contain"
         contentPosition="center"
         transition={0}
-        cachePolicy="memory-disk"
         priority="high"
       />
     </View>

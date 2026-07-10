@@ -4,7 +4,6 @@ import { ActivityIndicator, View } from 'react-native';
 import { DeckBuilderCanvas } from '@/components/deck/DeckBuilderCanvas';
 import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
 import { LegendPicker } from '@/components/deck/LegendPicker';
-import { AppShell } from '@/components/shell/AppShell';
 import { ScreenLayout, ScreenLayoutBody, useScreenLayout } from '@/components/shell/ScreenLayout';
 import { Text } from '@/components/ui/text';
 import { Button, ButtonText } from '@/components/ui/button';
@@ -43,57 +42,51 @@ export default function DeckEditorScreen() {
   const handleImport = useCallback(() => {
     if (!deck?.id) return;
     void importDeck.mutateAsync(deck.id).then((saved) => {
-      router.replace(`/deck/${saved.id}`);
+      router.replace(`/decks/${saved.id}`);
     });
   }, [deck?.id, importDeck, router]);
 
   if (isLoading) {
     return (
-      <AppShell>
-        <ScreenLayout mode="flex">
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator />
-          </View>
-        </ScreenLayout>
-      </AppShell>
+      <ScreenLayout mode="flex">
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator />
+        </View>
+      </ScreenLayout>
     );
   }
 
   if (!deck) {
     return (
-      <AppShell>
-        <ScreenLayout>
-          <ScreenLayoutBody>
-            <Text className="text-muted-foreground">Deck not found.</Text>
-            <Button className="mt-4" onPress={() => router.replace('/(tabs)/decks')}>
-              <ButtonText>Back to decks</ButtonText>
-            </Button>
-          </ScreenLayoutBody>
-        </ScreenLayout>
-      </AppShell>
+      <ScreenLayout>
+        <ScreenLayoutBody>
+          <Text className="text-muted-foreground">Deck not found.</Text>
+          <Button className="mt-4" onPress={() => router.replace('/decks')}>
+            <ButtonText>Back to decks</ButtonText>
+          </Button>
+        </ScreenLayoutBody>
+      </ScreenLayout>
     );
   }
 
   if (pickingLegend || (!readOnly && !deck.legend)) {
     return (
-      <AppShell>
-        <LegendPickerScreen
-          deck={deck}
-          onSelect={handleLegendSelect}
-          onBack={() => {
-            if (deck.legend) {
-              setPickingLegend(false);
-              return;
-            }
-            router.back();
-          }}
-        />
-      </AppShell>
+      <LegendPickerScreen
+        deck={deck}
+        onSelect={handleLegendSelect}
+        onBack={() => {
+          if (deck.legend) {
+            setPickingLegend(false);
+            return;
+          }
+          router.back();
+        }}
+      />
     );
   }
 
   return (
-    <AppShell>
+    <>
       <DeckImportLoadingOverlay
         visible={importDeck.isPending}
         message="Importing deck to your collection…"
@@ -116,7 +109,7 @@ export default function DeckEditorScreen() {
           />
         </ScreenLayoutBody>
       </ScreenLayout>
-    </AppShell>
+    </>
   );
 }
 

@@ -5,6 +5,9 @@ export default function DecksLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="browse" />
+      <Stack.Screen name="create" />
+      <Stack.Screen name="[id]" />
+      <Stack.Screen name="[id]/add" />
     </Stack>
   );
 }

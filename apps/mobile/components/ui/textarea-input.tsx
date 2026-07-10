@@ -1,3 +1,6 @@
+import {
+  INPUT_TEXTAREA_SHELL_CLASS,
+} from "@/constants/catalogToolbar";
 import { cn } from "@/lib/utils";
 import {
   Input,
@@ -28,6 +31,8 @@ export const TextareaInput = ({
 
   return (
     <InputPressable
+      bordered
+      className={cn(INPUT_TEXTAREA_SHELL_CLASS, className)}
       disabled={disabled}
       focused={isFocused}
       invalid={invalid}
@@ -35,7 +40,7 @@ export const TextareaInput = ({
     >
       <Input
         {...props}
-        className={cn("min-h-24", className)}
+        className={cn("min-h-24 w-full", className)}
         disabled={disabled}
         multiline
         onBlur={handleBlur}
