@@ -1,8 +1,9 @@
 import { View } from 'react-native';
-import { FilterTrigger } from '@/components/catalog/FilterSheet';
+import { CatalogFilterTrigger } from '@/components/catalog/FilterSheet';
 import { SortTrigger } from '@/components/catalog/SortSheet';
 import { ViewToggle } from '@/components/catalog/ViewToggle';
 import { Text } from '@/components/ui/text';
+import type { CatalogFilters } from '@/constants/catalogFilters';
 import {
   CATALOG_TOOLBAR_MOBILE_ROW_CLASS,
   CATALOG_TOOLBAR_MOBILE_SLOT_CLASS,
@@ -14,7 +15,7 @@ interface CatalogActionBarProps {
   view: 'list' | 'grid';
   onViewChange: (view: 'list' | 'grid') => void;
   onSortPress: () => void;
-  activeFilter: string;
+  filters: CatalogFilters;
   onFilterPress: () => void;
   className?: string;
 }
@@ -24,7 +25,7 @@ export function CatalogActionBar({
   view,
   onViewChange,
   onSortPress,
-  activeFilter,
+  filters,
   onFilterPress,
   className,
 }: CatalogActionBarProps) {
@@ -63,8 +64,8 @@ export function CatalogActionBar({
               <SortTrigger onPress={onSortPress} compact mobile />
             </View>
             <View className={CATALOG_TOOLBAR_MOBILE_SLOT_CLASS}>
-              <FilterTrigger
-                activeFilter={activeFilter}
+              <CatalogFilterTrigger
+                filters={filters}
                 onPress={onFilterPress}
                 compact
                 mobile
@@ -76,7 +77,7 @@ export function CatalogActionBar({
             <ViewToggle view={view} onViewChange={onViewChange} />
             <View className="flex-row items-center gap-2">
               <SortTrigger label="Sort" onPress={onSortPress} />
-              <FilterTrigger activeFilter={activeFilter} onPress={onFilterPress} />
+              <CatalogFilterTrigger filters={filters} onPress={onFilterPress} />
             </View>
           </>
         )}

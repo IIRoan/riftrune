@@ -1,6 +1,5 @@
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { CardsListResponse } from '@riftbound/contracts';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
 import {
@@ -19,8 +18,13 @@ import {
   groupCardListItems,
 } from '@/utils/variants';
 import { searchCatalogItems } from '@/utils/catalogSearch';
+import {
+  catalogFiltersToQuery,
+  DEFAULT_CATALOG_FILTERS,
+  type CatalogFilters,
+} from '@/constants/catalogFilters';
 
-import type { CardsListQuery } from '@riftbound/contracts';
+import type { CardsListQuery, CardsListResponse } from '@riftbound/contracts';
 import { DEFAULT_CATALOG_SORT, type CatalogSort } from '@/constants/catalogSort';
 
 const DEBOUNCE_MS = 250;
@@ -30,7 +34,8 @@ const STALE_MS = 5 * 60 * 1000;
 export function useCardSearch(
   query: string,
   sort: CatalogSort = DEFAULT_CATALOG_SORT,
-  pageSize = 40
+  pageSize = 40,
+  filters: CatalogFilters = DEFAULT_CATALOG_FILTERS
 ) {
   const trimmed = query.trim();
   const debounced = useDebounce(trimmed, DEBOUNCE_MS);
@@ -66,7 +71,7 @@ export function useCardSearch(
 
   useEffect(() => {
     setLocalPage(1);
-  }, [activeTerm, sort.sortBy, sort.dir]);
+  }, [activeTerm, sort.sortBy, sort.dir, filters]);
 
   useEffect(() => {
     if (immediateTerm && debounced === immediateTerm) {
@@ -99,7 +104,8 @@ export function useCardSearch(
     queryKey: cardQueryKeys.searchInfinite(
       activeTerm,
       sort.sortBy,
-      sort.dir
+      sort.dir,
+      filters
     ),
     queryFn: async ({ pageParam }) => {
       const params: Partial<CardsListQuery> = {
@@ -108,6 +114,7 @@ export function useCardSearch(
         page: pageParam,
         sortBy: sort.sortBy,
         dir: sort.dir,
+        ...catalogFiltersToQuery(filters),
       };
       const response = await api.listCards(params);
       const normalized = normalizeCardsListResponse(response);
