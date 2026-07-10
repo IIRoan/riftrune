@@ -12,6 +12,7 @@ import { useDeckCardImages } from '@/hooks/useDeckCardImages';
 import { useDeckLiveLegality } from '@/hooks/useBanDatesByVariant';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
+import { Pressable, View } from 'react-native';
 
 const PREVIEW_SIZE = 44;
 

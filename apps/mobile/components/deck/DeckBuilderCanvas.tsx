@@ -12,7 +12,7 @@ import { DeckValidationBanner } from '@/components/deck/DeckValidationBanner';
 import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { SearchInput } from '@/components/ui/search-input';
+import { TextInput } from '@/components/ui/text-input';
 import { Text } from '@/components/ui/text';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
@@ -99,7 +99,7 @@ export function DeckBuilderCanvas({
       if (readOnly) return;
       hapticPress();
       void prefetchDeckAddCatalog(queryClient, deck, section);
-      router.push(`/deck/${deck.id}/add?section=${section}`);
+      router.push(`/decks/${deck.id}/add?section=${section}`);
     },
     [deck, queryClient, readOnly, router]
   );
@@ -157,7 +157,7 @@ export function DeckBuilderCanvas({
                 {readOnly ? (
                   <Text className="text-lg font-semibold text-foreground">{deck.name}</Text>
                 ) : (
-                  <SearchInput
+                  <TextInput
                     value={deck.name}
                     onChangeText={(name) =>
                       onPersist({ ...deck, name, updatedAt: Date.now() })

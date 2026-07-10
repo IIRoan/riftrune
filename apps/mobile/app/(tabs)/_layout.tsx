@@ -10,7 +10,9 @@ import { Tabs } from 'expo-router';
 export default function TabLayout() {
   const pathname = usePathname();
   const showRail = useShowSideRail();
-  const showTabBar = !pathname.startsWith('/card/') && !showRail;
+  const isDeepDeckRoute =
+    pathname.startsWith('/decks/') && pathname !== '/decks/browse';
+  const showTabBar = !pathname.startsWith('/card/') && !showRail && !isDeepDeckRoute;
   const [backgroundRaw] = useCSSVariable(['--color-background']);
   const background = String(backgroundRaw ?? 'oklch(0.130 0 0)');
 

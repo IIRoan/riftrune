@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Keyboard, Pressable, View, type ViewStyle } from 'react-native';
 import type { CardListItem } from '@riftbound/contracts';
+import { CardArtImage } from '@/components/cards/CardArtImage';
 import { CardBannedOverlay } from '@/components/riftbound/CardBannedOverlay';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
@@ -12,6 +13,7 @@ import { Text } from '@/components/ui/text';
 import { rarityIconFor } from '@/constants/gameAssets';
 import { gridCardTitleStyle } from '@/lib/cardTileGridTitle';
 import { useCollectionMutations } from '@/hooks/useCollection';
+import { useOwnershipMap } from '@/hooks/useOwnershipMap';
 import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
 import { openCard } from '@/utils/cardNavigation';
 import {
@@ -55,7 +57,7 @@ interface Props {
   collectionByVariant?: CollectionOwnershipMap;
 }
 
-export function CardTile({
+function CardTileInner({
   card,
   layout = 'grid',
   mode: _mode = 'search',
@@ -66,10 +68,12 @@ export function CardTile({
   familyContextVariantNumber,
   hidePrice = false,
   onPress,
-  collectionByVariant,
+  collectionByVariant: collectionByVariantProp,
 }: Props) {
   const router = useRouter();
   const isMobile = useMobileLayout();
+  const ownershipFromStore = useOwnershipMap();
+  const collectionByVariant = collectionByVariantProp ?? ownershipFromStore;
   const { addCard, setQuantity } = useCollectionMutations();
 
   const allPrintings = getCardPrintings(card);
@@ -195,12 +199,11 @@ export function CardTile({
         accessibilityState={{ selected }}
       >
         <View className="relative shrink-0">
-          <Image
-            source={imageUri ? { uri: imageUri } : undefined}
+          <CardArtImage
+            uri={imageUri}
             recyclingKey={card.variantNumber}
             style={{ width: listThumbW, height: listThumbH }}
             className={cn(
-              'overflow-hidden bg-background',
               CARD_ART_RADIUS_CLASS,
               banned
                 ? 'border-2 border-destructive/70'
@@ -210,8 +213,7 @@ export function CardTile({
             )}
             contentFit="cover"
             contentPosition="top"
-            transition={120}
-            cachePolicy="memory-disk"
+            instant={_mode === 'search'}
           />
           {banned ? <CardBannedOverlay className="left-0.5 top-0.5" /> : null}
         </View>
@@ -353,27 +355,17 @@ export function CardTile({
         <Pressable className="active:opacity-90" onPress={onOpenCard}>
           <View
             className={cn(
-              'relative aspect-[5/7] w-full overflow-hidden bg-background',
+              'relative aspect-[5/7] w-full overflow-hidden',
               CARD_ART_RADIUS_CLASS
             )}
           >
-            <Image
-              source={imageUri ? { uri: imageUri } : undefined}
+            <CardArtImage
+              uri={imageUri}
               recyclingKey={card.variantNumber}
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-              }}
+              className="absolute inset-0"
               contentFit="cover"
               contentPosition="top"
-              transition={120}
-              cachePolicy="memory-disk"
-              placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+              instant
             />
             {banned ? <CardBannedOverlay /> : null}
           </View>
@@ -413,20 +405,18 @@ export function CardTile({
     >
       <View
         className={cn(
-          'relative aspect-[5/7] w-full overflow-hidden bg-background ring-1',
+          'relative aspect-[5/7] w-full overflow-hidden ring-1',
           banned ? 'ring-destructive/50' : 'ring-white/10',
           CARD_ART_RADIUS_CLASS
         )}
       >
-        <Image
-          source={imageUri ? { uri: imageUri } : undefined}
+        <CardArtImage
+          uri={imageUri}
           recyclingKey={card.variantNumber}
-          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' }}
+          className="absolute inset-0"
           contentFit="cover"
           contentPosition="top"
-          transition={120}
-          cachePolicy="memory-disk"
-          placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+          instant={_mode === 'search'}
         />
         {banned ? <CardBannedOverlay /> : null}
       </View>
@@ -451,6 +441,21 @@ export function CardTile({
     </Pressable>
   );
 }
+
+export const CardTile = memo(
+  CardTileInner,
+  (prev, next) =>
+    prev.card.variantNumber === next.card.variantNumber &&
+    prev.layout === next.layout &&
+    prev.compact === next.compact &&
+    prev.enableQuickAdd === next.enableQuickAdd &&
+    prev.selected === next.selected &&
+    prev.familyContextVariantNumber === next.familyContextVariantNumber &&
+    prev.hidePrice === next.hidePrice &&
+    prev.collectionByVariant === next.collectionByVariant &&
+    prev.onPress === next.onPress &&
+    prev.mode === next.mode
+);
 
 export function CardTileSkeleton({
   layout = 'grid',

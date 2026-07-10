@@ -10,7 +10,7 @@ import Animated, {
 import type { AuthPanelVariant, AuthScreenLayout, Mode } from '@/components/auth/auth-types';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { TextInput } from '@/components/ui/text-input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Text } from '@/components/ui/text';
@@ -320,7 +320,7 @@ export function AuthPanel({
       <View className="gap-5">
         <View className="gap-2">
           <Label>Email</Label>
-          <Input
+          <TextInput
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"

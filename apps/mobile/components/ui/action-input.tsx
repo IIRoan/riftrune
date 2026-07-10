@@ -1,3 +1,4 @@
+import { INPUT_SHELL_CLASS } from "@/constants/catalogToolbar";
 import { Text, View } from "react-native";
 import { cn } from "@/lib/utils";
 import { ChevronRightIcon } from "@/components/icons";
@@ -23,6 +24,9 @@ export const ActionInput = ({
   placeholder,
   children,
   className,
+  focused,
+  invalid,
+  disabled,
   ...props
 }: ActionInputProps) => {
   const { startAddons, endAddons, pressableClassName } =
@@ -31,7 +35,11 @@ export const ActionInput = ({
   return (
     <InputPressable
       {...props}
-      className={cn(pressableClassName, "pr-0", className)}
+      bordered
+      className={cn(pressableClassName, INPUT_SHELL_CLASS, "pr-0", className)}
+      disabled={disabled}
+      focused={focused}
+      invalid={invalid}
     >
       {startAddons}
 

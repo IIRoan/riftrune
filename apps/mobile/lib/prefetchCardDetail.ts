@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import type { QueryClient } from '@tanstack/react-query';
 import type { CardListItem } from '@riftbound/contracts';
+import { markSessionImageLoaded } from '@/lib/imageSessionCache';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
@@ -12,7 +13,9 @@ export function prefetchCardDetail(queryClient: QueryClient, item: CardListItem)
   const { variantNumber } = item;
   const imageUri = resolveImageUrl(item.imageUrl);
   if (imageUri) {
-    void Image.prefetch(imageUri);
+    void Image.prefetch(imageUri).then((ok) => {
+      if (ok) markSessionImageLoaded(imageUri);
+    });
   }
 
   void queryClient.prefetchQuery({

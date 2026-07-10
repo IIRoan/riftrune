@@ -1,3 +1,4 @@
+import { INPUT_SHELL_CLASS } from "@/constants/catalogToolbar";
 import { cn } from "@/lib/utils";
 import {
   Input,
@@ -24,6 +25,7 @@ export const TextInput = ({
   disabled,
   invalid,
   children,
+  className,
   ...props
 }: TextInputProps) => {
   const { isFocused, internalRef, handleFocus, handleBlur, handlePress } =
@@ -34,7 +36,8 @@ export const TextInput = ({
 
   return (
     <InputPressable
-      className={pressableClassName}
+      bordered
+      className={cn(pressableClassName, INPUT_SHELL_CLASS, className)}
       disabled={disabled}
       focused={isFocused}
       invalid={invalid}
@@ -44,7 +47,7 @@ export const TextInput = ({
 
       <Input
         {...props}
-        className={cn("shrink", props.className)}
+        className="shrink"
         disabled={disabled}
         onBlur={handleBlur}
         onFocus={handleFocus}

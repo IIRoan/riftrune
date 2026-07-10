@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SearchInput } from '@/components/ui/search-input';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
-import { AppShell } from '@/components/shell/AppShell';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
@@ -159,27 +158,23 @@ export default function DeckAddScreen() {
 
   if (isLoading || !deck) {
     return (
-      <AppShell>
-        <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator />
-          </View>
-        </ScreenLayout>
-      </AppShell>
+      <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator />
+        </View>
+      </ScreenLayout>
     );
   }
 
   return (
-    <AppShell>
-      <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
-        <DeckAddScreenBody
-          deck={deck}
-          sectionParam={sectionParam}
-          onPersist={persist}
-          onFlushSave={flushSave}
-        />
-      </ScreenLayout>
-    </AppShell>
+    <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
+      <DeckAddScreenBody
+        deck={deck}
+        sectionParam={sectionParam}
+        onPersist={persist}
+        onFlushSave={flushSave}
+      />
+    </ScreenLayout>
   );
 }
 

@@ -3,6 +3,9 @@ export const cardQueryKeys = {
   search: (q: string, limit = 40, sortBy = 'name', dir = 'asc') =>
     ['cards', 'search', q.toLowerCase(), limit, sortBy, dir] as const,
   featured: (limit: number) => ['cards', 'featured', limit] as const,
+  browse: () => ['cards', 'browse'] as const,
+  searchInfinite: (q: string, sortBy: string, dir: string) =>
+    ['cards', 'search', 'infinite', q.toLowerCase(), sortBy, dir] as const,
   detail: (variantNumber: string) => ['cards', 'detail', variantNumber] as const,
   health: ['health'] as const,
 };

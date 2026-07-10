@@ -95,10 +95,10 @@ export function DecksListScreen({
       <DeckBrowseCard
         key={deck.id}
         deck={deck}
-        onPress={() => router.push(`/deck/${deck.id}`)}
+        onPress={() => router.push(`/decks/${deck.id}`)}
         onImport={() => {
           void importDeck.mutateAsync(deck.id).then((saved) => {
-            router.push(`/deck/${saved.id}`);
+            router.push(`/decks/${saved.id}`);
           });
         }}
         importBusy={importDeck.isPending && importDeck.variables === deck.id}
@@ -107,7 +107,7 @@ export function DecksListScreen({
       <DeckListCard
         key={deck.id}
         deck={deck}
-        onPress={() => router.push(`/deck/${deck.id}`)}
+        onPress={() => router.push(`/decks/${deck.id}`)}
         onDelete={
           deck.readOnly
             ? undefined
@@ -119,7 +119,7 @@ export function DecksListScreen({
           deck.readOnly
             ? () => {
                 void importDeck.mutateAsync(deck.id).then((saved) => {
-                  router.push(`/deck/${saved.id}`);
+                  router.push(`/decks/${saved.id}`);
                 });
               }
             : undefined
@@ -167,7 +167,7 @@ export function DecksListScreen({
                     className="w-auto"
                     onPress={() => {
                       hapticPress();
-                      router.push('/deck/create');
+                      router.push('/decks/create');
                     }}
                   >
                     <ButtonIcon>
@@ -187,7 +187,6 @@ export function DecksListScreen({
             onChangeText={onQueryChange}
             placeholder={searchPlaceholder}
             accessibilityLabel={searchPlaceholder}
-            className="min-h-12 rounded-xl border-border bg-card"
             autoCorrect={false}
             autoCapitalize="none"
             returnKeyType="search"
@@ -226,7 +225,7 @@ export function DecksListScreen({
                 <Button
                   onPress={() => {
                     hapticPress();
-                    router.push('/deck/create');
+                    router.push('/decks/create');
                   }}
                 >
                   <ButtonText>Create your first deck</ButtonText>
@@ -283,7 +282,7 @@ export function DecksListScreen({
             try {
               const saved = await saveDeckNow.mutateAsync(imported);
               setImportOpen(false);
-              router.push(`/deck/${saved.id}`);
+              router.push(`/decks/${saved.id}`);
             } finally {
               setImportSaving(false);
             }

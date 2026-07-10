@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { usePathname } from 'expo-router';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCSSVariable } from 'uniwind';
@@ -68,6 +69,7 @@ const TAB_ITEMS: {
 ];
 
 export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarProps) {
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const reduceMotion = useReduceMotion();
@@ -120,7 +122,9 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
           if (routeIndex === -1) return null;
 
           const route = state.routes[routeIndex];
-          const isFocused = state.index === routeIndex;
+          const isFocused =
+            state.index === routeIndex ||
+            (item.routeName === 'decks' && pathname.startsWith('/decks'));
           const { options } = descriptors[route.key];
           const label = options.title ?? item.label;
 
