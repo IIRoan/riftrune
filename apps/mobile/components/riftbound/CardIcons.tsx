@@ -1,9 +1,31 @@
 import { Image } from 'expo-image';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
+import { useCSSVariable } from 'uniwind';
 import { typeIconFor, rarityIconFor, domainIconFor, mightIcon } from '@/constants/gameAssets';
 import { KeywordBadge } from '@/components/riftbound/KeywordBadge';
 import { Text } from '@/components/ui/text';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
+import { cn } from '@/lib/utils';
+
+export type GameIconTone = 'default' | 'foreground';
+
+function useForegroundIconTint(tone: GameIconTone): string | undefined {
+  const foreground = useCSSVariable('--color-foreground') as string | undefined;
+  if (tone !== 'foreground' || !foreground) return undefined;
+  return foreground;
+}
+
+function gameIconClassName(tone: GameIconTone, className?: string): string | undefined {
+  if (tone !== 'foreground') return className;
+  return cn(
+    className,
+    Platform.OS === 'web' ? 'brightness-0 dark:brightness-100' : undefined
+  );
+}
+
+function gameIconStyle(size: number, tint?: string) {
+  return tint ? { width: size, height: size, tintColor: tint } : { width: size, height: size };
+}
 
 interface PipProps {
   value: number | string;
@@ -85,15 +107,18 @@ export function DomainIcon({
   name,
   imageUrl,
   size = 15,
+  className,
 }: {
   name: string;
   imageUrl?: string;
   size?: number;
+  className?: string;
 }) {
   if (imageUrl) {
     return (
       <Image
         source={{ uri: resolveImageUrl(imageUrl) }}
+        className={className}
         style={{ width: size, height: size }}
         contentFit="contain"
         accessibilityIgnoresInvertColors
@@ -106,6 +131,7 @@ export function DomainIcon({
   return (
     <Image
       source={source}
+      className={className}
       style={{ width: size, height: size }}
       contentFit="contain"
       accessibilityIgnoresInvertColors
@@ -114,25 +140,46 @@ export function DomainIcon({
   );
 }
 
-export function TypeIcon({ type, size = 15 }: { type: string; size?: number }) {
+export function TypeIcon({
+  type,
+  size = 15,
+  tone = 'default',
+  className,
+}: {
+  type: string;
+  size?: number;
+  tone?: GameIconTone;
+  className?: string;
+}) {
   const source = typeIconFor(type);
   if (!source) return null;
+  const tint = useForegroundIconTint(tone);
   return (
     <Image
       source={source}
-      style={{ width: size, height: size }}
+      className={gameIconClassName(tone, className)}
+      style={gameIconStyle(size, tint)}
       contentFit="contain"
       accessibilityIgnoresInvertColors
     />
   );
 }
 
-export function RarityIcon({ rarity, size = 15 }: { rarity: string; size?: number }) {
+export function RarityIcon({
+  rarity,
+  size = 15,
+  className,
+}: {
+  rarity: string;
+  size?: number;
+  className?: string;
+}) {
   const source = rarityIconFor(rarity);
   if (!source) return null;
   return (
     <Image
       source={source}
+      className={className}
       style={{ width: size, height: size }}
       contentFit="contain"
       accessibilityIgnoresInvertColors

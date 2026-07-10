@@ -15,7 +15,7 @@ import {
 import type { PriceCacheService } from './price-cache.js';
 import type { ImageStoreService } from './image-store.js';
 import { buildCardSearchCondition, buildSearchRelevanceOrder } from '../lib/search.js';
-import { buildCardColorsSubsetCondition } from '../lib/card-colors-filter.js';
+import { buildCardColorsContainsAllCondition } from '../lib/card-colors-filter.js';
 import { TtlCache } from '../lib/ttl-cache.js';
 import {
   buildUpstreamListParams,
@@ -45,6 +45,7 @@ function searchCacheKey(query: CardsListQuery, catalogHash: string): string {
     types: query.types ?? '',
     super: query.super ?? '',
     rarities: query.rarities ?? '',
+    variants: query.variants ?? '',
     energyMin: query.energyMin,
     energyMax: query.energyMax,
     powerMin: query.powerMin,
@@ -639,6 +640,41 @@ export class CardCacheService {
     if (query.energyMax !== undefined) {
       conditions.push(sql`${cards.energy} <= ${query.energyMax}`);
     }
+    if (query.powerMin !== undefined) {
+      conditions.push(sql`${cards.power} >= ${query.powerMin}`);
+    }
+    if (query.powerMax !== undefined) {
+      conditions.push(sql`${cards.power} <= ${query.powerMax}`);
+    }
+    if (query.mightMin !== undefined) {
+      conditions.push(sql`${cards.might} >= ${query.mightMin}`);
+    }
+    if (query.mightMax !== undefined) {
+      conditions.push(sql`${cards.might} <= ${query.mightMax}`);
+    }
+    if (query.rarities) {
+      const rarityFilters = query.rarities
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (rarityFilters.length > 0) {
+        conditions.push(inArray(variants.rarity, rarityFilters));
+      }
+    }
+    if (query.variants) {
+      const variantFilters = query.variants
+        .split(',')
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+      if (variantFilters.length > 0) {
+        conditions.push(
+          sql`lower(${variants.variantType}) in (${sql.join(
+            variantFilters.map((value) => sql`${value}`),
+            sql`, `
+          )})`
+        );
+      }
+    }
     if (query.types) {
       const typeFilters = query.types
         .split(',')
@@ -654,11 +690,24 @@ export class CardCacheService {
       }
     }
     if (query.super) {
-      conditions.push(sql`lower(${cards.super}) = ${query.super.trim().toLowerCase()}`);
+      const superFilters = query.super
+        .split(',')
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+      if (superFilters.length === 1) {
+        conditions.push(sql`lower(${cards.super}) = ${superFilters[0]}`);
+      } else if (superFilters.length > 1) {
+        conditions.push(
+          sql`lower(${cards.super}) in (${sql.join(
+            superFilters.map((value) => sql`${value}`),
+            sql`, `
+          )})`
+        );
+      }
     }
     if (query.colors) {
       const colorNames = query.colors.split(',').map((value) => value.trim());
-      const colorCond = buildCardColorsSubsetCondition(colorNames);
+      const colorCond = buildCardColorsContainsAllCondition(colorNames);
       if (colorCond) conditions.push(colorCond);
     }
     if (query.excludeTokens) {

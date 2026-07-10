@@ -1,20 +1,28 @@
 import { usePathname } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCSSVariable } from 'uniwind';
 import { AppShell } from '@/components/shell/AppShell';
 import { MobileTabBar, type MobileTabBarProps } from '@/components/shell/MobileTabBar';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
+import { prefetchCatalogFilters } from '@/hooks/useFiltersData';
 import { Tabs } from 'expo-router';
 
 export default function TabLayout() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const showRail = useShowSideRail();
   const isDeepDeckRoute =
     pathname.startsWith('/decks/') && pathname !== '/decks/browse';
   const showTabBar = !pathname.startsWith('/card/') && !showRail && !isDeepDeckRoute;
   const [backgroundRaw] = useCSSVariable(['--color-background']);
   const background = String(backgroundRaw ?? 'oklch(0.130 0 0)');
+
+  useEffect(() => {
+    void prefetchCatalogFilters(queryClient);
+  }, [queryClient]);
 
   return (
     <AuthGate>

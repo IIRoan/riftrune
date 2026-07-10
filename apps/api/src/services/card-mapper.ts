@@ -113,6 +113,8 @@ export function mapListItem(
     variantNumber: primaryVariant.variantNumber,
     name: card.name,
     type: card.type,
+    super: card.super ?? null,
+    variantType: primaryVariant.variantType,
     energy: card.energy,
     might: card.might,
     power: card.power,

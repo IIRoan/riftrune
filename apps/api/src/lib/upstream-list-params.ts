@@ -17,6 +17,7 @@ export function buildUpstreamListParams(
   if (q) params.q = q;
   if (query.types) params.types = query.types;
   if (query.super) params.supertypes = query.super;
+  if (query.variants) params.variants = query.variants;
   if (query.sets) params.sets = query.sets;
   if (query.colors) params.colors = query.colors;
   if (query.rarities) params.rarities = query.rarities;
@@ -35,6 +36,7 @@ export function upstreamCheckKey(query: CardsListQuery): string {
     q: query.q?.trim().toLowerCase() ?? '',
     types: query.types ?? '',
     super: query.super ?? '',
+    variants: query.variants ?? '',
     sets: query.sets ?? '',
     colors: query.colors ?? '',
     rarities: query.rarities ?? '',

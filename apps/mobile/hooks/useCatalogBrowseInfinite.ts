@@ -5,6 +5,12 @@ import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
 import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
 import {
+  catalogFiltersToQuery,
+  DEFAULT_CATALOG_FILTERS,
+  matchesCatalogFilters,
+  type CatalogFilters,
+} from '@/constants/catalogFilters';
+import {
   groupCatalogListItems,
   normalizeCardListItems,
   normalizeCardsListResponse,
@@ -13,7 +19,11 @@ import { featuredCatalogItems } from '@/utils/catalogSearch';
 
 const STALE_MS = 10 * 60 * 1000;
 
-export function useCatalogBrowseInfinite(pageSize: number) {
+export function useCatalogBrowseInfinite(
+  pageSize: number,
+  filters: CatalogFilters = DEFAULT_CATALOG_FILTERS,
+  collectionByVariant: ReadonlyMap<string, { quantity: number }> = new Map()
+) {
   const catalogIndex = useCatalogIndex();
   const catalogItems = getCatalogIndexItems(catalogIndex.data);
   const indexReady = catalogItems.length > 0;
@@ -21,8 +31,11 @@ export function useCatalogBrowseInfinite(pageSize: number) {
 
   const allFeatured = useMemo(() => {
     if (!indexReady) return null;
-    return featuredCatalogItems(catalogItems, catalogItems.length);
-  }, [indexReady, catalogItems]);
+    const featured = featuredCatalogItems(catalogItems, catalogItems.length);
+    return featured.filter((card) =>
+      matchesCatalogFilters(card, filters, collectionByVariant)
+    );
+  }, [indexReady, catalogItems, filters, collectionByVariant]);
 
   useEffect(() => {
     setVisibleCount((count) => Math.max(count, pageSize));
@@ -31,22 +44,26 @@ export function useCatalogBrowseInfinite(pageSize: number) {
   useEffect(() => {
     if (!indexReady) return;
     setVisibleCount(pageSize);
-  }, [indexReady, pageSize]);
+  }, [indexReady, pageSize, filters]);
 
   const listQuery = useInfiniteQuery({
-    queryKey: cardQueryKeys.browse(),
+    queryKey: cardQueryKeys.browse(filters),
     queryFn: async ({ pageParam }) => {
       const response = await api.listCards({
         limit: CATALOG_NETWORK_PAGE_SIZE,
         page: pageParam,
         sortBy: 'name',
         dir: 'asc',
+        ...catalogFiltersToQuery(filters),
       });
       const normalized = normalizeCardsListResponse(response);
       const items = groupCatalogListItems(normalizeCardListItems(normalized.data));
+      const filtered = items.filter((card) =>
+        matchesCatalogFilters(card, filters, collectionByVariant)
+      );
       return {
         ...normalized,
-        data: featuredCatalogItems(items, items.length),
+        data: featuredCatalogItems(filtered, filtered.length),
       };
     },
     initialPageParam: 1,

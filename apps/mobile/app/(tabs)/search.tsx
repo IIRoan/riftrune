@@ -17,11 +17,16 @@ import { CardDetailDrawer } from '@/components/catalog/CardDetailDrawer';
 import { CatalogDetailPanel } from '@/components/catalog/CatalogDetailPanel';
 import { CatalogActionBar } from '@/components/catalog/CatalogActionBar';
 import {
-  ActiveFilterChip,
-  ALL_CARDS_FILTER,
-  FilterSheet,
-  matchesCatalogFilter,
+  CatalogActiveFilterChips,
+  CatalogFilterSheet,
 } from '@/components/catalog/FilterSheet';
+import {
+  catalogFiltersActive,
+  DEFAULT_CATALOG_FILTERS,
+  matchesCatalogFilters,
+  sanitizeCatalogFilters,
+  type CatalogFilters,
+} from '@/constants/catalogFilters';
 import { SortSheet } from '@/components/catalog/SortSheet';
 import {
   DEFAULT_CATALOG_SORT,
@@ -50,6 +55,7 @@ import { Layout } from '@/constants/Layout';
 import { useTheme } from '@/context/ThemeContext';
 import { useCardSearch } from '@/hooks/useCardSearch';
 import { useCatalogBrowseInfinite } from '@/hooks/useCatalogBrowseInfinite';
+import { prefetchCatalogFilters } from '@/hooks/useFiltersData';
 import { useCollectionOwnership } from '@/hooks/useCollection';
 import { collectVariantNumbers } from '@/utils/collectionOwnership';
 import { cardListItemMatchesVariant } from '@/utils/variants';
@@ -119,7 +125,12 @@ function SearchScreenBody() {
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(true);
-  const [activeFilter, setActiveFilter] = useState(ALL_CARDS_FILTER);
+  const [catalogFilters, setCatalogFilters] = useState<CatalogFilters>(
+    DEFAULT_CATALOG_FILTERS
+  );
+  const applyCatalogFilters = useCallback((next: CatalogFilters) => {
+    setCatalogFilters(sanitizeCatalogFilters(next));
+  }, []);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(DEFAULT_CATALOG_SORT);
@@ -187,8 +198,7 @@ function SearchScreenBody() {
     hasNextPage: searchHasNextPage,
     isFetchingNextPage: searchIsFetchingNextPage,
     fetchNextPage: fetchNextSearchPage,
-  } = useCardSearch(query, catalogSort, pageSize);
-  const browseCatalog = useCatalogBrowseInfinite(pageSize);
+  } = useCardSearch(query, catalogSort, pageSize, catalogFilters);
 
   const trimmedQuery = query.trim();
   const hasSearchInput = trimmedQuery.length >= minLength;
@@ -224,20 +234,15 @@ function SearchScreenBody() {
   }, [ownershipRevision, selectedVariant]);
 
   const { collectionByVariant } = useCollectionOwnership(ownershipVariants);
+  const browseCatalog = useCatalogBrowseInfinite(pageSize, catalogFilters, collectionByVariant);
 
-  const filteredItems = useMemo(() => {
-    if (activeFilter === ALL_CARDS_FILTER) return items;
-    return items.filter((card) =>
-      matchesCatalogFilter(card, activeFilter, collectionByVariant)
-    );
-  }, [items, activeFilter, collectionByVariant]);
+  const filteredItems = useMemo(
+    () =>
+      items.filter((card) => matchesCatalogFilters(card, catalogFilters, collectionByVariant)),
+    [items, catalogFilters, collectionByVariant]
+  );
 
-  const featuredFiltered = useMemo(() => {
-    if (activeFilter === ALL_CARDS_FILTER) return browseCatalog.items;
-    return browseCatalog.items.filter((card) =>
-      matchesCatalogFilter(card, activeFilter, collectionByVariant)
-    );
-  }, [browseCatalog.items, activeFilter, collectionByVariant]);
+  const featuredFiltered = browseCatalog.items;
   const displayItems = hasSearchInput ? filteredItems : featuredFiltered;
   const displayItemsRef = useRef(displayItems);
   displayItemsRef.current = displayItems;
@@ -456,7 +461,7 @@ function SearchScreenBody() {
     displayItems.length > 0 ||
     (hasSearchInput && (searchPending || isLoading || isFetching)) ||
     (!hasSearchInput && (browseCatalog.isLoading || browseCatalog.isFetching));
-  const filterActive = activeFilter !== ALL_CARDS_FILTER;
+  const filterActive = catalogFiltersActive(catalogFilters);
 
   const loadHistory = useCallback(async () => {
     setHistory(await getSearchHistory());
@@ -465,7 +470,8 @@ function SearchScreenBody() {
   useFocusEffect(
     useCallback(() => {
       void loadHistory();
-    }, [loadHistory])
+      void prefetchCatalogFilters(queryClient);
+    }, [loadHistory, queryClient])
   );
 
   const clearSearch = useCallback(() => {
@@ -722,14 +728,10 @@ function SearchScreenBody() {
       />
 
       {filterActive ? (
-        <View className="flex-row flex-wrap items-center gap-2">
-          <ActiveFilterChip
-            label={activeFilter}
-            onClear={() => {
-              setActiveFilter(ALL_CARDS_FILTER);
-            }}
-          />
-        </View>
+        <CatalogActiveFilterChips
+          filters={catalogFilters}
+          onFiltersChange={applyCatalogFilters}
+        />
       ) : null}
 
       <CatalogActionBar
@@ -738,7 +740,7 @@ function SearchScreenBody() {
         onSortPress={() => {
           setSortSheetOpen(true);
         }}
-        activeFilter={activeFilter}
+        filters={catalogFilters}
         onFilterPress={() => {
           setFilterSheetOpen(true);
         }}
@@ -822,13 +824,13 @@ function SearchScreenBody() {
         </ScreenLayoutBody>
       )}
 
-      <FilterSheet
+      <CatalogFilterSheet
         visible={filterSheetOpen}
-        activeFilter={activeFilter}
+        filters={catalogFilters}
         onClose={() => {
           setFilterSheetOpen(false);
         }}
-        onFilterChange={setActiveFilter}
+        onFiltersChange={applyCatalogFilters}
       />
       <SortSheet
         visible={sortSheetOpen}
