@@ -137,6 +137,42 @@ export function catalogFilterSegmentActive(
   }
 }
 
+/** Short label for mobile accordion headers and quick-filter pills. */
+export function catalogFilterSegmentSummary(
+  segment: CatalogFilterSegment,
+  filters: CatalogFilters
+): string | undefined {
+  switch (segment) {
+    case 'collection':
+      if (filters.collection === 'owned') return 'Owned';
+      if (filters.collection === 'wishlist') return 'Wishlist';
+      return undefined;
+    case 'colors':
+      return filters.colors.length > 0 ? filters.colors.join(', ') : undefined;
+    case 'sets':
+      return filters.sets.length > 0 ? filters.sets.join(', ') : undefined;
+    case 'types':
+      return filters.types.length > 0 ? filters.types.join(', ') : undefined;
+    case 'supertypes':
+      return filters.supertypes.length > 0 ? filters.supertypes.join(', ') : undefined;
+    case 'variants':
+      return filters.variants.length > 0 ? filters.variants.join(', ') : undefined;
+    case 'rarities':
+      return filters.rarities.length > 0 ? filters.rarities.join(', ') : undefined;
+    case 'stats': {
+      const parts: string[] = [];
+      if (filters.energy !== undefined) parts.push(`E${filters.energy}`);
+      if (filters.power !== undefined) parts.push(`P${filters.power}`);
+      if (filters.might !== undefined) parts.push(`M${filters.might}`);
+      if (filters.excludeTokens) parts.push('No tokens');
+      if (filters.tokensOnly) parts.push('Tokens');
+      return parts.length > 0 ? parts.join(' · ') : undefined;
+    }
+    default:
+      return undefined;
+  }
+}
+
 function joinFilterValues(values: string[]): string | undefined {
   const normalized = values.map((value) => value.trim()).filter(Boolean);
   return normalized.length > 0 ? normalized.join(',') : undefined;

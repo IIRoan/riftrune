@@ -17,6 +17,7 @@ interface CatalogActionBarProps {
   onSortPress: () => void;
   filters: CatalogFilters;
   onFilterPress: () => void;
+  showFilterTrigger?: boolean;
   className?: string;
 }
 
@@ -27,6 +28,7 @@ export function CatalogActionBar({
   onSortPress,
   filters,
   onFilterPress,
+  showFilterTrigger = true,
   className,
 }: CatalogActionBarProps) {
   const isMobile = useMobileLayout();
@@ -63,21 +65,25 @@ export function CatalogActionBar({
             <View className={CATALOG_TOOLBAR_MOBILE_SLOT_CLASS}>
               <SortTrigger onPress={onSortPress} compact mobile />
             </View>
-            <View className={CATALOG_TOOLBAR_MOBILE_SLOT_CLASS}>
-              <CatalogFilterTrigger
-                filters={filters}
-                onPress={onFilterPress}
-                compact
-                mobile
-              />
-            </View>
+            {showFilterTrigger ? (
+              <View className={CATALOG_TOOLBAR_MOBILE_SLOT_CLASS}>
+                <CatalogFilterTrigger
+                  filters={filters}
+                  onPress={onFilterPress}
+                  compact
+                  mobile
+                />
+              </View>
+            ) : null}
           </>
         ) : (
           <>
             <ViewToggle view={view} onViewChange={onViewChange} />
             <View className="flex-row items-center gap-2">
               <SortTrigger label="Sort" onPress={onSortPress} />
-              <CatalogFilterTrigger filters={filters} onPress={onFilterPress} />
+              {showFilterTrigger ? (
+                <CatalogFilterTrigger filters={filters} onPress={onFilterPress} />
+              ) : null}
             </View>
           </>
         )}

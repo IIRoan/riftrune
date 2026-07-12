@@ -16,6 +16,7 @@ import { CardTile } from '@/components/cards/CardTile';
 import { CardDetailDrawer } from '@/components/catalog/CardDetailDrawer';
 import { CatalogDetailPanel } from '@/components/catalog/CatalogDetailPanel';
 import { CatalogActionBar } from '@/components/catalog/CatalogActionBar';
+import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
 import {
   CatalogActiveFilterChips,
   CatalogFilterSheet,
@@ -64,6 +65,7 @@ import {
   DETAIL_PANEL_WIDTH,
   SIDE_RAIL_WIDTH,
   useCatalogSplitLayout,
+  useMobileLayout,
 } from '@/hooks/useBreakpoint';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { prefetchCardDetail } from '@/lib/prefetchCardDetail';
@@ -122,16 +124,17 @@ function SearchScreenBody() {
     useScreenLayout();
   const [splitMainWidth, setSplitMainWidth] = useState<number | null>(null);
   const splitLayout = useCatalogSplitLayout();
+  const isMobile = useMobileLayout();
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(true);
   const [catalogFilters, setCatalogFilters] = useState<CatalogFilters>(
     DEFAULT_CATALOG_FILTERS
   );
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const applyCatalogFilters = useCallback((next: CatalogFilters) => {
     setCatalogFilters(sanitizeCatalogFilters(next));
   }, []);
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(DEFAULT_CATALOG_SORT);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
@@ -727,7 +730,21 @@ function SearchScreenBody() {
         }}
       />
 
-      {filterActive ? (
+      {isMobile && filterActive ? (
+        <CatalogActiveFilterChips
+          filters={catalogFilters}
+          onFiltersChange={applyCatalogFilters}
+        />
+      ) : null}
+
+      {!isMobile ? (
+        <CatalogDesktopFilterBar
+          filters={catalogFilters}
+          onFiltersChange={applyCatalogFilters}
+        />
+      ) : null}
+
+      {!isMobile && filterActive ? (
         <CatalogActiveFilterChips
           filters={catalogFilters}
           onFiltersChange={applyCatalogFilters}
@@ -741,9 +758,8 @@ function SearchScreenBody() {
           setSortSheetOpen(true);
         }}
         filters={catalogFilters}
-        onFilterPress={() => {
-          setFilterSheetOpen(true);
-        }}
+        onFilterPress={() => setFilterSheetOpen(true)}
+        showFilterTrigger={isMobile}
       />
     </View>
   );
@@ -824,14 +840,14 @@ function SearchScreenBody() {
         </ScreenLayoutBody>
       )}
 
-      <CatalogFilterSheet
-        visible={filterSheetOpen}
-        filters={catalogFilters}
-        onClose={() => {
-          setFilterSheetOpen(false);
-        }}
-        onFiltersChange={applyCatalogFilters}
-      />
+      {isMobile ? (
+        <CatalogFilterSheet
+          visible={filterSheetOpen}
+          filters={catalogFilters}
+          onClose={() => setFilterSheetOpen(false)}
+          onFiltersChange={applyCatalogFilters}
+        />
+      ) : null}
       <SortSheet
         visible={sortSheetOpen}
         activeSort={catalogSort}
