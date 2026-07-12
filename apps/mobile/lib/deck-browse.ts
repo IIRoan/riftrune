@@ -87,3 +87,28 @@ export function deckBrowseFilterSegmentActive(
       return false;
   }
 }
+
+export function deckBrowseFilterSegmentSummary(
+  segment: DeckBrowseFilterSegment,
+  filters: DeckBrowseFilters
+): string | undefined {
+  switch (segment) {
+    case 'legends':
+      return filters.legend;
+    case 'sets':
+      return filters.sets.length > 0 ? filters.sets.join(', ') : undefined;
+    case 'legality':
+      if (filters.isLegal === true) return 'Legal only';
+      if (filters.isLegal === false) return 'Not legal';
+      return undefined;
+    case 'content': {
+      const parts: string[] = [];
+      if (filters.hasGuide) parts.push('Guide');
+      if (filters.hasVideo) parts.push('Video');
+      if (filters.hasMatchups) parts.push('Matchups');
+      return parts.length > 0 ? parts.join(', ') : undefined;
+    }
+    default:
+      return undefined;
+  }
+}

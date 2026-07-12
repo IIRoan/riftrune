@@ -5,6 +5,7 @@ import {
   DeckBrowseFilterSheet,
   DeckBrowseFilterTrigger,
 } from '@/components/deck/DeckBrowseFilterSheet';
+import { DeckBrowseDesktopFilterBar } from '@/components/deck/DeckBrowseDesktopFilterBar';
 import {
   DeckBrowseSortSheet,
   DeckBrowseSortTrigger,
@@ -17,10 +18,12 @@ import {
   type DeckBrowseFilters,
   type DeckBrowseSort,
 } from '@/constants/deckBrowse';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useImportedDecksBrowse } from '@/hooks/useDecks';
 
 export default function BrowseDecksScreen() {
+  const isMobile = useMobileLayout();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<DeckBrowseSort>(DEFAULT_DECK_BROWSE_SORT);
   const [filters, setFilters] = useState<DeckBrowseFilters>(DEFAULT_DECK_BROWSE_FILTERS);
@@ -65,14 +68,25 @@ export default function BrowseDecksScreen() {
         }
         browseToolbar={
           <View className="gap-2.5">
-            <View className="flex-row items-stretch gap-2">
-              <View className="min-w-0 flex-1">
-                <DeckBrowseSortTrigger activeSort={sort} onPress={() => setSortOpen(true)} />
+            {isMobile ? (
+              <View className="flex-row items-stretch gap-2">
+                <View className="min-w-0 flex-1">
+                  <DeckBrowseSortTrigger activeSort={sort} onPress={() => setSortOpen(true)} />
+                </View>
+                <View className="min-w-0 flex-1">
+                  <DeckBrowseFilterTrigger filters={filters} onPress={() => setFilterOpen(true)} />
+                </View>
               </View>
-              <View className="min-w-0 flex-1">
-                <DeckBrowseFilterTrigger filters={filters} onPress={() => setFilterOpen(true)} />
+            ) : (
+              <View className="flex-row items-start gap-3">
+                <View className="min-w-0 flex-1">
+                  <DeckBrowseDesktopFilterBar filters={filters} onFiltersChange={setFilters} />
+                </View>
+                <View className="shrink-0">
+                  <DeckBrowseSortTrigger activeSort={sort} onPress={() => setSortOpen(true)} />
+                </View>
               </View>
-            </View>
+            )}
             <DeckBrowseActiveFilterChips filters={filters} onFiltersChange={setFilters} />
           </View>
         }
@@ -89,12 +103,14 @@ export default function BrowseDecksScreen() {
         onClose={() => setSortOpen(false)}
         onSortChange={setSort}
       />
-      <DeckBrowseFilterSheet
-        visible={filterOpen}
-        filters={filters}
-        onClose={() => setFilterOpen(false)}
-        onFiltersChange={setFilters}
-      />
+      {isMobile ? (
+        <DeckBrowseFilterSheet
+          visible={filterOpen}
+          filters={filters}
+          onClose={() => setFilterOpen(false)}
+          onFiltersChange={setFilters}
+        />
+      ) : null}
     </>
   );
 }
