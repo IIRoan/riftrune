@@ -5,7 +5,6 @@ import {
   BreakdownSection,
   DashboardStat,
   DashboardStatGrid,
-  mergeSetStats,
   computeTypeStats,
   SetCardGrid,
   rarityIconFor,
@@ -23,11 +22,13 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { useCollection } from '@/hooks/useCollection';
 import { useCollectionInsights } from '@/hooks/useCollectionInsights';
 import { useFiltersData } from '@/hooks/useFiltersData';
+import { getSetCatalogEntry } from '@/constants/setCatalog';
 import {
   catalogCardTotalFromTypes,
   computeRarityBreakdown,
   countUniqueCardNames,
   countUniqueVariants,
+  mergeSetStats,
   sumCollectionCopies,
 } from '@/utils/collectionStats';
 
@@ -81,7 +82,7 @@ function CollectionScreenBody() {
         : '—';
 
   const mergedSets = useMemo(
-    () => mergeSetStats(collection, apiSets),
+    () => mergeSetStats(collection, apiSets, getSetCatalogEntry),
     [collection, apiSets]
   );
 

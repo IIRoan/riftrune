@@ -6,6 +6,7 @@ import {
   computeTypeBreakdown,
   countUniqueCardNames,
   countUniqueVariants,
+  mergeSetStats,
   sumCollectionCopies,
 } from './collectionStats';
 
@@ -97,5 +98,42 @@ describe('collectionStats', () => {
         { name: 'Card', count: 99 },
       ])
     ).toBe(693);
+  });
+
+  it('lists sets from the API snapshot, not a hardcoded catalog', () => {
+    const collection = [
+      entry({ variantNumber: 'OGN-001', name: 'Card A', setCode: 'OGN', quantity: 1 }),
+      entry({ variantNumber: 'VEN-001', name: 'New Card', setCode: 'VEN', quantity: 1 }),
+    ];
+
+    const merged = mergeSetStats(
+      collection,
+      [
+        { code: 'VEN', name: 'Vendetta', count: 30 },
+        { code: 'OGN', name: 'Origins', count: 354 },
+      ],
+      (code) =>
+        code === 'OGN'
+          ? { name: 'Origins', released: 'Oct 2025' }
+          : undefined
+    );
+
+    expect(merged.map((set) => set.code)).toEqual(['VEN', 'OGN']);
+    expect(merged[0]).toMatchObject({
+      code: 'VEN',
+      name: 'Vendetta',
+      total: 30,
+      owned: 1,
+    });
+  });
+
+  it('includes owned sets missing from the API snapshot', () => {
+    const merged = mergeSetStats(
+      [entry({ variantNumber: 'VEN-001', name: 'New Card', setCode: 'VEN', quantity: 2 })],
+      [{ code: 'OGN', name: 'Origins', count: 354 }]
+    );
+
+    expect(merged.map((set) => set.code)).toEqual(['OGN', 'VEN']);
+    expect(merged[1]).toMatchObject({ code: 'VEN', name: 'VEN', owned: 1, total: 1 });
   });
 });

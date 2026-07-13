@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { DEFAULT_DECK_BROWSE_FILTERS } from '@/constants/deckBrowse';
 import {
   deckBrowseFilterSegmentActive,
+  deckBrowseFilterSegmentSummary,
   deckBrowseSummaryLine,
   deckHasBannedCards,
   formatDeckRelativeTime,
@@ -138,5 +139,22 @@ describe('deckBrowseFilterSegmentActive', () => {
         hasVideo: true,
       })
     ).toBe(true);
+  });
+});
+
+describe('deckBrowseFilterSegmentSummary', () => {
+  test('uses set names in the sets segment summary', () => {
+    const lookup = new Map([
+      ['VEN', 'Vendetta'],
+      ['OGN', 'Origins'],
+    ]);
+
+    expect(
+      deckBrowseFilterSegmentSummary(
+        'sets',
+        { ...DEFAULT_DECK_BROWSE_FILTERS, sets: ['VEN', 'OGN'] },
+        lookup
+      )
+    ).toBe('Vendetta, Origins');
   });
 });

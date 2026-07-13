@@ -8,11 +8,9 @@ import {
 import { FilterToggleRow } from '@/components/filters/FilterPrimitives';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
-import {
-  DECK_BROWSE_SET_OPTIONS,
-  type DeckBrowseFilters,
-} from '@/constants/deckBrowse';
+import { type DeckBrowseFilters } from '@/constants/deckBrowse';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useDeckBrowseFilterOptions } from '@/hooks/useDeckBrowseFilterOptions';
 import { type DeckBrowseFilterSegment } from '@/lib/deck-browse';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
@@ -39,6 +37,7 @@ export function DeckBrowseFilterSegmentPanel({
   const [legendQuery, setLegendQuery] = useState('');
   const debouncedLegendQuery = useDebounce(legendQuery.trim(), 300);
   const isMobile = presentation === 'mobile';
+  const { isLoading: setOptionsLoading, setOptions } = useDeckBrowseFilterOptions();
 
   const legendsQuery = useQuery({
     queryKey: cardQueryKeys.search(debouncedLegendQuery || 'type:legend', 50, 'name', 'asc'),
@@ -137,10 +136,24 @@ export function DeckBrowseFilterSegmentPanel({
         </View>
       );
     case 'sets':
+      if (setOptionsLoading) {
+        return (
+          <View className="items-center py-8">
+            <ActivityIndicator />
+          </View>
+        );
+      }
+      if (setOptions.length === 0) {
+        return (
+          <Text className="py-6 text-center text-sm text-muted-foreground">
+            No set filters available.
+          </Text>
+        );
+      }
       if (isMobile) {
         return (
           <FilterChipGrid>
-            {DECK_BROWSE_SET_OPTIONS.map((set) => (
+            {setOptions.map((set) => (
               <FilterOptionChip
                 key={set.code}
                 label={set.code}
@@ -154,11 +167,11 @@ export function DeckBrowseFilterSegmentPanel({
       }
       return (
         <View className="gap-0.5">
-          {DECK_BROWSE_SET_OPTIONS.map((set) => (
+          {setOptions.map((set) => (
             <FilterToggleRow
               key={set.code}
               label={set.name}
-              subtitle={set.code}
+              subtitle={`${set.code} · ${set.count.toLocaleString()} printings`}
               active={filters.sets.includes(set.code)}
               onPress={() => toggleSet(set.code)}
               compact={compact}
