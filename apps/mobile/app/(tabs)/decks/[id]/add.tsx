@@ -1,5 +1,6 @@
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckAddSectionStatus } from '@/components/deck/DeckAddSectionStatus';
+import { DeckAddScreenHeader } from '@/components/deck/DeckAddScreenHeader';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { memo, useCallback, useEffect, useState } from 'react';
 import {
@@ -327,24 +328,14 @@ function DeckAddScreenBody({
 
   return (
     <View className="flex-1 gap-3">
-      <View className="flex-row items-center gap-2">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="size-9 items-center justify-center rounded-lg active:bg-card-panel"
-          onPress={() => void handleBack()}
-        >
-          <ThemedIonicon name="chevron-back" size={22} color="foreground" />
-        </Pressable>
-        <View className="min-w-0 flex-1">
-          <SearchInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={catalog.sectionMeta.placeholder}
-            autoFocus
-          />
-        </View>
-      </View>
+      <DeckAddScreenHeader deck={deck} section={activeSection} onBack={() => void handleBack()} />
+
+      <SearchInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder={catalog.sectionMeta.placeholder}
+        autoFocus
+      />
 
       {catalog.sectionMeta.contextLine ? (
         <Text className="text-[12px] text-muted-foreground">{catalog.sectionMeta.contextLine}</Text>

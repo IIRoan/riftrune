@@ -140,17 +140,6 @@ export function CatalogFilterSegmentPanel({
             }
             compact={compact}
           />
-          <FilterToggleRow
-            label="Wishlist"
-            subtitle="Cards you do not own yet"
-            active={filters.collection === 'wishlist'}
-            onPress={() =>
-              update({
-                collection: filters.collection === 'wishlist' ? 'all' : 'wishlist',
-              })
-            }
-            compact={compact}
-          />
         </View>
       );
 

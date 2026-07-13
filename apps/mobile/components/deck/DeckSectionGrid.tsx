@@ -119,6 +119,7 @@ export function DeckSectionGrid({
         target={progress.target}
         hint={progress.hint}
         readOnly={readOnly}
+        onAdd={readOnly ? undefined : onAdd}
       />
 
       <View>

@@ -94,7 +94,7 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Back"
-              className="size-9 items-center justify-center rounded-lg active:bg-card-panel"
+              className="size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
               onPress={() => {
                 hapticPress();
                 onBack();

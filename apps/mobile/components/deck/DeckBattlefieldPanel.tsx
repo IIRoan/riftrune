@@ -73,6 +73,7 @@ export function DeckBattlefieldPanel({
         target={progress.target}
         hint={battlefieldHint}
         readOnly={readOnly}
+        onAdd={readOnly ? undefined : onAdd}
       />
       {!readOnly ? <BattlefieldProgress count={count} /> : null}
 

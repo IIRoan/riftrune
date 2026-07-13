@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   DeckBattlefieldRow,
@@ -11,12 +11,17 @@ import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
 import { DeckValidationBanner } from '@/components/deck/DeckValidationBanner';
 import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { TextInput } from '@/components/ui/text-input';
+import {
+  DeckBuilderActions,
+  DeckBuilderSection,
+  DeckBuilderToolbar,
+} from '@/components/deck/DeckBuilderToolbar';
+import { DeckBuilderStatusStrip } from '@/components/deck/DeckBuilderStatusStrip';
+import { Button, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextareaInput } from '@/components/ui/textarea-input';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useCollection } from '@/hooks/useCollection';
 import { useCollectionByCardName } from '@/hooks/useDeckCardResolver';
 import { useDeckCardImages } from '@/hooks/useDeckCardImages';
@@ -25,6 +30,7 @@ import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import {
   changeDeckCardQty,
   deckVariantNumbersKey,
+  getSectionCount,
   removeDeckCard,
 } from '@/lib/deck-card';
 import { adjustRuneCountForDomain, seedDefaultRuneSplit } from '@/lib/deck-runes';
@@ -64,12 +70,16 @@ export function DeckBuilderCanvas({
 }: DeckBuilderCanvasProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const isMobile = useMobileLayout();
   const { paddingBottomInline, contentWidth } = useScreenLayout();
+  const [validationExpanded, setValidationExpanded] = useState(false);
+
+  const builderWidth = isMobile ? contentWidth : Math.max(320, (contentWidth - 24) / 2);
   const { tileWidth: sectionTileWidth, gap, numColumns: gridColumns } = useResponsiveColumns(
     'grid',
-    { measuredWidth: contentWidth }
+    { measuredWidth: builderWidth }
   );
-  const identityTileWidth = sectionTileWidth;
+  const identityTileWidth = isMobile ? sectionTileWidth : Math.min(sectionTileWidth, 132);
 
   const { data: collection = [] } = useCollection();
   const collectionByName = useCollectionByCardName(collection);
@@ -113,6 +123,91 @@ export function DeckBuilderCanvas({
     [deck, onPersist, readOnly, runeCardsByDomain]
   );
 
+  const handleBack = useCallback(() => {
+    hapticPress();
+    onBack();
+  }, [onBack]);
+
+  const sideboardFull = getSectionCount(deck, 'sideboard') >= 8;
+
+  const identityColumn = (
+    <View className="gap-4">
+      <DeckBuilderSection>
+        <DeckIdentityHeader
+          deck={deck}
+          readOnly={readOnly}
+          legendTileWidth={identityTileWidth}
+          imageByVariant={imageByVariant ?? new Map()}
+          collectionByName={collectionByName}
+          runeCardsByDomain={runeCardsByDomain}
+          onChangeLegend={onChangeLegend}
+          onAddChampion={() => openAdd('champion')}
+          onRemoveChampion={() => onPersist(removeDeckCard(deck, 'champion'))}
+          onAdjustRune={handleAdjustRune}
+        />
+      </DeckBuilderSection>
+
+      <DeckBuilderSection>
+        <DeckBattlefieldRow
+          deck={deck}
+          readOnly={readOnly}
+          tileWidth={sectionTileWidth}
+          gap={gap}
+          imageByVariant={imageByVariant ?? new Map()}
+          collectionByName={collectionByName}
+          onAdd={() => openAdd('battlefields')}
+          onRemove={(name) => onPersist(removeDeckCard(deck, 'battlefields', name))}
+        />
+      </DeckBuilderSection>
+    </View>
+  );
+
+  const deckColumn = (
+    <View className="gap-4">
+      <DeckBuilderSection>
+        <DeckSectionGrid
+          deck={deck}
+          section="mainDeck"
+          readOnly={readOnly}
+          title="Main deck"
+          tileWidth={sectionTileWidth}
+          gap={gap}
+          gridColumns={gridColumns}
+          imageByVariant={imageByVariant ?? new Map()}
+          collectionByName={collectionByName}
+          onAdd={() => openAdd('mainDeck')}
+          onMinus={(name) =>
+            onPersist((prev) => changeDeckCardQty(prev, 'mainDeck', name, -1), { immediate: true })
+          }
+          onPlus={(name) =>
+            onPersist((prev) => changeDeckCardQty(prev, 'mainDeck', name, 1), { immediate: true })
+          }
+          onRemove={(name) =>
+            onPersist((prev) => removeDeckCard(prev, 'mainDeck', name), { immediate: true })
+          }
+        />
+      </DeckBuilderSection>
+
+      <DeckBuilderSection>
+        <DeckSectionGrid
+          deck={deck}
+          section="sideboard"
+          readOnly={readOnly}
+          title="Sideboard"
+          tileWidth={sectionTileWidth}
+          gap={gap}
+          gridColumns={gridColumns}
+          imageByVariant={imageByVariant ?? new Map()}
+          collectionByName={collectionByName}
+          onAdd={() => openAdd('sideboard')}
+          onMinus={(name) => onPersist(changeDeckCardQty(deck, 'sideboard', name, -1))}
+          onPlus={(name) => onPersist(changeDeckCardQty(deck, 'sideboard', name, 1))}
+          onRemove={(name) => onPersist(removeDeckCard(deck, 'sideboard', name))}
+        />
+      </DeckBuilderSection>
+    </View>
+  );
+
   return (
     <>
       <ScrollView
@@ -121,9 +216,9 @@ export function DeckBuilderCanvas({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="gap-5">
+        <View className="gap-4">
           {readOnly ? (
-            <View className="gap-2 rounded-xl border border-archive-soft-line bg-card-panel px-3 py-2.5">
+            <View className="gap-2 rounded-xl border border-border bg-card-panel px-4 py-3">
               <Text className="text-sm text-muted-foreground">
                 Imported from Piltover Archive — view only
               </Text>
@@ -140,155 +235,75 @@ export function DeckBuilderCanvas({
             </View>
           ) : null}
 
-          <View className="gap-3">
-            <View className="flex-row items-center gap-2">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Back to decks"
-                className="size-9 items-center justify-center rounded-lg active:bg-card-panel"
-                onPress={() => {
-                  hapticPress();
-                  onBack();
-                }}
-              >
-                <ThemedIonicon name="chevron-back" size={22} color="foreground" />
-              </Pressable>
-              <View className="min-w-0 flex-1">
-                {readOnly ? (
-                  <Text className="text-lg font-semibold text-foreground">{deck.name}</Text>
-                ) : (
-                  <TextInput
-                    value={deck.name}
-                    onChangeText={(name) =>
-                      onPersist({ ...deck, name, updatedAt: Date.now() })
-                    }
-                    placeholder="Deck name"
-                  />
-                )}
-              </View>
+          <DeckBuilderToolbar
+            deckName={deck.name}
+            readOnly={readOnly}
+            validation={validation}
+            onBack={handleBack}
+            onNameChange={
+              readOnly
+                ? undefined
+                : (name) => onPersist({ ...deck, name, updatedAt: Date.now() })
+            }
+            onToggleValidation={() => setValidationExpanded((v) => !v)}
+            validationExpanded={validationExpanded}
+          />
+
+          {readOnly ? (
+            <DeckViewInfoPanel deck={deck} />
+          ) : (
+            <>
+              <TextareaInput
+                value={deck.description}
+                onChangeText={(description) =>
+                  onPersist({ ...deck, description, updatedAt: Date.now() })
+                }
+                placeholder="Deck description (optional)"
+              />
+              {deckHasBannedCards(deck) ? (
+                <View className="self-start">
+                  <DeckLegalityBadge isLegal={false} />
+                </View>
+              ) : null}
+              <DeckBuilderActions
+                addToSideboard={deck.addToSideboard}
+                sideboardFull={sideboardFull}
+                onImport={() => onIoModeChange('import')}
+                onExport={() => onIoModeChange('export')}
+                onToggleSideboard={() =>
+                  onPersist({
+                    ...deck,
+                    addToSideboard: !deck.addToSideboard,
+                    updatedAt: Date.now(),
+                  })
+                }
+              />
+            </>
+          )}
+
+          {validationExpanded && validation.length > 0 ? (
+            <DeckValidationBanner messages={validation} listOnly />
+          ) : null}
+
+          <DeckBuilderStatusStrip
+            deck={deck}
+            readOnly={readOnly}
+            onSectionPress={(section) => openAdd(section)}
+          />
+
+          {isMobile ? (
+            <View className="gap-4">
+              {identityColumn}
+              {deckColumn}
             </View>
-
-            {readOnly ? (
-              <DeckViewInfoPanel deck={deck} />
-            ) : (
-              <>
-                <TextareaInput
-                  value={deck.description}
-                  onChangeText={(description) =>
-                    onPersist({ ...deck, description, updatedAt: Date.now() })
-                  }
-                  placeholder="Deck description (optional)"
-                />
-                {deckHasBannedCards(deck) ? (
-                  <View className="self-start">
-                    <DeckLegalityBadge isLegal={false} />
-                  </View>
-                ) : null}
-              </>
-            )}
-
-            {readOnly ? null : (
-              <View className="flex-row flex-wrap gap-2">
-                <Button variant="outline" size="sm" onPress={() => onIoModeChange('import')}>
-                  <ButtonText>Import</ButtonText>
-                </Button>
-                <Button variant="outline" size="sm" onPress={() => onIoModeChange('export')}>
-                  <ButtonText>Export</ButtonText>
-                </Button>
-                <Button
-                  variant={deck.addToSideboard ? 'default' : 'outline'}
-                  size="sm"
-                  onPress={() =>
-                    onPersist({
-                      ...deck,
-                      addToSideboard: !deck.addToSideboard,
-                      updatedAt: Date.now(),
-                    })
-                  }
-                >
-                  <ButtonIcon>
-                    <ThemedIonicon
-                      name={deck.addToSideboard ? 'swap-horizontal' : 'albums-outline'}
-                      size={14}
-                      color={deck.addToSideboard ? 'primary-foreground' : 'foreground'}
-                    />
-                  </ButtonIcon>
-                  <ButtonText>
-                    {deck.addToSideboard ? 'Adding to sideboard' : 'Add to sideboard'}
-                  </ButtonText>
-                </Button>
+          ) : (
+            <View className="flex-row items-start gap-4">
+              <View className="min-w-0 flex-1" style={{ maxWidth: 380 }}>
+                {identityColumn}
               </View>
-            )}
-          </View>
-
-          <DeckValidationBanner messages={validation} />
-
-          <DeckIdentityHeader
-            deck={deck}
-            readOnly={readOnly}
-            legendTileWidth={identityTileWidth}
-            championTileWidth={identityTileWidth}
-            imageByVariant={imageByVariant ?? new Map()}
-            collectionByName={collectionByName}
-            runeCardsByDomain={runeCardsByDomain}
-            onChangeLegend={onChangeLegend}
-            onAddChampion={() => openAdd('champion')}
-            onRemoveChampion={() => onPersist(removeDeckCard(deck, 'champion'))}
-            onAdjustRune={handleAdjustRune}
-          />
-
-          <View className="h-px bg-archive-soft-line" />
-
-          <DeckBattlefieldRow
-            deck={deck}
-            readOnly={readOnly}
-            tileWidth={sectionTileWidth}
-            gap={gap}
-            imageByVariant={imageByVariant ?? new Map()}
-            collectionByName={collectionByName}
-            onAdd={() => openAdd('battlefields')}
-            onRemove={(name) => onPersist(removeDeckCard(deck, 'battlefields', name))}
-          />
-
-          <View className="h-px bg-archive-soft-line" />
-
-          <DeckSectionGrid
-            deck={deck}
-            section="mainDeck"
-            readOnly={readOnly}
-            title="Main deck"
-            tileWidth={sectionTileWidth}
-            gap={gap}
-            gridColumns={gridColumns}
-            imageByVariant={imageByVariant ?? new Map()}
-            collectionByName={collectionByName}
-            onAdd={() => openAdd('mainDeck')}
-            onMinus={(name) =>
-              onPersist((prev) => changeDeckCardQty(prev, 'mainDeck', name, -1), { immediate: true })
-            }
-            onPlus={(name) =>
-              onPersist((prev) => changeDeckCardQty(prev, 'mainDeck', name, 1), { immediate: true })
-            }
-            onRemove={(name) =>
-              onPersist((prev) => removeDeckCard(prev, 'mainDeck', name), { immediate: true })
-            }
-          />
-
-          <DeckSectionGrid
-            deck={deck}
-            section="sideboard"
-            readOnly={readOnly}
-            title="Sideboard"
-            tileWidth={sectionTileWidth}
-            gap={gap}
-            gridColumns={gridColumns}
-            imageByVariant={imageByVariant ?? new Map()}
-            collectionByName={collectionByName}
-            onAdd={() => openAdd('sideboard')}
-            onMinus={(name) => onPersist(changeDeckCardQty(deck, 'sideboard', name, -1))}
-            onPlus={(name) => onPersist(changeDeckCardQty(deck, 'sideboard', name, 1))}
-            onRemove={(name) => onPersist(removeDeckCard(deck, 'sideboard', name))}
-          />
+              <View className="min-w-0 flex-1">{deckColumn}</View>
+            </View>
+          )}
         </View>
       </ScrollView>
 

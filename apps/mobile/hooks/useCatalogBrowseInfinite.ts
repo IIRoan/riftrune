@@ -5,6 +5,7 @@ import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
 import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
 import {
+  cardOwnedQuantity,
   catalogFiltersToQuery,
   DEFAULT_CATALOG_FILTERS,
   matchesCatalogFilters,
@@ -29,12 +30,23 @@ export function useCatalogBrowseInfinite(
   const indexReady = catalogItems.length > 0;
   const [visibleCount, setVisibleCount] = useState(pageSize);
 
-  const allFeatured = useMemo(() => {
+  const allBrowseItems = useMemo(() => {
     if (!indexReady) return null;
-    const featured = featuredCatalogItems(catalogItems, catalogItems.length);
-    return featured.filter((card) =>
+
+    const sourceItems =
+      filters.collection === 'owned'
+        ? catalogItems.filter((card) => cardOwnedQuantity(card, collectionByVariant) > 0)
+        : featuredCatalogItems(catalogItems, catalogItems.length);
+
+    const filtered = sourceItems.filter((card) =>
       matchesCatalogFilters(card, filters, collectionByVariant)
     );
+
+    if (filters.collection === 'owned') {
+      return [...filtered].sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    return filtered;
   }, [indexReady, catalogItems, filters, collectionByVariant]);
 
   useEffect(() => {
@@ -85,12 +97,12 @@ export function useCatalogBrowseInfinite(
   );
 
   const localItems = useMemo(
-    () => allFeatured?.slice(0, visibleCount) ?? [],
-    [allFeatured, visibleCount]
+    () => allBrowseItems?.slice(0, visibleCount) ?? [],
+    [allBrowseItems, visibleCount]
   );
 
   const items = indexReady ? localItems : apiItems;
-  const totalLocal = allFeatured?.length ?? 0;
+  const totalLocal = allBrowseItems?.length ?? 0;
   const hasNextPage = indexReady
     ? localItems.length < totalLocal
     : (listQuery.hasNextPage ?? false);

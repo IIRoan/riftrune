@@ -31,6 +31,12 @@ export function ownershipRecordFromCollection(
   return record;
 }
 
+export function ownershipMapFromCollection(
+  entries: readonly CollectionEntry[]
+): CollectionOwnershipMap {
+  return ownershipMapFromRecord(ownershipRecordFromCollection(entries));
+}
+
 export function ownershipMapFromRecord(
   record: Readonly<Record<string, number>>
 ): CollectionOwnershipMap {

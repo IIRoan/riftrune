@@ -49,7 +49,7 @@ export function CatalogDesktopFilterBar({
             onOpenChange={(open) => handleOpenChange(segment.id, open)}
             portalName={`catalog-filter-${segment.id}`}
             contentClassName={segment.id === 'stats' ? 'w-[320px]' : undefined}
-            maxHeight={segment.id === 'stats' ? 400 : 320}
+            maxHeight={segment.id === 'stats' ? 480 : 420}
           >
             <CatalogFilterSegmentPanel
               segment={segment.id}

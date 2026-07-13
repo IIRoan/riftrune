@@ -1,5 +1,6 @@
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { cn } from '@/lib/utils';
 
 interface DeckSectionHeaderProps {
@@ -8,6 +9,7 @@ interface DeckSectionHeaderProps {
   target: number;
   hint?: string;
   readOnly?: boolean;
+  onAdd?: () => void;
   className?: string;
 }
 
@@ -17,6 +19,7 @@ export function DeckSectionHeader({
   target,
   hint,
   readOnly = false,
+  onAdd,
   className,
 }: DeckSectionHeaderProps) {
   if (readOnly) {
@@ -45,9 +48,22 @@ export function DeckSectionHeader({
           </Text>
           <Text className="text-sm font-semibold text-foreground">{title}</Text>
         </View>
-        <Text className="shrink-0 font-mono text-[11px] text-muted-foreground">
-          {current}/{target}
-        </Text>
+        <View className="shrink-0 flex-row items-center gap-2">
+          <Text className="font-mono text-[11px] text-muted-foreground">
+            {current}/{target}
+          </Text>
+          {onAdd ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Add cards to ${title}`}
+              className="h-8 flex-row items-center gap-1 rounded-lg border border-border bg-card-panel px-2.5 active:opacity-90"
+              onPress={onAdd}
+            >
+              <ThemedIonicon name="add" size={14} color="primary" />
+              <Text className="text-[12px] font-semibold text-primary">Add</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <View className="h-1 overflow-hidden rounded-full bg-border/80">
