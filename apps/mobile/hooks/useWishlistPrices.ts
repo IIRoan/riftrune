@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import type { PriceStats, PriceTrend } from '@riftbound/contracts';
-import { formatTrendLabel } from '@riftbound/contracts';
+import {
+  CARDMARKET_PRICE_SCOPE_NOTE,
+  cardmarketPriceScopeLabel,
+  formatTrendLabel,
+} from '@riftbound/contracts';
 import { getWishlist, type WishlistEntry } from '@/services/wishlistService';
 import { api } from '@/src/api/client';
 import { wishlistQueryKeys } from '@/src/api/queryKeys';
@@ -76,10 +80,9 @@ function toWishlistPriceItem(
     trendDirection: stats?.trend ?? 'flat',
     belowTarget: stats?.belowTarget ?? false,
     targetPriceCents: stats?.targetPriceCents ?? entry.targetPriceCents ?? null,
-    priceFilterLabel: stats?.priceFilterLabel ?? 'Cardmarket price guide · EUR',
-    priceSourceNote:
-      stats?.priceSourceNote ??
-      'Trend = Cardmarket price guide. Cheapest listing = any language/condition.',
+    priceFilterLabel:
+      stats?.priceFilterLabel ?? cardmarketPriceScopeLabel(false),
+    priceSourceNote: stats?.priceSourceNote ?? CARDMARKET_PRICE_SCOPE_NOTE,
     dataPointCount: points.length,
     points,
   };

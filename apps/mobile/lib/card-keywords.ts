@@ -111,13 +111,3 @@ export function getKeywordInkClassName(keywordBase: string): string {
   }
   return 'text-white';
 }
-
-export function getKeywordTextClassName(keywordBase: string): string {
-  const baseClasses =
-    'px-1.5 py-px font-extrabold uppercase italic tracking-wide';
-  return `${getKeywordBadgeClassName(keywordBase)} ${getKeywordInkClassName(keywordBase)} ${baseClasses}`;
-}
-
-export function isWeaponmasterKeyword(keywordBase: string): boolean {
-  return keywordBase.toUpperCase() === 'WEAPONMASTER';
-}

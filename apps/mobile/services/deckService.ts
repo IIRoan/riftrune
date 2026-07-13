@@ -1,5 +1,5 @@
 import type { DecksListQuery } from '@riftbound/contracts';
-import { enrichDeckWithBanDates } from '@/lib/enrich-deck-ban-dates';
+import { refreshDeckLegality } from '@/lib/enrich-deck-ban-dates';
 import { createEmptyDeck, deserializeDeck, serializeDeck } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
 import { logActionFailure } from '@/lib/logger';
@@ -36,7 +36,7 @@ export async function getDeck(id: string): Promise<DeckState | null> {
   const remote = await fetchRemoteDeck(id);
   if (!remote) return null;
   const deck = deserializeDeck(remote);
-  return enrichDeckWithBanDates(deck);
+  return refreshDeckLegality(deck);
 }
 
 export async function createDeck(name = 'New Deck', description = ''): Promise<DeckState> {

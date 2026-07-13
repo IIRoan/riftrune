@@ -1,9 +1,7 @@
 import { describe, expect, test } from 'bun:test';
+import { computeTrend, formatTrendLabel } from '@riftbound/contracts';
 import {
   computePriceStats,
-  computeTrend,
-  formatTrendLabel,
-  listingLowPrice,
   trendPrice,
 } from '../../src/lib/price-stats.js';
 
@@ -36,18 +34,6 @@ describe('price-stats', () => {
         highPrice: null,
       })
     ).toBeNull();
-  });
-
-  test('listingLowPrice exposes unfiltered cheapest listing', () => {
-    expect(
-      listingLowPrice({
-        priceDate: '2026-01-01',
-        marketPrice: 0.29,
-        lowPrice: 0.02,
-        midPrice: null,
-        highPrice: null,
-      })
-    ).toBe(0.02);
   });
 
   test('computeTrend uses a 5% threshold', () => {

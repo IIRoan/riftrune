@@ -3,24 +3,23 @@ import { api } from '@/src/api/client';
 import type { CatalogIndexCacheKey } from '@/services/catalogIndexService';
 import { getInMemoryCatalogIndex, readPersistedCatalogIndex } from '@/services/catalogIndexService';
 
-export const CATALOG_META_QUERY_KEY = ['catalog', 'meta'] as const;
-
-export type CatalogMeta = {
+type CatalogMeta = {
   cachedAt: string;
   catalogHash: string;
   pricesCatalogHash: string;
   variantCount: number;
 };
 
+const CATALOG_META_QUERY_KEY = ['catalog', 'meta'] as const;
 const CATALOG_META_STALE_MS = 5 * 60_000;
 
-export function getCachedCatalogMeta(
+function getCachedCatalogMeta(
   queryClient: Pick<QueryClient, 'getQueryData'>
 ): CatalogMeta | undefined {
   return queryClient.getQueryData<CatalogMeta>(CATALOG_META_QUERY_KEY);
 }
 
-export async function fetchCatalogMeta(): Promise<CatalogMeta> {
+async function fetchCatalogMeta(): Promise<CatalogMeta> {
   const res = await api.getFilters();
   return res.meta;
 }

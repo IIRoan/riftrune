@@ -31,8 +31,6 @@ export function formatCardPrice(
   return amount != null ? `€${amount.toFixed(2)}` : null;
 }
 
-export { getVariantMarketPriceDisplays, type MarketPriceDisplay } from '@/utils/variants';
-
 export function formatStat(value: number): string {
   return value > 0 ? String(value) : '—';
 }

@@ -58,8 +58,6 @@ export const StoredDeckPayload = z.object({
 
 export const DeckSource = z.enum(['owned', 'imported']);
 
-export const DeckListSource = z.enum(['owned', 'imported', 'all']);
-
 export const DeckListItem = StoredDeckPayload.extend({
   source: DeckSource,
   readOnly: z.boolean(),
@@ -78,14 +76,6 @@ export const DeckListItem = StoredDeckPayload.extend({
 
 export const DeckUpsertRequest = StoredDeckPayload;
 
-export const DeckSummary = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-});
-
 export const DeckListResponse = z.object({
   data: z.array(DeckListItem),
   meta: z.object({
@@ -103,8 +93,6 @@ export const DeckDetailResponse = z.object({
 export type StoredDeckPayload = z.infer<typeof StoredDeckPayload>;
 export type DeckListItem = z.infer<typeof DeckListItem>;
 export type DeckSource = z.infer<typeof DeckSource>;
-export type DeckListSource = z.infer<typeof DeckListSource>;
 export type DeckSortField = z.infer<typeof DeckSortField>;
 export type DecksListQuery = z.infer<typeof DecksListQuery>;
 export type DeckUpsertRequest = z.infer<typeof DeckUpsertRequest>;
-export type DeckSummary = z.infer<typeof DeckSummary>;

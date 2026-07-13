@@ -1,12 +1,5 @@
 import { isCardBannedAt, isCardNameInBannedList } from '@riftbound/contracts';
-import type { CardListItem } from '@riftbound/contracts';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
-
-export { isCardBannedAt, isCardNameInBannedList };
-
-export function isListItemBanned(item: Pick<CardListItem, 'isBanned'>): boolean {
-  return item.isBanned;
-}
 
 export function isCardTournamentIllegal(
   card: Pick<DeckCard, 'name' | 'banEffectiveDate'>,

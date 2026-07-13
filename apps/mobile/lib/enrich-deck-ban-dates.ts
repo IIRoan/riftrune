@@ -106,8 +106,3 @@ export function overlayDeckLegality(base: DeckState, refreshed: DeckState): Deck
     sideboard: refreshed.sideboard,
   };
 }
-
-/** @deprecated Use refreshDeckLegality */
-export async function enrichDeckWithBanDates(deck: DeckState): Promise<DeckState> {
-  return refreshDeckLegality(deck);
-}

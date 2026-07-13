@@ -205,9 +205,6 @@ export function aggregateImportItems(items: CollectionImportItem[]): CollectionI
   return [...merged.values()];
 }
 
-/** @deprecated Use aggregateImportItems */
-export const mergeImportItems = aggregateImportItems;
-
 export function chunkArray<T>(items: T[], size: number): T[][] {
   if (size <= 0) return [items];
   const chunks: T[][] = [];

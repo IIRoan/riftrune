@@ -1,11 +1,5 @@
 import { z } from 'zod';
 
-export const ApiErrorBody = z.object({
-  error: z.string(),
-  message: z.string(),
-  details: z.unknown().optional(),
-});
-
 export const HealthResponse = z.object({
   data: z.object({
     status: z.literal('ok'),
@@ -31,4 +25,5 @@ export const SyncStatusResponse = z.object({
   }),
 });
 
-export type ApiErrorBody = z.infer<typeof ApiErrorBody>;
+export type HealthResponse = z.infer<typeof HealthResponse>;
+export type SyncStatusResponse = z.infer<typeof SyncStatusResponse>;

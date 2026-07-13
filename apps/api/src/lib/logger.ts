@@ -35,11 +35,3 @@ export function logActionFailure(
     ...context,
   });
 }
-
-export function logActionWarning(
-  action: string,
-  message: string,
-  context?: LogFields
-): void {
-  write('warn', 'action.warning', { action, message, ...context });
-}

@@ -224,7 +224,7 @@ export async function ensureCatalogSynced(): Promise<void> {
 
 export async function syncPricesForE2E(): Promise<void> {
   if (ctx) {
-    await ctx.priceCache.syncFromUpstream();
+    await ctx.priceCache.syncFromCardmarket(getEnv().CARDMARKET_GAME_ID);
     return;
   }
 

@@ -144,7 +144,7 @@ export function DeckSectionGrid({
   );
 }
 
-export { DeckBattlefieldPanel, DeckBattlefieldRow } from '@/components/deck/DeckBattlefieldPanel';
+export { DeckBattlefieldPanel } from '@/components/deck/DeckBattlefieldPanel';
 
 export function deckSectionSubtitle(deck: DeckState, section: 'mainDeck' | 'sideboard'): string {
   const count = getSectionCount(deck, section);

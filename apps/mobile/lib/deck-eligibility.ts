@@ -22,14 +22,8 @@ export type DeckIdentity = {
 };
 
 function normalizeDomainNames(domains: string[]): string[] {
-  // Domains in deck cards are already strings; normalize casing for robust comparisons.
   return domains.map((d) => d.trim()).filter(Boolean);
 }
-
-/** @deprecated Use cardPrimaryNameToken from @riftbound/contracts */
-export const legendPrimaryNameToken = cardPrimaryNameToken;
-
-export { legendChampionTags };
 
 function domainIdentityMatch(cardDomains: string[], allowed: Set<string>): boolean {
   if (!cardDomains.length) return true;
