@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Popover,
   PopoverContent,
@@ -136,13 +137,12 @@ export function FilterCollectionSegment({
   value,
   onChange,
 }: {
-  value: 'all' | 'owned' | 'wishlist';
-  onChange: (value: 'all' | 'owned' | 'wishlist') => void;
+  value: 'all' | 'owned';
+  onChange: (value: 'all' | 'owned') => void;
 }) {
-  const options: { id: 'all' | 'owned' | 'wishlist'; label: string }[] = [
+  const options: { id: 'all' | 'owned'; label: string }[] = [
     { id: 'all', label: 'All cards' },
     { id: 'owned', label: 'Owned' },
-    { id: 'wishlist', label: 'Wishlist' },
   ];
 
   return (
@@ -195,8 +195,16 @@ export function FilterPopoverSection({
   children,
   portalName,
   contentClassName,
-  maxHeight = 320,
+  maxHeight = 420,
 }: FilterPopoverSectionProps) {
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const viewportMaxHeight = Math.max(
+    160,
+    windowHeight - insets.top - insets.bottom - 96
+  );
+  const effectiveMaxHeight = Math.min(maxHeight, viewportMaxHeight);
+
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
@@ -234,10 +242,11 @@ export function FilterPopoverSection({
           width={280}
         >
           <ScrollView
-            style={{ maxHeight }}
+            style={{ maxHeight: effectiveMaxHeight }}
             contentContainerClassName="p-2"
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
           >
             {children}
           </ScrollView>

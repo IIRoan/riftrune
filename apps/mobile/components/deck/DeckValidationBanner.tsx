@@ -8,10 +8,12 @@ import { cn } from '@/lib/utils';
 
 interface DeckValidationBannerProps {
   messages: DeckValidationMessage[];
+  /** When true, show messages only (no collapsible header). */
+  listOnly?: boolean;
 }
 
-export function DeckValidationBanner({ messages }: DeckValidationBannerProps) {
-  const [expanded, setExpanded] = useState(false);
+export function DeckValidationBanner({ messages, listOnly = false }: DeckValidationBannerProps) {
+  const [expanded, setExpanded] = useState(listOnly);
 
   const { errors, warnings, valid } = useMemo(() => {
     const errorItems = messages.filter((message) => message.type === 'error');
@@ -31,6 +33,42 @@ export function DeckValidationBanner({ messages }: DeckValidationBannerProps) {
 
   const status = isValidOnly ? 'valid' : errors.length > 0 ? 'error' : 'warning';
 
+  const messageList = (
+    <View className={cn('gap-1.5', !listOnly && 'border-t border-border px-3 py-2.5')}>
+      {messages.map((message) => (
+        <View key={message.message} className="flex-row items-start gap-2">
+          <Text
+            className={cn(
+              'mt-0.5 font-mono text-[10px] font-bold',
+              message.type === 'error' && 'text-destructive',
+              message.type === 'warning' && 'text-warning',
+              message.type === 'valid' && 'text-success'
+            )}
+          >
+            {message.type === 'error' ? '×' : message.type === 'warning' ? '!' : '✓'}
+          </Text>
+          <Text
+            className={cn(
+              'min-w-0 flex-1 text-[13px] leading-snug text-foreground',
+              message.type === 'error' && 'text-destructive',
+              message.type === 'warning' && 'text-warning'
+            )}
+          >
+            {message.message}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+
+  if (listOnly) {
+    return (
+      <View className="overflow-hidden rounded-xl border border-border bg-card-panel px-3 py-2.5">
+        {messageList}
+      </View>
+    );
+  }
+
   return (
     <View className="overflow-hidden rounded-xl border border-border bg-card-panel">
       <Pressable
@@ -48,33 +86,7 @@ export function DeckValidationBanner({ messages }: DeckValidationBannerProps) {
         />
       </Pressable>
 
-      {expanded ? (
-        <View className="gap-1.5 border-t border-border px-3 py-2.5">
-          {messages.map((message) => (
-            <View key={message.message} className="flex-row items-start gap-2">
-              <Text
-                className={cn(
-                  'mt-0.5 font-mono text-[10px] font-bold',
-                  message.type === 'error' && 'text-destructive',
-                  message.type === 'warning' && 'text-warning',
-                  message.type === 'valid' && 'text-success'
-                )}
-              >
-                {message.type === 'error' ? '×' : message.type === 'warning' ? '!' : '✓'}
-              </Text>
-              <Text
-                className={cn(
-                  'min-w-0 flex-1 text-[13px] leading-snug text-foreground',
-                  message.type === 'error' && 'text-destructive',
-                  message.type === 'warning' && 'text-warning'
-                )}
-              >
-                {message.message}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
+      {expanded ? messageList : null}
     </View>
   );
 }

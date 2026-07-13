@@ -81,7 +81,16 @@ function getVerticalSidePosition({
     };
   }
 
-  // For bottom placement, match reference implementation exactly
+  // For bottom placement, flip upward when there is more room above.
+  const spaceBelow = dimensions.height - insetBottom - positionBottom;
+  const spaceAbove = triggerPosition.pageY - insetTop - sideOffset;
+
+  if (contentLayout.height > spaceBelow && spaceAbove > spaceBelow) {
+    return {
+      top: Math.max(insetTop, positionTop),
+    };
+  }
+
   return {
     top: Math.min(
       dimensions.height - insetBottom - contentLayout.height,
@@ -603,10 +612,19 @@ export function useRelativePosition({
       dimensions,
     });
 
+    const insetTop = insets?.top ?? 0;
+    const insetBottom = insets?.bottom ?? 0;
+    const resolvedTop = sidePosition.top ?? alignPosition.top ?? insetTop;
+    const verticalMaxHeight =
+      side === 'top' || side === 'bottom'
+        ? Math.max(120, dimensions.height - insetBottom - resolvedTop - 8)
+        : undefined;
+
     return {
-      position: "absolute" as const,
+      position: 'absolute' as const,
       ...sidePosition,
       ...alignPosition,
+      ...(verticalMaxHeight !== undefined ? { maxHeight: verticalMaxHeight } : {}),
     };
   }, [
     align,

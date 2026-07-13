@@ -87,24 +87,6 @@ describe('matchesCatalogFilters', () => {
     expect(
       matchesCatalogFilters(sampleCard, { ...DEFAULT_CATALOG_FILTERS, collection: 'owned' }, collection)
     ).toBe(true);
-    expect(
-      matchesCatalogFilters(
-        sampleCard,
-        { ...DEFAULT_CATALOG_FILTERS, collection: 'wishlist' },
-        collection
-      )
-    ).toBe(false);
-  });
-
-  test('wishlist filter matches cards with zero owned copies', () => {
-    const collection = new Map([['OGN-001', { quantity: 0 }]]);
-    expect(
-      matchesCatalogFilters(
-        sampleCard,
-        { ...DEFAULT_CATALOG_FILTERS, collection: 'wishlist' },
-        collection
-      )
-    ).toBe(true);
   });
 
   test('token filters distinguish markers from playable cards', () => {

@@ -57,8 +57,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { useCardSearch } from '@/hooks/useCardSearch';
 import { useCatalogBrowseInfinite } from '@/hooks/useCatalogBrowseInfinite';
 import { prefetchCatalogFilters } from '@/hooks/useFiltersData';
-import { useCollectionOwnership } from '@/hooks/useCollection';
-import { collectVariantNumbers } from '@/utils/collectionOwnership';
+import { useCollectionOwnership, useCollection } from '@/hooks/useCollection';
+import { collectVariantNumbers, ownershipMapFromCollection } from '@/utils/collectionOwnership';
 import { cardListItemMatchesVariant } from '@/utils/variants';
 import {
   CATALOG_DETAIL_GAP,
@@ -227,6 +227,9 @@ function SearchScreenBody() {
     []
   );
 
+  const ownedFilterActive = catalogFilters.collection === 'owned';
+  const { data: collectionEntries = [] } = useCollection({ enabled: ownedFilterActive });
+
   const ownershipVariants = useMemo(() => {
     void ownershipRevision;
     const variants = [...ownershipVariantSetRef.current];
@@ -237,12 +240,25 @@ function SearchScreenBody() {
   }, [ownershipRevision, selectedVariant]);
 
   const { collectionByVariant } = useCollectionOwnership(ownershipVariants);
-  const browseCatalog = useCatalogBrowseInfinite(pageSize, catalogFilters, collectionByVariant);
+
+  const filterOwnership = useMemo(() => {
+    if (!ownedFilterActive) return collectionByVariant;
+    const ownedMap = new Map(ownershipMapFromCollection(collectionEntries));
+    for (const [variantNumber, entry] of collectionByVariant) {
+      const current = ownedMap.get(variantNumber)?.quantity ?? 0;
+      if (entry.quantity > current) {
+        ownedMap.set(variantNumber, entry);
+      }
+    }
+    return ownedMap;
+  }, [ownedFilterActive, collectionEntries, collectionByVariant]);
+
+  const browseCatalog = useCatalogBrowseInfinite(pageSize, catalogFilters, filterOwnership);
 
   const filteredItems = useMemo(
     () =>
-      items.filter((card) => matchesCatalogFilters(card, catalogFilters, collectionByVariant)),
-    [items, catalogFilters, collectionByVariant]
+      items.filter((card) => matchesCatalogFilters(card, catalogFilters, filterOwnership)),
+    [items, catalogFilters, filterOwnership]
   );
 
   const featuredFiltered = browseCatalog.items;
@@ -662,6 +678,24 @@ function SearchScreenBody() {
     }
 
     if (!isSearching && !browseCatalog.isLoading && filterActive && featuredFiltered.length === 0) {
+      if (ownedFilterActive) {
+        return (
+          <SearchEmptyState
+            icon="albums-outline"
+            title={
+              catalogFiltersActive({ ...catalogFilters, collection: 'all' })
+                ? 'No owned cards match this filter'
+                : 'No cards in your collection yet'
+            }
+            description={
+              catalogFiltersActive({ ...catalogFilters, collection: 'all' })
+                ? 'Try clearing other filters or search for a specific card'
+                : 'Add cards from the catalog or import your collection'
+            }
+          />
+        );
+      }
+
       return (
         <SearchEmptyState
           icon="search-outline"
@@ -703,6 +737,8 @@ function SearchScreenBody() {
     tileWidth,
     compact,
     filterActive,
+    ownedFilterActive,
+    catalogFilters,
     onClearAllHistory,
     onHistoryPress,
     onHistoryDelete,

@@ -12,6 +12,7 @@ import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
   type LayoutRectangle,
+  Platform,
   Pressable,
   type View,
   type ViewStyle,
@@ -322,6 +323,11 @@ export const PopoverContent = ({
     return _widthStyle;
   }, [width, triggerPosition]);
 
+  const platformStyle = useMemo(
+    () => (Platform.OS === "web" ? ({ position: "fixed" } as const) : null),
+    []
+  );
+
   if (!open) {
     return null;
   }
@@ -335,7 +341,7 @@ export const PopoverContent = ({
       {...props}
       className={cn("z-50 rounded-lg bg-background p-4 shadow-lg", className)}
       onLayout={onLayout}
-      style={[positionStyle, widthStyle, animatedStyle, style]}
+      style={[platformStyle, positionStyle, widthStyle, animatedStyle, style]}
     >
       {children}
     </Animated.View>
