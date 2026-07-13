@@ -1,6 +1,6 @@
 import type { CardListItem } from '@riftbound/contracts';
 import type { CatalogSort } from '@/constants/catalogSort';
-import { getCardPrintings } from '@/utils/variants';
+import { getCardMaxMarketPrice, getCardPrintings } from '@/utils/variants';
 
 export function tokenizeSearchQuery(raw: string): string[] {
   return raw
@@ -82,12 +82,7 @@ export function searchCatalogItems(
 }
 
 function priceScore(card: CardListItem): number {
-  const printings = getCardPrintings(card);
-  const printingPrices = printings.map(
-    (printing) => printing.priceEur?.market ?? printing.priceEur?.low ?? 0
-  );
-  const primary = card.priceEur?.market ?? card.priceEur?.low ?? 0;
-  return Math.max(primary, ...printingPrices, 0);
+  return getCardMaxMarketPrice(card);
 }
 
 export function featuredCatalogItems(

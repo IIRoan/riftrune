@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import type { PriceHistoryPoint, PriceRow } from '@riftbound/contracts';
+import type { PriceStats, PriceTrend } from '@riftbound/contracts';
+import { formatTrendLabel } from '@riftbound/contracts';
 import { getWishlist, type WishlistEntry } from '@/services/wishlistService';
 import { api } from '@/src/api/client';
 import { wishlistQueryKeys } from '@/src/api/queryKeys';
@@ -15,34 +16,25 @@ export interface WishlistPricePoint {
 export interface WishlistPriceItem extends WishlistEntry {
   currentPrice: number | null;
   baselinePrice: number | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  avgPrice: number | null;
+  listingLow: number | null;
+  changePercent: number | null;
   trend: string;
+  trendDirection: PriceTrend;
+  belowTarget: boolean;
+  targetPriceCents: number | null;
+  priceFilterLabel: string;
+  priceSourceNote: string;
+  dataPointCount: number;
   points: WishlistPricePoint[];
 }
 
-function amount(value: number | null | undefined): number | null {
-  return value == null ? null : value;
-}
-
-type PriceLike = PriceRow | PriceHistoryPoint;
-
-function currentAmount(row: PriceLike | undefined): number | null {
-  if (!row) return null;
-  return amount(row.marketPrice) ?? amount(row.lowPrice);
-}
-
-function baselineAmount(row: PriceLike | undefined, range: WishlistRange): number | null {
-  if (!row) return null;
-  if (range === '1d') return amount(row.avg1Day);
-  if (range === '30d') return amount(row.avg30Day);
-  return amount(row.avg7Day);
-}
-
-function formatTrend(current: number | null, baseline: number | null): string {
-  if (current == null || baseline == null || baseline === 0) return 'Flat';
-  const pct = Math.round(((current - baseline) / baseline) * 100);
-  if (pct >= 5) return `+${String(pct)}%`;
-  if (pct <= -5) return `${String(pct)}%`;
-  return 'Flat';
+function rangeDays(range: WishlistRange): number {
+  if (range === '1d') return 1;
+  if (range === '30d') return 30;
+  return 7;
 }
 
 function pointLabel(value: string, index: number, total: number): string {
@@ -52,48 +44,45 @@ function pointLabel(value: string, index: number, total: number): string {
   return '';
 }
 
-function findExactPriceRow(rows: PriceRow[], isFoil: boolean): PriceRow | undefined {
-  return rows.find((row) => row.isFoil === isFoil) ?? rows[0];
-}
+function toWishlistPriceItem(
+  entry: WishlistEntry & {
+    priority?: number;
+    targetPriceCents?: number | null;
+  },
+  stats: PriceStats | undefined
+): WishlistPriceItem {
+  const points =
+    stats?.points.map((point, index, all) => {
+      const date = new Date(`${point.priceDate}T00:00:00.000Z`);
+      const label = Number.isNaN(date.getTime())
+        ? ''
+        : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      return {
+        label: pointLabel(label, index, all.length),
+        value: point.marketPrice ?? point.midPrice,
+      };
+    }) ?? [];
 
-async function loadDbPriceHistory({
-  variantNumber,
-  isFoil,
-  range,
-}: {
-  variantNumber: string;
-  isFoil: boolean;
-  range: WishlistRange;
-}): Promise<PriceLike[]> {
-  const days = range === '1d' ? 1 : range === '30d' ? 30 : 7;
-  const history = await api
-    .getPriceHistory({ variantNumber, isFoil, days })
-    .then((res) => res.data)
-    .catch(() => []);
-
-  if (history.length > 0) return history;
-
-  const current = await api
-    .getPrices({ variantNumber, isFoil })
-    .then((res) => findExactPriceRow(res.data, isFoil))
-    .catch(() => undefined);
-
-  return current ? [current] : [];
-}
-
-function pricePoints(rows: PriceLike[]): WishlistPricePoint[] {
-  if (rows.length === 0) return [];
-
-  return rows.map((row, index) => {
-    const date = new Date(row.lastUpdated);
-    const label = Number.isNaN(date.getTime())
-      ? ''
-      : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    return {
-      label: pointLabel(label, index, rows.length),
-      value: currentAmount(row),
-    };
-  });
+  return {
+    ...entry,
+    currentPrice: stats?.currentPrice ?? null,
+    baselinePrice: stats?.baselinePrice ?? null,
+    minPrice: stats?.minPrice ?? null,
+    maxPrice: stats?.maxPrice ?? null,
+    avgPrice: stats?.avgPrice ?? null,
+    listingLow: stats?.listingLow ?? null,
+    changePercent: stats?.changePercent ?? null,
+    trend: formatTrendLabel(stats?.changePercent ?? null, stats?.trend ?? 'flat'),
+    trendDirection: stats?.trend ?? 'flat',
+    belowTarget: stats?.belowTarget ?? false,
+    targetPriceCents: stats?.targetPriceCents ?? entry.targetPriceCents ?? null,
+    priceFilterLabel: stats?.priceFilterLabel ?? 'Cardmarket price guide · EUR',
+    priceSourceNote:
+      stats?.priceSourceNote ??
+      'Trend = Cardmarket price guide. Cheapest listing = any language/condition.',
+    dataPointCount: points.length,
+    points,
+  };
 }
 
 export function useWishlistPrices(range: WishlistRange, enabled = true) {
@@ -117,9 +106,9 @@ export function useWishlistPrices(range: WishlistRange, enabled = true) {
         }
       }
 
-      return Promise.all(
-        wishlist.map(async (item) => {
-          const card = cardByVariant.get(item.variantNumber);
+      const statsResponse = await api.getPriceStatsBatch({
+        days: rangeDays(range),
+        items: wishlist.map((item) => {
           const variant = variantByNumber.get(item.variantNumber);
           const isFoil =
             variant != null
@@ -129,29 +118,32 @@ export function useWishlistPrices(range: WishlistRange, enabled = true) {
                   variant.variantType
                 )
               : false;
-          const priceRows = await loadDbPriceHistory({
+          return {
             variantNumber: item.variantNumber,
             isFoil,
-            range,
-          });
-          const priceRow = priceRows.at(-1);
-          const current = currentAmount(priceRow);
-          const baseline =
-            priceRows.length > 1
-              ? currentAmount(priceRows[0])
-              : baselineAmount(priceRow, range);
+            targetPriceCents: item.targetPriceCents,
+          };
+        }),
+      });
 
-          return {
+      const statsByVariant = new Map(
+        statsResponse.data.map((stats) => [stats.variantNumber, stats] as const)
+      );
+
+      return wishlist.map((item) => {
+        const card = cardByVariant.get(item.variantNumber);
+        const variant = variantByNumber.get(item.variantNumber);
+        const stats = statsByVariant.get(item.variantNumber);
+
+        return toWishlistPriceItem(
+          {
             ...item,
             name: card?.name ?? item.name,
             imageUrl: variant?.imageUrl ?? item.imageUrl,
-            currentPrice: current,
-            baselinePrice: baseline,
-            trend: formatTrend(current, baseline),
-            points: pricePoints(priceRows),
-          };
-        })
-      );
+          },
+          stats
+        );
+      });
     },
     enabled,
     staleTime: 5 * 60 * 1000,

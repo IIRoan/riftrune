@@ -1,59 +1,94 @@
-import { and, desc, eq, gte, inArray } from 'drizzle-orm';
-import type { PaPriceRow, PriceRow } from '@riftbound/contracts';
+import { and, desc, eq, gte, inArray, ne, sql } from 'drizzle-orm';
+import type { PaPriceRow, PriceDailyPoint, PriceRow, PriceStats } from '@riftbound/contracts';
+import {
+  CARDMARKET_PRICE_SCOPE_NOTE,
+  cardmarketPriceScopeLabel,
+} from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
-import { priceHistory, prices, syncState } from '../db/schema.js';
+import { priceDaily, priceHistory, prices, syncState, variants } from '../db/schema.js';
+import {
+  mapPriceGuideExportToRows,
+  type CardmarketPriceRow,
+} from '../lib/cardmarket-price-rows.js';
 import { pricesFingerprint } from '../lib/hash.js';
-import type { RiftruneClient } from '../upstream/riftrune-client.js';
-import { paPriceHash } from './card-mapper.js';
+import {
+  computePriceStats,
+  type DailyPricePoint,
+  utcDateString,
+} from '../lib/price-stats.js';
+import {
+  CARDMARKET_RIFTBOUND_GAME_ID,
+  fetchCardmarketPriceGuide,
+} from '../upstream/cardmarket-export.js';
 
 function parseNum(value: string | null | undefined): string | null {
   if (value === null || value === undefined || value === '') return null;
   return value;
 }
 
+function toNumber(value: string | null): number | null {
+  return value === null ? null : Number(value);
+}
+
 function toPriceRow(row: typeof prices.$inferSelect): PriceRow {
-  const num = (v: string | null) => (v === null ? null : Number(v));
   return {
     id: row.id,
     cardmarketId: row.cardmarketId,
     isFoil: row.isFoil,
     provider: 'cardmarket',
     currency: 'EUR',
-    lowPrice: num(row.lowPrice),
-    marketPrice: num(row.marketPrice),
-    midPrice: num(row.midPrice),
-    highPrice: num(row.highPrice),
-    avg1Day: num(row.avg1Day),
-    avg7Day: num(row.avg7Day),
-    avg30Day: num(row.avg30Day),
+    lowPrice: toNumber(row.lowPrice),
+    marketPrice: toNumber(row.marketPrice),
+    midPrice: toNumber(row.midPrice),
+    highPrice: toNumber(row.highPrice),
+    avg1Day: toNumber(row.avg1Day),
+    avg7Day: toNumber(row.avg7Day),
+    avg30Day: toNumber(row.avg30Day),
     lastUpdated: row.upstreamLastUpdated.toISOString(),
   };
 }
 
-function toHistoryRow(row: typeof priceHistory.$inferSelect) {
-  const num = (v: string | null) => (v === null ? null : Number(v));
+function toDailyPoint(row: typeof priceDaily.$inferSelect): PriceDailyPoint {
   return {
     cardmarketId: row.cardmarketId,
     isFoil: row.isFoil,
-    provider: 'cardmarket' as const,
-    currency: 'EUR' as const,
-    lowPrice: num(row.lowPrice),
-    marketPrice: num(row.marketPrice),
-    midPrice: num(row.midPrice),
-    highPrice: num(row.highPrice),
-    avg1Day: num(row.avg1Day),
-    avg7Day: num(row.avg7Day),
-    avg30Day: num(row.avg30Day),
-    lastUpdated: row.upstreamLastUpdated.toISOString(),
-    capturedAt: row.capturedAt.toISOString(),
+    provider: 'cardmarket',
+    currency: 'EUR',
+    priceDate: row.priceDate,
+    lowPrice: toNumber(row.lowPrice),
+    marketPrice: toNumber(row.marketPrice),
+    midPrice: toNumber(row.midPrice),
+    highPrice: toNumber(row.highPrice),
   };
 }
 
+function sinceDate(days: number): string {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  return utcDateString(since);
+}
+
+function resolveCardmarketGameId(): number {
+  const raw = process.env.CARDMARKET_GAME_ID;
+  if (!raw) return CARDMARKET_RIFTBOUND_GAME_ID;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`Invalid CARDMARKET_GAME_ID: ${raw}`);
+  }
+  return parsed;
+}
+
+const PRICE_SYNC_CHUNK_SIZE = 200;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const batches: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    batches.push(items.slice(index, index + size));
+  }
+  return batches;
+}
+
 export class PriceCacheService {
-  constructor(
-    private readonly db: Database,
-    private readonly riftrune: RiftruneClient
-  ) {}
+  constructor(private readonly db: Database) {}
 
   /** Fetch only prices for the cardmarket IDs in the current result page (fast path). */
   async getRowsForCardmarketIds(cardmarketIds: number[]): Promise<PaPriceRow[]> {
@@ -115,135 +150,413 @@ export class PriceCacheService {
     };
   }
 
-  async history(filters: {
+  async dailyHistory(filters: {
     cardmarketId: number;
     isFoil?: boolean;
     days: number;
-  }): Promise<{ rows: ReturnType<typeof toHistoryRow>[] }> {
-    const since = new Date(Date.now() - filters.days * 24 * 60 * 60 * 1000);
+  }): Promise<{ rows: PriceDailyPoint[] }> {
     const conditions = [
-      eq(priceHistory.cardmarketId, filters.cardmarketId),
-      gte(priceHistory.capturedAt, since),
+      eq(priceDaily.cardmarketId, filters.cardmarketId),
+      gte(priceDaily.priceDate, sinceDate(filters.days)),
     ];
 
     if (filters.isFoil !== undefined) {
-      conditions.push(eq(priceHistory.isFoil, filters.isFoil));
+      conditions.push(eq(priceDaily.isFoil, filters.isFoil));
     }
 
     const rows = await this.db
       .select()
-      .from(priceHistory)
+      .from(priceDaily)
       .where(and(...conditions))
-      .orderBy(desc(priceHistory.capturedAt));
+      .orderBy(priceDaily.priceDate);
 
-    return { rows: rows.map(toHistoryRow).reverse() };
+    return { rows: rows.map(toDailyPoint) };
   }
 
+  async statsForVariant(input: {
+    variantNumber: string;
+    cardmarketId: number | null;
+    isFoil: boolean;
+    days: number;
+    targetPriceCents?: number | null;
+  }): Promise<PriceStats> {
+    const priceSlot =
+      input.cardmarketId == null
+        ? null
+        : await this.resolvePriceSlot(input.cardmarketId, input.isFoil);
+
+    const points =
+      priceSlot == null
+        ? []
+        : (
+            await this.dailyHistory({
+              cardmarketId: priceSlot.cardmarketId,
+              isFoil: priceSlot.isFoil,
+              days: input.days,
+            })
+          ).rows;
+
+    const resolvedPoints = await this.ensureCurrentDailyPoint(
+      priceSlot?.cardmarketId ?? null,
+      priceSlot?.isFoil ?? input.isFoil,
+      points
+    );
+    const stats = computePriceStats(resolvedPoints as DailyPricePoint[]);
+    const belowTarget =
+      input.targetPriceCents != null && stats.currentPrice != null
+        ? stats.currentPrice * 100 <= input.targetPriceCents
+        : undefined;
+
+    const resolvedIsFoil = priceSlot?.isFoil ?? input.isFoil;
+
+    return {
+      variantNumber: input.variantNumber,
+      cardmarketId: input.cardmarketId,
+      isFoil: resolvedIsFoil,
+      currency: 'EUR',
+      currentPrice: stats.currentPrice,
+      baselinePrice: stats.baselinePrice,
+      minPrice: stats.minPrice,
+      maxPrice: stats.maxPrice,
+      avgPrice: stats.avgPrice,
+      listingLow: stats.listingLow,
+      changePercent: stats.changePercent,
+      trend: stats.trend,
+      points: stats.points.map((point) => ({
+        cardmarketId: input.cardmarketId ?? 0,
+        isFoil: resolvedIsFoil,
+        provider: 'cardmarket' as const,
+        currency: 'EUR' as const,
+        priceDate: point.priceDate,
+        lowPrice: point.lowPrice,
+        marketPrice: point.marketPrice,
+        midPrice: point.midPrice,
+        highPrice: point.highPrice,
+      })),
+      days: input.days,
+      priceFilterLabel: cardmarketPriceScopeLabel(resolvedIsFoil),
+      priceSourceNote: CARDMARKET_PRICE_SCOPE_NOTE,
+      ...(input.targetPriceCents !== undefined
+        ? { targetPriceCents: input.targetPriceCents }
+        : {}),
+      ...(belowTarget !== undefined ? { belowTarget } : {}),
+    };
+  }
+
+  private async resolvePriceSlot(
+    cardmarketId: number,
+    isFoil: boolean
+  ): Promise<{ cardmarketId: number; isFoil: boolean }> {
+    if (await this.hasUsablePriceGuide(cardmarketId, isFoil)) {
+      return { cardmarketId, isFoil };
+    }
+    if (!isFoil && (await this.hasUsablePriceGuide(cardmarketId, true))) {
+      return { cardmarketId, isFoil: true };
+    }
+    return { cardmarketId, isFoil };
+  }
+
+  private async hasUsablePriceGuide(
+    cardmarketId: number,
+    isFoil: boolean
+  ): Promise<boolean> {
+    const [row] = await this.db
+      .select({
+        marketPrice: prices.marketPrice,
+        midPrice: prices.midPrice,
+      })
+      .from(prices)
+      .where(and(eq(prices.cardmarketId, cardmarketId), eq(prices.isFoil, isFoil)))
+      .orderBy(desc(prices.fetchedAt))
+      .limit(1);
+
+    if (!row) return false;
+
+    const market = toNumber(row.marketPrice);
+    const mid = toNumber(row.midPrice);
+    return (market != null && market > 0) || mid != null;
+  }
+
+  async statsBatch(
+    items: {
+      variantNumber: string;
+      isFoil?: boolean;
+      targetPriceCents?: number | null;
+    }[],
+    days: number
+  ): Promise<PriceStats[]> {
+    if (items.length === 0) return [];
+
+    const variantNumbers = items.map((item) => item.variantNumber);
+    const variantRows = await this.db
+      .select({
+        variantNumber: variants.variantNumber,
+        cardmarketId: variants.cardmarketId,
+      })
+      .from(variants)
+      .where(inArray(variants.variantNumber, variantNumbers));
+
+    const variantByNumber = new Map(
+      variantRows.map((row) => [row.variantNumber, row.cardmarketId] as const)
+    );
+
+    return Promise.all(
+      items.map((item) => {
+        const resolved: {
+          variantNumber: string;
+          cardmarketId: number | null;
+          isFoil: boolean;
+          days: number;
+          targetPriceCents?: number | null;
+        } = {
+          variantNumber: item.variantNumber,
+          cardmarketId: variantByNumber.get(item.variantNumber) ?? null,
+          isFoil: item.isFoil ?? false,
+          days,
+        };
+        if (item.targetPriceCents !== undefined) {
+          resolved.targetPriceCents = item.targetPriceCents;
+        }
+        return this.statsForVariant(resolved);
+      })
+    );
+  }
+
+  private async ensureCurrentDailyPoint(
+    cardmarketId: number | null,
+    isFoil: boolean,
+    points: PriceDailyPoint[]
+  ): Promise<DailyPricePoint[]> {
+    if (cardmarketId == null) return points;
+
+    const today = utcDateString(new Date());
+    if (points.some((point) => point.priceDate === today)) {
+      return points;
+    }
+
+    const [current] = await this.db
+      .select()
+      .from(prices)
+      .where(and(eq(prices.cardmarketId, cardmarketId), eq(prices.isFoil, isFoil)))
+      .limit(1);
+
+    if (!current) return points;
+
+    return [
+      ...points,
+      {
+        priceDate: today,
+        lowPrice: toNumber(current.lowPrice),
+        marketPrice: toNumber(current.marketPrice),
+        midPrice: toNumber(current.midPrice),
+        highPrice: toNumber(current.highPrice),
+      },
+    ];
+  }
+
+  /** Download Cardmarket's daily Riftbound price guide and upsert cache + history. */
+  async syncFromCardmarket(gameId = resolveCardmarketGameId()): Promise<{
+    changed: boolean;
+    rowCount: number;
+    productCount: number;
+    hash: string;
+    source: 'cardmarket';
+    gameId: number;
+    exportCreatedAt: string;
+  }> {
+    const exportData = await fetchCardmarketPriceGuide(gameId);
+    const upstream = mapPriceGuideExportToRows(exportData);
+    return this.persistPriceRows(upstream, {
+      hashInput: upstream.map((row) => ({
+        cardmarketId: row.cardmarketId,
+        isFoil: row.isFoil,
+        lastUpdated: row.lastUpdated.toISOString(),
+        marketPrice: row.marketPrice,
+      })),
+      productCount: exportData.priceGuides.length,
+      sourceMeta: {
+        source: 'cardmarket' as const,
+        gameId,
+        exportCreatedAt: exportData.createdAt,
+      },
+    });
+  }
+
+  /** Daily price sync entry point (Cardmarket export). */
   async syncFromUpstream(): Promise<{
     changed: boolean;
     rowCount: number;
     hash: string;
   }> {
-    const upstream = await this.riftrune.getAllPrices();
-    const hash = pricesFingerprint(
-      upstream.map((r) => ({
-        cardmarketId: r.cardmarketId,
-        isFoil: r.isFoil,
-        lastUpdated: r.lastUpdated,
-        marketPrice: r.marketPrice,
-      }))
-    );
+    const result = await this.syncFromCardmarket();
+    return {
+      changed: result.changed,
+      rowCount: result.rowCount,
+      hash: result.hash,
+    };
+  }
+
+  async persistPriceRows(
+    upstream: CardmarketPriceRow[],
+    meta: {
+      hashInput: {
+        cardmarketId: number;
+        isFoil: boolean;
+        lastUpdated: string;
+        marketPrice: string | null;
+      }[];
+      productCount: number;
+      sourceMeta: {
+        source: 'cardmarket';
+        gameId: number;
+        exportCreatedAt: string;
+      };
+    }
+  ): Promise<{
+    changed: boolean;
+    rowCount: number;
+    productCount: number;
+    hash: string;
+    source: 'cardmarket';
+    gameId: number;
+    exportCreatedAt: string;
+  }> {
+    const hash = pricesFingerprint(meta.hashInput);
 
     const existing = await this.db.query.syncState.findFirst({
       where: eq(syncState.key, 'prices'),
     });
 
     const now = new Date();
+    const priceDate = utcDateString(now);
+    const changed = existing?.contentHash !== hash;
 
-    if (existing?.contentHash === hash) {
-      await this.db.transaction(async (tx) => {
-        for (const row of upstream) {
-          await tx
-            .insert(priceHistory)
-            .values({
-              cardmarketId: row.cardmarketId,
-              isFoil: row.isFoil,
-              provider: row.provider,
-              currency: row.currency,
-              lowPrice: parseNum(row.lowPrice),
-              marketPrice: parseNum(row.marketPrice),
-              midPrice: parseNum(row.midPrice),
-              highPrice: parseNum(row.highPrice),
-              avg1Day: parseNum(row.avg1Day),
-              avg7Day: parseNum(row.avg7Day),
-              avg30Day: parseNum(row.avg30Day),
-              upstreamLastUpdated: new Date(row.lastUpdated),
-              contentHash: paPriceHash(row),
-              capturedAt: now,
-            })
-            .onConflictDoNothing();
-        }
-      });
+    const dailyRows = upstream.map((row) => ({
+      cardmarketId: row.cardmarketId,
+      isFoil: row.isFoil,
+      priceDate,
+      provider: row.provider,
+      currency: row.currency,
+      lowPrice: parseNum(row.lowPrice),
+      marketPrice: parseNum(row.marketPrice),
+      midPrice: parseNum(row.midPrice),
+      highPrice: parseNum(row.highPrice),
+      syncedAt: now,
+    }));
 
-      return { changed: false, rowCount: upstream.length, hash };
-    }
+    const currentRows = upstream.map((row) => ({
+      id: row.id,
+      cardmarketId: row.cardmarketId,
+      isFoil: row.isFoil,
+      provider: row.provider,
+      currency: row.currency,
+      lowPrice: parseNum(row.lowPrice),
+      marketPrice: parseNum(row.marketPrice),
+      midPrice: parseNum(row.midPrice),
+      highPrice: parseNum(row.highPrice),
+      avg1Day: parseNum(row.avg1Day),
+      avg7Day: parseNum(row.avg7Day),
+      avg30Day: parseNum(row.avg30Day),
+      upstreamLastUpdated: row.lastUpdated,
+      contentHash: row.contentHash,
+      fetchedAt: now,
+    }));
+
+    const historyRows = upstream.map((row) => ({
+      cardmarketId: row.cardmarketId,
+      isFoil: row.isFoil,
+      provider: row.provider,
+      currency: row.currency,
+      lowPrice: parseNum(row.lowPrice),
+      marketPrice: parseNum(row.marketPrice),
+      midPrice: parseNum(row.midPrice),
+      highPrice: parseNum(row.highPrice),
+      avg1Day: parseNum(row.avg1Day),
+      avg7Day: parseNum(row.avg7Day),
+      avg30Day: parseNum(row.avg30Day),
+      upstreamLastUpdated: row.lastUpdated,
+      contentHash: row.contentHash,
+      capturedAt: now,
+    }));
 
     await this.db.transaction(async (tx) => {
-      for (const row of upstream) {
-        const rowHash = paPriceHash(row);
+      for (const batch of chunk(dailyRows, PRICE_SYNC_CHUNK_SIZE)) {
         await tx
-          .insert(priceHistory)
+          .insert(priceDaily)
+          .values(batch)
+          .onConflictDoUpdate({
+            target: [priceDaily.cardmarketId, priceDaily.isFoil, priceDaily.priceDate],
+            set: {
+              lowPrice: sql`excluded.low_price`,
+              marketPrice: sql`excluded.market_price`,
+              midPrice: sql`excluded.mid_price`,
+              highPrice: sql`excluded.high_price`,
+              syncedAt: sql`excluded.synced_at`,
+            },
+          });
+      }
+
+      if (!changed) {
+        await tx
+          .insert(syncState)
           .values({
-            cardmarketId: row.cardmarketId,
-            isFoil: row.isFoil,
-            provider: row.provider,
-            currency: row.currency,
-            lowPrice: parseNum(row.lowPrice),
-            marketPrice: parseNum(row.marketPrice),
-            midPrice: parseNum(row.midPrice),
-            highPrice: parseNum(row.highPrice),
-            avg1Day: parseNum(row.avg1Day),
-            avg7Day: parseNum(row.avg7Day),
-            avg30Day: parseNum(row.avg30Day),
-            upstreamLastUpdated: new Date(row.lastUpdated),
-            contentHash: rowHash,
-            capturedAt: now,
+            key: 'prices',
+            contentHash: hash,
+            rowCount: upstream.length,
+            lastSuccessAt: now,
+            lastAttemptAt: now,
+            status: 'idle',
+            lastError: null,
           })
-          .onConflictDoNothing();
+          .onConflictDoUpdate({
+            target: syncState.key,
+            set: {
+              contentHash: hash,
+              rowCount: upstream.length,
+              lastSuccessAt: now,
+              lastAttemptAt: now,
+              status: 'idle',
+              lastError: null,
+            },
+          });
+        return;
+      }
+
+      for (const batch of chunk(currentRows, PRICE_SYNC_CHUNK_SIZE)) {
+        for (const row of batch) {
+          await tx
+            .delete(prices)
+            .where(
+              and(
+                eq(prices.cardmarketId, row.cardmarketId),
+                eq(prices.isFoil, row.isFoil),
+                ne(prices.id, row.id)
+              )
+            );
+        }
 
         await tx
           .insert(prices)
-          .values({
-            id: row.id,
-            cardmarketId: row.cardmarketId,
-            isFoil: row.isFoil,
-            provider: row.provider,
-            currency: row.currency,
-            lowPrice: parseNum(row.lowPrice),
-            marketPrice: parseNum(row.marketPrice),
-            midPrice: parseNum(row.midPrice),
-            highPrice: parseNum(row.highPrice),
-            avg1Day: parseNum(row.avg1Day),
-            avg7Day: parseNum(row.avg7Day),
-            avg30Day: parseNum(row.avg30Day),
-            upstreamLastUpdated: new Date(row.lastUpdated),
-            contentHash: rowHash,
-            fetchedAt: now,
-          })
+          .values(batch)
           .onConflictDoUpdate({
             target: prices.id,
             set: {
-              lowPrice: parseNum(row.lowPrice),
-              marketPrice: parseNum(row.marketPrice),
-              midPrice: parseNum(row.midPrice),
-              avg1Day: parseNum(row.avg1Day),
-              avg7Day: parseNum(row.avg7Day),
-              avg30Day: parseNum(row.avg30Day),
-              upstreamLastUpdated: new Date(row.lastUpdated),
-              contentHash: rowHash,
-              fetchedAt: now,
+              lowPrice: sql`excluded.low_price`,
+              marketPrice: sql`excluded.market_price`,
+              midPrice: sql`excluded.mid_price`,
+              highPrice: sql`excluded.high_price`,
+              avg1Day: sql`excluded.avg_1_day`,
+              avg7Day: sql`excluded.avg_7_day`,
+              avg30Day: sql`excluded.avg_30_day`,
+              upstreamLastUpdated: sql`excluded.upstream_last_updated`,
+              contentHash: sql`excluded.content_hash`,
+              fetchedAt: sql`excluded.fetched_at`,
             },
           });
+      }
+
+      for (const batch of chunk(historyRows, PRICE_SYNC_CHUNK_SIZE)) {
+        await tx.insert(priceHistory).values(batch).onConflictDoNothing();
       }
 
       await tx
@@ -270,6 +583,16 @@ export class PriceCacheService {
         });
     });
 
-    return { changed: true, rowCount: upstream.length, hash };
+    console.log(
+      `[prices] Cardmarket sync complete: game=${String(meta.sourceMeta.gameId)} products=${String(meta.productCount)} rows=${String(upstream.length)} changed=${String(changed)} export=${meta.sourceMeta.exportCreatedAt}`
+    );
+
+    return {
+      changed,
+      rowCount: upstream.length,
+      productCount: meta.productCount,
+      hash,
+      ...meta.sourceMeta,
+    };
   }
 }

@@ -12,7 +12,7 @@ import {
   type CatalogFilters,
 } from '@/constants/catalogFilters';
 import {
-  groupCatalogListItems,
+  groupCardListItems,
   normalizeCardListItems,
   normalizeCardsListResponse,
 } from '@/utils/variants';
@@ -69,7 +69,7 @@ export function useCatalogBrowseInfinite(
         ...catalogFiltersToQuery(filters),
       });
       const normalized = normalizeCardsListResponse(response);
-      const items = groupCatalogListItems(normalizeCardListItems(normalized.data));
+      const items = groupCardListItems(normalizeCardListItems(normalized.data));
       const filtered = items.filter((card) =>
         matchesCatalogFilters(card, filters, collectionByVariant)
       );

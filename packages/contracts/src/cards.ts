@@ -147,6 +147,7 @@ export const CatalogIndexResponse = z.object({
   data: z.array(CardListItem),
   meta: z.object({
     catalogHash: z.string(),
+    pricesCatalogHash: z.string(),
     total: z.number().int().nonnegative(),
     source: z.enum(['cache']),
   }),

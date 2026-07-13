@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { getSearchGroupKey, getSearchGroupVariants, getVariantFamiliesFromPrintings, getVariantMarketPriceDisplays, getPrintingsInSearchGroup } from '@/utils/variants';
+import { getSearchGroupKey, getSearchGroupVariants, getVariantFamiliesFromPrintings, getVariantMarketPriceDisplays, getPrintingsInSearchGroup, pickVariantDisplayPrice } from '@/utils/variants';
 
 describe('getSearchGroupVariants', () => {
   const dariusVariants = [
@@ -45,6 +45,20 @@ describe('getSearchGroupVariants', () => {
     expect(getSearchGroupKey('OGN-253-Release', 'Release Event Promo')).toBe(
       'OGN-253-Release'
     );
+  });
+});
+
+describe('pickVariantDisplayPrice', () => {
+  test('falls back to foil guide for foil-only signed printings', () => {
+    const row = pickVariantDisplayPrice(
+      [{ market: 2547.93, low: 2499.95, isFoil: true }],
+      {
+        variantNumber: 'SFD-227*',
+        variantLabel: 'Showcase',
+        variantType: 'Overnumbered Signed',
+      }
+    );
+    expect(row?.market).toBe(2547.93);
   });
 });
 

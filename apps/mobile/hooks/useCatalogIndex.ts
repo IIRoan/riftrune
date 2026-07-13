@@ -1,12 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CardListItem } from '@riftbound/contracts';
 import {
-  fetchAndPersistCatalogIndex,
   getInMemoryCatalogIndex,
   readPersistedCatalogIndex,
+  syncCatalogIndex,
 } from '@/services/catalogIndexService';
-import { api } from '@/src/api/client';
-import { cardQueryKeys } from '@/src/api/queryKeys';
+import {
+  prefetchCatalogMeta,
+  resolveCatalogIndexCacheKey,
+} from '@/services/catalogMetaService';
 
 export const catalogIndexQueryKey = ['catalog', 'index'] as const;
 
@@ -15,17 +17,8 @@ export function useCatalogIndex() {
 
   return useQuery({
     queryKey: catalogIndexQueryKey,
-    queryFn: async () => {
-      let catalogHash: string | null = null;
-      try {
-        const filters = await api.getFilters();
-        catalogHash = filters.meta.catalogHash;
-      } catch {
-        catalogHash = getInMemoryCatalogIndex()?.catalogHash ?? null;
-      }
-
-      return fetchAndPersistCatalogIndex(catalogHash);
-    },
+    queryFn: () =>
+      syncCatalogIndex(() => resolveCatalogIndexCacheKey(queryClient)),
     staleTime: 10 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
     refetchOnMount: false,
@@ -48,20 +41,11 @@ export async function hydrateCatalogIndex(queryClient: ReturnType<typeof useQuer
 
 export async function prefetchCatalogIndex(queryClient: ReturnType<typeof useQueryClient>) {
   await hydrateCatalogIndex(queryClient);
-  await queryClient.prefetchQuery({
+  void prefetchCatalogMeta(queryClient);
+  void queryClient.prefetchQuery({
     queryKey: catalogIndexQueryKey,
-    queryFn: async () => {
-      let catalogHash: string | null = getInMemoryCatalogIndex()?.catalogHash ?? null;
-      if (!catalogHash) {
-        try {
-          const filters = await api.getFilters();
-          catalogHash = filters.meta.catalogHash;
-        } catch {
-          catalogHash = null;
-        }
-      }
-      return fetchAndPersistCatalogIndex(catalogHash);
-    },
+    queryFn: () =>
+      syncCatalogIndex(() => resolveCatalogIndexCacheKey(queryClient)),
     staleTime: 10 * 60 * 1000,
   });
 }

@@ -26,6 +26,7 @@ describe('cards (cached catalog)', () => {
     expect(parsed.data.length).toBeGreaterThan(0);
     expect(parsed.meta.total).toBe(parsed.data.length);
     expect(parsed.meta.catalogHash.length).toBeGreaterThan(0);
+    expect(parsed.meta.pricesCatalogHash.length).toBeGreaterThan(0);
     expect(parsed.meta.source).toBe('cache');
     expect(parsed.data[0]?.printings.length).toBeGreaterThan(0);
   });

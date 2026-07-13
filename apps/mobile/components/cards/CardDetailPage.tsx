@@ -27,7 +27,8 @@ import { formatStat } from '@/hooks/useCardDetail';
 import {
   formatMarketTrend,
   getVariantMarketPriceDisplays,
-  isFoilVariant,
+  pickVariantDisplayPrice,
+  toPriceEurSummary,
 } from '@/utils/variants';
 import { useIsDesktopLayout } from '@/hooks/useResponsiveColumns';
 
@@ -68,17 +69,8 @@ export function CardDetailPage({
   const marketPrices = getVariantMarketPriceDisplays(activeVariant);
   const singleMarketPrice =
     printingPreviews.length <= 1 && marketPrices.length === 1 ? marketPrices[0] : null;
-  const singlePriceTrend = (() => {
-    if (!singleMarketPrice) return 'Flat';
-    const isFoil = isFoilVariant(
-      activeVariant.variantNumber,
-      activeVariant.variantLabel,
-      activeVariant.variantType
-    );
-    const row =
-      activeVariant.prices.find((p) => p.isFoil === isFoil) ?? activeVariant.prices[0];
-    return formatMarketTrend(row ?? null);
-  })();
+  const activePrice = pickVariantDisplayPrice(activeVariant.prices, activeVariant);
+  const singlePriceTrend = formatMarketTrend(toPriceEurSummary(activePrice));
 
   const info = (
     <>

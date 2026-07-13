@@ -2,6 +2,8 @@ import { Elysia } from 'elysia';
 import {
   PriceHistoryQuery,
   PriceHistoryResponse,
+  PriceStatsBatchRequest,
+  PriceStatsBatchResponse,
   PricesListQuery,
 } from '@riftbound/contracts';
 import type { PriceCacheService } from '../services/price-cache.js';
@@ -82,7 +84,7 @@ export function createPricesRoutes(prices: PriceCacheService, db: Database) {
         };
         if (parsed.isFoil !== undefined) historyQuery.isFoil = parsed.isFoil;
 
-        const result = await prices.history(historyQuery);
+        const result = await prices.dailyHistory(historyQuery);
 
         return PriceHistoryResponse.parse({
           data: result.rows,
@@ -91,6 +93,36 @@ export function createPricesRoutes(prices: PriceCacheService, db: Database) {
             isFoil: parsed.isFoil ?? null,
             days: parsed.days,
             rowCount: result.rows.length,
+          },
+        });
+      },
+      { detail: { tags: ['prices'] } }
+    )
+    .post(
+      '/stats/batch',
+      async ({ body }) => {
+        const parsed = PriceStatsBatchRequest.parse(body);
+        const stats = await prices.statsBatch(
+          parsed.items.map((item) => {
+            const row: {
+              variantNumber: string;
+              isFoil?: boolean;
+              targetPriceCents?: number | null;
+            } = { variantNumber: item.variantNumber };
+            if (item.isFoil !== undefined) row.isFoil = item.isFoil;
+            if (item.targetPriceCents !== undefined) {
+              row.targetPriceCents = item.targetPriceCents;
+            }
+            return row;
+          }),
+          parsed.days
+        );
+
+        return PriceStatsBatchResponse.parse({
+          data: stats,
+          meta: {
+            days: parsed.days,
+            rowCount: stats.length,
           },
         });
       },

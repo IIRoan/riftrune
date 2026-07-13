@@ -36,9 +36,14 @@ type SearchResult = {
   source: 'cache' | 'upstream' | 'mixed';
 };
 
-function searchCacheKey(query: CardsListQuery, catalogHash: string): string {
+function searchCacheKey(
+  query: CardsListQuery,
+  catalogHash: string,
+  pricesCatalogHash: string
+): string {
   return JSON.stringify({
     catalogHash,
+    pricesCatalogHash,
     q: query.q?.trim().toLowerCase() ?? '',
     sets: query.sets ?? '',
     colors: query.colors ?? '',
@@ -86,6 +91,13 @@ export class CardCacheService {
   async getCatalogHash(): Promise<string> {
     const row = await this.db.query.syncState.findFirst({
       where: eq(syncState.key, 'catalog'),
+    });
+    return row?.contentHash ?? '';
+  }
+
+  async getPricesCatalogHash(): Promise<string> {
+    const row = await this.db.query.syncState.findFirst({
+      where: eq(syncState.key, 'prices'),
     });
     return row?.contentHash ?? '';
   }
@@ -520,8 +532,11 @@ export class CardCacheService {
   }
 
   async search(query: CardsListQuery): Promise<SearchResult> {
-    const catalogHash = await this.getCatalogHash();
-    const cacheKey = searchCacheKey(query, catalogHash);
+    const [catalogHash, pricesCatalogHash] = await Promise.all([
+      this.getCatalogHash(),
+      this.getPricesCatalogHash(),
+    ]);
+    const cacheKey = searchCacheKey(query, catalogHash, pricesCatalogHash);
 
     if (!query.refresh) {
       const cached = this.searchCache.get(cacheKey);
@@ -812,6 +827,7 @@ export class CardCacheService {
     items: CardListItem[];
     total: number;
     catalogHash: string;
+    pricesCatalogHash: string;
   }> {
     const rows = await this.db
       .select({
@@ -837,10 +853,15 @@ export class CardCacheService {
     });
 
     const items = groupCardListItems(rawItems);
+    const [catalogHash, pricesCatalogHash] = await Promise.all([
+      this.getCatalogHash(),
+      this.getPricesCatalogHash(),
+    ]);
     return {
       items,
       total: items.length,
-      catalogHash: await this.getCatalogHash(),
+      catalogHash,
+      pricesCatalogHash,
     };
   }
 }

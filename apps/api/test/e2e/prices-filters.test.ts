@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   FiltersResponse,
   PriceHistoryResponse,
+  PriceStatsBatchResponse,
   PricesListResponse,
 } from '@riftbound/contracts';
 import { apiJson, syncPricesForE2E } from './support.js';
@@ -21,6 +22,8 @@ describe('filters', () => {
     expect(parsed.data.rarities.length).toBeGreaterThan(0);
     expect(parsed.data.sets[0]?.name).toBeTruthy();
     expect(parsed.meta.variantCount).toBe(expectedCatalogTotal);
+    expect(parsed.meta.catalogHash.length).toBeGreaterThan(0);
+    expect(parsed.meta.pricesCatalogHash.length).toBeGreaterThan(0);
     expect(parsed.meta.variantCount).toBe(sumSetPrintCounts(parsed.data));
     const ogn = parsed.data.sets.find((s) => s.code === 'OGN');
     expect(ogn?.printCount).toBe(
@@ -57,7 +60,7 @@ describe('prices (Cardmarket EUR cache)', () => {
     );
   }, 60_000);
 
-  test('GET /api/v1/prices/history returns stored snapshots for a cardmarket id', async () => {
+  test('GET /api/v1/prices/history returns daily snapshots for a cardmarket id', async () => {
     await syncPricesForE2E();
 
     const all = PricesListResponse.parse(await apiJson<unknown>('/api/v1/prices'));
@@ -80,6 +83,31 @@ describe('prices (Cardmarket EUR cache)', () => {
       true
     );
     expect(history.data.every((row) => row.isFoil === sample!.isFoil)).toBe(true);
-    expect(history.data.at(-1)?.capturedAt).toBeTruthy();
+    expect(history.data.at(-1)?.priceDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  }, 300_000);
+
+  test('POST /api/v1/prices/stats/batch returns computed stats for variants', async () => {
+    await syncPricesForE2E();
+
+    const cards = await apiJson<{ data: { variantNumber: string }[] }>(
+      '/api/v1/cards?limit=1'
+    );
+    const variantNumber = cards.data[0]?.variantNumber;
+    expect(variantNumber).toBeTruthy();
+
+    const json = await apiJson<unknown>('/api/v1/prices/stats/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        days: 30,
+        items: [{ variantNumber }],
+      }),
+    });
+
+    const parsed = PriceStatsBatchResponse.parse(json);
+    expect(parsed.data).toHaveLength(1);
+    expect(parsed.data[0]?.variantNumber).toBe(variantNumber);
+    expect(parsed.data[0]?.currency).toBe('EUR');
+    expect(parsed.meta.days).toBe(30);
   }, 300_000);
 });

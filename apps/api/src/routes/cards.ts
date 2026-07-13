@@ -43,6 +43,7 @@ export function createCardsRoutes(cards: CardCacheService, _env: Env) {
           data: result.items,
           meta: {
             catalogHash: result.catalogHash,
+            pricesCatalogHash: result.pricesCatalogHash,
             total: result.total,
             source: 'cache' as const,
           },

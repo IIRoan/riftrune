@@ -10,6 +10,8 @@ import {
   FiltersResponse,
   HealthResponse,
   PriceHistoryResponse,
+  PriceStatsBatchRequest,
+  PriceStatsBatchResponse,
   PricesListResponse,
 } from '@riftbound/contracts';
 import type { z } from 'zod';
@@ -112,6 +114,12 @@ export const api = {
       PriceHistoryResponse
     );
   },
+
+  getPriceStatsBatch: (body: PriceStatsBatchRequest) =>
+    apiFetch('/api/v1/prices/stats/batch', PriceStatsBatchResponse, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
 
 export type { CardDetail };

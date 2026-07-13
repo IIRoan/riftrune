@@ -26,6 +26,8 @@ export const FiltersResponse = z.object({
   meta: z.object({
     cachedAt: z.string().datetime(),
     catalogHash: z.string(),
+    /** Changes when Cardmarket price sync updates local prices — invalidates catalog index cache. */
+    pricesCatalogHash: z.string(),
     variantCount: z.number().int().nonnegative(),
   }),
 });

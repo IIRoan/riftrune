@@ -88,10 +88,12 @@ function CardTileInner({
     return variantFamilies[0]?.variants ?? allPrintings;
   }, [allPrintings, familyContextVariantNumber, variantFamilies]);
 
+  const pricePrintings = familyContextVariantNumber ? stepperPrintings : allPrintings;
   const printings = stepperPrintings;
+  const multiplePricePrintings = hasMultiplePrintings(pricePrintings);
   const scopedCard = useMemo(
-    () => ({ ...card, printings: stepperPrintings }),
-    [card, stepperPrintings]
+    () => ({ ...card, printings: pricePrintings }),
+    [card, pricePrintings]
   );
   const printingsLabel = printingSummary(scopedCard);
   const multiplePrintings = hasMultiplePrintings(printings);
@@ -162,12 +164,14 @@ function CardTileInner({
     },
   };
 
+  const desktopGridStepper = enableQuickAdd && layout === 'grid' && !isMobile;
   const desktopStepper = enableQuickAdd && !mobileGridQuickAdd ? (
     <OwnershipStepper
       owned={owned}
       name={card.name}
       compact={stepperCompact}
       relaxed={stepperRelaxed}
+      gridSlot={desktopGridStepper}
       printings={printingsWithOwned}
       {...collectionCallbacks}
     />
@@ -313,9 +317,9 @@ function CardTileInner({
         <View className={cn('items-end', listCompact ? 'gap-1.5' : 'gap-2')}>
           {showPrice ? (
             <View className="items-end gap-0.5">
-              {printings.map((p) => (
+              {pricePrintings.map((p) => (
                 <View key={p.variantNumber} className="flex-row items-center gap-1.5">
-                  {multiplePrintings ? (
+                  {multiplePricePrintings ? (
                     <Text className="font-mono text-[10px] text-muted-foreground">
                       {p.isFoil ? 'Foil' : 'Std'}
                     </Text>
@@ -377,11 +381,22 @@ function CardTileInner({
           >
             {card.name}
           </Text>
-          {showPrice ? (
-            <Text className="px-1 pb-0.5 font-mono text-[10px] font-semibold tabular-nums text-muted-foreground">
-              {priceLabel ?? '—'}
+          <View className="min-w-0 flex-row items-center justify-between gap-1 px-1 pb-0.5">
+            <Text
+              className="min-w-0 shrink font-mono text-[10px] text-muted-foreground"
+              numberOfLines={1}
+            >
+              {primaryPrinting?.variantNumber}
             </Text>
-          ) : null}
+            {showPrice ? (
+              <Text
+                className="shrink-0 font-mono text-[10px] font-semibold tabular-nums text-muted-foreground"
+                numberOfLines={1}
+              >
+                {priceLabel ?? '—'}
+              </Text>
+            ) : null}
+          </View>
         </Pressable>
         <View className="px-1 pb-1 pt-0">{gridControl}</View>
       </View>
@@ -391,7 +406,7 @@ function CardTileInner({
   return (
     <Pressable
       className={cn(
-        'rounded-xl border p-2 active:opacity-90',
+        'overflow-hidden rounded-xl border p-2 active:opacity-90',
         banned
           ? 'border-destructive/70 bg-card'
           : selected
@@ -424,20 +439,26 @@ function CardTileInner({
       <Text className="mt-2 truncate px-0.5 text-[13px] font-semibold text-foreground" numberOfLines={1}>
         {card.name}
       </Text>
-      <Text className="px-0.5 font-mono text-[11px] text-muted-foreground">
-        {primaryPrinting?.variantNumber}
-      </Text>
-
-      <View className="mt-2 flex-row items-center justify-between gap-1.5 px-0.5">
+      <View className="min-w-0 flex-row items-center justify-between gap-1.5 px-0.5">
+        <Text
+          className="min-w-0 shrink font-mono text-[11px] text-muted-foreground"
+          numberOfLines={1}
+        >
+          {primaryPrinting?.variantNumber}
+        </Text>
         {showPrice ? (
-          <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+          <Text
+            className="shrink-0 font-mono text-[11px] font-semibold tabular-nums text-foreground"
+            numberOfLines={1}
+          >
             {priceLabel ?? '—'}
           </Text>
-        ) : (
-          <View className="min-w-0 flex-1" />
-        )}
-        {desktopStepper}
+        ) : null}
       </View>
+
+      {desktopStepper ? (
+        <View className="mt-2 px-0.5">{desktopStepper}</View>
+      ) : null}
     </Pressable>
   );
 }

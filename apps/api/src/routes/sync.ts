@@ -2,6 +2,7 @@ import { Elysia } from 'elysia';
 import type { Env } from '../env.js';
 import type { SyncEngine } from '../services/sync-engine.js';
 import type { PriceCacheService } from '../services/price-cache.js';
+import type { CardCacheService } from '../services/card-cache.js';
 import { sql } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 
@@ -15,6 +16,7 @@ function assertAdmin(env: Env, authorization?: string) {
 export function createSyncRoutes(
   sync: SyncEngine,
   prices: PriceCacheService,
+  cards: CardCacheService,
   env: Env
 ) {
   return new Elysia({ prefix: '/api/v1/sync' })
@@ -26,7 +28,8 @@ export function createSyncRoutes(
     })
     .post('/prices', async ({ headers }) => {
       assertAdmin(env, headers.authorization);
-      const result = await prices.syncFromUpstream();
+      const result = await prices.syncFromCardmarket(env.CARDMARKET_GAME_ID);
+      cards.invalidateSearchCache();
       return { data: result };
     });
 }

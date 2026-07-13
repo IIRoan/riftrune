@@ -9,7 +9,7 @@ import {
 import { collectVariantNumbers } from '@/utils/collectionOwnership';
 import { useCollectionRemove } from '@/hooks/useCollectionRemove';
 import { cardListItemToDetailResponse } from '@/lib/cardDetailPlaceholder';
-import { formatPrintingLabel, findVariantByNumber, getSearchGroupVariants, isFoilVariant, cardListItemMatchesVariant } from '@/utils/variants';
+import { formatPrintingLabel, findVariantByNumber, getSearchGroupVariants, isFoilVariant, cardListItemMatchesVariant, pickVariantDisplayPrice } from '@/utils/variants';
 import {
   getCollectedPrintingsForDetailCard,
 } from '@/utils/collectionRemove';
@@ -20,11 +20,14 @@ import { cardQueryKeys } from '@/src/api/queryKeys';
 
 export function formatCardPrice(
   prices: { market: number | null; low: number | null; isFoil: boolean }[],
-  foil: boolean
+  variant: {
+    variantNumber: string;
+    variantLabel: string;
+    variantType?: string;
+  }
 ): string | null {
-  const row = prices.find((p) => p.isFoil === foil);
-  if (!row) return null;
-  const amount = row.market ?? row.low;
+  const row = pickVariantDisplayPrice(prices, variant);
+  const amount = row?.market;
   return amount != null ? `€${amount.toFixed(2)}` : null;
 }
 
@@ -131,8 +134,8 @@ export function useCardDetail(
         variant.variantLabel,
         variant.variantType
       );
-      const price = variant.prices.find((p) => p.isFoil === foil);
-      const amount = price ? (price.market ?? price.low) : null;
+      const price = pickVariantDisplayPrice(variant.prices, variant);
+      const amount = price?.market ?? null;
       return {
         id: variant.variantNumber,
         label: formatPrintingLabel(variant.variantLabel, foil, variant.variantNumber),
@@ -144,18 +147,13 @@ export function useCardDetail(
 
   const printingPreviews = useMemo(() => {
     return groupVariants.map((variant) => {
-      const foil = isFoilVariant(
-        variant.variantNumber,
-        variant.variantLabel,
-        variant.variantType
-      );
       return {
         id: variant.id,
         variantNumber: variant.variantNumber,
         variantLabel: variant.variantLabel,
         variantType: variant.variantType,
         imageUrl: variant.imageUrl,
-        price: formatCardPrice(variant.prices, foil),
+        price: formatCardPrice(variant.prices, variant),
       };
     });
   }, [groupVariants]);

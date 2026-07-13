@@ -47,7 +47,7 @@ function buildApp(env: Env): AppContext {
   const auth = createAuth(db, env);
   const authPlugin = createAuthPlugin(auth);
   const riftrune = new RiftruneClient(env);
-  const priceCache = new PriceCacheService(db, riftrune);
+  const priceCache = new PriceCacheService(db);
   const imageStore = new ImageStoreService(env);
   const cardCache = new CardCacheService(db, riftrune, priceCache, imageStore);
   const catalogMetadata = new CatalogMetadataService(db, riftrune);
@@ -81,7 +81,7 @@ function buildApp(env: Env): AppContext {
           info: {
             title: 'Riftbound API',
             version: '1.0.0',
-            description: 'Cached riftrune.com card catalog + Cardmarket prices',
+            description: 'Cached riftrune.com card catalog + Cardmarket daily price guide',
           },
         },
       })
@@ -100,7 +100,7 @@ function buildApp(env: Env): AppContext {
     .use(createWishlistRoutes(wishlistService, auth))
     .use(createDeckRulesRoutes())
     .use(createDecksRoutes(deckService, auth))
-    .use(createSyncRoutes(syncEngine, priceCache, env))
+    .use(createSyncRoutes(syncEngine, priceCache, cardCache, env))
     .get('/', () => ({
       name: 'riftrune-api',
       docs: '/swagger',
@@ -151,8 +151,15 @@ export function startSyncCrons(ctx: AppContext, env: Env): void {
   }, SIX_HOURS);
 
   setInterval(() => {
-    void ctx.priceCache.syncFromUpstream().catch((err: unknown) => {
-      console.error('Price sync failed:', err);
-    });
+    void ctx.priceCache
+      .syncFromUpstream()
+      .then((result) => {
+        if (result.changed) {
+          ctx.cardCache.invalidateSearchCache();
+        }
+      })
+      .catch((err: unknown) => {
+        console.error('Price sync failed:', err);
+      });
   }, ONE_DAY);
 }
