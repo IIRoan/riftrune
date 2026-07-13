@@ -5,6 +5,7 @@ import {
   type DecksListQuery,
   type StoredDeckPayload,
 } from '@riftbound/contracts';
+import { authedFetch, RemoteApiError } from '@/src/api/authedClient';
 
 type DeckListPagination = {
   total: number;
@@ -14,63 +15,8 @@ type DeckListPagination = {
   hasNext: boolean;
   hasPrevious?: boolean;
 };
-import { getAuthCookieHeader } from '@/lib/auth-cookie';
-import { logActionFailure } from '@/lib/logger';
 
-const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000').replace(
-  /\/$/,
-  ''
-);
-
-const isBrowserRuntime = typeof document !== 'undefined';
-
-export class RemoteDeckApiError extends Error {
-  constructor(
-    readonly status: number,
-    readonly path: string,
-    readonly body: string
-  ) {
-    super(`API ${String(status)} ${path}: ${body}`);
-    this.name = 'RemoteDeckApiError';
-  }
-}
-
-async function authedFetch<T>(
-  path: string,
-  init?: { method?: string; body?: unknown }
-): Promise<T> {
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    ...(init?.body == null ? {} : { 'Content-Type': 'application/json' }),
-  };
-
-  if (!isBrowserRuntime) {
-    const cookie = getAuthCookieHeader();
-    if (cookie) headers.cookie = cookie;
-  }
-
-  const method = init?.method ?? 'GET';
-
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, {
-      method,
-      credentials: 'include',
-      headers,
-      body: init?.body == null ? undefined : JSON.stringify(init.body),
-    });
-  } catch (error) {
-    logActionFailure('decks.fetch', error, { path, method });
-    throw error;
-  }
-
-  const text = await res.text();
-  if (!res.ok) {
-    throw new RemoteDeckApiError(res.status, path, text);
-  }
-
-  return (text ? JSON.parse(text) : undefined) as T;
-}
+export { RemoteApiError };
 
 export async function fetchRemoteDecks(
   options?: Partial<DecksListQuery>
@@ -100,7 +46,7 @@ export async function fetchRemoteDeck(deckId: string): Promise<DeckListItem | nu
     const res = await authedFetch<unknown>(`/api/v1/decks/${encodeURIComponent(deckId)}`);
     return DeckDetailResponse.parse(res).data;
   } catch (error) {
-    if (error instanceof RemoteDeckApiError && error.status === 404) return null;
+    if (error instanceof RemoteApiError && error.status === 404) return null;
     throw error;
   }
 }
@@ -127,5 +73,5 @@ export async function remoteDeleteDeck(deckId: string): Promise<void> {
 }
 
 export function isRemoteDeckReadOnlyError(error: unknown): boolean {
-  return error instanceof RemoteDeckApiError && error.status === 403;
+  return error instanceof RemoteApiError && error.status === 403;
 }

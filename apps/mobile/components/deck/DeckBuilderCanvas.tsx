@@ -36,7 +36,7 @@ import {
 import { adjustRuneCountForDomain, seedDefaultRuneSplit } from '@/lib/deck-runes';
 import type { DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { validateDeck } from '@/lib/deck-validation';
-import { deckHasBannedCards } from '@/lib/deck-browse';
+import { deckHasBannedCards } from '@/lib/card-legality';
 import { prefetchDeckAddCatalog } from '@/lib/prefetchDeckAddCatalog';
 import { hapticPress } from '@/utils/haptics';
 

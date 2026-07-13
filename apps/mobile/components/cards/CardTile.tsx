@@ -95,7 +95,6 @@ function CardTileInner({
     [card, pricePrintings]
   );
   const printingsLabel = printingSummary(scopedCard);
-  const multiplePrintings = hasMultiplePrintings(printings);
   const primaryPrinting = printings[0];
   const owned = useMemo(
     () => totalOwnedForCard(scopedCard, collectionByVariant),

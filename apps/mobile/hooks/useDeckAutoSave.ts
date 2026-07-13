@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { DeckState } from '@/lib/deck-types';
-import { deckQueryKeys } from '@/hooks/useDecks';
+import { deckQueryKeys } from '@/src/api/queryKeys';
 import { flushRemoteDeckSave, scheduleRemoteDeckSave } from '@/services/deckService';
 
 /** Debounced account save while editing a deck. */

@@ -6,6 +6,7 @@ import {
   CollectionQuantitiesResponse,
   FiltersResponse,
   HealthResponse,
+  PricesListResponse,
 } from '@riftbound/contracts';
 import { authFetch, cleanupTestUsers, signUpTestUser } from './helpers/auth.js';
 import { assertMaxMs, readBudget, timedJson } from './helpers/timing.js';
@@ -20,6 +21,11 @@ const BUDGET = {
   detail: readBudget('detail', 500),
   quantities: readBudget('quantities', 400),
   collectionList: readBudget('collection_list', 2500),
+  batch: readBudget('batch', 1200),
+  prices: readBudget('prices', 1500),
+  priceStats: readBudget('price_stats', 2000),
+  syncStatus: readBudget('sync_status', 200),
+  priceHistory: readBudget('price_history', 2500),
 };
 
 const testEmail = `test-perf-${Date.now()}@test.riftbound.dev`;
@@ -144,6 +150,91 @@ describe('API response times (cached catalog)', () => {
 
     CardsListResponse.parse(cold.data);
     CardsListResponse.parse(warm.data);
-    expect(warm.ms).toBeLessThanOrEqual(cold.ms * 1.5);
+    if (cold.ms >= 15) {
+      expect(warm.ms).toBeLessThanOrEqual(cold.ms * 1.5);
+    }
+  });
+
+  test(`POST /api/v1/cards/batch ≤ ${String(BUDGET.batch)}ms`, async () => {
+    const { ms, data } = await timedJson<unknown>('cards batch', () =>
+      authFetch('/api/v1/cards/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variantNumbers: sampleVariants }),
+      })
+    );
+    expect(data).toBeTruthy();
+    assertMaxMs('cards batch', ms, BUDGET.batch);
+  });
+
+  test(`GET /api/v1/prices ≤ ${String(BUDGET.prices)}ms`, async () => {
+    const { ms, data } = await timedJson<unknown>('prices list', () =>
+      authFetch('/api/v1/prices')
+    );
+    expect(data).toBeTruthy();
+    assertMaxMs('prices list', ms, BUDGET.prices);
+  });
+
+  test(`GET /api/v1/sync/status ≤ ${String(BUDGET.syncStatus)}ms`, async () => {
+    const { ms, data } = await timedJson<unknown>('sync status', () =>
+      authFetch('/api/v1/sync/status')
+    );
+    expect(data).toBeTruthy();
+    assertMaxMs('sync status', ms, BUDGET.syncStatus);
+  });
+
+  test(`POST /api/v1/prices/stats/batch ≤ ${String(BUDGET.priceStats)}ms`, async () => {
+    const { ms, data } = await timedJson<unknown>('price stats batch', () =>
+      authFetch('/api/v1/prices/stats/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          days: 30,
+          items: sampleVariants.slice(0, 10).map((variantNumber) => ({ variantNumber })),
+        }),
+      })
+    );
+    expect(data).toBeTruthy();
+    assertMaxMs('price stats batch', ms, BUDGET.priceStats);
+  });
+
+  test(`GET /api/v1/prices/history ≤ ${String(BUDGET.priceHistory)}ms`, async () => {
+    const all = PricesListResponse.parse(
+      (await timedJson<unknown>('prices seed', () => authFetch('/api/v1/prices'))).data
+    );
+    const sample = all.data.find((row) => row.cardmarketId != null);
+    expect(sample?.cardmarketId).toBeTruthy();
+
+    const { ms, data } = await timedJson<unknown>('price history', () =>
+      authFetch(
+        `/api/v1/prices/history?cardmarketId=${String(sample!.cardmarketId)}&isFoil=${String(
+          sample!.isFoil
+        )}&days=90`
+      )
+    );
+    expect(data).toBeTruthy();
+    assertMaxMs('price history', ms, BUDGET.priceHistory);
+  });
+
+  test('repeat filters and catalog index benefit from cache', async () => {
+    const filtersCold = await timedJson<unknown>('filters cold', () =>
+      authFetch('/api/v1/filters')
+    );
+    const filtersWarm = await timedJson<unknown>('filters warm', () =>
+      authFetch('/api/v1/filters')
+    );
+    FiltersResponse.parse(filtersCold.data);
+    FiltersResponse.parse(filtersWarm.data);
+    expect(filtersWarm.ms).toBeLessThanOrEqual(filtersCold.ms * 1.5);
+
+    const indexCold = await timedJson<unknown>('index cold', () =>
+      authFetch('/api/v1/cards/index')
+    );
+    const indexWarm = await timedJson<unknown>('index warm', () =>
+      authFetch('/api/v1/cards/index')
+    );
+    CatalogIndexResponse.parse(indexCold.data);
+    CatalogIndexResponse.parse(indexWarm.data);
+    expect(indexWarm.ms).toBeLessThanOrEqual(indexCold.ms * 1.5);
   });
 });

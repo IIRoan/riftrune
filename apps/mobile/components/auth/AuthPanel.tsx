@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, LayoutChangeEvent, Pressable, View } from 'react-native';
+import { AccessibilityInfo, Pressable, View, type LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   Easing,
@@ -18,7 +18,7 @@ import { migrateLocalCollectionToRemote } from '@/services/collectionService';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 import { authClient } from '@/src/lib/auth-client';
-import { collectionQueryKeys } from '@/src/api/queryKeys';
+import { invalidateUserDataQueries, removeUserDataQueries } from '@/src/api/queryClient';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -240,8 +240,7 @@ export function AuthPanel({
       }
       await sessionQuery.refetch();
       await migrateLocalCollectionToRemote();
-      void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
-      void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
+      await invalidateUserDataQueries(queryClient);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
@@ -256,8 +255,7 @@ export function AuthPanel({
       await sessionQuery.refetch();
       await clearPersistedCollection();
       await clearPersistedCatalogIndex();
-      void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
-      void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
+      removeUserDataQueries(queryClient);
     } finally {
       setBusy(false);
     }

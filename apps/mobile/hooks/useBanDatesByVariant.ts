@@ -4,6 +4,7 @@ import { isCardBannedAt } from '@riftbound/contracts';
 import { fetchBanDatesByVariant } from '@/lib/enrich-deck-ban-dates';
 import { getDeckVariantNumbers } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
+import { cardQueryKeys } from '@/src/api/queryKeys';
 import {
   mergeBanDatesIntoDeck,
   syncDeckLegalityFields,
@@ -17,7 +18,7 @@ export function useBanDatesByVariant(variantNumbers: string[]) {
   );
 
   return useQuery({
-    queryKey: ['cards', 'ban-dates', key],
+    queryKey: cardQueryKeys.banDates(key),
     queryFn: () => fetchBanDatesByVariant(key.split('|').filter(Boolean)),
     enabled: key.length > 0,
     staleTime: 60_000,
@@ -26,6 +27,7 @@ export function useBanDatesByVariant(variantNumbers: string[]) {
 }
 
 export function useDeckLiveLegality(deck: DeckState | null) {
+  // Cached deck rows can be stale — overlay today's catalog ban dates while editing.
   const variantNumbers = useMemo(
     () => (deck ? getDeckVariantNumbers(deck) : []),
     [deck]

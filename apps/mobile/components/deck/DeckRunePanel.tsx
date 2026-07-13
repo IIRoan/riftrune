@@ -19,7 +19,7 @@ interface DeckRunePanelProps {
 function RuneDomainRow({
   domain,
   count,
-  targetTotal,
+  targetTotal: _targetTotal,
   readOnly,
   onAdjust,
 }: {

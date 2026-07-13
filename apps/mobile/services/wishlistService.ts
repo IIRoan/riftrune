@@ -33,8 +33,3 @@ export async function addToWishlist(
 export async function removeFromWishlist(variantNumber: string): Promise<void> {
   await remoteRemoveFromWishlist(variantNumber);
 }
-
-export async function isOnWishlist(variantNumber: string): Promise<boolean> {
-  const items = await getWishlist();
-  return items.some((i) => i.variantNumber === variantNumber);
-}

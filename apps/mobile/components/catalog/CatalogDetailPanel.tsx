@@ -32,12 +32,12 @@ import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { Layout } from '@/constants/Layout';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
-import { formatStat, useCardDetail } from '@/hooks/useCardDetail';
+import { formatStat } from '@/utils/cardFormat';
+import { useCardDetail } from '@/hooks/useCardDetail';
 import { useCollectionMutations, useCollectionOwnership } from '@/hooks/useCollection';
 import { collectVariantNumbers } from '@/utils/collectionOwnership';
 import { useWishlist } from '@/hooks/useWishlist';
-import { addToWishlist, removeFromWishlist } from '@/services/wishlistService';
-import { wishlistQueryKeys } from '@/src/api/queryKeys';
+import { useWishlistMutations } from '@/hooks/useWishlistMutations';
 import {
   formatMarketTrend,
   formatPrintingPrice,
@@ -56,7 +56,6 @@ import { isCardBannedAt } from '@riftbound/contracts';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { hapticPress } from '@/utils/haptics';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
-import { useQueryClient } from '@tanstack/react-query';
 
 interface CatalogDetailPanelProps {
   variantNumber: string;
@@ -71,7 +70,6 @@ export function CatalogDetailPanel({
   catalogListItem = null,
   embedded = 'panel',
 }: CatalogDetailPanelProps) {
-  const queryClient = useQueryClient();
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { setQuantity } = useCollectionMutations();
   const detailVariants = useMemo(() => {
@@ -83,6 +81,7 @@ export function CatalogDetailPanel({
   const [wishlistPickerVisible, setWishlistPickerVisible] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);
   const { data: wishlist = [] } = useWishlist();
+  const { add: addWishlist, remove: removeWishlist } = useWishlistMutations();
   const wishlistVariants = useMemo(
     () => new Set(wishlist.map((entry) => entry.variantNumber)),
     [wishlist]
@@ -121,22 +120,20 @@ export function CatalogDetailPanel({
         detail.activeVariant;
       if (!variant) return;
 
-      await addToWishlist({
+      await addWishlist.mutateAsync({
         variantNumber: variant.variantNumber,
         name: detail.card.name,
         imageUrl: variant.imageUrl,
       });
-      void queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all });
     },
-    [detail.activeVariant, detail.card, queryClient]
+    [addWishlist, detail.activeVariant, detail.card]
   );
 
   const removeVariantFromWishlist = useCallback(
     async (targetVariantNumber: string) => {
-      await removeFromWishlist(targetVariantNumber);
-      void queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all });
+      await removeWishlist.mutateAsync(targetVariantNumber);
     },
-    [queryClient]
+    [removeWishlist]
   );
 
   if (!detail.card || !detail.activeVariant) {
@@ -640,7 +637,7 @@ export function CatalogDetailPanel({
 function CatalogCardFullscreen({
   visible,
   imageUrl,
-  name,
+  name: _name,
   onClose,
 }: {
   visible: boolean;

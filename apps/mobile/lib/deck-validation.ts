@@ -54,10 +54,6 @@ function countUnresolvedCards(deck: DeckState): number {
   return count;
 }
 
-export function deckHasErrors(messages: DeckValidationMessage[]): boolean {
-  return messages.some((message) => message.type === 'error');
-}
-
 export function ownedCountForCardName(
   name: string,
   collectionByName: ReadonlyMap<string, number>

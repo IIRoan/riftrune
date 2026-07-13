@@ -1,20 +1,20 @@
-import type { CardDetail, CardsListQuery } from '@riftbound/contracts';
+import type { CardDetail, CardsListQuery, PriceStatsBatchRequest } from '@riftbound/contracts';
 import {
   CardDetailResponse,
   CardsBatchResponse,
   CardsListResponse,
   CatalogIndexResponse,
   DeckRulesResponse,
-  DeckValidateInput,
-  DeckValidateResponse,
   FiltersResponse,
   HealthResponse,
   PriceHistoryResponse,
-  PriceStatsBatchRequest,
   PriceStatsBatchResponse,
   PricesListResponse,
 } from '@riftbound/contracts';
 import type { z } from 'zod';
+
+// Unauthenticated JSON client for catalog, prices, and filters.
+// User data (collection, decks) goes through authedClient.ts instead.
 
 const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000');
 
@@ -78,12 +78,6 @@ export const api = {
   getFilters: () => apiFetch('/api/v1/filters', FiltersResponse),
 
   getDeckRules: () => apiFetch('/api/v1/deck-rules', DeckRulesResponse),
-
-  validateDeck: (deck: DeckValidateInput) =>
-    apiFetch('/api/v1/deck-rules/validate', DeckValidateResponse, {
-      method: 'POST',
-      body: JSON.stringify(deck),
-    }),
 
   getPrices: (query: {
     cardmarketId?: number;

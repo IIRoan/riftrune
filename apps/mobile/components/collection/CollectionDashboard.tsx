@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Children } from 'react';
 import { Platform, Pressable, View, type ImageSourcePropType } from 'react-native';
 import { TrendTag } from '@/components/catalog/TrendTag';
-import { rarityIconFor, typeIconFor } from '@/constants/gameAssets';
+import type { typeIconFor } from '@/constants/gameAssets';
 import { Text } from '@/components/ui/text';
 import { useFillGridLayout } from '@/hooks/useFillGridLayout';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';

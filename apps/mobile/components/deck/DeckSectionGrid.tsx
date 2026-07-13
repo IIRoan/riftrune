@@ -4,10 +4,9 @@ import { DeckSectionHeader } from '@/components/deck/DeckSectionHeader';
 import { buildDeckGridRows } from '@/lib/deck-builder';
 import { getSectionCount } from '@/lib/deck-card';
 import { deckSectionProgress } from '@/lib/deck-display';
-import type { DeckEntry, DeckSectionKey, DeckState } from '@/lib/deck-types';
+import type { DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import { ownedCountForCardName } from '@/lib/deck-validation';
-import { cn } from '@/lib/utils';
 
 interface DeckSectionGridProps {
   deck: DeckState;
