@@ -1,4 +1,4 @@
-import type { DeckSortField } from '@riftbound/contracts';
+import type { DeckSortField, FilterSnapshot } from '@riftbound/contracts';
 
 export type DeckBrowseSort = {
   sort: DeckSortField;
@@ -73,13 +73,116 @@ export function countDeckBrowseFilters(filters: DeckBrowseFilters): number {
   return count;
 }
 
-/** Set prefixes shown in browse filters (matches Piltover Archive deck library). */
-export const DECK_BROWSE_SET_OPTIONS = [
-  { code: 'OGN', name: 'Origins' },
-  { code: 'SFD', name: 'Spiritforged' },
-  { code: 'UNL', name: 'Unleashed' },
-  { code: 'OGS', name: 'Proving Grounds' },
-] as const;
+export type DeckBrowseSetOption = {
+  code: string;
+  name: string;
+  count: number;
+};
+
+/** Live set list for deck browse filters — synced from `/api/v1/filters` (Piltover Archive). */
+export function deckBrowseSetOptionsFromFilters(
+  sets: FilterSnapshot['sets'] | undefined
+): DeckBrowseSetOption[] {
+  return (sets ?? [])
+    .filter((entry) => (entry.printCount ?? entry.count) > 0)
+    .map((entry) => ({
+      code: (entry.code ?? entry.id).toUpperCase(),
+      name: entry.name,
+      count: entry.printCount ?? entry.count,
+    }));
+}
+
+export function deckBrowseSetNameLookup(
+  options: readonly DeckBrowseSetOption[]
+): Map<string, string> {
+  return new Map(options.map((option) => [option.code.toUpperCase(), option.name]));
+}
+
+export function formatDeckBrowseSetSelection(
+  codes: readonly string[],
+  lookup: ReadonlyMap<string, string> = new Map()
+): string {
+  if (codes.length === 0) return '';
+  return codes.map((code) => lookup.get(code.toUpperCase()) ?? code).join(', ');
+}
+
+/** Drop set codes that are no longer in the upstream catalog snapshot. */
+export function sanitizeDeckBrowseFilters(
+  filters: DeckBrowseFilters,
+  availableSetCodes: readonly string[]
+): DeckBrowseFilters {
+  if (filters.sets.length === 0) return filters;
+
+  const allowed = new Set(availableSetCodes.map((code) => code.toUpperCase()));
+  const sets = filters.sets.filter((code) => allowed.has(code.toUpperCase()));
+  if (sets.length === filters.sets.length) return filters;
+  return { ...filters, sets };
+}
+
+export type DeckBrowseFilterChipDescriptor = {
+  key: string;
+  label: string;
+  applyClear: (filters: DeckBrowseFilters) => DeckBrowseFilters;
+};
+
+export function buildDeckBrowseFilterChips(
+  filters: DeckBrowseFilters,
+  setNameByCode: ReadonlyMap<string, string> = new Map()
+): DeckBrowseFilterChipDescriptor[] {
+  const chips: DeckBrowseFilterChipDescriptor[] = [];
+
+  if (filters.legend) {
+    chips.push({
+      key: 'legend',
+      label: filters.legend,
+      applyClear: (current) => ({ ...current, legend: undefined }),
+    });
+  }
+  if (filters.sets.length > 0) {
+    chips.push({
+      key: 'sets',
+      label: `Sets: ${formatDeckBrowseSetSelection(filters.sets, setNameByCode)}`,
+      applyClear: (current) => ({ ...current, sets: [] }),
+    });
+  }
+  if (filters.isLegal === true) {
+    chips.push({
+      key: 'legal',
+      label: 'Legal',
+      applyClear: (current) => ({ ...current, isLegal: undefined }),
+    });
+  }
+  if (filters.isLegal === false) {
+    chips.push({
+      key: 'not-legal',
+      label: 'Not legal',
+      applyClear: (current) => ({ ...current, isLegal: undefined }),
+    });
+  }
+  if (filters.hasGuide) {
+    chips.push({
+      key: 'guide',
+      label: 'Has guide',
+      applyClear: (current) => ({ ...current, hasGuide: false }),
+    });
+  }
+  if (filters.hasVideo) {
+    chips.push({
+      key: 'video',
+      label: 'Has video',
+      applyClear: (current) => ({ ...current, hasVideo: false }),
+    });
+  }
+  if (filters.hasMatchups) {
+    chips.push({
+      key: 'matchups',
+      label: 'Has matchups',
+      applyClear: (current) => ({ ...current, hasMatchups: false }),
+    });
+  }
+
+  return chips;
+}
 
 export function deckBrowseFiltersToQuery(
   filters: DeckBrowseFilters

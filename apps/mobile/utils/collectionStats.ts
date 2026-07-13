@@ -1,4 +1,29 @@
+import type { ImageSourcePropType } from 'react-native';
 import type { CollectionEntry } from '@/services/collectionService';
+
+export type ApiSetRow = {
+  code: string;
+  name: string;
+  count: number;
+};
+
+export type SetCatalogOverlay = {
+  name?: string;
+  released?: string;
+  art?: ImageSourcePropType;
+  logo?: ImageSourcePropType;
+};
+
+export type MergedSetStat = {
+  code: string;
+  name: string;
+  released: string;
+  art?: ImageSourcePropType;
+  logo?: ImageSourcePropType;
+  total: number;
+  owned: number;
+  foilOwned: number;
+};
 
 export type CollectionBreakdownRow = {
   name: string;
@@ -83,6 +108,62 @@ export function computeRarityBreakdown(
     owned: namesByRarity.get(rarity.name)?.size ?? 0,
     total: rarity.count,
   }));
+}
+
+/** Merge live PA set list with collection ownership and optional local artwork. */
+export function mergeSetStats(
+  collection: CollectionEntry[],
+  apiSets: ApiSetRow[],
+  resolveCatalogEntry: (code: string) => SetCatalogOverlay | undefined = () => undefined
+): MergedSetStat[] {
+  const ownedBySet = new Map<string, { variants: Set<string>; foilVariants: Set<string> }>();
+
+  for (const entry of collection) {
+    if (entry.quantity <= 0) continue;
+    const code = entry.setCode || entry.variantNumber.split('-')[0] || 'UNK';
+    const current = ownedBySet.get(code) ?? {
+      variants: new Set<string>(),
+      foilVariants: new Set<string>(),
+    };
+    current.variants.add(entry.variantNumber);
+    if (entry.isFoil) {
+      current.foilVariants.add(entry.variantNumber);
+    }
+    ownedBySet.set(code, current);
+  }
+
+  const seen = new Set<string>();
+  const merged: MergedSetStat[] = [];
+
+  const pushSet = (code: string, name: string, total: number) => {
+    const catalog = resolveCatalogEntry(code);
+    const stats = ownedBySet.get(code);
+    const owned = stats?.variants.size ?? 0;
+    const foilOwned = stats?.foilVariants.size ?? 0;
+
+    merged.push({
+      code,
+      name: catalog?.name ?? name,
+      released: catalog?.released ?? '',
+      ...(catalog?.art ? { art: catalog.art } : {}),
+      ...(catalog?.logo ? { logo: catalog.logo } : {}),
+      total: Math.max(total, owned),
+      owned,
+      foilOwned,
+    });
+  };
+
+  for (const apiSet of apiSets) {
+    seen.add(apiSet.code);
+    pushSet(apiSet.code, apiSet.name, apiSet.count);
+  }
+
+  for (const [code, stats] of ownedBySet) {
+    if (seen.has(code)) continue;
+    pushSet(code, code, stats.variants.size);
+  }
+
+  return merged;
 }
 
 export function countUniqueFoilVariants(collection: CollectionEntry[]): number {

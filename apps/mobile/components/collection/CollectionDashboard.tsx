@@ -4,12 +4,12 @@ import { Children } from 'react';
 import { Platform, Pressable, View, type ImageSourcePropType } from 'react-native';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import { rarityIconFor, typeIconFor } from '@/constants/gameAssets';
-import { SET_CATALOG, type SetCatalogEntry } from '@/constants/setCatalog';
 import { Text } from '@/components/ui/text';
 import { useFillGridLayout } from '@/hooks/useFillGridLayout';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import type { CollectionEntry } from '@/services/collectionService';
 import { openCard } from '@/utils/cardNavigation';
+import type { MergedSetStat } from '@/utils/collectionStats';
 import { cn } from '@/lib/utils';
 
 const SET_CARD_MIN_WIDTH = 280;
@@ -53,11 +53,7 @@ function SetLogoImage({ source }: { source: ImageSourcePropType }) {
   );
 }
 
-export type MergedSetStat = SetCatalogEntry & {
-  total: number;
-  owned: number;
-  foilOwned: number;
-};
+export type { MergedSetStat } from '@/utils/collectionStats';
 
 export function DashboardStat({
   label,
@@ -172,7 +168,9 @@ export function SetCard({ set }: { set: MergedSetStat }) {
       <View className="p-4">
         <View className="flex-row items-baseline justify-between gap-3">
           <Text className="min-w-0 flex-1 text-sm font-semibold text-foreground">{set.name}</Text>
-          <Text className="shrink-0 font-mono text-xs text-archive-subtle">{set.released}</Text>
+          {set.released ? (
+            <Text className="shrink-0 font-mono text-xs text-archive-subtle">{set.released}</Text>
+          ) : null}
         </View>
         {set.art ? (
           <Text className="mt-1 font-mono text-xs text-archive-subtle">{set.total} cards</Text>
@@ -340,42 +338,6 @@ export function CollectionMoverRow({
       <TrendTag trend={trend} />
     </Pressable>
   );
-}
-
-export function mergeSetStats(
-  collection: CollectionEntry[],
-  apiSets: { code: string; name: string; count: number }[]
-): MergedSetStat[] {
-  const apiSetMap = new Map(apiSets.map((s) => [s.code, s]));
-  const ownedBySet = new Map<string, { variants: Set<string>; foilVariants: Set<string> }>();
-
-  for (const entry of collection) {
-    if (entry.quantity <= 0) continue;
-    const code = entry.setCode || entry.variantNumber.split('-')[0] || 'UNK';
-    const current = ownedBySet.get(code) ?? {
-      variants: new Set<string>(),
-      foilVariants: new Set<string>(),
-    };
-    current.variants.add(entry.variantNumber);
-    if (entry.isFoil) {
-      current.foilVariants.add(entry.variantNumber);
-    }
-    ownedBySet.set(code, current);
-  }
-
-  return SET_CATALOG.map((catalog) => {
-    const apiSet = apiSetMap.get(catalog.code);
-    const stats = ownedBySet.get(catalog.code);
-    const owned = stats?.variants.size ?? 0;
-    const foilOwned = stats?.foilVariants.size ?? 0;
-    return {
-      ...catalog,
-      name: apiSet?.name ?? catalog.name,
-      total: Math.max(apiSet?.count ?? 0, owned),
-      owned,
-      foilOwned,
-    };
-  });
 }
 
 export function computeTypeStats(

@@ -10,11 +10,13 @@ import {
 import { FilterKeywordChip } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
 import {
+  buildDeckBrowseFilterChips,
   countDeckBrowseFilters,
   deckBrowseFiltersActive,
   DEFAULT_DECK_BROWSE_FILTERS,
   type DeckBrowseFilters,
 } from '@/constants/deckBrowse';
+import { useDeckBrowseFilterOptions } from '@/hooks/useDeckBrowseFilterOptions';
 import {
   DECK_BROWSE_FILTER_SEGMENTS,
   deckBrowseFilterSegmentActive,
@@ -44,6 +46,7 @@ export function DeckBrowseFilterSheet({
   onFiltersChange,
 }: DeckBrowseFilterSheetProps) {
   const activeCount = countDeckBrowseFilters(filters);
+  const { setNameByCode } = useDeckBrowseFilterOptions();
   const accordionKey = visible ? 'open' : 'closed';
   const defaultOpen = useMemo(() => defaultOpenSegments(filters), [filters, accordionKey]);
 
@@ -63,7 +66,7 @@ export function DeckBrowseFilterSheet({
             key={segment.id}
             value={segment.id}
             label={segment.label}
-            summary={deckBrowseFilterSegmentSummary(segment.id, filters)}
+            summary={deckBrowseFilterSegmentSummary(segment.id, filters, setNameByCode)}
             active={deckBrowseFilterSegmentActive(segment.id, filters)}
           >
             <DeckBrowseFilterSegmentPanel
@@ -122,59 +125,13 @@ export function DeckBrowseActiveFilterChips({
   filters: DeckBrowseFilters;
   onFiltersChange: (filters: DeckBrowseFilters) => void;
 }) {
-  if (!deckBrowseFiltersActive(filters)) return null;
+  const { setNameByCode } = useDeckBrowseFilterOptions();
+  const chips = useMemo(
+    () => buildDeckBrowseFilterChips(filters, setNameByCode),
+    [filters, setNameByCode]
+  );
 
-  const chips: Array<{ key: string; label: string; clear: () => void }> = [];
-
-  if (filters.legend) {
-    chips.push({
-      key: 'legend',
-      label: filters.legend,
-      clear: () => onFiltersChange({ ...filters, legend: undefined }),
-    });
-  }
-  if (filters.sets.length > 0) {
-    chips.push({
-      key: 'sets',
-      label: `Sets: ${filters.sets.join(', ')}`,
-      clear: () => onFiltersChange({ ...filters, sets: [] }),
-    });
-  }
-  if (filters.isLegal === true) {
-    chips.push({
-      key: 'legal',
-      label: 'Legal',
-      clear: () => onFiltersChange({ ...filters, isLegal: undefined }),
-    });
-  }
-  if (filters.isLegal === false) {
-    chips.push({
-      key: 'not-legal',
-      label: 'Not legal',
-      clear: () => onFiltersChange({ ...filters, isLegal: undefined }),
-    });
-  }
-  if (filters.hasGuide) {
-    chips.push({
-      key: 'guide',
-      label: 'Has guide',
-      clear: () => onFiltersChange({ ...filters, hasGuide: false }),
-    });
-  }
-  if (filters.hasVideo) {
-    chips.push({
-      key: 'video',
-      label: 'Has video',
-      clear: () => onFiltersChange({ ...filters, hasVideo: false }),
-    });
-  }
-  if (filters.hasMatchups) {
-    chips.push({
-      key: 'matchups',
-      label: 'Has matchups',
-      clear: () => onFiltersChange({ ...filters, hasMatchups: false }),
-    });
-  }
+  if (chips.length === 0) return null;
 
   return (
     <ScrollView
@@ -214,7 +171,7 @@ export function DeckBrowseActiveFilterChips({
             <Pressable
               key={chip.key}
               className="h-9 flex-row items-center gap-1.5 rounded-xl border border-border bg-card-panel px-3 active:opacity-80"
-              onPress={chip.clear}
+              onPress={() => onFiltersChange(chip.applyClear(filters))}
               accessibilityLabel={`Clear ${chip.label} filter`}
             >
               <Text className="text-sm font-semibold text-foreground">{chip.label}</Text>
@@ -228,7 +185,7 @@ export function DeckBrowseActiveFilterChips({
             key={chip.key}
             label={keywordLabel}
             keywordBase={keywordBase}
-            onClear={chip.clear}
+            onClear={() => onFiltersChange(chip.applyClear(filters))}
           />
         );
       })}

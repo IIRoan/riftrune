@@ -1,4 +1,5 @@
 import type { DeckBrowseFilters } from '@/constants/deckBrowse';
+import { formatDeckBrowseSetSelection } from '@/constants/deckBrowse';
 import type { DeckState } from '@/lib/deck-types';
 
 export {
@@ -90,13 +91,16 @@ export function deckBrowseFilterSegmentActive(
 
 export function deckBrowseFilterSegmentSummary(
   segment: DeckBrowseFilterSegment,
-  filters: DeckBrowseFilters
+  filters: DeckBrowseFilters,
+  setNameByCode: ReadonlyMap<string, string> = new Map()
 ): string | undefined {
   switch (segment) {
     case 'legends':
       return filters.legend;
     case 'sets':
-      return filters.sets.length > 0 ? filters.sets.join(', ') : undefined;
+      return filters.sets.length > 0
+        ? formatDeckBrowseSetSelection(filters.sets, setNameByCode)
+        : undefined;
     case 'legality':
       if (filters.isLegal === true) return 'Legal only';
       if (filters.isLegal === false) return 'Not legal';

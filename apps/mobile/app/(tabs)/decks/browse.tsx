@@ -12,12 +12,11 @@ import {
 } from '@/components/deck/DeckBrowseSortSheet';
 import { DecksListScreen } from '@/components/deck/DecksListScreen';
 import {
-  DEFAULT_DECK_BROWSE_FILTERS,
   DEFAULT_DECK_BROWSE_SORT,
   deckBrowseFiltersActive,
-  type DeckBrowseFilters,
   type DeckBrowseSort,
 } from '@/constants/deckBrowse';
+import { useDeckBrowseFilters } from '@/hooks/useDeckBrowseFilters';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useImportedDecksBrowse } from '@/hooks/useDecks';
@@ -26,7 +25,7 @@ export default function BrowseDecksScreen() {
   const isMobile = useMobileLayout();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<DeckBrowseSort>(DEFAULT_DECK_BROWSE_SORT);
-  const [filters, setFilters] = useState<DeckBrowseFilters>(DEFAULT_DECK_BROWSE_FILTERS);
+  const [filters, setFilters] = useDeckBrowseFilters();
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const debouncedQuery = useDebounce(query, 350);
