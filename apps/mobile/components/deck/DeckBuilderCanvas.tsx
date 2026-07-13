@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  DeckBattlefieldRow,
+  DeckBattlefieldPanel,
   DeckSectionGrid,
 } from '@/components/deck/DeckSectionGrid';
 import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
@@ -36,7 +36,7 @@ import {
 import { adjustRuneCountForDomain, seedDefaultRuneSplit } from '@/lib/deck-runes';
 import type { DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { validateDeck } from '@/lib/deck-validation';
-import { deckHasBannedCards } from '@/lib/deck-browse';
+import { deckHasBannedCards } from '@/lib/card-legality';
 import { prefetchDeckAddCatalog } from '@/lib/prefetchDeckAddCatalog';
 import { hapticPress } from '@/utils/haptics';
 
@@ -148,7 +148,7 @@ export function DeckBuilderCanvas({
       </DeckBuilderSection>
 
       <DeckBuilderSection>
-        <DeckBattlefieldRow
+        <DeckBattlefieldPanel
           deck={deck}
           readOnly={readOnly}
           tileWidth={sectionTileWidth}

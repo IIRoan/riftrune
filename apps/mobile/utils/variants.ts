@@ -1,4 +1,5 @@
 import type { CardListItem, CardListPrinting, CardsListResponse } from '@riftbound/contracts';
+import { computeTrend, formatTrendLabel } from '@riftbound/contracts';
 
 export function isFoilVariant(
   variantNumber: string,
@@ -441,10 +442,7 @@ export type MarketPriceDisplay = {
   price: string;
 };
 
-function formatPriceRowAmount(row: {
-  market: number | null;
-  low: number | null;
-}): string | null {
+function formatPriceRowAmount(row: { market: number | null }): string | null {
   const amount = row.market;
   return amount != null ? `€${amount.toFixed(2)}` : null;
 }
@@ -478,11 +476,9 @@ export function getVariantMarketPriceDisplays(variant: {
 export function formatMarketTrend(
   price: CardListItem['priceEur']
 ): string {
-  if (!price?.market || !price.avg7d || price.avg7d === 0) return 'Flat';
-  const pct = Math.round(((price.market - price.avg7d) / price.avg7d) * 100);
-  if (pct >= 5) return `+${String(pct)}%`;
-  if (pct <= -5) return `${String(pct)}%`;
-  return 'Flat';
+  if (!price?.market || !price.avg7d) return 'Flat';
+  const { changePercent, trend } = computeTrend(price.market, price.avg7d);
+  return formatTrendLabel(changePercent, trend);
 }
 
 export function bestCardTrend(card: CardListItem): string {

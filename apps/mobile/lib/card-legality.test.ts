@@ -3,7 +3,6 @@ import {
   collectIllegalCardNames,
   isCardBannedInDeck,
   isCardTournamentIllegal,
-  isListItemBanned,
 } from '@/lib/card-legality';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 
@@ -97,12 +96,5 @@ describe('collectIllegalCardNames', () => {
       ]),
     });
     expect(collectIllegalCardNames(state)).toEqual(['Banned']);
-  });
-});
-
-describe('isListItemBanned', () => {
-  test('reads list item flag', () => {
-    expect(isListItemBanned({ isBanned: true })).toBe(true);
-    expect(isListItemBanned({ isBanned: false })).toBe(false);
   });
 });

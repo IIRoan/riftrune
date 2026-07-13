@@ -32,7 +32,6 @@ import { hapticPress } from '@/utils/haptics';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { cn } from '@/lib/utils';
-import { isListItemBanned } from '@/lib/card-legality';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const LIST_THUMB_W = 56;
@@ -96,7 +95,6 @@ function CardTileInner({
     [card, pricePrintings]
   );
   const printingsLabel = printingSummary(scopedCard);
-  const multiplePrintings = hasMultiplePrintings(printings);
   const primaryPrinting = printings[0];
   const owned = useMemo(
     () => totalOwnedForCard(scopedCard, collectionByVariant),
@@ -187,7 +185,7 @@ function CardTileInner({
   ) : null;
 
   const imageUri = resolveImageUrl(card.imageUrl);
-  const banned = isListItemBanned(card);
+  const banned = card.isBanned;
 
   if (layout === 'list') {
     return (

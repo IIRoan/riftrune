@@ -16,7 +16,7 @@ import {
   DEFAULT_DECK_BROWSE_FILTERS,
   type DeckBrowseFilters,
 } from '@/constants/deckBrowse';
-import { useDeckBrowseFilterOptions } from '@/hooks/useDeckBrowseFilterOptions';
+import { useDeckBrowseFilterOptions } from '@/hooks/useDeckBrowseFilters';
 import {
   DECK_BROWSE_FILTER_SEGMENTS,
   deckBrowseFilterSegmentActive,

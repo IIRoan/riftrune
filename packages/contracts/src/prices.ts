@@ -29,8 +29,6 @@ export const PriceDailyPoint = z.object({
   highPrice: z.number().nullable(),
 });
 
-export const PriceHistoryPoint = PriceDailyPoint;
-
 export const PriceTrend = z.enum(['up', 'down', 'flat']);
 
 export const PriceStats = z.object({
@@ -118,7 +116,6 @@ export const PriceStatsBatchResponse = z.object({
 
 export type PriceRow = z.infer<typeof PriceRow>;
 export type PriceDailyPoint = z.infer<typeof PriceDailyPoint>;
-export type PriceHistoryPoint = z.infer<typeof PriceHistoryPoint>;
 export type PriceTrend = z.infer<typeof PriceTrend>;
 export type PriceStats = z.infer<typeof PriceStats>;
 export type PriceHistoryQuery = z.infer<typeof PriceHistoryQuery>;

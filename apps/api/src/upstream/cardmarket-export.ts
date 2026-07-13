@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** Cardmarket `idGame` for Riftbound (League of Legends TCG). */
+/** Cardmarket `idGame` for Riftbound. */
 export const CARDMARKET_RIFTBOUND_GAME_ID = 22;
 
 export const CARDMARKET_EXPORT_BASE_URL =
@@ -40,10 +40,6 @@ export function priceGuideDownloadUrl(gameId: number): string {
   return `${CARDMARKET_EXPORT_BASE_URL}/priceGuide/price_guide_${String(gameId)}.json`;
 }
 
-export function productsSinglesDownloadUrl(gameId: number): string {
-  return `${CARDMARKET_EXPORT_BASE_URL}/productList/products_singles_${String(gameId)}.json`;
-}
-
 export async function fetchCardmarketPriceGuide(
   gameId: number = CARDMARKET_RIFTBOUND_GAME_ID
 ): Promise<CardmarketPriceGuideExport> {
@@ -63,11 +59,5 @@ export async function fetchCardmarketPriceGuide(
   }
 
   const json: unknown = await res.json();
-  return CardmarketPriceGuideExportSchema.parse(json);
-}
-
-export function parseCardmarketPriceGuideExport(
-  json: unknown
-): CardmarketPriceGuideExport {
   return CardmarketPriceGuideExportSchema.parse(json);
 }

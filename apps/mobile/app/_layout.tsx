@@ -6,7 +6,7 @@ import {
   DefaultTheme,
   ThemeProvider as NavThemeProvider,
 } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -16,20 +16,12 @@ import { Text } from '@/components/ui/text';
 import { TetraProvider } from '@/components/TetraProvider';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useAppFonts } from '@/hooks/useAppFonts';
+import { createQueryClient } from '@/src/api/queryClient';
 import { hydrateSecureStorage } from '@/src/lib/secure-storage';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60_000,
-      gcTime: 30 * 60 * 1000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = createQueryClient();
 
 function RootNav() {
   const { actualTheme } = useTheme();

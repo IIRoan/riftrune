@@ -7,7 +7,6 @@ import {
 import {
   accumulatePrintCounts,
   enrichFilterSnapshotWithPrintCounts,
-  countCollectiblePrintings,
 } from '../../src/services/catalog-probe.js';
 import {
   enrichedFilterSnapshot,
@@ -60,8 +59,6 @@ describe('catalog probe helpers', () => {
         { isCollectible: true, set: { prefix: 'OGN' } },
       ],
     } as PaLogicalCard;
-
-    expect(countCollectiblePrintings(card)).toBe(2);
 
     const totals = new Map<string, number>();
     expect(accumulatePrintCounts(card, totals)).toBe(2);

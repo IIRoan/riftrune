@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CardListItem } from '@riftbound/contracts';
+import { catalogQueryKeys } from '@/src/api/queryKeys';
 import {
   getInMemoryCatalogIndex,
   readPersistedCatalogIndex,
@@ -10,13 +11,14 @@ import {
   resolveCatalogIndexCacheKey,
 } from '@/services/catalogMetaService';
 
-export const catalogIndexQueryKey = ['catalog', 'index'] as const;
+/** @deprecated Import catalogQueryKeys.index from @/src/api/queryKeys */
+export const catalogIndexQueryKey = catalogQueryKeys.index;
 
 export function useCatalogIndex() {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: catalogIndexQueryKey,
+    queryKey: catalogQueryKeys.index,
     queryFn: () =>
       syncCatalogIndex(() => resolveCatalogIndexCacheKey(queryClient)),
     staleTime: 10 * 60 * 1000,
@@ -26,7 +28,7 @@ export function useCatalogIndex() {
     placeholderData: () => {
       const inMemory = getInMemoryCatalogIndex();
       if (inMemory) return inMemory;
-      return queryClient.getQueryData(catalogIndexQueryKey);
+      return queryClient.getQueryData(catalogQueryKeys.index);
     },
     initialData: () => getInMemoryCatalogIndex() ?? undefined,
   });
@@ -35,7 +37,7 @@ export function useCatalogIndex() {
 export async function hydrateCatalogIndex(queryClient: ReturnType<typeof useQueryClient>) {
   const persisted = await readPersistedCatalogIndex();
   if (persisted) {
-    queryClient.setQueryData(catalogIndexQueryKey, persisted);
+    queryClient.setQueryData(catalogQueryKeys.index, persisted);
   }
 }
 
@@ -43,7 +45,7 @@ export async function prefetchCatalogIndex(queryClient: ReturnType<typeof useQue
   await hydrateCatalogIndex(queryClient);
   void prefetchCatalogMeta(queryClient);
   void queryClient.prefetchQuery({
-    queryKey: catalogIndexQueryKey,
+    queryKey: catalogQueryKeys.index,
     queryFn: () =>
       syncCatalogIndex(() => resolveCatalogIndexCacheKey(queryClient)),
     staleTime: 10 * 60 * 1000,

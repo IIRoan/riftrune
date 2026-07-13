@@ -164,10 +164,3 @@ export function CatalogActiveFilterChips({
     </ScrollView>
   );
 }
-
-/** @deprecated Use CatalogFilterSheet */
-export const FilterSheet = CatalogFilterSheet;
-/** @deprecated Use CatalogFilterTrigger */
-export const FilterTrigger = CatalogFilterTrigger;
-/** @deprecated Use CatalogActiveFilterChips */
-export const ActiveFilterChip = CatalogActiveFilterChips;

@@ -36,7 +36,7 @@ import { Heading } from '@/components/ui/heading';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
-import { formatCardPrice, formatStat } from '@/hooks/useCardDetail';
+import { formatCardPrice, formatStat } from '@/utils/cardFormat';
 import {
   formatMarketTrend,
   getVariantMarketPriceDisplays,

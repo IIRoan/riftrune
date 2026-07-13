@@ -45,7 +45,7 @@ export function normalizeGuideTrend(
   avg: number | null,
   avg7: number | null
 ): number | null {
-  if (trend === null || trend === undefined) return null;
+  if (trend === null) return null;
   if (trend === 0 && avg === null && avg7 === null) return null;
   return trend;
 }

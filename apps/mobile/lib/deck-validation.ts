@@ -14,7 +14,7 @@ function mapToEntries(
   }));
 }
 
-export function deckToValidateInput(deck: DeckState): DeckValidateInput {
+function deckToValidateInput(deck: DeckState): DeckValidateInput {
   return {
     legend: deck.legend,
     champion: deck.champion,
@@ -52,10 +52,6 @@ function countUnresolvedCards(deck: DeckState): number {
   }
   if (deck.champion && isUnresolvedDeckVariant(deck.champion.variantNumber)) count += 1;
   return count;
-}
-
-export function deckHasErrors(messages: DeckValidationMessage[]): boolean {
-  return messages.some((message) => message.type === 'error');
 }
 
 export function ownedCountForCardName(

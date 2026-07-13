@@ -7,10 +7,6 @@ export type ExpandedCatalogProbe = {
   setPrintTotals: Record<string, number>;
 };
 
-export function countCollectiblePrintings(card: PaLogicalCard): number {
-  return card.variants.filter((variant) => variant.isCollectible).length;
-}
-
 export function accumulatePrintCounts(
   card: PaLogicalCard,
   setPrintTotals: Map<string, number>

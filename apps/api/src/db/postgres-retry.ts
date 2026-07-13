@@ -60,7 +60,7 @@ function wrapPendingQuery(createQuery: QueryFactory, maxAttempts: number): Promi
       if (typeof prop === 'string' && CHAINABLE_QUERY_METHODS.has(prop)) {
         return (...args: unknown[]) => {
           chain.push((query) => {
-            const method = (query as Record<string, unknown>)[prop];
+            const method = (query as unknown as Record<string, unknown>)[prop];
             if (typeof method !== 'function') {
               throw new TypeError(`Query method ${prop} is not callable`);
             }
@@ -71,7 +71,7 @@ function wrapPendingQuery(createQuery: QueryFactory, maxAttempts: number): Promi
       }
 
       const sample = buildQuery();
-      const value = (sample as Record<string | symbol, unknown>)[prop];
+      const value = (sample as unknown as Record<string | symbol, unknown>)[prop];
       return typeof value === 'function' ? value.bind(sample) : value;
     },
   });
