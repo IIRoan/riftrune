@@ -1,4 +1,8 @@
-import type { DeckSortField, FilterSnapshot } from '@riftbound/contracts';
+import type {
+  DeckSortField,
+  DecksListQuery,
+  FilterSnapshot,
+} from '@riftbound/contracts';
 
 export type DeckBrowseSort = {
   sort: DeckSortField;
@@ -54,11 +58,11 @@ export const DEFAULT_DECK_BROWSE_FILTERS: DeckBrowseFilters = {
 export function deckBrowseFiltersActive(filters: DeckBrowseFilters): boolean {
   return Boolean(
     filters.legend ||
-      filters.sets.length > 0 ||
-      filters.isLegal !== undefined ||
-      filters.hasGuide ||
-      filters.hasVideo ||
-      filters.hasMatchups
+    filters.sets.length > 0 ||
+    filters.isLegal !== undefined ||
+    filters.hasGuide ||
+    filters.hasVideo ||
+    filters.hasMatchups
   );
 }
 
@@ -187,7 +191,7 @@ export function buildDeckBrowseFilterChips(
 export function deckBrowseFiltersToQuery(
   filters: DeckBrowseFilters
 ): Pick<
-  import('@riftbound/contracts').DecksListQuery,
+  DecksListQuery,
   'legend' | 'sets' | 'isLegal' | 'hasGuide' | 'hasVideo' | 'hasMatchups'
 > {
   return {

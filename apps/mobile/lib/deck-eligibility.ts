@@ -4,7 +4,7 @@ import {
   legendChampionTags,
   sharesLegendChampionTag,
 } from '@riftbound/contracts';
-import { getSectionCount, sectionForCardType } from '@/lib/deck-card';
+import { sectionForCardType } from '@/lib/deck-card';
 import { battlefieldsAtCapacity } from '@/lib/deck-limits';
 
 export type CardEligibilityResult = {
@@ -182,7 +182,10 @@ export function isCardEligibleForSection(args: {
       return { eligible: false, reason: 'Not a Main Deck card for sideboard.' };
     }
     if (candidateCard.isSignature) {
-      return { eligible: false, reason: 'Signature cards cannot be added to sideboard.' };
+      return {
+        eligible: false,
+        reason: 'Signature cards cannot be added to sideboard.',
+      };
     }
   }
 
@@ -211,10 +214,10 @@ export function isCardEligibleForSection(args: {
     // This avoids a UX where changing the legend would instantly make your existing deck invalid.
     const hasExisting = Boolean(
       deck.champion ||
-        deck.mainDeck.size > 0 ||
-        deck.runes.size > 0 ||
-        deck.battlefields.size > 0 ||
-        deck.sideboard.size > 0
+      deck.mainDeck.size > 0 ||
+      deck.runes.size > 0 ||
+      deck.battlefields.size > 0 ||
+      deck.sideboard.size > 0
     );
     if (hasExisting) {
       const nextIdentity: DeckIdentity = {
@@ -226,36 +229,54 @@ export function isCardEligibleForSection(args: {
       const champion = deck.champion;
       if (champion && nextIdentity.allowedDomains) {
         if (!domainIdentityMatch(champion.colors, nextIdentity.allowedDomains)) {
-          return { eligible: false, reason: 'Legend domain identity would conflict with existing Champion.' };
+          return {
+            eligible: false,
+            reason: 'Legend domain identity would conflict with existing Champion.',
+          };
         }
         if (!matchesLegendChampionTag(champion, candidateCard)) {
-          return { eligible: false, reason: 'Legend champion tags would conflict with existing Champion.' };
+          return {
+            eligible: false,
+            reason: 'Legend champion tags would conflict with existing Champion.',
+          };
         }
       }
 
-      const validateEntryDomain = (card: DeckCard, context: string) => {
+      const validateEntryDomain = (card: DeckCard, _context: string) => {
         if (!nextIdentity.allowedDomains) return true;
         return domainIdentityMatch(card.colors, nextIdentity.allowedDomains);
       };
 
       for (const [, entry] of deck.mainDeck) {
         if (!validateEntryDomain(entry.card, 'main')) {
-          return { eligible: false, reason: 'Legend domain identity would conflict with existing Main Deck.' };
+          return {
+            eligible: false,
+            reason: 'Legend domain identity would conflict with existing Main Deck.',
+          };
         }
       }
       for (const [, entry] of deck.runes) {
         if (!validateEntryDomain(entry.card, 'runes')) {
-          return { eligible: false, reason: 'Legend domain identity would conflict with existing Runes.' };
+          return {
+            eligible: false,
+            reason: 'Legend domain identity would conflict with existing Runes.',
+          };
         }
       }
       for (const [, entry] of deck.battlefields) {
         if (!validateEntryDomain(entry.card, 'battlefields')) {
-          return { eligible: false, reason: 'Legend domain identity would conflict with existing Battlefields.' };
+          return {
+            eligible: false,
+            reason: 'Legend domain identity would conflict with existing Battlefields.',
+          };
         }
       }
       for (const [, entry] of deck.sideboard) {
         if (!validateEntryDomain(entry.card, 'sideboard')) {
-          return { eligible: false, reason: 'Legend domain identity would conflict with existing Sideboard.' };
+          return {
+            eligible: false,
+            reason: 'Legend domain identity would conflict with existing Sideboard.',
+          };
         }
       }
 
@@ -263,7 +284,10 @@ export function isCardEligibleForSection(args: {
       for (const [name, entry] of deck.mainDeck) {
         if (!entry.card.isSignature) continue;
         if (!matchesLegendChampionTag(entry.card, candidateCard)) {
-          return { eligible: false, reason: `Signature card "${name}" must match the Legend champion tag.` };
+          return {
+            eligible: false,
+            reason: `Signature card "${name}" must match the Legend champion tag.`,
+          };
         }
       }
     }
@@ -287,7 +311,10 @@ export function isCardEligibleForSection(args: {
     const base = totalCopiesForCardName(deck, candidateCard.name);
     const future = base - (existingChampionName === candidateCard.name ? 1 : 0) + 1;
     if (future > maxCopiesForCandidate(candidateCard)) {
-      return { eligible: false, reason: 'Adding this Champion would exceed copy limits.' };
+      return {
+        eligible: false,
+        reason: 'Adding this Champion would exceed copy limits.',
+      };
     }
   } else if (section !== 'legend' && section !== 'battlefields') {
     // Battlefields use slot + uniqueness rules above, not the 3-copy default.
@@ -304,11 +331,17 @@ export function isCardEligibleForSection(args: {
         ? matchesLegendChampionTag(candidateCard, deck.legend)
         : true;
       if (!matchesTag) {
-        return { eligible: false, reason: 'Signature cards must match the Legend champion tag.' };
+        return {
+          eligible: false,
+          reason: 'Signature cards must match the Legend champion tag.',
+        };
       }
       const existingMatching = signatureCountMatchingLegend(deck);
       if (existingMatching + 1 > 3) {
-        return { eligible: false, reason: 'Signature card cap reached for this Legend.' };
+        return {
+          eligible: false,
+          reason: 'Signature card cap reached for this Legend.',
+        };
       }
     } else {
       const existing = signatureCountAll(deck);
@@ -320,4 +353,3 @@ export function isCardEligibleForSection(args: {
 
   return { eligible: true };
 }
-

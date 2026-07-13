@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { Elysia } from 'elysia';
 import { errorPlugin } from '../../src/plugins/error-handler.js';
 
 function createApp() {

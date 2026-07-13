@@ -1,5 +1,5 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Layout, tabBarContentInset } from '@/constants/Layout';
+import { tabBarContentInset } from '@/constants/Layout';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
 
 export function useScreenInsets() {
