@@ -1,6 +1,6 @@
-import { INPUT_SEARCH_SHELL_CLASS } from "@/constants/catalogToolbar";
-import { cn } from "@/lib/utils";
-import { SearchIcon } from "@/components/icons";
+import { INPUT_SEARCH_SHELL_CLASS } from '@/constants/catalogToolbar';
+import { cn } from '@/lib/utils';
+import { SearchIcon } from '@/components/icons';
 import {
   Input,
   InputAddon,
@@ -10,7 +10,7 @@ import {
   type InputProps,
   useInputAddons,
   useInputFocusState,
-} from "./input";
+} from './input';
 
 // Types
 export type SearchInputProps = InputProps & {
@@ -27,14 +27,13 @@ export const SearchInput = ({
   disabled,
   children,
   className,
-  accessibilityRole = "search",
+  accessibilityRole = 'search',
   ...props
 }: SearchInputProps) => {
   const { isFocused, internalRef, handleFocus, handleBlur, handlePress } =
     useInputFocusState({ onFocus, onBlur });
 
-  const { startAddons, endAddons, pressableClassName } =
-    useInputAddons(children);
+  const { startAddons, endAddons, pressableClassName } = useInputAddons(children);
 
   return (
     <InputPressable
@@ -55,7 +54,7 @@ export const SearchInput = ({
       <Input
         {...props}
         accessibilityRole={accessibilityRole}
-        className={cn("shrink", props.className)}
+        className={cn('shrink')}
         disabled={disabled}
         onBlur={handleBlur}
         onFocus={handleFocus}

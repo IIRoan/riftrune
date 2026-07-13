@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  apiImageUrl,
   contentTypeForKey,
   objectKeyFromUrl,
   rewriteImageUrl,
@@ -30,17 +29,14 @@ const s3Env: Env = {
 
 describe('s3 helpers', () => {
   test('objectKeyFromUrl extracts path from CDN URL', () => {
-    expect(
-      objectKeyFromUrl('https://cdn.piltoverarchive.com/cards/UNL-099.webp')
-    ).toBe('cards/UNL-099.webp');
+    expect(objectKeyFromUrl('https://cdn.piltoverarchive.com/cards/UNL-099.webp')).toBe(
+      'cards/UNL-099.webp'
+    );
   });
 
   test('rewriteImageUrl maps CDN URL to API route', () => {
     expect(
-      rewriteImageUrl(
-        s3Env,
-        'https://cdn.piltoverarchive.com/cards/SFD-198.webp'
-      )
+      rewriteImageUrl(s3Env, 'https://cdn.piltoverarchive.com/cards/SFD-198.webp')
     ).toBe('http://localhost:7000/api/v1/images/cards/SFD-198.webp');
   });
 

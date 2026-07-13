@@ -28,8 +28,16 @@ function mockCard(overrides: Partial<DeckCard> & Pick<DeckCard, 'name'>): DeckCa
 
 describe('deck-membership', () => {
   test('matches cards by cardId when names differ slightly', () => {
-    const a = mockCard({ name: 'Obelisk of Power', cardId: 'bf-1', variantNumber: 'OGN-001' });
-    const b = mockCard({ name: 'Obelisk of Power ', cardId: 'bf-1', variantNumber: 'OGN-001' });
+    const a = mockCard({
+      name: 'Obelisk of Power',
+      cardId: 'bf-1',
+      variantNumber: 'OGN-001',
+    });
+    const b = mockCard({
+      name: 'Obelisk of Power ',
+      cardId: 'bf-1',
+      variantNumber: 'OGN-001',
+    });
     expect(deckCardsMatch(a, b)).toBe(true);
   });
 
@@ -51,7 +59,7 @@ describe('deck-membership', () => {
 
   test('tracks main deck counts', () => {
     const unit = mockCard({ name: 'Flame Chompers', type: 'Unit' });
-    let deck = createEmptyDeck();
+    const deck = createEmptyDeck();
     deck.mainDeck.set(unit.name, { card: unit, count: 2 });
 
     expect(getDeckCandidateCount(deck, 'mainDeck', unit)).toBe(2);

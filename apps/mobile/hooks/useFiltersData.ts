@@ -9,7 +9,6 @@ const FILTERS_GC_MS = 30 * 60_000;
 
 /** @deprecated Import catalogQueryKeys.filters from @/src/api/queryKeys */
 export const FILTERS_QUERY_KEY = catalogQueryKeys.filters;
-const FILTERS_GC_MS = 30 * 60_000;
 
 export type CatalogFiltersSnapshot = Awaited<ReturnType<typeof fetchCatalogFilters>>;
 

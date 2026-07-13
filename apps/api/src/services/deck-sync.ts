@@ -1,6 +1,10 @@
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import type { DeckListItem, DecksListQuery, StoredDeckPayload } from '@riftbound/contracts';
+import type {
+  DeckListItem,
+  DecksListQuery,
+  StoredDeckPayload,
+} from '@riftbound/contracts';
 import {
   DeckCardInput as DeckCardInputSchema,
   DeckEntryInput as DeckEntryInputSchema,
@@ -132,9 +136,8 @@ async function mapWithConcurrency<T, R>(
     }
   }
 
-  const workers = Array.from(
-    { length: Math.min(concurrency, items.length) },
-    () => worker()
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () =>
+    worker()
   );
   await Promise.all(workers);
   return results;
@@ -224,7 +227,10 @@ function placeholderDeckCard(variantId: string, cardId: string): DeckCardInput {
   });
 }
 
-async function deckCardFromVariantNumber(cardCache: CardCacheService, variantNumber: string) {
+async function deckCardFromVariantNumber(
+  cardCache: CardCacheService,
+  variantNumber: string
+) {
   const { detail } = await cardCache.getByVariantNumber(variantNumber);
 
   const variant = detail.variants.find((v) => v.variantNumber === variantNumber);
@@ -300,7 +306,10 @@ async function resolveDeckCardForUpstreamEntry(
   let variantNumber = resolved.get(entry.variantId);
   if (!variantNumber) {
     variantNumber =
-      (await cardCache.resolveVariantNumberByUpstreamId(entry.variantId, entry.cardId)) ?? undefined;
+      (await cardCache.resolveVariantNumberByUpstreamId(
+        entry.variantId,
+        entry.cardId
+      )) ?? undefined;
     if (variantNumber) resolved.set(entry.variantId, variantNumber);
   }
 
@@ -347,8 +356,10 @@ function browseMetaFromListEntry(entry: UpstreamListEntry): Partial<DeckListItem
   }
   if (entry.isLegal !== undefined) meta.isLegal = entry.isLegal;
   if (entry.bannedCardNames?.length) meta.bannedCardNames = entry.bannedCardNames;
-  if (entry.contentFlags?.hasGuide !== undefined) meta.hasGuide = entry.contentFlags.hasGuide;
-  if (entry.contentFlags?.hasVideo !== undefined) meta.hasVideo = entry.contentFlags.hasVideo;
+  if (entry.contentFlags?.hasGuide !== undefined)
+    meta.hasGuide = entry.contentFlags.hasGuide;
+  if (entry.contentFlags?.hasVideo !== undefined)
+    meta.hasVideo = entry.contentFlags.hasVideo;
   if (entry.contentFlags?.hasMatchups !== undefined) {
     meta.hasMatchups = entry.contentFlags.hasMatchups;
   }
@@ -407,7 +418,10 @@ export class DeckSyncService {
           legendCard = cached;
         } else {
           try {
-            legendCard = await deckCardFromVariantNumber(this.cardCache, legendVariantNumber);
+            legendCard = await deckCardFromVariantNumber(
+              this.cardCache,
+              legendVariantNumber
+            );
           } catch {
             legendCard = legendCardFromUpstreamListEntry(entry.legend);
           }
@@ -417,8 +431,10 @@ export class DeckSyncService {
 
       const createdAt = parseMs(entry.createdAt);
       const updatedAt =
-        Math.max(parseMs(entry.editedAt ?? undefined), parseMs(entry.updatedAt ?? undefined)) ||
-        createdAt;
+        Math.max(
+          parseMs(entry.editedAt ?? undefined),
+          parseMs(entry.updatedAt ?? undefined)
+        ) || createdAt;
 
       const payload = StoredDeckPayloadSchema.parse({
         id: entry.id,
@@ -442,7 +458,9 @@ export class DeckSyncService {
         ...(entry.views !== undefined ? { views: entry.views } : {}),
         ...(entry.likes !== undefined ? { likes: entry.likes } : {}),
         ...(entry.isLegal !== undefined ? { isLegal: entry.isLegal } : {}),
-        ...(entry.bannedCardNames?.length ? { bannedCardNames: entry.bannedCardNames } : {}),
+        ...(entry.bannedCardNames?.length
+          ? { bannedCardNames: entry.bannedCardNames }
+          : {}),
         ...(entry.videoUrl ? { videoUrl: entry.videoUrl } : {}),
         ...(entry.sets?.length
           ? { setPrefixes: entry.sets.map((set) => set.prefix) }
@@ -460,9 +478,7 @@ export class DeckSyncService {
     }
 
     const enrichedItems =
-      query.preview === true
-        ? await this.enrichImportedDeckPreviews(items)
-        : items;
+      query.preview === true ? await this.enrichImportedDeckPreviews(items) : items;
 
     const upstreamPagination = parsed.pagination;
     const pagination = upstreamPagination
@@ -487,7 +503,8 @@ export class DeckSyncService {
     return mapWithConcurrency(items, BROWSE_PREVIEW_CONCURRENCY, async (item) => {
       try {
         const upstream = await this.getUpstreamDeckDetail(item.id);
-        const payload = await this.transformUpstreamDeckDetailToStoredDeckPayload(upstream);
+        const payload =
+          await this.transformUpstreamDeckDetailToStoredDeckPayload(upstream);
         return {
           ...item,
           legend: payload.legend ?? item.legend,
@@ -500,7 +517,9 @@ export class DeckSyncService {
     });
   }
 
-  async getUpstreamDeckDetail(deckId: string): Promise<z.infer<typeof UpstreamDeckDetail>> {
+  async getUpstreamDeckDetail(
+    deckId: string
+  ): Promise<z.infer<typeof UpstreamDeckDetail>> {
     const res = await this.riftrune.getDeck(deckId);
     return UpstreamDeckDetail.parse(res);
   }
@@ -541,7 +560,10 @@ export class DeckSyncService {
     let legendCard: DeckCardInput | null = null;
     if (upstream.legend?.variantNumber) {
       try {
-        legendCard = await deckCardFromVariantNumber(this.cardCache, upstream.legend.variantNumber);
+        legendCard = await deckCardFromVariantNumber(
+          this.cardCache,
+          upstream.legend.variantNumber
+        );
       } catch {
         syncWarnings.push('Legend card could not be loaded from the local catalog.');
         legendCard = legendCardFromUpstreamListEntry(upstream.legend);
@@ -581,23 +603,29 @@ export class DeckSyncService {
       return DeckEntryInputSchema.parse({ card, count: entry.quantity });
     };
 
-    const mainDeck = await Promise.all((upstream.maindeck ?? []).map(mapEntryWithQuantity));
+    const mainDeck = await Promise.all(
+      (upstream.maindeck ?? []).map(mapEntryWithQuantity)
+    );
     const runes = await Promise.all((upstream.runes ?? []).map(mapEntryWithQuantity));
 
     const battlefields = await Promise.all(
-      (upstream.battlefields ?? []).map(async (entry: z.infer<typeof UpstreamDeckCardEntryNoQuantity>) => {
-        const card = await resolveDeckCardForUpstreamEntry(
-          entry,
-          resolved,
-          getCard,
-          this.cardCache,
-          unresolvedVariantIds
-        );
-        return DeckEntryInputSchema.parse({ card, count: 1 });
-      })
+      (upstream.battlefields ?? []).map(
+        async (entry: z.infer<typeof UpstreamDeckCardEntryNoQuantity>) => {
+          const card = await resolveDeckCardForUpstreamEntry(
+            entry,
+            resolved,
+            getCard,
+            this.cardCache,
+            unresolvedVariantIds
+          );
+          return DeckEntryInputSchema.parse({ card, count: 1 });
+        }
+      )
     );
 
-    const sideboard = await Promise.all((upstream.sideboard ?? []).map(mapEntryWithQuantity));
+    const sideboard = await Promise.all(
+      (upstream.sideboard ?? []).map(mapEntryWithQuantity)
+    );
 
     if (unresolvedVariantIds.size > 0) {
       syncWarnings.push(
@@ -674,7 +702,7 @@ export class DeckSyncService {
     try {
       const detail = await this.getUpstreamDeckDetail(deckId);
       return await this.transformUpstreamDeckDetailToStoredDeckPayload(detail);
-    } catch (err) {
+    } catch {
       // Treat upstream not found or missing variant mappings as "not available".
       return null;
     }
@@ -687,7 +715,8 @@ export class DeckSyncService {
     if (deck.champion?.variantNumber) variantNumbers.push(deck.champion.variantNumber);
     for (const entry of deck.mainDeck) variantNumbers.push(entry.card.variantNumber);
     for (const entry of deck.runes) variantNumbers.push(entry.card.variantNumber);
-    for (const entry of deck.battlefields) variantNumbers.push(entry.card.variantNumber);
+    for (const entry of deck.battlefields)
+      variantNumbers.push(entry.card.variantNumber);
     for (const entry of deck.sideboard) variantNumbers.push(entry.card.variantNumber);
 
     const uniqVariantNumbers = [...new Set(variantNumbers)];
@@ -715,7 +744,10 @@ export class DeckSyncService {
       name: deck.name,
       description: deck.description ?? '',
       legend: deck.legend
-        ? { cardId: deck.legend.cardId, variantId: variantIdByVariantNumber.get(deck.legend.variantNumber)! }
+        ? {
+            cardId: deck.legend.cardId,
+            variantId: variantIdByVariantNumber.get(deck.legend.variantNumber)!,
+          }
         : null,
       champions: deck.champion
         ? [
@@ -748,7 +780,10 @@ export class DeckSyncService {
     };
 
     const extraHeaders = this.deckWriteAuthorizationHeader
-      ? { [this.deckWriteAuthorizationHeader.name]: this.deckWriteAuthorizationHeader.value }
+      ? {
+          [this.deckWriteAuthorizationHeader.name]:
+            this.deckWriteAuthorizationHeader.value,
+        }
       : undefined;
 
     const res = await this.riftrune.createOrUpsertDeck(payload, extraHeaders);
@@ -765,7 +800,10 @@ export class DeckSyncService {
 
   async deleteUpstreamDeck(deckId: string): Promise<void> {
     const extraHeaders = this.deckWriteAuthorizationHeader
-      ? { [this.deckWriteAuthorizationHeader.name]: this.deckWriteAuthorizationHeader.value }
+      ? {
+          [this.deckWriteAuthorizationHeader.name]:
+            this.deckWriteAuthorizationHeader.value,
+        }
       : undefined;
     await this.riftrune.deleteDeck(deckId, extraHeaders);
   }
