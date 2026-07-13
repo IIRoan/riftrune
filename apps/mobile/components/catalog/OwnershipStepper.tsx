@@ -14,6 +14,8 @@ interface OwnershipStepperProps {
   compact?: boolean;
   /** Slightly larger targets for mobile list rows. */
   relaxed?: boolean;
+  /** Fill a fixed-width grid tile slot — Add and stepper share the same footprint. */
+  gridSlot?: boolean;
   busy?: boolean;
   printings?: CardListPrinting[];
   fixedVariantNumber?: string;
@@ -26,6 +28,7 @@ export function OwnershipStepper({
   name,
   compact = false,
   relaxed = false,
+  gridSlot = false,
   busy = false,
   printings,
   fixedVariantNumber,
@@ -72,7 +75,8 @@ export function OwnershipStepper({
         variant="outline"
         size="sm"
         className={cn(
-          'w-auto shrink-0 border-border active:border-ring',
+          'border-border active:border-ring',
+          gridSlot ? 'w-full' : 'w-auto shrink-0',
           controlHeight,
           relaxed ? 'px-3' : compact ? 'px-1.5' : 'px-2.5'
         )}
@@ -109,14 +113,18 @@ export function OwnershipStepper({
         accessibilityLabel={label}
         className={cn(
           'items-center justify-center active:bg-accent',
-          stepSize,
-          direction === 'add'
-            ? compact
-              ? 'rounded-r-md'
-              : 'rounded-r-lg'
-            : compact
-              ? 'rounded-l-md'
-              : 'rounded-l-lg'
+          gridSlot
+            ? 'h-full flex-1'
+            : cn(
+                stepSize,
+                direction === 'add'
+                  ? compact
+                    ? 'rounded-r-md'
+                    : 'rounded-r-lg'
+                  : compact
+                    ? 'rounded-l-md'
+                    : 'rounded-l-lg'
+              )
         )}
         onPress={showPicker ? undefined : onPress}
         disabled={busy}
@@ -143,7 +151,8 @@ export function OwnershipStepper({
     return (
       <View
         className={cn(
-          'flex-row items-center overflow-hidden border border-border bg-card',
+          'flex-row items-stretch overflow-hidden border border-border bg-card',
+          gridSlot ? 'w-full' : undefined,
           shellRadius,
           controlHeight
         )}
@@ -156,14 +165,22 @@ export function OwnershipStepper({
           removeOptions,
           onRemove
         )}
+        <View className="w-hairline self-stretch bg-archive-soft-line" />
         <Text
           className={cn(
-            'text-center font-mono font-semibold tabular-nums text-success',
-            compact ? 'min-w-5 text-[11px]' : relaxed ? 'min-w-6 text-[13px]' : 'min-w-7 text-[13px]'
+            'shrink-0 self-center text-center font-mono font-semibold tabular-nums text-success',
+            gridSlot
+              ? 'min-w-[1.25rem] px-0.5 text-xs'
+              : compact
+                ? 'min-w-5 text-[11px]'
+                : relaxed
+                  ? 'min-w-6 text-[13px]'
+                  : 'min-w-7 text-[13px]'
           )}
         >
           {owned}
         </Text>
+        <View className="w-hairline self-stretch bg-archive-soft-line" />
         {renderStepButton(
           'add',
           () => onAdd(fixedVariantNumber),

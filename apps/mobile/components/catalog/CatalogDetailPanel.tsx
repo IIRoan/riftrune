@@ -47,6 +47,8 @@ import {
   getVariantMarketPriceDisplays,
   hasMultiplePrintings,
   isFoilVariant,
+  pickVariantDisplayPrice,
+  toPriceEurSummary,
   totalOwnedForCard,
 } from '@/utils/variants';
 import { cn } from '@/lib/utils';
@@ -179,16 +181,15 @@ export function CatalogDetailPanel({
     colors: card.colors.map((c) => c.name),
     imageUrl: activeVariant.imageUrl,
     cardmarketId: activeVariant.cardmarketId,
-    priceEur: activeVariant.prices[0] ?? null,
+    priceEur: toPriceEurSummary(pickVariantDisplayPrice(activeVariant.prices, activeVariant)),
     printings: groupVariants.map((v) => {
       const foil = isFoilVariant(v.variantNumber, v.variantLabel, v.variantType);
-      const prices = v.prices;
-      const display = prices.find((p) => p.isFoil === foil) ?? prices[0] ?? null;
+      const display = pickVariantDisplayPrice(v.prices, v);
       return {
         variantNumber: v.variantNumber,
         variantLabel: v.variantLabel,
         isFoil: foil,
-        priceEur: display,
+        priceEur: toPriceEurSummary(display),
         owned: collectionByVariant.get(v.variantNumber)?.quantity ?? 0,
       } satisfies CardListPrinting & { owned: number };
     }),

@@ -2,7 +2,7 @@ import { chunkArray } from '@riftbound/contracts';
 import { useQuery } from '@tanstack/react-query';
 import type { CollectionEntry } from '@/services/collectionService';
 import { api } from '@/src/api/client';
-import { formatMarketTrend, isFoilVariant } from '@/utils/variants';
+import { formatMarketTrend, pickVariantDisplayPrice, toPriceEurSummary } from '@/utils/variants';
 
 export function useCollectionInsights(collection: CollectionEntry[]) {
   const variantNumbers = [
@@ -36,27 +36,11 @@ export function useCollectionInsights(collection: CollectionEntry[]) {
         const variant = card.variants.find((v) => v.variantNumber === entry.variantNumber);
         if (!variant) continue;
 
-        const foil = isFoilVariant(
-          variant.variantNumber,
-          variant.variantLabel,
-          variant.variantType
-        );
-        const priceRow =
-          variant.prices.find((p) => p.isFoil === foil) ?? variant.prices[0];
-        const unit = priceRow?.market ?? priceRow?.low ?? 0;
+        const priceRow = pickVariantDisplayPrice(variant.prices, variant);
+        const unit = priceRow?.market ?? 0;
         estimatedValue += unit * entry.quantity;
 
-        const trend = formatMarketTrend(
-          priceRow
-            ? {
-                currency: 'EUR',
-                low: priceRow.low,
-                market: priceRow.market,
-                avg7d: priceRow.avg7d,
-                isFoil: priceRow.isFoil,
-              }
-            : null
-        );
+        const trend = formatMarketTrend(toPriceEurSummary(priceRow));
         if (trend.startsWith('+') || trend.startsWith('-')) {
           const magnitude = Math.abs(parseFloat(trend));
           movers.push({ entry, trend, magnitude });

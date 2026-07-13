@@ -11,6 +11,7 @@ export function createFiltersRoutes(catalogMetadata: CatalogMetadataService) {
         meta: {
           cachedAt: meta.cachedAt,
           catalogHash: meta.catalogHash,
+          pricesCatalogHash: meta.pricesCatalogHash,
           variantCount: meta.variantCount,
         },
       };

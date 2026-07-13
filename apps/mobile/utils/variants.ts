@@ -332,9 +332,65 @@ export function groupCatalogListItems(items: CardListItem[]): CardListItem[] {
   });
 }
 
+export type VariantPriceLike = {
+  market: number | null;
+  low: number | null;
+  isFoil: boolean;
+  avg7d?: number | null;
+};
+
+export type VariantIdentity = {
+  variantNumber: string;
+  variantLabel: string;
+  variantType?: string;
+};
+
+/** Match Cardmarket finish to catalog variant — foil fallback when only one guide exists. */
+export function pickVariantDisplayPrice<T extends VariantPriceLike>(
+  prices: readonly T[],
+  variant: VariantIdentity
+): T | null {
+  if (prices.length === 0) return null;
+
+  const isFoil = isFoilVariant(
+    variant.variantNumber,
+    variant.variantLabel,
+    variant.variantType
+  );
+  const rowsWithMarket = prices.filter((row) => row.market != null);
+  const matching = rowsWithMarket.find((row) => row.isFoil === isFoil);
+  if (matching) return matching;
+  if (rowsWithMarket.length === 1) return rowsWithMarket[0] ?? null;
+  return prices.find((row) => !row.isFoil) ?? rowsWithMarket[0] ?? prices[0] ?? null;
+}
+
+export function toPriceEurSummary(
+  price: VariantPriceLike | null | undefined
+): CardListItem['priceEur'] {
+  if (!price || price.market == null) return null;
+  return {
+    currency: 'EUR',
+    low: price.low,
+    market: price.market,
+    avg7d: price.avg7d ?? null,
+    isFoil: price.isFoil,
+  };
+}
+
 function priceAmount(price: CardListItem['priceEur']): number | null {
   if (!price) return null;
-  return price.market ?? price.low ?? null;
+  return price.market ?? null;
+}
+
+/** Highest Cardmarket trend across a card row and all of its printings. */
+export function getCardMaxMarketPrice(card: CardListItem): number {
+  const printings = getCardPrintings(card);
+  let max = priceAmount(card.priceEur) ?? 0;
+  for (const printing of printings) {
+    const amount = priceAmount(printing.priceEur);
+    if (amount != null && amount > max) max = amount;
+  }
+  return max;
 }
 
 export function formatListPrice(card: CardListItem): string | null {
@@ -389,7 +445,7 @@ function formatPriceRowAmount(row: {
   market: number | null;
   low: number | null;
 }): string | null {
-  const amount = row.market ?? row.low;
+  const amount = row.market;
   return amount != null ? `€${amount.toFixed(2)}` : null;
 }
 
@@ -411,21 +467,11 @@ export function getVariantMarketPriceDisplays(variant: {
     variant.variantNumber
   );
 
-  const rowsWithAmount = variant.prices.filter((p) => (p.market ?? p.low) != null);
-  if (rowsWithAmount.length === 0) return [];
+  const matching = pickVariantDisplayPrice(variant.prices, variant);
+  if (!matching) return [];
 
-  const matching = rowsWithAmount.find((p) => p.isFoil === isFoil);
-  if (matching) {
-    const price = formatPriceRowAmount(matching);
-    if (price) return [{ label, price }];
-  }
-
-  if (rowsWithAmount.length === 1) {
-    const price = formatPriceRowAmount(rowsWithAmount[0]!);
-    if (price) return [{ label, price }];
-  }
-
-  return [];
+  const price = formatPriceRowAmount(matching);
+  return price ? [{ label, price }] : [];
 }
 
 /** Derive a week-over-week style trend label from market vs avg7d. */

@@ -11,6 +11,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { StatusBar, View } from 'react-native';
+import { CatalogBootstrap } from '@/components/CatalogBootstrap';
 import { Text } from '@/components/ui/text';
 import { TetraProvider } from '@/components/TetraProvider';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
@@ -88,6 +89,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
+        <CatalogBootstrap />
         <ThemeProvider>
           <TetraProvider>
             <RootNav />

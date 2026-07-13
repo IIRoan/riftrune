@@ -38,8 +38,22 @@ export function mapPriceRows(rows: PaPriceRow[], cardmarketId: number): PriceSum
     }));
 }
 
-function pickDisplayPrice(rows: PriceSummary[]): PriceSummary | null {
-  return rows.find((p) => !p.isFoil) ?? rows[0] ?? null;
+function pickDisplayPrice(
+  rows: PriceSummary[],
+  variant: Pick<PaVariant, 'variantNumber' | 'variantLabel' | 'variantType'>
+): PriceSummary | null {
+  if (rows.length === 0) return null;
+
+  const isFoil = isFoilVariant(
+    variant.variantNumber,
+    variant.variantLabel,
+    variant.variantType
+  );
+  const rowsWithMarket = rows.filter((row) => row.market != null);
+  const matching = rowsWithMarket.find((row) => row.isFoil === isFoil);
+  if (matching) return matching;
+  if (rowsWithMarket.length === 1) return rowsWithMarket[0] ?? null;
+  return rows.find((row) => !row.isFoil) ?? rowsWithMarket[0] ?? rows[0] ?? null;
 }
 
 export function mapCardDetail(
@@ -94,7 +108,7 @@ export function mapListItem(
 ): CardListItem {
   const cmId = primaryVariant.cardmarketId ?? null;
   const variantPrices = cmId ? mapPriceRows(priceRows, cmId) : [];
-  const displayPrice = pickDisplayPrice(variantPrices);
+  const displayPrice = pickDisplayPrice(variantPrices, primaryVariant);
   const isFoil = isFoilVariant(
     primaryVariant.variantNumber,
     primaryVariant.variantLabel,

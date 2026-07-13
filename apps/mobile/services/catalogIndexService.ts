@@ -7,9 +7,26 @@ const CATALOG_INDEX_KEY = 'riftbound_catalog_index';
 
 type PersistedCatalogIndex = {
   catalogHash: string;
+  pricesCatalogHash: string;
   cachedAt: number;
   items: CardListItem[];
 };
+
+export type CatalogIndexCacheKey = {
+  catalogHash: string;
+  pricesCatalogHash: string;
+};
+
+export function catalogIndexCacheMatches(
+  persisted: CatalogIndexCacheKey | null | undefined,
+  expected: CatalogIndexCacheKey
+): boolean {
+  if (!persisted) return false;
+  return (
+    persisted.catalogHash === expected.catalogHash &&
+    persisted.pricesCatalogHash === expected.pricesCatalogHash
+  );
+}
 
 let memoryIndex: PersistedCatalogIndex | null = null;
 let memoryLoadPromise: Promise<PersistedCatalogIndex | null> | null = null;
@@ -26,6 +43,7 @@ export async function readPersistedCatalogIndex(): Promise<PersistedCatalogIndex
       if (!Array.isArray(parsed.items) || parsed.items.length === 0) return null;
       memoryIndex = {
         ...parsed,
+        pricesCatalogHash: parsed.pricesCatalogHash ?? '',
         items: normalizeCardListItems(parsed.items),
       };
       return memoryIndex;
@@ -41,11 +59,13 @@ export async function readPersistedCatalogIndex(): Promise<PersistedCatalogIndex
 
 export async function persistCatalogIndex(
   catalogHash: string,
+  pricesCatalogHash: string,
   items: CardListItem[]
 ): Promise<void> {
   const normalized = normalizeCardListItems(items);
   const payload: PersistedCatalogIndex = {
     catalogHash,
+    pricesCatalogHash,
     cachedAt: Date.now(),
     items: normalized,
   };
@@ -67,22 +87,28 @@ export async function clearPersistedCatalogIndex(): Promise<void> {
 }
 
 export async function fetchAndPersistCatalogIndex(
-  expectedCatalogHash?: string | null
+  expected: CatalogIndexCacheKey
 ): Promise<PersistedCatalogIndex> {
   const persisted = await readPersistedCatalogIndex();
-  if (
-    persisted &&
-    expectedCatalogHash &&
-    persisted.catalogHash === expectedCatalogHash
-  ) {
+  if (persisted && catalogIndexCacheMatches(persisted, expected)) {
+    return persisted;
+  }
+
+  const hashesUnavailable = !expected.catalogHash && !expected.pricesCatalogHash;
+  if (persisted && hashesUnavailable) {
     return persisted;
   }
 
   const response = await api.getCatalogIndex();
   const items = normalizeCardListItems(response.data);
-  await persistCatalogIndex(response.meta.catalogHash, items);
+  await persistCatalogIndex(
+    response.meta.catalogHash,
+    response.meta.pricesCatalogHash,
+    items
+  );
   return {
     catalogHash: response.meta.catalogHash,
+    pricesCatalogHash: response.meta.pricesCatalogHash,
     cachedAt: Date.now(),
     items,
   };
@@ -90,4 +116,20 @@ export async function fetchAndPersistCatalogIndex(
 
 export function getInMemoryCatalogIndex(): PersistedCatalogIndex | null {
   return memoryIndex;
+}
+
+/** Resolve cache validity and download the catalog index only when stale. */
+export async function syncCatalogIndex(
+  resolveCacheKey: () => Promise<CatalogIndexCacheKey>
+): Promise<PersistedCatalogIndex> {
+  const [persisted, cacheKey] = await Promise.all([
+    readPersistedCatalogIndex(),
+    resolveCacheKey(),
+  ]);
+
+  if (persisted && catalogIndexCacheMatches(persisted, cacheKey)) {
+    return persisted;
+  }
+
+  return fetchAndPersistCatalogIndex(cacheKey);
 }

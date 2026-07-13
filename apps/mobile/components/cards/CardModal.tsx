@@ -41,6 +41,8 @@ import {
   formatMarketTrend,
   getVariantMarketPriceDisplays,
   isFoilVariant,
+  pickVariantDisplayPrice,
+  toPriceEurSummary,
 } from '@/utils/variants';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
 import { cn } from '@/lib/utils';
@@ -222,14 +224,12 @@ function ModalInfoPanel({
     activeVariant.variantType
   );
   const activeFinish = activeIsFoil ? 'Foil' : 'Normal';
-  const activePrice =
-    activeVariant.prices.find((price) => price.isFoil === activeIsFoil) ??
-    (activeVariant.prices.length === 1 ? activeVariant.prices[0] : undefined);
+  const activePrice = pickVariantDisplayPrice(activeVariant.prices, activeVariant);
   const activePriceText =
     wishlistItem?.currentPrice != null
       ? `€${wishlistItem.currentPrice.toFixed(2)}`
       : activePrice
-        ? formatCardPrice([activePrice], activePrice.isFoil)
+        ? formatCardPrice(activeVariant.prices, activeVariant)
         : null;
   const wishlistContext = source === 'wishlist';
   const marketPrices = getVariantMarketPriceDisplays(activeVariant);
@@ -237,13 +237,7 @@ function ModalInfoPanel({
     !wishlistContext && printingPreviews.length <= 1 && marketPrices.length === 1
       ? marketPrices[0]
       : null;
-  const singlePriceTrend = (() => {
-    if (!singleMarketPrice) return 'Flat';
-    const row =
-      activeVariant.prices.find((p) => p.isFoil === activeIsFoil) ??
-      activeVariant.prices[0];
-    return formatMarketTrend(row ?? null);
-  })();
+  const singlePriceTrend = formatMarketTrend(toPriceEurSummary(activePrice));
 
   const panelPadding = isWide ? 'px-8 py-7' : 'px-5 py-5';
   const isBanned = isCardBannedAt(card.banEffectiveDate);

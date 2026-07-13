@@ -7,7 +7,12 @@ memoryStorage.install();
 
 const getCatalogIndex = mock(async () => ({
   data: [sampleCard],
-  meta: { catalogHash: 'hash-v2', total: 1, source: 'cache' as const },
+  meta: {
+    catalogHash: 'hash-v2',
+    pricesCatalogHash: 'prices-v2',
+    total: 1,
+    source: 'cache' as const,
+  },
 }));
 
 mock.module('@/src/api/client', () => ({
@@ -42,11 +47,13 @@ const sampleCard = {
 } satisfies CardListItem;
 
 const {
+  catalogIndexCacheMatches,
   clearPersistedCatalogIndex,
   fetchAndPersistCatalogIndex,
   getInMemoryCatalogIndex,
   persistCatalogIndex,
   readPersistedCatalogIndex,
+  syncCatalogIndex,
 } = await import('./catalogIndexService');
 
 beforeEach(async () => {
@@ -57,46 +64,100 @@ beforeEach(async () => {
 
 describe('catalogIndexService', () => {
   test('persistCatalogIndex writes to memory and AsyncStorage', async () => {
-    await persistCatalogIndex('hash-v1', [sampleCard]);
+    await persistCatalogIndex('hash-v1', 'prices-v1', [sampleCard]);
 
     const inMemory = getInMemoryCatalogIndex();
     expect(inMemory?.catalogHash).toBe('hash-v1');
+    expect(inMemory?.pricesCatalogHash).toBe('prices-v1');
     expect(inMemory?.items).toHaveLength(1);
 
     const persisted = await readPersistedCatalogIndex();
     expect(persisted?.catalogHash).toBe('hash-v1');
+    expect(persisted?.pricesCatalogHash).toBe('prices-v1');
     expect(persisted?.items[0]?.name).toBe('Vi Destructive');
   });
 
-  test('fetchAndPersistCatalogIndex reuses cache when catalogHash matches', async () => {
-    await persistCatalogIndex('hash-v1', [sampleCard]);
+  test('catalogIndexCacheMatches requires both catalog and prices hashes', () => {
+    expect(
+      catalogIndexCacheMatches(
+        { catalogHash: 'hash-v1', pricesCatalogHash: 'prices-v1' },
+        { catalogHash: 'hash-v1', pricesCatalogHash: 'prices-v1' }
+      )
+    ).toBe(true);
+    expect(
+      catalogIndexCacheMatches(
+        { catalogHash: 'hash-v1', pricesCatalogHash: 'prices-v1' },
+        { catalogHash: 'hash-v1', pricesCatalogHash: 'prices-v2' }
+      )
+    ).toBe(false);
+  });
 
-    const result = await fetchAndPersistCatalogIndex('hash-v1');
+  test('fetchAndPersistCatalogIndex reuses cache when both hashes match', async () => {
+    await persistCatalogIndex('hash-v1', 'prices-v1', [sampleCard]);
+
+    const result = await fetchAndPersistCatalogIndex({
+      catalogHash: 'hash-v1',
+      pricesCatalogHash: 'prices-v1',
+    });
 
     expect(getCatalogIndex).toHaveBeenCalledTimes(0);
     expect(result.catalogHash).toBe('hash-v1');
+    expect(result.pricesCatalogHash).toBe('prices-v1');
     expect(result.items).toHaveLength(1);
   });
 
-  test('fetchAndPersistCatalogIndex downloads when hash differs', async () => {
-    await persistCatalogIndex('hash-v1', [sampleCard]);
+  test('fetchAndPersistCatalogIndex downloads when catalog hash differs', async () => {
+    await persistCatalogIndex('hash-v1', 'prices-v1', [sampleCard]);
 
-    const result = await fetchAndPersistCatalogIndex('hash-v2');
+    const result = await fetchAndPersistCatalogIndex({
+      catalogHash: 'hash-v2',
+      pricesCatalogHash: 'prices-v1',
+    });
 
     expect(getCatalogIndex).toHaveBeenCalledTimes(1);
     expect(result.catalogHash).toBe('hash-v2');
+    expect(result.pricesCatalogHash).toBe('prices-v2');
     expect(result.items[0]?.name).toBe('Vi Destructive');
   });
 
-  test('fetchAndPersistCatalogIndex downloads when no cache exists', async () => {
-    const result = await fetchAndPersistCatalogIndex('hash-v2');
+  test('fetchAndPersistCatalogIndex downloads when prices hash differs', async () => {
+    await persistCatalogIndex('hash-v1', 'prices-v1', [sampleCard]);
+
+    const result = await fetchAndPersistCatalogIndex({
+      catalogHash: 'hash-v1',
+      pricesCatalogHash: 'prices-v2',
+    });
 
     expect(getCatalogIndex).toHaveBeenCalledTimes(1);
     expect(result.catalogHash).toBe('hash-v2');
+    expect(result.pricesCatalogHash).toBe('prices-v2');
+  });
+
+  test('fetchAndPersistCatalogIndex downloads when no cache exists', async () => {
+    const result = await fetchAndPersistCatalogIndex({
+      catalogHash: 'hash-v2',
+      pricesCatalogHash: 'prices-v2',
+    });
+
+    expect(getCatalogIndex).toHaveBeenCalledTimes(1);
+    expect(result.catalogHash).toBe('hash-v2');
+    expect(result.pricesCatalogHash).toBe('prices-v2');
+  });
+
+  test('syncCatalogIndex reuses persisted cache without downloading', async () => {
+    await persistCatalogIndex('hash-v1', 'prices-v1', [sampleCard]);
+
+    const result = await syncCatalogIndex(async () => ({
+      catalogHash: 'hash-v1',
+      pricesCatalogHash: 'prices-v1',
+    }));
+
+    expect(getCatalogIndex).toHaveBeenCalledTimes(0);
+    expect(result.items).toHaveLength(1);
   });
 
   test('clearPersistedCatalogIndex removes memory and storage', async () => {
-    await persistCatalogIndex('hash-v1', [sampleCard]);
+    await persistCatalogIndex('hash-v1', 'prices-v1', [sampleCard]);
     await clearPersistedCatalogIndex();
 
     expect(getInMemoryCatalogIndex()).toBeNull();

@@ -4,6 +4,8 @@ import {
   findVariantByNumber,
   getCardPrintings,
   isFoilVariant,
+  pickVariantDisplayPrice,
+  toPriceEurSummary,
   variantNumbersMatch,
 } from '@/utils/variants';
 import {
@@ -106,13 +108,8 @@ export async function addDetailToCollection(
   }
 
   const setCode = variant.variantNumber.split('-')[0] ?? '';
-  const isFoil = isFoilVariant(
-    variant.variantNumber,
-    variant.variantLabel,
-    variant.variantType
-  );
-  const displayPrice =
-    variant.prices.find((p) => p.isFoil === isFoil) ?? variant.prices[0];
+  const displayPrice = pickVariantDisplayPrice(variant.prices, variant);
+  const priceEur = toPriceEurSummary(displayPrice);
 
   await addToCollection(
     {
@@ -128,29 +125,17 @@ export async function addDetailToCollection(
       power: 0,
       colors: [],
       cardmarketId: null,
-      priceEur: displayPrice
-        ? {
-            currency: 'EUR',
-            low: displayPrice.low,
-            market: displayPrice.market,
-            avg7d: null,
-            isFoil: displayPrice.isFoil,
-          }
-        : null,
+      priceEur,
       printings: [
         {
           variantNumber: variant.variantNumber,
           variantLabel: variant.variantLabel,
-          isFoil,
-          priceEur: displayPrice
-            ? {
-                currency: 'EUR',
-                low: displayPrice.low,
-                market: displayPrice.market,
-                avg7d: null,
-                isFoil: displayPrice.isFoil,
-              }
-            : null,
+          isFoil: isFoilVariant(
+            variant.variantNumber,
+            variant.variantLabel,
+            variant.variantType
+          ),
+          priceEur,
         },
       ],
       isBanned: isCardBannedAt(card.banEffectiveDate),

@@ -123,4 +123,39 @@ describe('catalogSearch', () => {
   test('featuredCatalogItems respects limit', () => {
     expect(featuredCatalogItems(catalog, 2)).toHaveLength(2);
   });
+
+  test('featuredCatalogItems ranks by the highest printing price on a card', () => {
+    const ahri = {
+      ...vi,
+      name: 'Ahri, Inquisitive',
+      variantNumber: 'OGN-119',
+      priceEur: { currency: 'EUR' as const, low: 1, market: 5, avg7d: null, isFoil: false },
+      printings: [
+        {
+          variantNumber: 'OGN-119',
+          variantLabel: 'Standard',
+          isFoil: false,
+          priceEur: { currency: 'EUR' as const, low: 1, market: 5, avg7d: null, isFoil: false },
+        },
+        {
+          variantNumber: 'SFD-227*',
+          variantLabel: 'Showcase',
+          isFoil: false,
+          priceEur: {
+            currency: 'EUR' as const,
+            low: 2499.95,
+            market: 2547.93,
+            avg7d: null,
+            isFoil: true,
+          },
+        },
+      ],
+    } satisfies CardListItem;
+
+    expect(featuredCatalogItems([vi, jinx, ahri]).map((card) => card.name)).toEqual([
+      'Ahri, Inquisitive',
+      'Jinx Rebel',
+      'Vi Destructive',
+    ]);
+  });
 });

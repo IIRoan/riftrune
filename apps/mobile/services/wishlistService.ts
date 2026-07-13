@@ -9,6 +9,7 @@ export type WishlistEntry = {
   name: string;
   imageUrl?: string;
   addedAt: number;
+  targetPriceCents: number | null;
 };
 
 export async function getWishlist(): Promise<WishlistEntry[]> {
@@ -18,10 +19,14 @@ export async function getWishlist(): Promise<WishlistEntry[]> {
     name: item.name,
     imageUrl: item.imageUrl,
     addedAt: new Date(item.addedAt).getTime(),
+    targetPriceCents: item.targetPriceCents,
   }));
 }
 
-export async function addToWishlist(entry: Omit<WishlistEntry, 'addedAt'>): Promise<void> {
+export async function addToWishlist(
+  entry: Pick<WishlistEntry, 'variantNumber' | 'name'> &
+    Partial<Pick<WishlistEntry, 'imageUrl' | 'targetPriceCents'>>
+): Promise<void> {
   await remoteAddToWishlist(entry.variantNumber);
 }
 

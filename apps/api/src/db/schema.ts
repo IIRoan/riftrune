@@ -6,6 +6,7 @@ import {
   smallint,
   jsonb,
   timestamp,
+  date,
   integer,
   boolean,
   numeric,
@@ -159,6 +160,27 @@ export const priceHistory = pgTable(
       t.isFoil,
       t.capturedAt
     ),
+  ]
+);
+
+export const priceDaily = pgTable(
+  'price_daily',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    cardmarketId: integer('cardmarket_id').notNull(),
+    isFoil: boolean('is_foil').notNull(),
+    priceDate: date('price_date').notNull(),
+    provider: text('provider').notNull().default('cardmarket'),
+    currency: text('currency').notNull().default('EUR'),
+    lowPrice: numeric('low_price', { precision: 12, scale: 2 }),
+    marketPrice: numeric('market_price', { precision: 12, scale: 2 }),
+    midPrice: numeric('mid_price', { precision: 12, scale: 2 }),
+    highPrice: numeric('high_price', { precision: 12, scale: 2 }),
+    syncedAt: timestamp('synced_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    uniqueIndex('price_daily_unique_day_idx').on(t.cardmarketId, t.isFoil, t.priceDate),
+    index('price_daily_lookup_idx').on(t.cardmarketId, t.isFoil, t.priceDate),
   ]
 );
 

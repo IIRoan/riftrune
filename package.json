@@ -20,6 +20,8 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "bun run --filter @riftbound/api db:migrate",
+    "db:reset": "bun run --filter @riftbound/api db:reset",
+    "db:reset:full": "bun run --filter @riftbound/api db:reset:full",
     "db:generate": "bun run --filter @riftbound/api db:generate",
     "db:studio": "bun run --filter @riftbound/api db:studio",
     "sync:catalog": "curl -s -X POST http://localhost:7000/api/v1/sync/catalog -H \"Authorization: Bearer ${ADMIN_SYNC_TOKEN:-dev-sync-token-change-me}\"",

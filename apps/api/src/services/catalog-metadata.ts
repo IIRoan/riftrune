@@ -15,6 +15,7 @@ export type FiltersMeta = {
   snapshot: FilterSnapshot;
   cachedAt: string;
   catalogHash: string;
+  pricesCatalogHash: string;
   variantCount: number;
 };
 
@@ -34,11 +35,15 @@ export class CatalogMetadataService {
     const catalog = await this.db.query.syncState.findFirst({
       where: eq(syncState.key, 'catalog'),
     });
+    const prices = await this.db.query.syncState.findFirst({
+      where: eq(syncState.key, 'prices'),
+    });
 
     return {
       snapshot,
       cachedAt: (latest?.capturedAt ?? new Date()).toISOString(),
       catalogHash: catalog?.contentHash ?? '',
+      pricesCatalogHash: prices?.contentHash ?? '',
       variantCount: computeCatalogTotal(snapshot, catalog?.rowCount ?? 0),
     };
   }
