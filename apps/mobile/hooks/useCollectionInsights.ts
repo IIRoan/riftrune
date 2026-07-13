@@ -1,7 +1,6 @@
-import { chunkArray } from '@riftbound/contracts';
 import { useQuery } from '@tanstack/react-query';
 import type { CollectionEntry } from '@/services/collectionService';
-import { api } from '@/src/api/client';
+import { fetchCardDetailsByVariant } from '@/lib/batchCardsIndex';
 import { formatMarketTrend, pickVariantDisplayPrice, toPriceEurSummary } from '@/utils/variants';
 
 export function useCollectionInsights(collection: CollectionEntry[]) {
@@ -16,16 +15,7 @@ export function useCollectionInsights(collection: CollectionEntry[]) {
         return { estimatedValue: 0, movers: [] as { entry: CollectionEntry; trend: string }[] };
       }
 
-      const detailByVariant = new Map<string, Awaited<ReturnType<typeof api.batchCards>>['data'][number]>();
-
-      for (const batchVariantNumbers of chunkArray(variantNumbers, 100)) {
-        const batch = await api.batchCards(batchVariantNumbers);
-        for (const card of batch.data) {
-          for (const variant of card.variants) {
-            detailByVariant.set(variant.variantNumber, card);
-          }
-        }
-      }
+      const detailByVariant = await fetchCardDetailsByVariant(variantNumbers);
 
       let estimatedValue = 0;
       const movers: { entry: CollectionEntry; trend: string; magnitude: number }[] = [];

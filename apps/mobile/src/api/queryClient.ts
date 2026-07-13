@@ -1,0 +1,69 @@
+import { AppState, Platform } from 'react-native';
+import { QueryClient, focusManager } from '@tanstack/react-query';
+import {
+  cardQueryKeys,
+  catalogQueryKeys,
+  collectionQueryKeys,
+  deckQueryKeys,
+  wishlistQueryKeys,
+} from '@/src/api/queryKeys';
+
+/** Map iOS/Android app resume to TanStack Query's window-focus refetch. */
+export function setupQueryFocusManager(): void {
+  if (Platform.OS === 'web') return;
+
+  focusManager.setEventListener((onFocus) => {
+    const subscription = AppState.addEventListener('change', (status) => {
+      onFocus(status === 'active');
+    });
+    return () => subscription.remove();
+  });
+}
+
+export function createQueryClient(): QueryClient {
+  setupQueryFocusManager();
+
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60_000,
+        gcTime: 30 * 60 * 1000,
+        retry: 1,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+      },
+    },
+  });
+}
+
+/** Refresh account-bound lists after sign-in or background sync. */
+export async function invalidateUserDataQueries(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot }),
+    queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: deckQueryKeys.all }),
+  ]);
+}
+
+/** Drop cached account data on sign-out so the next user never sees stale rows. */
+export function removeUserDataQueries(queryClient: QueryClient): void {
+  for (const key of [
+    collectionQueryKeys.all,
+    collectionQueryKeys.ownershipRoot,
+    wishlistQueryKeys.all,
+    deckQueryKeys.all,
+  ]) {
+    queryClient.removeQueries({ queryKey: key });
+  }
+}
+
+/** Catalog index/meta can go stale after a server sync — nudge without wiping disk cache. */
+export async function invalidateCatalogQueries(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: catalogQueryKeys.index }),
+    queryClient.invalidateQueries({ queryKey: catalogQueryKeys.meta }),
+    queryClient.invalidateQueries({ queryKey: catalogQueryKeys.filters }),
+    queryClient.invalidateQueries({ queryKey: cardQueryKeys.browse() }),
+  ]);
+}

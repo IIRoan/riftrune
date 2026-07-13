@@ -10,7 +10,7 @@ import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
 import { type DeckBrowseFilters } from '@/constants/deckBrowse';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useDeckBrowseFilterOptions } from '@/hooks/useDeckBrowseFilterOptions';
+import { useDeckBrowseFilterOptions } from '@/hooks/useDeckBrowseFilters';
 import { type DeckBrowseFilterSegment } from '@/lib/deck-browse';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';

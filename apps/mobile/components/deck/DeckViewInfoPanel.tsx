@@ -8,8 +8,8 @@ import {
   collectIllegalCardNames,
   deckArchiveViewUrl,
   deckBrowseSummaryLine,
-  deckHasBannedCards,
 } from '@/lib/deck-browse';
+import { deckHasBannedCards } from '@/lib/card-legality';
 import type { DeckState } from '@/lib/deck-types';
 import { hapticPress } from '@/utils/haptics';
 

@@ -29,7 +29,10 @@ export function cardListItemToDetail(listItem: CardListItem): CardDetail {
       id: `placeholder-color-${name}`,
       name,
     })),
-    banEffectiveDate: listItem.isBanned ? '1970-01-01T00:00:00.000Z' : null,
+    banEffectiveDate: listItem.isBanned
+      ? // Placeholder so banned overlay renders before detail fetch lands.
+        '1970-01-01T00:00:00.000Z'
+      : null,
     variants: printings.map((printing, index) => ({
       id: placeholderVariantId(listItem.cardId, printing.variantNumber, index),
       variantNumber: printing.variantNumber,

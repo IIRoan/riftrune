@@ -1,9 +1,32 @@
-import { describe, expect, test } from 'bun:test';
-import {
+import { describe, expect, mock, test } from 'bun:test';
+import type { DeckCard, DeckState } from '@/lib/deck-types';
+
+const batchCards = mock(async (variantNumbers: string[]) => ({
+  data: variantNumbers.map((variantNumber) => ({
+    id: 'card-1',
+    name: 'Test',
+    banEffectiveDate: variantNumber === 'OGN-001' ? '2020-01-01T00:00:00.000Z' : null,
+    variants: [
+      {
+        variantNumber,
+        variantLabel: 'Standard',
+        variantType: 'Standard',
+        imageUrl: null,
+        prices: [],
+      },
+    ],
+  })),
+}));
+
+mock.module('@/src/api/client', () => ({
+  api: { batchCards },
+}));
+
+const {
+  fetchBanDatesByVariant,
   mergeBanDatesIntoDeck,
   syncDeckLegalityFields,
-} from '@/lib/enrich-deck-ban-dates';
-import type { DeckCard, DeckState } from '@/lib/deck-types';
+} = await import('@/lib/enrich-deck-ban-dates');
 
 function deckCard(name: string, banEffectiveDate: string | null = null): DeckCard {
   return {
@@ -40,6 +63,14 @@ function emptyDeck(overrides: Partial<DeckState> = {}): DeckState {
     ...overrides,
   };
 }
+
+describe('fetchBanDatesByVariant', () => {
+  test('maps catalog ban dates onto requested variants', async () => {
+    const map = await fetchBanDatesByVariant(['OGN-001', 'OGN-002']);
+    expect(map.get('OGN-001')).toBe('2020-01-01T00:00:00.000Z');
+    expect(map.get('OGN-002')).toBeNull();
+  });
+});
 
 describe('mergeBanDatesIntoDeck', () => {
   test('overwrites stale null ban dates from catalog', () => {

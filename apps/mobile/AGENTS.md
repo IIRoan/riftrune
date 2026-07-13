@@ -51,7 +51,7 @@ import { cn } from '@/lib/utils';
 - Theme tokens are defined in `global.css` and mapped in `@theme inline`
 - Standard tokens: `bg-background`, `bg-card`, `bg-card-panel`, `text-foreground`, `text-muted-foreground`, `border-border`, `text-primary`, `text-ring`, `text-success`
 - Keyword badge colors: `bg-keyword-accelerate`, `bg-keyword-combat`, `bg-keyword-ability`, `bg-keyword-default` (see `lib/card-keywords.ts`)
-- **Riftbound UI kit** (`components/riftbound/`): use `KeywordBadge`, `StatusKeywordBadge`, `ContentKeywordBadge`, `QuantityPip`, and `EnergyPip` for game-native labels instead of generic pills. Import from `@/components/riftbound` or `@/components/riftbound/RiftboundBadges`.
+- **Riftbound UI kit** (`components/riftbound/`): use `KeywordBadge`, `StatusKeywordBadge`, `ContentKeywordBadge`, `QuantityPip`, and `EnergyPip` for game-native labels instead of generic pills. Import from `@/components/riftbound/RiftboundBadges` or the specific component file.
 - Child `Text` elements must be styled directly; styles do not cascade from parent `View` classes
 - `ThemeContext` syncs accent color and light/dark/system mode to Uniwind via `Uniwind.setTheme` and `Uniwind.updateCSSVariables`
 - For React Navigation tab bar colors, use `useCSSVariable` from `uniwind`

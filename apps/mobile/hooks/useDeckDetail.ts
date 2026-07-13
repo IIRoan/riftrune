@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { DeckState } from '@/lib/deck-types';
-import { deckQueryKeys } from '@/hooks/useDecks';
+import { deckQueryKeys } from '@/src/api/queryKeys';
 import { useDeckLiveLegality } from '@/hooks/useBanDatesByVariant';
 import { applyDeckStateIfNewerToCache, setDeckDetailCache } from '@/lib/deck-state';
 import {

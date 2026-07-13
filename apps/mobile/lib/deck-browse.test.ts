@@ -4,12 +4,11 @@ import {
   deckBrowseFilterSegmentActive,
   deckBrowseFilterSegmentSummary,
   deckBrowseSummaryLine,
-  deckHasBannedCards,
   formatDeckRelativeTime,
   formatDeckStatCount,
   isBrowseDeck,
-  isCardBannedInDeck,
 } from '@/lib/deck-browse';
+import { deckHasBannedCards, isCardBannedInDeck } from '@/lib/card-legality';
 import type { DeckState } from '@/lib/deck-types';
 
 function browseDeck(overrides: Partial<DeckState> = {}): DeckState {

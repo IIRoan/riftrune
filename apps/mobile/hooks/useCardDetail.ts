@@ -9,6 +9,7 @@ import {
 import { collectVariantNumbers } from '@/utils/collectionOwnership';
 import { useCollectionRemove } from '@/hooks/useCollectionRemove';
 import { cardListItemToDetailResponse } from '@/lib/cardDetailPlaceholder';
+import { formatCardPrice } from '@/utils/cardFormat';
 import { formatPrintingLabel, findVariantByNumber, getSearchGroupVariants, isFoilVariant, cardListItemMatchesVariant, pickVariantDisplayPrice } from '@/utils/variants';
 import {
   getCollectedPrintingsForDetailCard,
@@ -17,23 +18,6 @@ import { hapticPress } from '@/utils/haptics';
 import { closeCard } from '@/utils/cardNavigation';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
-
-export function formatCardPrice(
-  prices: { market: number | null; low: number | null; isFoil: boolean }[],
-  variant: {
-    variantNumber: string;
-    variantLabel: string;
-    variantType?: string;
-  }
-): string | null {
-  const row = pickVariantDisplayPrice(prices, variant);
-  const amount = row?.market;
-  return amount != null ? `€${amount.toFixed(2)}` : null;
-}
-
-export function formatStat(value: number): string {
-  return value > 0 ? String(value) : '—';
-}
 
 export function useCardDetail(
   variantNumber: string,

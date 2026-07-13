@@ -2,13 +2,6 @@ import type { DeckBrowseFilters } from '@/constants/deckBrowse';
 import { formatDeckBrowseSetSelection } from '@/constants/deckBrowse';
 import type { DeckState } from '@/lib/deck-types';
 
-export {
-  collectIllegalCardNames,
-  deckHasBannedCards,
-  isCardBannedInDeck,
-  isCardTournamentIllegal,
-} from '@/lib/card-legality';
-
 export type DeckBrowseFilterSegment = 'legends' | 'sets' | 'legality' | 'content';
 
 export const DECK_BROWSE_FILTER_SEGMENTS: {

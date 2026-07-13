@@ -151,32 +151,6 @@ export function useCollectionOwnership(
   };
 }
 
-export function useCollectionEntry(variantNumber: string) {
-  const queryClient = useQueryClient();
-
-  return useQuery({
-    queryKey: collectionQueryKeys.entry(variantNumber),
-    queryFn: async () => {
-      const cached = queryClient
-        .getQueryData<CollectionEntry[]>(collectionQueryKeys.all)
-        ?.find((entry) => entry.variantNumber === variantNumber);
-      if (cached) return cached;
-
-      const ownership = getOwnershipRecord(queryClient);
-      if (ownership[variantNumber] !== undefined) {
-        return ownership[variantNumber] > 0 ? ({ variantNumber, quantity: ownership[variantNumber] } as CollectionEntry) : null;
-      }
-
-      const rows = await fetchRemoteCollectionQuantities([variantNumber]);
-      const quantity = rows[0]?.quantity ?? 0;
-      setOwnershipQuantity(queryClient, variantNumber, quantity);
-      return quantity > 0 ? ({ variantNumber, quantity } as CollectionEntry) : null;
-    },
-    staleTime: 10_000,
-    enabled: Boolean(variantNumber),
-  });
-}
-
 type CollectionEntrySeed = Omit<
   CollectionEntry,
   'quantity' | 'addedAt' | 'updatedAt' | 'variantNumber'

@@ -16,30 +16,7 @@ import {
 } from '@/services/deckService';
 import { isRemoteDeckReadOnlyError } from '@/services/remoteDeckService';
 
-export const deckQueryKeys = {
-  all: ['decks'] as const,
-  list: (source: 'owned' | 'imported', q?: string) =>
-    ['decks', 'list', source, q ?? ''] as const,
-  browse: (input: {
-    q?: string;
-    sort: DeckBrowseSort;
-    filters: DeckBrowseFilters;
-  }) =>
-    [
-      'decks',
-      'browse',
-      input.q ?? '',
-      input.sort.sort,
-      input.sort.dir,
-      input.filters.legend ?? '',
-      input.filters.sets.join(','),
-      input.filters.isLegal ?? 'all',
-      input.filters.hasGuide,
-      input.filters.hasVideo,
-      input.filters.hasMatchups,
-    ] as const,
-  detail: (id: string) => ['decks', id] as const,
-};
+import { deckQueryKeys } from '@/src/api/queryKeys';
 
 export function useOwnedDecks(query?: string) {
   return useQuery({
@@ -89,7 +66,7 @@ export function useDeckMutations() {
   const queryClient = useQueryClient();
 
   const invalidate = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['decks'] });
+    void queryClient.invalidateQueries({ queryKey: deckQueryKeys.all });
   }, [queryClient]);
 
   const saveDeck = useMutation({

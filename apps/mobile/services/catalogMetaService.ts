@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { catalogQueryKeys } from '@/src/api/queryKeys';
 import { api } from '@/src/api/client';
 import type { CatalogIndexCacheKey } from '@/services/catalogIndexService';
 import { getInMemoryCatalogIndex, readPersistedCatalogIndex } from '@/services/catalogIndexService';
@@ -10,13 +11,12 @@ type CatalogMeta = {
   variantCount: number;
 };
 
-const CATALOG_META_QUERY_KEY = ['catalog', 'meta'] as const;
 const CATALOG_META_STALE_MS = 5 * 60_000;
 
 function getCachedCatalogMeta(
   queryClient: Pick<QueryClient, 'getQueryData'>
 ): CatalogMeta | undefined {
-  return queryClient.getQueryData<CatalogMeta>(CATALOG_META_QUERY_KEY);
+  return queryClient.getQueryData<CatalogMeta>(catalogQueryKeys.meta);
 }
 
 async function fetchCatalogMeta(): Promise<CatalogMeta> {
@@ -26,7 +26,7 @@ async function fetchCatalogMeta(): Promise<CatalogMeta> {
 
 export function prefetchCatalogMeta(queryClient: QueryClient) {
   return queryClient.prefetchQuery({
-    queryKey: CATALOG_META_QUERY_KEY,
+    queryKey: catalogQueryKeys.meta,
     queryFn: fetchCatalogMeta,
     staleTime: CATALOG_META_STALE_MS,
   });
@@ -45,7 +45,7 @@ export async function resolveCatalogIndexCacheKey(
 
   try {
     const meta = await fetchCatalogMeta();
-    queryClient?.setQueryData(CATALOG_META_QUERY_KEY, meta);
+    queryClient?.setQueryData(catalogQueryKeys.meta, meta);
     return {
       catalogHash: meta.catalogHash,
       pricesCatalogHash: meta.pricesCatalogHash,

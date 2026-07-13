@@ -22,8 +22,6 @@ import {
 import { onSheetIndexChange } from "@/lib/bottom-sheet-lifecycle";
 import {
   BackHandler,
-  type BlurEvent,
-  type FocusEvent,
   Keyboard,
   type LayoutChangeEvent,
   Platform,

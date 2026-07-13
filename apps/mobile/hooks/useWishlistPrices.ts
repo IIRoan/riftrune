@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { PriceStats, PriceTrend } from '@riftbound/contracts';
 import {
   CARDMARKET_PRICE_SCOPE_NOTE,
@@ -7,10 +7,10 @@ import {
 } from '@riftbound/contracts';
 import { getWishlist, type WishlistEntry } from '@/services/wishlistService';
 import { api } from '@/src/api/client';
-import { wishlistQueryKeys } from '@/src/api/queryKeys';
+import { wishlistQueryKeys, type WishlistRange } from '@/src/api/queryKeys';
 import { isFoilVariant } from '@/utils/variants';
 
-export type WishlistRange = '1d' | '7d' | '30d';
+export type { WishlistRange } from '@/src/api/queryKeys';
 
 export interface WishlistPricePoint {
   label: string;
@@ -89,10 +89,15 @@ function toWishlistPriceItem(
 }
 
 export function useWishlistPrices(range: WishlistRange, enabled = true) {
+  const queryClient = useQueryClient();
+
   return useQuery({
-    queryKey: [...wishlistQueryKeys.all, 'prices', range] as const,
+    queryKey: wishlistQueryKeys.prices(range),
     queryFn: async (): Promise<WishlistPriceItem[]> => {
-      const wishlist = await getWishlist();
+      const wishlist = await queryClient.ensureQueryData({
+        queryKey: wishlistQueryKeys.all,
+        queryFn: getWishlist,
+      });
       if (wishlist.length === 0) return [];
 
       const batch = await api.batchCards(wishlist.map((item) => item.variantNumber));
