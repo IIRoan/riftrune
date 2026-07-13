@@ -1,10 +1,5 @@
 export type DeckSectionKey =
-  | 'legend'
-  | 'champion'
-  | 'mainDeck'
-  | 'runes'
-  | 'battlefields'
-  | 'sideboard';
+  'legend' | 'champion' | 'mainDeck' | 'runes' | 'battlefields' | 'sideboard';
 
 export interface DeckCard {
   cardId: string;
@@ -28,7 +23,10 @@ export interface DeckEntry {
   count: number;
 }
 
-export type DeckSectionMap = Record<Exclude<DeckSectionKey, 'legend' | 'champion'>, Map<string, DeckEntry>>;
+export type DeckSectionMap = Record<
+  Exclude<DeckSectionKey, 'legend' | 'champion'>,
+  Map<string, DeckEntry>
+>;
 
 export interface DeckState {
   id: string;
@@ -95,13 +93,7 @@ export interface SerializedDeck {
   bannedCardNames?: string[];
 }
 
-export type ValidationSeverity = 'error' | 'warning' | 'valid';
-
-export interface DeckValidationMessage {
-  type: ValidationSeverity;
-  message: string;
-  code?: string;
-}
+export type { DeckValidationMessage } from '@riftbound/contracts';
 
 export const DECK_SECTIONS: Array<{
   key: DeckSectionKey;

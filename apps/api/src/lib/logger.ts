@@ -21,7 +21,7 @@ function write(level: LogLevel, event: string, fields?: LogFields): void {
   console.log(line);
 }
 
-/** Structured log for failed API actions (mutations, imports, etc.). */
+/** Structured log for failed mutations and imports. */
 export function logActionFailure(
   action: string,
   error: unknown,
@@ -34,12 +34,4 @@ export function logActionFailure(
     name: err.name,
     ...context,
   });
-}
-
-export function logActionWarning(
-  action: string,
-  message: string,
-  context?: LogFields
-): void {
-  write('warn', 'action.warning', { action, message, ...context });
 }

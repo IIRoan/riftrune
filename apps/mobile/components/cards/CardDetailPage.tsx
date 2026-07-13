@@ -23,7 +23,7 @@ import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
-import { formatStat } from '@/hooks/useCardDetail';
+import { formatStat } from '@/utils/cardFormat';
 import {
   formatMarketTrend,
   getVariantMarketPriceDisplays,

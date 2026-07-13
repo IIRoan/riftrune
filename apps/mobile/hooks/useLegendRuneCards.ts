@@ -4,7 +4,6 @@ import type { DeckCard } from '@/lib/deck-types';
 import { deckCardFromDetail } from '@/lib/deck-card';
 import { getLegendRuneDomains } from '@/lib/deck-builder';
 import { api } from '@/src/api/client';
-import { cardQueryKeys } from '@/src/api/queryKeys';
 
 async function fetchRuneCard(domain: string): Promise<DeckCard | null> {
   const name = runeNameForDomain(domain);
@@ -27,7 +26,11 @@ export function useLegendRuneCards(legend: DeckCard | null) {
   const domains = legend ? getLegendRuneDomains(legend) : null;
 
   return useQuery({
-    queryKey: ['legend-rune-cards', legend?.variantNumber ?? 'none', domains?.join('/')],
+    queryKey: [
+      'legend-rune-cards',
+      legend?.variantNumber ?? 'none',
+      domains?.join('/'),
+    ],
     queryFn: async () => {
       if (!domains) return { byDomain: new Map<string, DeckCard>() };
       const [first, second] = domains;

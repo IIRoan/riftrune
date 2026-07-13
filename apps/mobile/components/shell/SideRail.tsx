@@ -6,7 +6,7 @@ import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { authClient } from '@/src/lib/auth-client';
 import { useQueryClient } from '@tanstack/react-query';
-import { collectionQueryKeys } from '@/src/api/queryKeys';
+import { removeUserDataQueries } from '@/src/api/queryClient';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 
@@ -41,8 +41,7 @@ export function SideRail() {
     await sessionQuery.refetch();
     await clearPersistedCollection();
     await clearPersistedCatalogIndex();
-    void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
-    void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
+    removeUserDataQueries(queryClient);
   };
 
   const userName = session?.user?.name ?? '';

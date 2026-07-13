@@ -15,8 +15,6 @@ export const Layout = {
   tabBarMaxWidth: 400,
   /** Minimum touch target per HIG / Material (px). */
   minTouchTarget: 44,
-  /** @deprecated Use `tabBarContentInset(bottomSafeArea)` for scroll padding. */
-  bottomPadding: 100,
 } as const;
 
 /** Scroll content padding so the last row clears the floating tab bar. */

@@ -4,12 +4,8 @@ import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
-import {
-  collectIllegalCardNames,
-  deckArchiveViewUrl,
-  deckBrowseSummaryLine,
-  deckHasBannedCards,
-} from '@/lib/deck-browse';
+import { deckArchiveViewUrl, deckBrowseSummaryLine } from '@/lib/deck-browse';
+import { collectIllegalCardNames, deckHasBannedCards } from '@/lib/card-legality';
 import type { DeckState } from '@/lib/deck-types';
 import { hapticPress } from '@/utils/haptics';
 
@@ -46,8 +42,12 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
 
       {deck.description ? (
         <View className="gap-1 rounded-lg border border-archive-soft-line/80 bg-background/40 px-2.5 py-2">
-          <Text className="text-[11px] font-semibold text-muted-foreground">Description</Text>
-          <Text className="text-[13px] leading-5 text-foreground">{deck.description}</Text>
+          <Text className="text-[11px] font-semibold text-muted-foreground">
+            Description
+          </Text>
+          <Text className="text-[13px] leading-5 text-foreground">
+            {deck.description}
+          </Text>
         </View>
       ) : null}
 
@@ -87,7 +87,11 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
               onPress={() => void openExternalUrl(archiveUrl)}
             >
               <ButtonIcon>
-                <ThemedIonicon name="git-compare-outline" size={14} color="foreground" />
+                <ThemedIonicon
+                  name="git-compare-outline"
+                  size={14}
+                  color="foreground"
+                />
               </ButtonIcon>
               <ButtonText>View matchups</ButtonText>
             </Button>
@@ -100,7 +104,9 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
         className="self-start active:opacity-80"
         onPress={() => void openExternalUrl(archiveUrl)}
       >
-        <Text className="text-[12px] font-medium text-primary">Open on Piltover Archive</Text>
+        <Text className="text-[12px] font-medium text-primary">
+          Open on Piltover Archive
+        </Text>
       </Pressable>
     </View>
   );

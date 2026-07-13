@@ -1,11 +1,18 @@
 import type { CatalogFilters } from '@/constants/catalogFilters';
 import { catalogFiltersQueryKey } from '@/constants/catalogFilters';
+import type { DeckBrowseFilters, DeckBrowseSort } from '@/constants/deckBrowse';
+
+export type WishlistRange = '1d' | '7d' | '30d';
+
+export const catalogQueryKeys = {
+  meta: ['catalog', 'meta'] as const,
+  index: ['catalog', 'index'] as const,
+  filters: ['filters'] as const,
+};
 
 export const cardQueryKeys = {
-  all: ['cards'] as const,
   search: (q: string, limit = 40, sortBy = 'name', dir = 'asc') =>
     ['cards', 'search', q.toLowerCase(), limit, sortBy, dir] as const,
-  featured: (limit: number) => ['cards', 'featured', limit] as const,
   browse: (filters?: CatalogFilters) =>
     ['cards', 'browse', catalogFiltersQueryKey(filters)] as const,
   searchInfinite: (
@@ -24,7 +31,7 @@ export const cardQueryKeys = {
       catalogFiltersQueryKey(filters),
     ] as const,
   detail: (variantNumber: string) => ['cards', 'detail', variantNumber] as const,
-  health: ['health'] as const,
+  banDates: (variantKey: string) => ['cards', 'ban-dates', variantKey] as const,
 };
 
 export const collectionQueryKeys = {
@@ -37,4 +44,30 @@ export const collectionQueryKeys = {
 
 export const wishlistQueryKeys = {
   all: ['wishlist'] as const,
+  prices: (range: WishlistRange) => ['wishlist', 'prices', range] as const,
+};
+
+export const deckQueryKeys = {
+  all: ['decks'] as const,
+  list: (source: 'owned' | 'imported', q?: string) =>
+    ['decks', 'list', source, q ?? ''] as const,
+  browse: (input: {
+    q?: string;
+    sort: DeckBrowseSort;
+    filters: DeckBrowseFilters;
+  }) =>
+    [
+      'decks',
+      'browse',
+      input.q ?? '',
+      input.sort.sort,
+      input.sort.dir,
+      input.filters.legend ?? '',
+      input.filters.sets.join(','),
+      input.filters.isLegal ?? 'all',
+      input.filters.hasGuide,
+      input.filters.hasVideo,
+      input.filters.hasMatchups,
+    ] as const,
+  detail: (id: string) => ['decks', id] as const,
 };

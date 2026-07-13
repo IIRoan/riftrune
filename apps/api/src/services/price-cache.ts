@@ -16,15 +16,7 @@ import {
   type DailyPricePoint,
   utcDateString,
 } from '../lib/price-stats.js';
-import {
-  CARDMARKET_RIFTBOUND_GAME_ID,
-  fetchCardmarketPriceGuide,
-} from '../upstream/cardmarket-export.js';
-
-function parseNum(value: string | null | undefined): string | null {
-  if (value === null || value === undefined || value === '') return null;
-  return value;
-}
+import { fetchCardmarketPriceGuide } from '../upstream/cardmarket-export.js';
 
 function toNumber(value: string | null): number | null {
   return value === null ? null : Number(value);
@@ -65,16 +57,6 @@ function toDailyPoint(row: typeof priceDaily.$inferSelect): PriceDailyPoint {
 function sinceDate(days: number): string {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   return utcDateString(since);
-}
-
-function resolveCardmarketGameId(): number {
-  const raw = process.env.CARDMARKET_GAME_ID;
-  if (!raw) return CARDMARKET_RIFTBOUND_GAME_ID;
-  const parsed = Number(raw);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`Invalid CARDMARKET_GAME_ID: ${raw}`);
-  }
-  return parsed;
 }
 
 const PRICE_SYNC_CHUNK_SIZE = 200;
@@ -354,8 +336,7 @@ export class PriceCacheService {
     ];
   }
 
-  /** Download Cardmarket's daily Riftbound price guide and upsert cache + history. */
-  async syncFromCardmarket(gameId = resolveCardmarketGameId()): Promise<{
+  async syncFromCardmarket(gameId: number): Promise<{
     changed: boolean;
     rowCount: number;
     productCount: number;
@@ -380,20 +361,6 @@ export class PriceCacheService {
         exportCreatedAt: exportData.createdAt,
       },
     });
-  }
-
-  /** Daily price sync entry point (Cardmarket export). */
-  async syncFromUpstream(): Promise<{
-    changed: boolean;
-    rowCount: number;
-    hash: string;
-  }> {
-    const result = await this.syncFromCardmarket();
-    return {
-      changed: result.changed,
-      rowCount: result.rowCount,
-      hash: result.hash,
-    };
   }
 
   async persistPriceRows(
@@ -437,10 +404,10 @@ export class PriceCacheService {
       priceDate,
       provider: row.provider,
       currency: row.currency,
-      lowPrice: parseNum(row.lowPrice),
-      marketPrice: parseNum(row.marketPrice),
-      midPrice: parseNum(row.midPrice),
-      highPrice: parseNum(row.highPrice),
+      lowPrice: row.lowPrice,
+      marketPrice: row.marketPrice,
+      midPrice: row.midPrice,
+      highPrice: row.highPrice,
       syncedAt: now,
     }));
 
@@ -450,13 +417,13 @@ export class PriceCacheService {
       isFoil: row.isFoil,
       provider: row.provider,
       currency: row.currency,
-      lowPrice: parseNum(row.lowPrice),
-      marketPrice: parseNum(row.marketPrice),
-      midPrice: parseNum(row.midPrice),
-      highPrice: parseNum(row.highPrice),
-      avg1Day: parseNum(row.avg1Day),
-      avg7Day: parseNum(row.avg7Day),
-      avg30Day: parseNum(row.avg30Day),
+      lowPrice: row.lowPrice,
+      marketPrice: row.marketPrice,
+      midPrice: row.midPrice,
+      highPrice: row.highPrice,
+      avg1Day: row.avg1Day,
+      avg7Day: row.avg7Day,
+      avg30Day: row.avg30Day,
       upstreamLastUpdated: row.lastUpdated,
       contentHash: row.contentHash,
       fetchedAt: now,
@@ -467,13 +434,13 @@ export class PriceCacheService {
       isFoil: row.isFoil,
       provider: row.provider,
       currency: row.currency,
-      lowPrice: parseNum(row.lowPrice),
-      marketPrice: parseNum(row.marketPrice),
-      midPrice: parseNum(row.midPrice),
-      highPrice: parseNum(row.highPrice),
-      avg1Day: parseNum(row.avg1Day),
-      avg7Day: parseNum(row.avg7Day),
-      avg30Day: parseNum(row.avg30Day),
+      lowPrice: row.lowPrice,
+      marketPrice: row.marketPrice,
+      midPrice: row.midPrice,
+      highPrice: row.highPrice,
+      avg1Day: row.avg1Day,
+      avg7Day: row.avg7Day,
+      avg30Day: row.avg30Day,
       upstreamLastUpdated: row.lastUpdated,
       contentHash: row.contentHash,
       capturedAt: now,

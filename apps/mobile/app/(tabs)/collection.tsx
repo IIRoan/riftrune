@@ -7,9 +7,8 @@ import {
   DashboardStatGrid,
   computeTypeStats,
   SetCardGrid,
-  rarityIconFor,
-  typeIconFor,
 } from '@/components/collection/CollectionDashboard';
+import { rarityIconFor, typeIconFor } from '@/constants/gameAssets';
 import { CollectionCardList } from '@/components/collection/CollectionCardList';
 import {
   CollectionImportExportStatus,

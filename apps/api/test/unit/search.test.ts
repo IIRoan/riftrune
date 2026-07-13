@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { tokenizeSearchQuery } from '../../src/lib/search.js';
+import {
+  buildCardSearchCondition,
+  buildSearchRelevanceOrder,
+  tokenizeSearchQuery,
+} from '../../src/lib/search.js';
 
 describe('tokenizeSearchQuery', () => {
   test('splits on whitespace and lowercases', () => {
@@ -12,5 +16,22 @@ describe('tokenizeSearchQuery', () => {
 
   test('preserves single-character tokens', () => {
     expect(tokenizeSearchQuery('a b')).toEqual(['a', 'b']);
+  });
+});
+
+describe('buildCardSearchCondition', () => {
+  test('returns undefined for blank queries', () => {
+    expect(buildCardSearchCondition('   ')).toBeUndefined();
+  });
+
+  test('builds a SQL fragment for one or more tokens', () => {
+    expect(buildCardSearchCondition('vi')).toBeDefined();
+    expect(buildCardSearchCondition('vi destructive')).toBeDefined();
+  });
+});
+
+describe('buildSearchRelevanceOrder', () => {
+  test('returns a SQL ordering fragment', () => {
+    expect(buildSearchRelevanceOrder('vi')).toBeDefined();
   });
 });

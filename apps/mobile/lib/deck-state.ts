@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { DeckState } from '@/lib/deck-types';
-import { deckQueryKeys } from '@/hooks/useDecks';
+import { deckQueryKeys } from '@/src/api/queryKeys';
 
 /** Merge remote deck into the query cache only when it is newer than local state. */
 export function applyDeckStateIfNewerToCache(

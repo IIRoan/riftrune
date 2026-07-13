@@ -31,5 +31,3 @@ void main().catch((error: unknown) => {
   console.error('Failed to start API:', error);
   process.exit(1);
 });
-
-export type App = ReturnType<typeof createApp>['app'];

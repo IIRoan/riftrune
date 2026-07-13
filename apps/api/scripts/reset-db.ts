@@ -10,7 +10,6 @@
  */
 import postgres from 'postgres';
 import { createApp } from '../src/app.js';
-import { createDb } from '../src/db/client.js';
 import { runStartupMigrations } from '../src/db/migrate.js';
 import { loadEnv } from '../src/env.js';
 import { PriceCacheService } from '../src/services/price-cache.js';
