@@ -152,7 +152,7 @@ export function startSyncCrons(ctx: AppContext, env: Env): void {
 
   setInterval(() => {
     void ctx.priceCache
-      .syncFromUpstream()
+      .syncFromCardmarket(env.CARDMARKET_GAME_ID)
       .then((result) => {
         if (result.changed) {
           ctx.cardCache.invalidateSearchCache();

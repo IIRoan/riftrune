@@ -14,7 +14,7 @@ function mapToEntries(
   }));
 }
 
-export function deckToValidateInput(deck: DeckState): DeckValidateInput {
+function deckToValidateInput(deck: DeckState): DeckValidateInput {
   return {
     legend: deck.legend,
     champion: deck.champion,

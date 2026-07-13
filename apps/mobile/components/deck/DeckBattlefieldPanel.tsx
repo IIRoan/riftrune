@@ -122,6 +122,3 @@ export function DeckBattlefieldPanel({
     </View>
   );
 }
-
-/** @deprecated Use DeckBattlefieldPanel */
-export const DeckBattlefieldRow = DeckBattlefieldPanel;

@@ -360,5 +360,3 @@ export function computeTypeStats(
       total: t.count,
     }));
 }
-
-export { typeIconFor, rarityIconFor };

@@ -1,5 +1,9 @@
 import type { CardDetail, CardListItem, CardsListQuery } from '@riftbound/contracts';
-import { isTokenVariantNumber } from '@riftbound/contracts';
+import {
+  cardPrimaryNameToken,
+  isTokenVariantNumber,
+  legendChampionTags,
+} from '@riftbound/contracts';
 import {
   cardMatchesSectionType,
   deckCardFromDetail,
@@ -12,8 +16,6 @@ import { BATTLEFIELD_MAX, battlefieldsAtCapacity } from '@/lib/deck-limits';
 import {
   getDeckIdentity,
   isCardEligibleForSection,
-  legendChampionTags,
-  legendPrimaryNameToken,
 } from '@/lib/deck-eligibility';
 import type { DeckCard, DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { api } from '@/src/api/client';
@@ -124,7 +126,7 @@ export function getDeckAddSectionMeta(
 
 export function defaultDeckAddSearch(section: DeckSectionKey, deck: DeckState): string {
   if (section !== 'champion' || !deck.legend) return '';
-  return legendPrimaryNameToken(deck.legend);
+  return cardPrimaryNameToken(deck.legend);
 }
 
 export function effectiveDeckAddSearch(
@@ -424,7 +426,7 @@ export function describeDeckAddEmptyState(args: {
       : null;
 
     if (section === 'champion' && deck.legend) {
-      const primary = legendPrimaryNameToken(deck.legend);
+      const primary = cardPrimaryNameToken(deck.legend);
       return {
         title: 'No eligible champions',
         description: primary
@@ -476,10 +478,6 @@ export function describeDeckAddEmptyState(args: {
     description: meta.placeholder,
   };
 }
-
-// Re-export for tests and add-time validation elsewhere.
-export { championMatchesLegend } from '@/lib/deck-eligibility';
-export { isCardEligibleForSection } from '@/lib/deck-eligibility';
 
 export function filterEligibleDeckAddCards(
   deck: DeckState,

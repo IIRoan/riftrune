@@ -55,9 +55,6 @@ export const INPUT_SEARCH_SHELL_CLASS =
 export const INPUT_TEXTAREA_SHELL_CLASS =
   'min-h-28 rounded-lg border border-border bg-card px-3 py-2 items-start active:bg-card-panel dark:active:bg-card';
 
-/** @deprecated Use INPUT_SEARCH_SHELL_CLASS */
-export const CATALOG_SEARCH_SHELL_CLASS = INPUT_SEARCH_SHELL_CLASS;
-
 export type ToolbarIconTone = 'active' | 'inactive' | 'primary';
 
 /** Icon color for toolbar controls — foreground when active, muted when idle. */

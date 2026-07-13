@@ -14,7 +14,7 @@ function sortKeys(value: unknown): unknown {
   return value;
 }
 
-export function canonicalJson(value: unknown): string {
+function canonicalJson(value: unknown): string {
   return JSON.stringify(sortKeys(value));
 }
 

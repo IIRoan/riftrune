@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  DeckBattlefieldRow,
+  DeckBattlefieldPanel,
   DeckSectionGrid,
 } from '@/components/deck/DeckSectionGrid';
 import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
@@ -148,7 +148,7 @@ export function DeckBuilderCanvas({
       </DeckBuilderSection>
 
       <DeckBuilderSection>
-        <DeckBattlefieldRow
+        <DeckBattlefieldPanel
           deck={deck}
           readOnly={readOnly}
           tileWidth={sectionTileWidth}

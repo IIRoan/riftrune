@@ -126,10 +126,6 @@ export async function remoteDeleteDeck(deckId: string): Promise<void> {
   });
 }
 
-export function isRemoteDeckAuthError(error: unknown): boolean {
-  return error instanceof RemoteDeckApiError && error.status === 401;
-}
-
 export function isRemoteDeckReadOnlyError(error: unknown): boolean {
   return error instanceof RemoteDeckApiError && error.status === 403;
 }

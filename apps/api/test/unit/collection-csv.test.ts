@@ -5,7 +5,7 @@ import {
   exportRowsToCsv,
   formatConditionLabel,
   formatLanguageLabel,
-  mergeImportItems,
+  aggregateImportItems,
   parseCollectionCsv,
   parseCollectionCsvToImportItems,
   parseConditionLabel,
@@ -103,8 +103,8 @@ describe('collection CSV format', () => {
     expect(rows[0]?.Language).toBe('English');
   });
 
-  test('mergeImportItems sums quantities for matching keys', () => {
-    const merged = mergeImportItems([
+  test('aggregateImportItems sums quantities for matching keys', () => {
+    const merged = aggregateImportItems([
       {
         variantNumber: 'OGN-001',
         quantity: 2,

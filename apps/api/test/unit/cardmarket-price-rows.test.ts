@@ -9,7 +9,7 @@ import {
   stablePriceRowId,
 } from '../../src/lib/cardmarket-price-rows.js';
 import {
-  parseCardmarketPriceGuideExport,
+  CardmarketPriceGuideExportSchema,
   priceGuideDownloadUrl,
 } from '../../src/upstream/cardmarket-export.js';
 
@@ -57,7 +57,7 @@ describe('cardmarket price rows', () => {
       join(import.meta.dir, '../fixtures/cardmarket-price-guide-riftbound.json'),
       'utf8'
     );
-    const exportData = parseCardmarketPriceGuideExport(JSON.parse(raw));
+    const exportData = CardmarketPriceGuideExportSchema.parse(JSON.parse(raw));
     const rows = mapPriceGuideExportToRows(exportData);
 
     expect(rows).toHaveLength(3);

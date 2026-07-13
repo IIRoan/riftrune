@@ -268,7 +268,3 @@ export function paCardHash(card: PaLogicalCard): string {
 export function paVariantHash(variant: PaVariant): string {
   return entityHash(variant);
 }
-
-export function paPriceHash(row: PaPriceRow): string {
-  return entityHash(row);
-}

@@ -2,7 +2,6 @@ import { Image } from 'expo-image';
 import { Platform, View } from 'react-native';
 import { useCSSVariable } from 'uniwind';
 import { typeIconFor, rarityIconFor, domainIconFor, mightIcon } from '@/constants/gameAssets';
-import { KeywordBadge } from '@/components/riftbound/KeywordBadge';
 import { Text } from '@/components/ui/text';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { cn } from '@/lib/utils';
@@ -43,49 +42,6 @@ export function EnergyPip({ value, size = 32 }: PipProps) {
         {value}
       </Text>
     </View>
-  );
-}
-
-export function AccelerateBadge() {
-  return <KeywordBadge label="ACCELERATE" />;
-}
-
-export function FuryIcon({ size = 15 }: { size?: number }) {
-  const source = domainIconFor('Fury');
-  if (!source) return null;
-  return (
-    <Image
-      source={source}
-      style={{ width: size, height: size }}
-      contentFit="contain"
-      accessibilityIgnoresInvertColors
-    />
-  );
-}
-
-export function UnitIcon({ size = 15 }: { size?: number }) {
-  const source = typeIconFor('Unit');
-  if (!source) return null;
-  return (
-    <Image
-      source={source}
-      style={{ width: size, height: size }}
-      contentFit="contain"
-      accessibilityIgnoresInvertColors
-    />
-  );
-}
-
-export function RarityCoin({ size = 15 }: { size?: number }) {
-  const source = rarityIconFor('Common');
-  if (!source) return null;
-  return (
-    <Image
-      source={source}
-      style={{ width: size, height: size }}
-      contentFit="contain"
-      accessibilityIgnoresInvertColors
-    />
   );
 }
 

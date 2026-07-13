@@ -175,10 +175,6 @@ export function groupInlineSegments(parts: CardRulesPart[]): InlineSegment[] {
   return segments;
 }
 
-export function classifyBracketTokenForTest(inner: string): CardRulesPart {
-  return classifyBracketToken(inner);
-}
-
 export function isInlineIconPart(
   part: CardRulesPart
 ): part is Extract<CardRulesPart, { type: 'might' | 'tap' | 'rune' | 'domain' }> {

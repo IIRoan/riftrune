@@ -85,15 +85,6 @@ export function useImportedDecksBrowse(options: {
   });
 }
 
-/** @deprecated Prefer useOwnedDecks / useImportedDecks */
-export function useDecks() {
-  return useQuery({
-    queryKey: deckQueryKeys.all,
-    queryFn: () => listDecks(),
-    staleTime: 5_000,
-  });
-}
-
 export function useDeckMutations() {
   const queryClient = useQueryClient();
 
