@@ -19,6 +19,13 @@ export type FiltersMeta = {
   variantCount: number;
 };
 
+type ProbeContext = {
+  baseFilters: FilterSnapshot;
+  fingerprint: string;
+  latestParsed: FilterSnapshot | null;
+  needsProbe: boolean;
+};
+
 export class CatalogMetadataService {
   private probePromise: Promise<FilterSnapshot> | null = null;
 
@@ -28,7 +35,7 @@ export class CatalogMetadataService {
   ) {}
 
   async getFiltersMeta(): Promise<FiltersMeta> {
-    const snapshot = await this.ensureExpandedPrintCounts();
+    const snapshot = await this.getFiltersSnapshot();
     const latest = await this.db.query.filterSnapshots.findFirst({
       orderBy: [desc(filterSnapshots.capturedAt)],
     });
@@ -48,11 +55,36 @@ export class CatalogMetadataService {
     };
   }
 
+  /** Best-effort snapshot for HTTP — never blocks on an in-flight catalog probe. */
+  async getFiltersSnapshot(): Promise<FilterSnapshot> {
+    if (process.env.CATALOG_PROBE_DISABLED === 'true') {
+      return this.loadLatestSnapshot();
+    }
+
+    const context = await this.prepareProbeContext();
+    if (!context.needsProbe && context.latestParsed) {
+      return context.latestParsed;
+    }
+
+    void this.scheduleProbe(context.baseFilters, context.fingerprint);
+    return context.latestParsed ?? context.baseFilters;
+  }
+
+  /** Blocks until expanded print counts are ready — used by catalog sync. */
   async ensureExpandedPrintCounts(force = false): Promise<FilterSnapshot> {
     if (process.env.CATALOG_PROBE_DISABLED === 'true') {
       return this.loadLatestSnapshot();
     }
 
+    const context = await this.prepareProbeContext(force);
+    if (!context.needsProbe && context.latestParsed) {
+      return context.latestParsed;
+    }
+
+    return this.scheduleProbe(context.baseFilters, context.fingerprint);
+  }
+
+  private async prepareProbeContext(force = false): Promise<ProbeContext> {
     const probe = await this.riftrune.listCards({ limit: 1, page: 1 });
     const fingerprint = catalogFingerprint(
       probe.pagination.total,
@@ -81,10 +113,13 @@ export class CatalogMetadataService {
       !snapshotHasPrintCounts(latestParsed) ||
       existing?.contentHash !== fingerprint;
 
-    if (!needsProbe && latestParsed) {
-      return latestParsed;
-    }
+    return { baseFilters, fingerprint, latestParsed, needsProbe };
+  }
 
+  private scheduleProbe(
+    baseFilters: FilterSnapshot,
+    fingerprint: string
+  ): Promise<FilterSnapshot> {
     if (!this.probePromise) {
       this.probePromise = this.runProbe(baseFilters, fingerprint).finally(() => {
         this.probePromise = null;

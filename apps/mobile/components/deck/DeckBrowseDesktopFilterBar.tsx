@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { DeckBrowseFilterSegmentPanel } from '@/components/deck/DeckBrowseFilterPanels';
-import { FilterClearButton, FilterPopoverSection } from '@/components/filters/FilterPrimitives';
+import { FilterClearButton, FilterPopoverBar } from '@/components/filters/FilterPrimitives';
 import {
   DEFAULT_DECK_BROWSE_FILTERS,
   deckBrowseFiltersActive,
@@ -24,23 +24,15 @@ export function DeckBrowseDesktopFilterBar({
 }: DeckBrowseDesktopFilterBarProps) {
   const [openSegment, setOpenSegment] = useState<DeckBrowseFilterSegment | null>(null);
 
-  const handleOpenChange = (segment: DeckBrowseFilterSegment, open: boolean) => {
-    setOpenSegment(open ? segment : null);
-  };
-
-  return (
-    <View className="flex-row flex-wrap items-center gap-2">
-      {DECK_BROWSE_FILTER_SEGMENTS.map((segment) => (
-        <FilterPopoverSection
-          key={segment.id}
-          label={segment.label}
-          hasValue={deckBrowseFilterSegmentActive(segment.id, filters)}
-          open={openSegment === segment.id}
-          onOpenChange={(open) => handleOpenChange(segment.id, open)}
-          portalName={`deck-browse-filter-${segment.id}`}
-          contentClassName={segment.id === 'legends' ? 'w-[300px]' : undefined}
-          maxHeight={segment.id === 'legends' ? 360 : 280}
-        >
+  const segments = useMemo(
+    () =>
+      DECK_BROWSE_FILTER_SEGMENTS.map((segment) => ({
+        id: segment.id,
+        label: segment.label,
+        hasValue: deckBrowseFilterSegmentActive(segment.id, filters),
+        contentClassName: segment.id === 'legends' ? 'w-[300px]' : undefined,
+        maxHeight: segment.id === 'legends' ? 360 : 280,
+        children: (
           <DeckBrowseFilterSegmentPanel
             segment={segment.id}
             filters={filters}
@@ -48,8 +40,19 @@ export function DeckBrowseDesktopFilterBar({
             enabled={openSegment === segment.id}
             compact
           />
-        </FilterPopoverSection>
-      ))}
+        ),
+      })),
+    [filters, onFiltersChange, openSegment]
+  );
+
+  return (
+    <View className="flex-row flex-wrap items-center gap-2">
+      <FilterPopoverBar
+        portalName="deck-browse-filter-bar"
+        openId={openSegment}
+        onOpenIdChange={setOpenSegment}
+        segments={segments}
+      />
 
       {deckBrowseFiltersActive(filters) ? (
         <FilterClearButton onPress={() => onFiltersChange(DEFAULT_DECK_BROWSE_FILTERS)} />

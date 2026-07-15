@@ -1,4 +1,5 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query';
+import { prefetchFilterIcons } from '@/lib/prefetchFilterIcons';
 import { catalogQueryKeys } from '@/src/api/queryKeys';
 import { api } from '@/src/api/client';
 
@@ -12,12 +13,27 @@ export const FILTERS_QUERY_KEY = catalogQueryKeys.filters;
 
 export type CatalogFiltersSnapshot = Awaited<ReturnType<typeof fetchCatalogFilters>>;
 
+/** UI loading/error flags for filter panels — avoids treating background refetch as initial load. */
+export function filtersQueryUiState<T>(query: {
+  data: T | undefined;
+  isPending: boolean;
+  isError: boolean;
+}): { isLoading: boolean; isError: boolean } {
+  const hasData = query.data != null;
+  return {
+    isLoading: !hasData && query.isPending,
+    isError: !hasData && query.isError,
+  };
+}
+
 export async function fetchCatalogFilters() {
   const res = await api.getFilters();
-  return {
+  const snapshot = {
     ...res.data,
     variantCount: res.meta.variantCount,
   };
+  prefetchFilterIcons(snapshot);
+  return snapshot;
 }
 
 export function prefetchCatalogFilters(queryClient: QueryClient) {

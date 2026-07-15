@@ -20,7 +20,11 @@ import {
   type CatalogFilterSegment,
   type CatalogFilters,
 } from '@/constants/catalogFilters';
-import { prefetchCatalogFilters, useFiltersData } from '@/hooks/useFiltersData';
+import {
+  filtersQueryUiState,
+  prefetchCatalogFilters,
+  useFiltersData,
+} from '@/hooks/useFiltersData';
 
 function toggleValue(values: string[], value: string): string[] {
   return values.includes(value) ? values.filter((entry) => entry !== value) : [...values, value];
@@ -37,7 +41,7 @@ export function useCatalogFilterOptions() {
   }, [queryClient]);
 
   const snapshot = filtersQuery.data;
-  const isLoading = !snapshot && (filtersQuery.isLoading || filtersQuery.isFetching);
+  const { isLoading, isError } = filtersQueryUiState(filtersQuery);
 
   const colorOptions = useMemo(
     () =>
@@ -69,6 +73,8 @@ export function useCatalogFilterOptions() {
 
   return {
     isLoading,
+    isError,
+    refetch: filtersQuery.refetch,
     colorOptions,
     setOptions,
     typeOptions,
@@ -95,6 +101,8 @@ export function CatalogFilterSegmentPanel({
 }: CatalogFilterSegmentPanelProps) {
   const {
     isLoading,
+    isError,
+    refetch,
     colorOptions,
     setOptions,
     typeOptions,
@@ -114,6 +122,23 @@ export function CatalogFilterSegmentPanel({
       <View className="items-center py-8">
         <ActivityIndicator />
         <Text className="mt-3 text-sm text-archive-subtle">Loading filter options…</Text>
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View className="items-center gap-3 py-8">
+        <Text className="text-center text-sm text-archive-subtle">
+          Could not load filter options.
+        </Text>
+        <Text
+          className="text-sm font-semibold text-primary"
+          accessibilityRole="button"
+          onPress={() => void refetch()}
+        >
+          Retry
+        </Text>
       </View>
     );
   }

@@ -38,6 +38,10 @@ export function mapPriceRows(rows: PaPriceRow[], cardmarketId: number): PriceSum
     }));
 }
 
+function hasUsableTrend(row: PriceSummary): boolean {
+  return row.market != null && row.market > 0;
+}
+
 function pickDisplayPrice(
   rows: PriceSummary[],
   variant: Pick<PaVariant, 'variantNumber' | 'variantLabel' | 'variantType'>
@@ -49,11 +53,24 @@ function pickDisplayPrice(
     variant.variantLabel,
     variant.variantType
   );
-  const rowsWithMarket = rows.filter((row) => row.market != null);
-  const matching = rowsWithMarket.find((row) => row.isFoil === isFoil);
+  const rowsWithTrend = rows.filter(hasUsableTrend);
+  const matching = rowsWithTrend.find((row) => row.isFoil === isFoil);
   if (matching) return matching;
-  if (rowsWithMarket.length === 1) return rowsWithMarket[0] ?? null;
-  return rows.find((row) => !row.isFoil) ?? rowsWithMarket[0] ?? rows[0] ?? null;
+
+  // Showcase / signed printings often only have foil trend data in Cardmarket's guide.
+  const foilTrend = rowsWithTrend.find((row) => row.isFoil);
+  if (foilTrend) return foilTrend;
+
+  const plainTrend = rowsWithTrend.find((row) => !row.isFoil);
+  if (plainTrend) return plainTrend;
+
+  const rowsWithLow = rows.filter((row) => row.low != null);
+  return (
+    rowsWithLow.find((row) => row.isFoil === isFoil) ??
+    rowsWithLow.find((row) => row.isFoil) ??
+    rowsWithLow[0] ??
+    null
+  );
 }
 
 export function mapCardDetail(

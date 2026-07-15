@@ -51,6 +51,23 @@ export function isDomainName(name: string): boolean {
   return domainIconFor(name) !== undefined;
 }
 
+/** Unique bundled icons used by catalog filter panels (type, rarity, domain). */
+export function allFilterPanelIconSources(): ImageSourcePropType[] {
+  const seen = new Set<ImageSourcePropType>();
+  const sources: ImageSourcePropType[] = [];
+  const add = (source: ImageSourcePropType | undefined) => {
+    if (!source || seen.has(source)) return;
+    seen.add(source);
+    sources.push(source);
+  };
+
+  for (const source of Object.values(TYPE_ICONS)) add(source);
+  for (const source of Object.values(RARITY_ICONS)) add(source);
+  for (const source of Object.values(DOMAIN_ICONS)) add(source);
+
+  return sources;
+}
+
 export const mightIcon = require('@/assets/icons/might.webp') as ImageSourcePropType;
 export const tapIcon = require('@/assets/icons/tap.webp') as ImageSourcePropType;
 export const runeIcon = require('@/assets/icons/rune.webp') as ImageSourcePropType;

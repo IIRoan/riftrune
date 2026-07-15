@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, ne, notInArray, sql } from 'drizzle-orm';
 import type { PaPriceRow, PriceDailyPoint, PriceRow, PriceStats } from '@riftbound/contracts';
 import {
   CARDMARKET_PRICE_SCOPE_NOTE,
@@ -463,32 +463,6 @@ export class PriceCacheService {
           });
       }
 
-      if (!changed) {
-        await tx
-          .insert(syncState)
-          .values({
-            key: 'prices',
-            contentHash: hash,
-            rowCount: upstream.length,
-            lastSuccessAt: now,
-            lastAttemptAt: now,
-            status: 'idle',
-            lastError: null,
-          })
-          .onConflictDoUpdate({
-            target: syncState.key,
-            set: {
-              contentHash: hash,
-              rowCount: upstream.length,
-              lastSuccessAt: now,
-              lastAttemptAt: now,
-              status: 'idle',
-              lastError: null,
-            },
-          });
-        return;
-      }
-
       for (const batch of chunk(currentRows, PRICE_SYNC_CHUNK_SIZE)) {
         for (const row of batch) {
           await tx
@@ -522,8 +496,15 @@ export class PriceCacheService {
           });
       }
 
-      for (const batch of chunk(historyRows, PRICE_SYNC_CHUNK_SIZE)) {
-        await tx.insert(priceHistory).values(batch).onConflictDoNothing();
+      const upstreamIds = upstream.map((row) => row.id);
+      if (upstreamIds.length > 0) {
+        await tx.delete(prices).where(notInArray(prices.id, upstreamIds));
+      }
+
+      if (changed) {
+        for (const batch of chunk(historyRows, PRICE_SYNC_CHUNK_SIZE)) {
+          await tx.insert(priceHistory).values(batch).onConflictDoNothing();
+        }
       }
 
       await tx

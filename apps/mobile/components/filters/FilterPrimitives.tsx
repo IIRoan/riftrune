@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
+import type { ScrollView as ScrollViewType } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Popover,
   PopoverContent,
-  PopoverOverlay,
   PopoverPortal,
-  PopoverTrigger,
 } from '@/components/ui/popover';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
@@ -176,83 +176,189 @@ export function FilterCollectionSegment({
   );
 }
 
-interface FilterPopoverSectionProps {
+type TriggerPosition = {
+  pageX: number;
+  pageY: number;
+  width: number;
+  height: number;
+};
+
+export type FilterPopoverBarItem<T extends string> = {
+  id: T;
   label: string;
   hasValue: boolean;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   children: ReactNode;
-  portalName: string;
   contentClassName?: string;
   maxHeight?: number;
-}
+};
 
-export function FilterPopoverSection({
+function FilterPopoverTrigger({
   label,
   hasValue,
   open,
-  onOpenChange,
-  children,
+  onPress,
+  triggerRef,
+}: {
+  label: string;
+  hasValue: boolean;
+  open: boolean;
+  onPress: () => void;
+  triggerRef: (node: View | null) => void;
+}) {
+  return (
+    <Pressable
+      ref={triggerRef}
+      className={cn(
+        'relative h-9 shrink-0 flex-row items-center gap-1 rounded-lg border px-2.5 active:opacity-90',
+        open || hasValue ? 'border-ring/50 bg-card-panel' : 'border-border bg-card'
+      )}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+    >
+      <Text
+        className={cn(
+          'text-[13px] font-semibold',
+          open || hasValue ? 'text-foreground' : 'text-muted-foreground'
+        )}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      <ThemedIonicon
+        name={open ? 'chevron-up' : 'chevron-down'}
+        size={14}
+        color={open || hasValue ? 'foreground' : 'muted-foreground'}
+      />
+      {hasValue && !open ? (
+        <View className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary" />
+      ) : null}
+    </Pressable>
+  );
+}
+
+/** One shared popover for a filter bar so sibling triggers stay clickable while switching menus. */
+export function FilterPopoverBar<T extends string>({
   portalName,
-  contentClassName,
-  maxHeight = 420,
-}: FilterPopoverSectionProps) {
+  openId,
+  onOpenIdChange,
+  segments,
+}: {
+  portalName: string;
+  openId: T | null;
+  onOpenIdChange: (id: T | null) => void;
+  segments: FilterPopoverBarItem<T>[];
+}) {
+  const triggerRefs = useRef<Partial<Record<T, View | null>>>({});
+  const contentRef = useRef<ScrollViewType | null>(null);
+  const [triggerPosition, setTriggerPosition] = useState<TriggerPosition>();
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const viewportMaxHeight = Math.max(
-    160,
-    windowHeight - insets.top - insets.bottom - 96
+  const viewportMaxHeight = Math.max(160, windowHeight - insets.top - insets.bottom - 96);
+  const activeSegment = segments.find((segment) => segment.id === openId);
+
+  const handleTriggerPress = useCallback(
+    (id: T) => {
+      const node = triggerRefs.current[id];
+      if (!node) return;
+
+      node.measure((_x, _y, width, height, pageX, pageY) => {
+        setTriggerPosition({ pageX, pageY, width, height });
+        onOpenIdChange(openId === id ? null : id);
+      });
+    },
+    [onOpenIdChange, openId]
   );
-  const effectiveMaxHeight = Math.min(maxHeight, viewportMaxHeight);
+
+  const effectiveMaxHeight = activeSegment
+    ? Math.min(activeSegment.maxHeight ?? 420, viewportMaxHeight)
+    : viewportMaxHeight;
+
+  useEffect(() => {
+    if (!openId || Platform.OS !== 'web') return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      const clickedTrigger = Object.values(triggerRefs.current).some((node) => {
+        const element = node as unknown as { contains?: (child: Node) => boolean } | null;
+        return element?.contains?.(target) ?? false;
+      });
+      if (clickedTrigger) return;
+
+      const contentNode = contentRef.current as unknown as {
+        contains?: (child: Node) => boolean;
+      } | null;
+      if (contentNode?.contains?.(target)) return;
+
+      onOpenIdChange(null);
+      setTriggerPosition(undefined);
+    };
+
+    const frame = requestAnimationFrame(() => {
+      document.addEventListener('pointerdown', handlePointerDown, true);
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, [openId, onOpenIdChange]);
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger
-        className={cn(
-          'relative h-9 shrink-0 flex-row items-center gap-1 rounded-lg border px-2.5 active:opacity-90',
-          open || hasValue ? 'border-ring/50 bg-card-panel' : 'border-border bg-card'
-        )}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-      >
-        <Text
-          className={cn(
-            'text-[13px] font-semibold',
-            open || hasValue ? 'text-foreground' : 'text-muted-foreground'
-          )}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-        <ThemedIonicon
-          name={open ? 'chevron-up' : 'chevron-down'}
-          size={14}
-          color={open || hasValue ? 'foreground' : 'muted-foreground'}
+    <>
+      {segments.map((segment) => (
+        <FilterPopoverTrigger
+          key={segment.id}
+          label={segment.label}
+          hasValue={segment.hasValue}
+          open={openId === segment.id}
+          onPress={() => handleTriggerPress(segment.id)}
+          triggerRef={(node) => {
+            triggerRefs.current[segment.id] = node;
+          }}
         />
-        {hasValue && !open ? (
-          <View className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary" />
-        ) : null}
-      </PopoverTrigger>
-      <PopoverPortal name={portalName}>
-        <PopoverOverlay />
-        <PopoverContent
-          className={cn('border border-border bg-card-panel p-0 shadow-md', contentClassName)}
-          side="bottom"
-          align="start"
-          width={280}
-        >
-          <ScrollView
-            style={{ maxHeight: effectiveMaxHeight }}
-            contentContainerClassName="p-2"
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator
-            nestedScrollEnabled
-          >
-            {children}
-          </ScrollView>
-        </PopoverContent>
-      </PopoverPortal>
-    </Popover>
+      ))}
+
+      <Popover
+        open={openId !== null}
+        switchKey={openId}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            onOpenIdChange(null);
+            setTriggerPosition(undefined);
+          }
+        }}
+        triggerPosition={triggerPosition}
+        onTriggerPositionChange={setTriggerPosition}
+      >
+        <PopoverPortal name={portalName}>
+          {activeSegment ? (
+            <PopoverContent
+              className={cn(
+                'border border-border bg-card-panel p-0 shadow-md',
+                activeSegment.contentClassName
+              )}
+              side="bottom"
+              align="start"
+              width={280}
+            >
+              <ScrollView
+                ref={contentRef}
+                style={{ maxHeight: effectiveMaxHeight }}
+                contentContainerClassName="p-2"
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+                nestedScrollEnabled
+              >
+                {activeSegment.children}
+              </ScrollView>
+            </PopoverContent>
+          ) : null}
+        </PopoverPortal>
+      </Popover>
+    </>
   );
 }
 
