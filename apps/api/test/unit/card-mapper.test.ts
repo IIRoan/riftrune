@@ -116,6 +116,41 @@ describe('mapListItem', () => {
     expect(standard.printings[0]?.isFoil).toBe(false);
     expect(foil.printings[0]?.isFoil).toBe(true);
   });
+
+  test('ignores zero-trend plain rows when foil guide has the real price', () => {
+    const showcase = variant(
+      VARIANT_ALT_ID,
+      'SFD-227*',
+      'Overnumbered Signed',
+      'Overnumbered',
+      867005
+    );
+    const showcaseRows = [
+      {
+        cardmarketId: 867005,
+        isFoil: false,
+        marketPrice: '0',
+        lowPrice: '2499.95',
+        avg7Day: null,
+        lastUpdated: '2026-01-01',
+      },
+      {
+        cardmarketId: 867005,
+        isFoil: true,
+        marketPrice: '2547.93',
+        lowPrice: '2499.95',
+        avg7Day: '2720.50',
+        lastUpdated: '2026-01-01',
+      },
+    ];
+    const item = mapListItem(
+      { ...logical, variants: [showcase] },
+      showcase,
+      showcaseRows
+    );
+    expect(item.priceEur?.market).toBe(2547.93);
+    expect(item.priceEur?.isFoil).toBe(true);
+  });
 });
 
 describe('getSearchGroupKey', () => {

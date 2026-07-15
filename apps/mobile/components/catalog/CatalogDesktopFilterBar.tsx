@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { CatalogFilterSegmentPanel } from '@/components/catalog/CatalogFilterPanels';
 import {
   FilterClearButton,
   FilterCollectionSegment,
-  FilterPopoverSection,
+  FilterPopoverBar,
 } from '@/components/filters/FilterPrimitives';
 import {
   CATALOG_FILTER_SEGMENTS,
@@ -26,9 +26,27 @@ export function CatalogDesktopFilterBar({
 }: CatalogDesktopFilterBarProps) {
   const [openSegment, setOpenSegment] = useState<CatalogFilterSegment | null>(null);
 
-  const handleOpenChange = (segment: CatalogFilterSegment, open: boolean) => {
-    setOpenSegment(open ? segment : null);
-  };
+  const segments = useMemo(
+    () =>
+      CATALOG_FILTER_SEGMENTS.filter((segment) => segment.id !== 'collection').map(
+        (segment) => ({
+          id: segment.id,
+          label: segment.label,
+          hasValue: catalogFilterSegmentActive(segment.id, filters),
+          contentClassName: segment.id === 'stats' ? 'w-[320px]' : undefined,
+          maxHeight: segment.id === 'stats' ? 480 : 420,
+          children: (
+            <CatalogFilterSegmentPanel
+              segment={segment.id}
+              filters={filters}
+              onFiltersChange={onFiltersChange}
+              compact
+            />
+          ),
+        })
+      ),
+    [filters, onFiltersChange]
+  );
 
   return (
     <View className="flex-row flex-wrap items-center gap-2">
@@ -39,27 +57,12 @@ export function CatalogDesktopFilterBar({
 
       <View className="h-6 w-px bg-border" accessibilityElementsHidden />
 
-      {CATALOG_FILTER_SEGMENTS.filter((segment) => segment.id !== 'collection').map(
-        (segment) => (
-          <FilterPopoverSection
-            key={segment.id}
-            label={segment.label}
-            hasValue={catalogFilterSegmentActive(segment.id, filters)}
-            open={openSegment === segment.id}
-            onOpenChange={(open) => handleOpenChange(segment.id, open)}
-            portalName={`catalog-filter-${segment.id}`}
-            contentClassName={segment.id === 'stats' ? 'w-[320px]' : undefined}
-            maxHeight={segment.id === 'stats' ? 480 : 420}
-          >
-            <CatalogFilterSegmentPanel
-              segment={segment.id}
-              filters={filters}
-              onFiltersChange={onFiltersChange}
-              compact
-            />
-          </FilterPopoverSection>
-        )
-      )}
+      <FilterPopoverBar
+        portalName="catalog-filter-bar"
+        openId={openSegment}
+        onOpenIdChange={setOpenSegment}
+        segments={segments}
+      />
 
       {catalogFiltersActive(filters) ? (
         <FilterClearButton onPress={() => onFiltersChange(DEFAULT_CATALOG_FILTERS)} />

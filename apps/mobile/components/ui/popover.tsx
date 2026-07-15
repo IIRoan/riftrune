@@ -34,8 +34,9 @@ import { Portal, PortalOverlay } from "./portal";
 import { Slot } from "./slot";
 
 // Constants
-const ANIMATION_DURATION = 280;
-const ANIMATION_EASING = Easing.out(Easing.cubic);
+const ANIMATION_DURATION = 160;
+const SWITCH_CONTENT_DURATION = 120;
+const ANIMATION_EASING = Easing.out(Easing.quad);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // Types
@@ -50,6 +51,7 @@ type PopoverContextProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   visibilityProgress: SharedValue<number>;
+  switchKey?: string | null;
   triggerPosition?: LayoutPosition;
   setTriggerPosition: (position?: LayoutPosition) => void;
   contentLayout?: LayoutRectangle;
@@ -58,6 +60,10 @@ type PopoverContextProps = {
 
 type PopoverProps = Partial<PopoverContextProps> & {
   children: React.ReactNode;
+  triggerPosition?: LayoutPosition;
+  onTriggerPositionChange?: (position?: LayoutPosition) => void;
+  /** Changes while open trigger a content crossfade + anchor slide (filter bar menus). */
+  switchKey?: string | null;
 };
 
 type PopoverPortalProps = Partial<React.ComponentProps<typeof Portal>>;
@@ -100,16 +106,34 @@ export const usePopover = () => {
 export const Popover = ({
   open: openProp,
   onOpenChange: onOpenChangeProp,
+  triggerPosition: triggerPositionProp,
+  onTriggerPositionChange,
+  switchKey = null,
   children,
 }: PopoverProps) => {
   const [internalOpen, setInternalOpen] = useState(openProp ?? false);
   const [contentLayout, setContentLayout] = useState<LayoutRectangle>();
-  const [triggerPosition, setTriggerPosition] = useState<LayoutPosition>();
+  const [internalTriggerPosition, setInternalTriggerPosition] =
+    useState<LayoutPosition>();
 
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
+  const isTriggerControlled = onTriggerPositionChange !== undefined;
+  const triggerPosition = isTriggerControlled
+    ? triggerPositionProp
+    : internalTriggerPosition;
 
   const visibilityProgress = useSharedValue(open ? 1 : 0);
+
+  const setTriggerPosition = useCallback(
+    (position?: LayoutPosition) => {
+      if (!isTriggerControlled) {
+        setInternalTriggerPosition(position);
+      }
+      onTriggerPositionChange?.(position);
+    },
+    [isTriggerControlled, onTriggerPositionChange]
+  );
 
   const onOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -126,17 +150,24 @@ export const Popover = ({
     });
   }, [open, visibilityProgress]);
 
+  useEffect(() => {
+    if (!open) {
+      setContentLayout(undefined);
+    }
+  }, [open]);
+
   const ctx = useMemo(
     () => ({
       open,
       onOpenChange,
       visibilityProgress,
+      switchKey,
       contentLayout,
       setContentLayout,
       triggerPosition,
       setTriggerPosition,
     }),
-    [open, triggerPosition, contentLayout, visibilityProgress, onOpenChange]
+    [open, switchKey, triggerPosition, contentLayout, visibilityProgress, onOpenChange]
   );
 
   return (
@@ -151,7 +182,7 @@ export const PopoverTrigger = ({
   onPress: onPressProp,
   ...props
 }: PopoverTriggerProps) => {
-  const { onOpenChange, setTriggerPosition } = usePopover();
+  const { onOpenChange, setTriggerPosition, open } = usePopover();
   const ref = useRef<React.ComponentRef<typeof Pressable>>(null);
 
   const mergedRefs = mergeRefs(ref, refProp);
@@ -168,10 +199,10 @@ export const PopoverTrigger = ({
           height,
         });
 
-        onOpenChange(true);
+        onOpenChange(!open);
       });
     },
-    [onOpenChange, onPressProp, setTriggerPosition]
+    [onOpenChange, onPressProp, open, setTriggerPosition]
   );
 
   const Comp = asChild ? Slot.Pressable : Pressable;
@@ -227,7 +258,7 @@ export const PopoverOverlay = ({
     const opacity = interpolate(
       visibilityProgress.value,
       [0, 1],
-      [0, isDark ? 0.75 : 0.5],
+      [0, isDark ? 0.35 : 0.18],
       Extrapolation.CLAMP
     );
 
@@ -238,7 +269,7 @@ export const PopoverOverlay = ({
 
   return (
     <AnimatedPressable
-      className={cn("absolute inset-0 bg-black", className)}
+      className={cn("absolute inset-0 z-40 bg-black", className)}
       disabled={!closeOnPress}
       onPress={() => onOpenChange(false)}
       style={animatedStyle}
@@ -262,12 +293,18 @@ export const PopoverContent = ({
   const {
     open,
     visibilityProgress,
+    switchKey,
     triggerPosition,
     setContentLayout,
     contentLayout,
   } = usePopover();
 
   const insets = useSafeAreaInsets();
+  const anchorTop = useSharedValue(-9999);
+  const anchorLeft = useSharedValue(-9999);
+  const contentSwap = useSharedValue(1);
+  const didAnchorInit = useRef(false);
+  const previousSwitchKey = useRef<string | null>(null);
 
   const onLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -276,27 +313,6 @@ export const PopoverContent = ({
     },
     [setContentLayout, onLayoutProp]
   );
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      visibilityProgress.value,
-      [0, 1],
-      [0, 1],
-      Extrapolation.CLAMP
-    );
-
-    const scale = interpolate(
-      visibilityProgress.value,
-      [0, 1],
-      [0.95, 1],
-      Extrapolation.CLAMP
-    );
-
-    return {
-      opacity,
-      transform: [{ scale }],
-    };
-  });
 
   const positionStyle = useRelativePosition({
     align,
@@ -307,6 +323,80 @@ export const PopoverContent = ({
     insets,
     side,
     sideOffset,
+  });
+
+  const resolvedTop =
+    typeof positionStyle.top === "number" ? positionStyle.top : undefined;
+  const resolvedLeft =
+    typeof positionStyle.left === "number" ? positionStyle.left : undefined;
+
+  useEffect(() => {
+    if (!open) {
+      didAnchorInit.current = false;
+      return;
+    }
+    if (resolvedTop === undefined || resolvedLeft === undefined) return;
+
+    if (!didAnchorInit.current) {
+      anchorTop.value = resolvedTop;
+      anchorLeft.value = resolvedLeft;
+      didAnchorInit.current = true;
+      return;
+    }
+
+    anchorTop.value = withTiming(resolvedTop, {
+      duration: ANIMATION_DURATION,
+      easing: ANIMATION_EASING,
+    });
+    anchorLeft.value = withTiming(resolvedLeft, {
+      duration: ANIMATION_DURATION,
+      easing: ANIMATION_EASING,
+    });
+  }, [resolvedTop, resolvedLeft, open, anchorTop, anchorLeft]);
+
+  useEffect(() => {
+    if (!open) {
+      previousSwitchKey.current = null;
+      contentSwap.value = 1;
+      return;
+    }
+
+    if (
+      previousSwitchKey.current !== null &&
+      switchKey !== null &&
+      previousSwitchKey.current !== switchKey
+    ) {
+      contentSwap.value = 0.45;
+      contentSwap.value = withTiming(1, {
+        duration: SWITCH_CONTENT_DURATION,
+        easing: ANIMATION_EASING,
+      });
+    }
+
+    previousSwitchKey.current = switchKey ?? null;
+  }, [switchKey, open, contentSwap]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const visibilityOpacity = interpolate(
+      visibilityProgress.value,
+      [0, 1],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+
+    const scale = interpolate(
+      visibilityProgress.value,
+      [0, 1],
+      [0.98, 1],
+      Extrapolation.CLAMP
+    );
+
+    return {
+      opacity: visibilityOpacity * contentSwap.value,
+      transform: [{ scale }],
+      top: anchorTop.value,
+      left: anchorLeft.value,
+    };
   });
 
   const widthStyle = useMemo(() => {
@@ -322,6 +412,11 @@ export const PopoverContent = ({
     }
     return _widthStyle;
   }, [width, triggerPosition]);
+
+  const staticPositionStyle = useMemo(() => {
+    const { top: _top, left: _left, opacity: _opacity, ...rest } = positionStyle;
+    return rest;
+  }, [positionStyle]);
 
   const platformStyle = useMemo(
     () => (Platform.OS === "web" ? ({ position: "fixed" } as const) : null),
@@ -341,7 +436,13 @@ export const PopoverContent = ({
       {...props}
       className={cn("z-50 rounded-lg bg-background p-4 shadow-lg", className)}
       onLayout={onLayout}
-      style={[platformStyle, positionStyle, widthStyle, animatedStyle, style]}
+      style={[
+        platformStyle,
+        staticPositionStyle,
+        widthStyle,
+        animatedStyle,
+        style,
+      ]}
     >
       {children}
     </Animated.View>

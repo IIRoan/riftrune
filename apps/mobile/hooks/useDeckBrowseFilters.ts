@@ -7,7 +7,7 @@ import {
   type DeckBrowseFilters,
   type DeckBrowseSetOption,
 } from '@/constants/deckBrowse';
-import { useFiltersData } from '@/hooks/useFiltersData';
+import { filtersQueryUiState, useFiltersData } from '@/hooks/useFiltersData';
 
 export function useDeckBrowseFilterOptions(): {
   isLoading: boolean;
@@ -23,8 +23,10 @@ export function useDeckBrowseFilterOptions(): {
 
   const setNameByCode = useMemo(() => deckBrowseSetNameLookup(setOptions), [setOptions]);
 
+  const { isLoading } = filtersQueryUiState(filtersQuery);
+
   return {
-    isLoading: !filtersQuery.data && (filtersQuery.isLoading || filtersQuery.isFetching),
+    isLoading,
     setOptions,
     setNameByCode,
   };
