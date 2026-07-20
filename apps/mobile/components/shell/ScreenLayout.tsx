@@ -28,7 +28,9 @@ const SplitMainContext = createContext<number | null>(null);
 function useEstimatedContentWidth(showRail: boolean) {
   const { width } = useWindowDimensions();
   return useMemo(() => {
-    const pad = Layout.screenPaddingHorizontal * 2;
+    const pad = showRail
+      ? Layout.screenPaddingHorizontalRail * 2
+      : Layout.screenPaddingHorizontal * 2;
     const rail = showRail ? SIDE_RAIL_WIDTH : 0;
     return Math.max(320, width - rail - pad);
   }, [width, showRail]);
@@ -116,7 +118,11 @@ export function ScreenLayout({
   if (mode === 'flex') {
     return (
       <View
-        className={cn('flex-1 bg-background px-4 sm:px-6', className)}
+        className={cn(
+          'flex-1 bg-background',
+          showRail ? 'px-2' : 'px-4 sm:px-6',
+          className
+        )}
         style={{ paddingTop }}
       >
         <View className="min-h-0 w-full flex-1">{inner}</View>
@@ -127,7 +133,7 @@ export function ScreenLayout({
   return (
     <ScrollView
       className={cn('flex-1 bg-background', className)}
-      contentContainerClassName="px-4 sm:px-6"
+      contentContainerClassName={showRail ? 'px-2' : 'px-4 sm:px-6'}
       contentContainerStyle={{
         paddingTop,
         paddingBottom,

@@ -216,9 +216,7 @@ export function DeckBuilderCanvas({
       onPersist={onPersist}
       section={catalogSection}
       onSectionChange={setCatalogSection}
-      paddingBottom={
-        paddingBottomInline + (readOnly ? FLOATING_PILL_NAV_CLEARANCE : 0)
-      }
+      paddingBottom={paddingBottomInline + FLOATING_PILL_NAV_CLEARANCE}
     />
   );
 
@@ -350,13 +348,11 @@ export function DeckBuilderCanvas({
           </View>
         )}
 
-        {readOnly ? (
-          <FloatingPillNav
-            items={browseSectionNavItems}
-            value={catalogSection}
-            onChange={setCatalogSection}
-          />
-        ) : null}
+        <FloatingPillNav
+          items={browseSectionNavItems}
+          value={catalogSection}
+          onChange={setCatalogSection}
+        />
       </View>
 
       {isMobile ? (

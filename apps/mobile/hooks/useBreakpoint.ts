@@ -3,8 +3,8 @@ import { Platform, useWindowDimensions } from 'react-native';
 const DESKTOP_RAIL = 1024;
 const TABLET_WIDTH = 768;
 
-/** SideRail outer width (`w-20`) */
-export const SIDE_RAIL_WIDTH = 80;
+/** SideRail column width (`w-12` card + left gutter; flush to content) */
+export const SIDE_RAIL_WIDTH = 56;
 
 /** Gap between catalog column and detail panel (`gap-4`) */
 export const CATALOG_DETAIL_GAP = 16;

@@ -18,7 +18,6 @@ import {
 import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
-import { PillNav, type PillNavItem } from '@/components/shell/FloatingPillNav';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
@@ -39,7 +38,6 @@ import {
 } from '@/lib/deck-add-catalog';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import { addCardToDeck, changeDeckCardQty } from '@/lib/deck-card';
-import { deckSectionProgress } from '@/lib/deck-display';
 import { isCardEligibleForSection } from '@/lib/deck-eligibility';
 import {
   deckMembershipRevision,
@@ -234,40 +232,6 @@ const CatalogTile = memo(function CatalogTile({
     </View>
   );
 });
-
-function SectionToggle({
-  section,
-  deck,
-  onChange,
-}: {
-  section: BuilderCatalogSection;
-  deck: DeckState;
-  onChange: (section: BuilderCatalogSection) => void;
-}) {
-  const main = deckSectionProgress(deck, 'mainDeck');
-  const side = deckSectionProgress(deck, 'sideboard');
-
-  const items: readonly PillNavItem<BuilderCatalogSection>[] = [
-    {
-      id: 'mainDeck',
-      label: 'Main',
-      accessibilityLabel: `Main deck ${main.current} of ${main.target}`,
-      icon: 'layers-outline',
-      iconActive: 'layers',
-      badge: `${main.current}/${main.target}`,
-    },
-    {
-      id: 'sideboard',
-      label: 'Side',
-      accessibilityLabel: `Sideboard ${side.current} of ${side.target}`,
-      icon: 'file-tray-outline',
-      iconActive: 'file-tray',
-      badge: `${side.current}/${side.target}`,
-    },
-  ];
-
-  return <PillNav items={items} value={section} onChange={onChange} fill />;
-}
 
 export function DeckBuilderCatalogPanel({
   deck,
@@ -464,10 +428,6 @@ export function DeckBuilderCatalogPanel({
 
   return (
     <View className="min-h-0 flex-1 gap-2" onLayout={onLayout}>
-      {!readOnly ? (
-        <SectionToggle section={section} deck={deck} onChange={setSection} />
-      ) : null}
-
       <View className="shrink-0 gap-1.5">
         <View className={cn('gap-2', !isMobile && 'flex-row items-center gap-3')}>
           <View className="min-w-0 flex-1">
