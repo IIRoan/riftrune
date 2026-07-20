@@ -11,6 +11,7 @@ import { useAuthWideLayout } from '@/components/auth/AuthBackdrop';
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import { AuthWallpaperFrame } from '@/components/auth/AuthWallpaperFrame';
 import type { Mode } from '@/components/auth/auth-types';
+import { AppLoadingScreen } from '@/components/ui/app-loader';
 import { Text } from '@/components/ui/text';
 import { authClient } from '@/src/lib/auth-client';
 import { hydrateCollectionCache, prefetchCollection } from '@/hooks/useCollection';
@@ -104,10 +105,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (isPending) {
     return (
       <View
-        className="flex-1 items-center justify-center bg-background"
+        className="flex-1 bg-background"
         style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
       >
-        <Text className="text-muted-foreground">Loading…</Text>
+        <AppLoadingScreen size="lg" className="bg-transparent" />
       </View>
     );
   }

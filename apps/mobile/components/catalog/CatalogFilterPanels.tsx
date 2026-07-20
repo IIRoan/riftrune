@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
+import { AppLoader } from '@/components/ui/app-loader';
 import { DomainIcon, RarityIcon, TypeIcon } from '@/components/riftbound/CardIcons';
 import {
   FilterChipGrid,
@@ -120,7 +121,7 @@ export function CatalogFilterSegmentPanel({
   if (isLoading) {
     return (
       <View className="items-center py-8">
-        <ActivityIndicator />
+        <AppLoader size="md" />
         <Text className="mt-3 text-sm text-archive-subtle">Loading filter options…</Text>
       </View>
     );
@@ -488,7 +489,7 @@ export function CatalogFilterSegmentPanel({
 export function CatalogFilterLoadingState() {
   return (
     <View className="items-center py-10">
-      <ActivityIndicator />
+      <AppLoader size="md" />
       <Text className="mt-3 text-sm text-archive-subtle">Loading filter options…</Text>
     </View>
   );

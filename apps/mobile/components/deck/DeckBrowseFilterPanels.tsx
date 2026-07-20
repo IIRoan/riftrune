@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
+import { AppLoader } from '@/components/ui/app-loader';
 import {
   FilterChipGrid,
   FilterOptionChip,
@@ -105,7 +106,7 @@ export function DeckBrowseFilterSegmentPanel({
           ) : null}
           {legendsQuery.isLoading ? (
             <View className="items-center py-8">
-              <ActivityIndicator />
+              <AppLoader size="md" />
             </View>
           ) : legendOptions.length === 0 ? (
             <Text className="py-6 text-center text-sm text-muted-foreground">
@@ -139,7 +140,7 @@ export function DeckBrowseFilterSegmentPanel({
       if (setOptionsLoading) {
         return (
           <View className="items-center py-8">
-            <ActivityIndicator />
+            <AppLoader size="md" />
           </View>
         );
       }

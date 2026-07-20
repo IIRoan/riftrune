@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
+import { AppLoader } from '@/components/ui/app-loader';
 import type { CardListItem } from '@riftbound/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { CardTile } from '@/components/cards/CardTile';
@@ -137,7 +138,7 @@ export function DeckCardPickerSheet({
 
             {cardsQuery.isLoading ? (
               <View className="items-center py-10">
-                <ActivityIndicator />
+                <AppLoader size="md" />
               </View>
             ) : cards.length === 0 ? (
               <Empty className="border border-dashed border-border py-8">
