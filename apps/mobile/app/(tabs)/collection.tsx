@@ -64,6 +64,7 @@ function CollectionScreenBody() {
         code: s.code ?? s.id,
         name: s.name,
         count: s.printCount ?? s.count,
+        ...(s.foilPrintCount != null ? { foilCount: s.foilPrintCount } : {}),
       })),
     [filtersQuery.data?.sets]
   );

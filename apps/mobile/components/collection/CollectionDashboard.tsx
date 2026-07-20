@@ -122,7 +122,9 @@ export function BreakdownSection({
 
 export function SetCard({ set }: { set: MergedSetStat }) {
   const completion = set.total > 0 ? (set.owned / set.total) * 100 : 0;
-  const foilCompletion = set.total > 0 ? (set.foilOwned / set.total) * 100 : 0;
+  const nonFoilCompletion =
+    set.nonFoilTotal > 0 ? (set.nonFoilOwned / set.nonFoilTotal) * 100 : 0;
+  const foilCompletion = set.foilTotal > 0 ? (set.foilOwned / set.foilTotal) * 100 : 0;
 
   return (
     <View className="overflow-hidden rounded-xl border border-border bg-card">
@@ -176,8 +178,16 @@ export function SetCard({ set }: { set: MergedSetStat }) {
           <Text className="mt-1 font-mono text-xs text-archive-subtle">{set.total} cards</Text>
         ) : null}
         <View className="mt-3 gap-3">
-          <ProgressRow label="Main set" value={`${set.owned}/${set.total}`} progress={completion / 100} />
-          <ProgressRow label="Foils" value={`${set.foilOwned}/${set.total}`} progress={foilCompletion / 100} />
+          <ProgressRow
+            label="Non-foil"
+            value={`${set.nonFoilOwned}/${set.nonFoilTotal}`}
+            progress={nonFoilCompletion / 100}
+          />
+          <ProgressRow
+            label="Foils"
+            value={`${set.foilOwned}/${set.foilTotal}`}
+            progress={foilCompletion / 100}
+          />
         </View>
         <View className="mt-3 flex-row items-center justify-between border-t border-archive-soft-line pt-3">
           <Text className="text-[13px] text-muted-foreground">Completion</Text>

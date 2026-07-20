@@ -36,6 +36,13 @@
       "when": 1783437866147,
       "tag": "0004_price_daily",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784516580000,
+      "tag": "0005_collection_is_foil_backfill",
+      "breakpoints": true
     }
   ]
 }

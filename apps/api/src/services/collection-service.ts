@@ -13,12 +13,24 @@ import { cards, collectionItems, sets, variants } from '../db/schema.js';
 import { logActionFailure } from '../lib/logger.js';
 
 import type { CardCacheService } from './card-cache.js';
+import { isFoilVariant } from './card-mapper.js';
 import type { ImageStoreService } from './image-store.js';
 import { VariantResolver } from './variant-resolver.js';
 
-function isFoilFromVariant(foilMode: string, variantLabel: string): boolean {
-  const label = variantLabel.toLowerCase();
-  return foilMode !== 'none' || label.includes('foil') || label.includes('showcase');
+/**
+ * Whether a catalog printing should count as foil in a user's collection.
+ * `foil_mode` is a product finish availability flag (`both` | `foil_only` | `nonfoil_only`),
+ * not "this row is foil" — only `foil_only` means every copy of that printing is foil.
+ * Explicit foil siblings under `both` (e.g. OGN-001-Foil) are detected via label/number/type.
+ */
+export function isCollectionVariantFoil(
+  foilMode: string,
+  variantNumber: string,
+  variantLabel: string,
+  variantType?: string
+): boolean {
+  if (isFoilVariant(variantNumber, variantLabel, variantType)) return true;
+  return foilMode.toLowerCase() === 'foil_only';
 }
 
 function toIso(value: Date | null): string | null {
@@ -49,7 +61,6 @@ export class CollectionService {
         quantity: collectionItems.quantity,
         condition: collectionItems.condition,
         language: collectionItems.language,
-        isFoil: collectionItems.isFoil,
         notes: collectionItems.notes,
         isGraded: collectionItems.isGraded,
         gradeCompany: collectionItems.gradeCompany,
@@ -62,6 +73,8 @@ export class CollectionService {
         imageUrl: variants.imageUrl,
         rarity: variants.rarity,
         variantLabel: variants.variantLabel,
+        variantType: variants.variantType,
+        foilMode: variants.foilMode,
         type: cards.type,
         setCode: sets.code,
       })
@@ -78,7 +91,12 @@ export class CollectionService {
       quantity: row.quantity,
       condition: row.condition as CardCondition,
       language: row.language,
-      isFoil: row.isFoil,
+      isFoil: isCollectionVariantFoil(
+        row.foilMode,
+        row.variantNumber,
+        row.variantLabel,
+        row.variantType
+      ),
       notes: row.notes,
       isGraded: row.isGraded,
       gradeCompany: row.gradeCompany,
@@ -148,6 +166,7 @@ export class CollectionService {
         variantNumber: variants.variantNumber,
         foilMode: variants.foilMode,
         variantLabel: variants.variantLabel,
+        variantType: variants.variantType,
       })
       .from(variants)
       .where(eq(variants.variantNumber, input.variantNumber))
@@ -161,7 +180,12 @@ export class CollectionService {
       throw new Error(`Variant ${input.variantNumber} not found`);
     }
 
-    const isFoil = isFoilFromVariant(variant.foilMode, variant.variantLabel);
+    const isFoil = isCollectionVariantFoil(
+      variant.foilMode,
+      variant.variantNumber,
+      variant.variantLabel,
+      variant.variantType
+    );
     const acquiredAt = input.acquiredAt ? new Date(input.acquiredAt) : null;
 
     await this.db
@@ -319,7 +343,6 @@ export class CollectionService {
         quantity: collectionItems.quantity,
         condition: collectionItems.condition,
         language: collectionItems.language,
-        isFoil: collectionItems.isFoil,
         notes: collectionItems.notes,
         gradeCompany: collectionItems.gradeCompany,
         gradeScore: collectionItems.gradeScore,
@@ -327,6 +350,7 @@ export class CollectionService {
         rarity: variants.rarity,
         variantType: variants.variantType,
         variantLabel: variants.variantLabel,
+        foilMode: variants.foilMode,
         setName: sets.name,
         setPrefix: sets.code,
       })
@@ -349,7 +373,12 @@ export class CollectionService {
       rarity: row.rarity,
       variantType: row.variantType,
       variantLabel: row.variantLabel,
-      isFoil: row.isFoil,
+      isFoil: isCollectionVariantFoil(
+        row.foilMode,
+        row.variantNumber,
+        row.variantLabel,
+        row.variantType
+      ),
       quantity: row.quantity,
       language: row.language,
       condition: row.condition as CardCondition,

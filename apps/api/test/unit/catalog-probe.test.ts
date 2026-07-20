@@ -109,7 +109,46 @@ describe('probeExpandedCatalog', () => {
     expect(result.logicalCardCount).toBe(2);
     expect(result.catalogPrintTotal).toBe(3);
     expect(result.setPrintTotals).toEqual({ OGN: 2, SFD: 1 });
+    expect(result.setFoilPrintTotals).toEqual({});
     expect(getCard).toHaveBeenCalledTimes(3);
+  });
+
+  test('counts foil printings separately when variant metadata is present', () => {
+    const totals = new Map<string, number>();
+    const foilTotals = new Map<string, number>();
+    const added = accumulatePrintCounts(
+      logicalCard('card-a', [
+        {
+          isCollectible: true,
+          set: { prefix: 'OGN' },
+          foilMode: 'both',
+          variantNumber: 'OGN-001',
+          variantLabel: 'Standard',
+          variantType: 'Standard',
+        },
+        {
+          isCollectible: true,
+          set: { prefix: 'OGN' },
+          foilMode: 'both',
+          variantNumber: 'OGN-001-Foil',
+          variantLabel: 'Foil',
+          variantType: 'Standard',
+        },
+        {
+          isCollectible: true,
+          set: { prefix: 'OGN' },
+          foilMode: 'foil_only',
+          variantNumber: 'OGN-001-Nexus',
+          variantLabel: 'Nexus Night Promo',
+          variantType: 'Promo',
+        },
+      ] as PaLogicalCard['variants']),
+      totals,
+      foilTotals
+    );
+    expect(added).toBe(3);
+    expect(totals.get('OGN')).toBe(3);
+    expect(foilTotals.get('OGN')).toBe(2);
   });
 
   test('accumulatePrintCounts skips non-collectible variants', () => {
