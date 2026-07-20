@@ -8,11 +8,9 @@ import {
 } from '@/components/deck/DeckSectionGrid';
 import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
 import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
-import { DeckValidationBanner } from '@/components/deck/DeckValidationBanner';
 import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import {
-  DeckBuilderActions,
   DeckBuilderSection,
   DeckBuilderToolbar,
 } from '@/components/deck/DeckBuilderToolbar';
@@ -30,7 +28,6 @@ import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import {
   changeDeckCardQty,
   deckVariantNumbersKey,
-  getSectionCount,
   removeDeckCard,
 } from '@/lib/deck-card';
 import { adjustRuneCountForDomain, seedDefaultRuneSplit } from '@/lib/deck-runes';
@@ -79,7 +76,16 @@ export function DeckBuilderCanvas({
     'grid',
     { measuredWidth: builderWidth }
   );
-  const identityTileWidth = isMobile ? sectionTileWidth : Math.min(sectionTileWidth, 132);
+
+  const identityColumnWidth = isMobile ? contentWidth : Math.min(460, contentWidth);
+  const identityInnerWidth = Math.max(0, identityColumnWidth - 32);
+  const identityPairGap = 12;
+  const identityTileWidth = useMemo(() => {
+    if (!deck.legend) return identityInnerWidth;
+    const pairWidth = Math.floor((identityInnerWidth - identityPairGap) / 2);
+    if (isMobile) return pairWidth;
+    return Math.min(132, pairWidth);
+  }, [deck.legend, identityInnerWidth, isMobile]);
 
   const { data: collection = [] } = useCollection();
   const collectionByName = useCollectionByCardName(collection);
@@ -128,8 +134,6 @@ export function DeckBuilderCanvas({
     onBack();
   }, [onBack]);
 
-  const sideboardFull = getSectionCount(deck, 'sideboard') >= 8;
-
   const identityColumn = (
     <View className="gap-4">
       <DeckBuilderSection>
@@ -151,8 +155,6 @@ export function DeckBuilderCanvas({
         <DeckBattlefieldPanel
           deck={deck}
           readOnly={readOnly}
-          tileWidth={sectionTileWidth}
-          gap={gap}
           imageByVariant={imageByVariant ?? new Map()}
           collectionByName={collectionByName}
           onAdd={() => openAdd('battlefields')}
@@ -247,6 +249,8 @@ export function DeckBuilderCanvas({
             }
             onToggleValidation={() => setValidationExpanded((v) => !v)}
             validationExpanded={validationExpanded}
+            onImport={readOnly ? undefined : () => onIoModeChange('import')}
+            onExport={readOnly ? undefined : () => onIoModeChange('export')}
           />
 
           {readOnly ? (
@@ -265,25 +269,8 @@ export function DeckBuilderCanvas({
                   <DeckLegalityBadge isLegal={false} />
                 </View>
               ) : null}
-              <DeckBuilderActions
-                addToSideboard={deck.addToSideboard}
-                sideboardFull={sideboardFull}
-                onImport={() => onIoModeChange('import')}
-                onExport={() => onIoModeChange('export')}
-                onToggleSideboard={() =>
-                  onPersist({
-                    ...deck,
-                    addToSideboard: !deck.addToSideboard,
-                    updatedAt: Date.now(),
-                  })
-                }
-              />
             </>
           )}
-
-          {validationExpanded && validation.length > 0 ? (
-            <DeckValidationBanner messages={validation} listOnly />
-          ) : null}
 
           <DeckBuilderStatusStrip
             deck={deck}
@@ -298,7 +285,7 @@ export function DeckBuilderCanvas({
             </View>
           ) : (
             <View className="flex-row items-start gap-4">
-              <View className="min-w-0 flex-1" style={{ maxWidth: 380 }}>
+              <View className="min-w-0 flex-1" style={{ maxWidth: 460 }}>
                 {identityColumn}
               </View>
               <View className="min-w-0 flex-1">{deckColumn}</View>

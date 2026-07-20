@@ -11,7 +11,8 @@ import { useDeckAutoSave } from '@/hooks/useDeckAutoSave';
 import { useDeckDetail } from '@/hooks/useDeckDetail';
 import { useDeckMutations } from '@/hooks/useDecks';
 import { addCardToDeck } from '@/lib/deck-card';
-import type { DeckCard, DeckState } from '@/lib/deck-types';
+import { leaveDeckEditor } from '@/lib/deck-navigation';
+import type { DeckCard } from '@/lib/deck-types';
 
 type IoMode = 'import' | 'export';
 
@@ -72,14 +73,13 @@ export default function DeckEditorScreen() {
   if (pickingLegend || (!readOnly && !deck.legend)) {
     return (
       <LegendPickerScreen
-        deck={deck}
         onSelect={handleLegendSelect}
         onBack={() => {
           if (deck.legend) {
             setPickingLegend(false);
             return;
           }
-          router.back();
+          leaveDeckEditor(router);
         }}
       />
     );
@@ -104,7 +104,7 @@ export default function DeckEditorScreen() {
             importBusy={importDeck.isPending}
             onBack={() => {
               if (!readOnly) void flushSave();
-              router.back();
+              leaveDeckEditor(router);
             }}
           />
         </ScreenLayoutBody>
@@ -114,40 +114,30 @@ export default function DeckEditorScreen() {
 }
 
 function LegendPickerScreen({
-  deck,
   onSelect,
   onBack,
 }: {
-  deck: DeckState;
   onSelect: (legend: DeckCard) => void;
   onBack: () => void;
 }) {
   return (
     <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
-      <LegendPickerScreenBody deck={deck} onSelect={onSelect} onBack={onBack} />
+      <LegendPickerScreenBody onSelect={onSelect} onBack={onBack} />
     </ScreenLayout>
   );
 }
 
 function LegendPickerScreenBody({
-  deck,
   onSelect,
   onBack,
 }: {
-  deck: DeckState;
   onSelect: (legend: DeckCard) => void;
   onBack: () => void;
 }) {
   const { paddingBottomInline } = useScreenLayout();
 
   return (
-    <ScreenLayoutBody className="min-h-0 flex-1 gap-3">
-      <View className="gap-1">
-        <Text className="text-base font-semibold text-foreground">{deck.name}</Text>
-        {deck.description ? (
-          <Text className="text-[13px] text-muted-foreground">{deck.description}</Text>
-        ) : null}
-      </View>
+    <ScreenLayoutBody className="min-h-0 flex-1">
       <LegendPicker
         onSelect={onSelect}
         onBack={onBack}

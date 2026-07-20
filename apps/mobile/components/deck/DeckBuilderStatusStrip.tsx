@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { totalRuneCount } from '@/lib/deck-builder';
 import { getSectionCount } from '@/lib/deck-card';
 import { deckSectionProgress } from '@/lib/deck-display';
@@ -33,6 +34,8 @@ export function DeckBuilderStatusStrip({
   readOnly = false,
   onSectionPress,
 }: DeckBuilderStatusStripProps) {
+  const isMobile = useMobileLayout();
+
   return (
     <View className="flex-row flex-wrap gap-2">
       {STRIP_SECTIONS.map(({ key, label, addSection }) => {
@@ -49,7 +52,8 @@ export function DeckBuilderStatusStrip({
             disabled={!interactive}
             onPress={() => onSectionPress?.(addSection)}
             className={cn(
-              'min-w-[4.5rem] flex-1 gap-1.5 rounded-lg border px-3 py-2',
+              'gap-1.5 rounded-lg border px-3 py-2',
+              isMobile ? 'min-w-[46%] flex-1' : 'min-w-[4.5rem] flex-1',
               complete ? 'border-success/30 bg-success/5' : 'border-border bg-card',
               interactive && 'active:opacity-90'
             )}

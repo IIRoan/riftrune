@@ -26,16 +26,23 @@ function IdentitySlotBlock({
   title,
   subtitle,
   children,
+  className,
 }: {
   title: string;
   subtitle: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <View className="gap-2.5">
-      <View>
+    <View className={cn('min-w-0 gap-2.5', className)}>
+      <View className="min-w-0">
         <Text className="text-sm font-semibold text-foreground">{title}</Text>
-        <Text className="mt-0.5 text-[12px] text-muted-foreground">{subtitle}</Text>
+        <Text
+          className="mt-0.5 text-[12px] leading-snug text-muted-foreground"
+          numberOfLines={2}
+        >
+          {subtitle}
+        </Text>
       </View>
       {children}
     </View>
@@ -56,7 +63,7 @@ export function DeckIdentityHeader({
 }: DeckIdentityHeaderProps) {
   const isMobile = useMobileLayout();
   const legend = deck.legend;
-  const tileWidth = isMobile ? legendTileWidth : Math.min(legendTileWidth, 140);
+  const tileWidth = legendTileWidth;
 
   const legendSlot = legend ? (
     <DeckCardSlot
@@ -104,37 +111,37 @@ export function DeckIdentityHeader({
 
   return (
     <View className="gap-4">
-      <View className={cn('gap-4', !isMobile && 'flex-row items-start')}>
-        <View className={cn('gap-4', !isMobile && 'shrink-0')}>
-          <IdentitySlotBlock
-            title="Champion Legend"
-            subtitle="Defines domain identity and rune colors"
-          >
-            {legendSlot}
-          </IdentitySlotBlock>
-
-          {legend ? (
-            <IdentitySlotBlock
-              title="Chosen Champion"
-              subtitle="Must share a champion tag with your Legend"
-            >
-              {championSlot}
-            </IdentitySlotBlock>
-          ) : null}
-        </View>
+      <View className="flex-row items-start gap-3">
+        <IdentitySlotBlock
+          className="flex-1"
+          title="Champion Legend"
+          subtitle="Defines domain identity and rune colors"
+        >
+          {legendSlot}
+        </IdentitySlotBlock>
 
         {legend ? (
-          <View className={cn('min-w-0', !isMobile ? 'flex-1' : undefined)}>
-            <DeckRunePanel
-              deck={deck}
-              readOnly={readOnly}
-              runeCardsByDomain={runeCardsByDomain}
-              onAdjust={onAdjustRune}
-              compact={isMobile}
-            />
-          </View>
+          <IdentitySlotBlock
+            className="flex-1"
+            title="Chosen Champion"
+            subtitle="Same champion tag as your Legend"
+          >
+            {championSlot}
+          </IdentitySlotBlock>
         ) : null}
       </View>
+
+      {legend ? (
+        <View className="min-w-0">
+          <DeckRunePanel
+            deck={deck}
+            readOnly={readOnly}
+            runeCardsByDomain={runeCardsByDomain}
+            onAdjust={onAdjustRune}
+            compact={isMobile}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }

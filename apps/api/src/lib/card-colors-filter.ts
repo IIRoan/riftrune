@@ -18,3 +18,25 @@ export function buildCardColorsContainsAllCondition(requiredColorNames: string[]
 
   return parts.length === 1 ? parts[0] : and(...parts);
 }
+
+/**
+ * Deck domain identity: every color on the card must be in the allowed set.
+ * Colorless cards (no colors) match. Single-domain cards match dual legends.
+ */
+export function buildCardColorsWithinCondition(allowedColorNames: string[]) {
+  const normalized = allowedColorNames.map((name) => name.trim()).filter(Boolean);
+  if (normalized.length === 0) return undefined;
+
+  const allowedList = sql.join(
+    normalized.map((name) => sql`lower(${name})`),
+    sql`, `
+  );
+
+  return sql`NOT EXISTS (
+    SELECT 1
+    FROM card_colors cc
+    INNER JOIN colors c ON c.id = cc.color_id
+    WHERE cc.card_id = ${cards.id}
+      AND lower(c.name) NOT IN (${allowedList})
+  )`;
+}

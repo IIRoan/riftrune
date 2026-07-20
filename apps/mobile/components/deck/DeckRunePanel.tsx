@@ -32,7 +32,7 @@ function RuneDomainRow({
   const icon = domainIconFor(domain);
 
   return (
-    <View className="flex-row items-center gap-3 rounded-xl border border-archive-soft-line bg-card-panel px-3 py-2.5">
+    <View className="flex-row items-center gap-3 rounded-xl border border-archive-soft-line bg-card-panel px-3 py-3">
       {icon ? (
         <Image source={icon} style={{ width: 28, height: 28 }} contentFit="contain" />
       ) : (
@@ -48,7 +48,7 @@ function RuneDomainRow({
         </Text>
       </View>
 
-      <View className="flex-row items-center overflow-hidden rounded-lg border border-border bg-background">
+      <View className="min-w-[5.5rem] flex-row items-center overflow-hidden rounded-lg border border-border bg-background">
         {readOnly ? (
           <Text className="min-w-[2rem] px-2 text-center font-mono text-sm font-bold tabular-nums text-foreground">
             {count}
@@ -100,7 +100,7 @@ export function DeckRunePanel({
   const complete = total === target;
 
   return (
-    <View className={cn('gap-3', compact ? 'flex-1' : 'flex-1 justify-center')}>
+    <View className={cn('gap-3', compact ? 'flex-1' : undefined)}>
       <View className="flex-row items-end justify-between gap-2">
         <View>
           <Text className="text-sm font-semibold text-foreground">Rune deck</Text>

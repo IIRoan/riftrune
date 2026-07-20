@@ -15,7 +15,10 @@ import {
 import type { PriceCacheService } from './price-cache.js';
 import type { ImageStoreService } from './image-store.js';
 import { buildCardSearchCondition, buildSearchRelevanceOrder } from '../lib/search.js';
-import { buildCardColorsContainsAllCondition } from '../lib/card-colors-filter.js';
+import {
+  buildCardColorsContainsAllCondition,
+  buildCardColorsWithinCondition,
+} from '../lib/card-colors-filter.js';
 import { TtlCache } from '../lib/ttl-cache.js';
 import {
   buildUpstreamListParams,
@@ -47,6 +50,7 @@ function searchCacheKey(
     q: query.q?.trim().toLowerCase() ?? '',
     sets: query.sets ?? '',
     colors: query.colors ?? '',
+    colorMode: query.colorMode ?? 'all',
     types: query.types ?? '',
     super: query.super ?? '',
     rarities: query.rarities ?? '',
@@ -722,7 +726,10 @@ export class CardCacheService {
     }
     if (query.colors) {
       const colorNames = query.colors.split(',').map((value) => value.trim());
-      const colorCond = buildCardColorsContainsAllCondition(colorNames);
+      const colorCond =
+        query.colorMode === 'within'
+          ? buildCardColorsWithinCondition(colorNames)
+          : buildCardColorsContainsAllCondition(colorNames);
       if (colorCond) conditions.push(colorCond);
     }
     if (query.excludeTokens) {

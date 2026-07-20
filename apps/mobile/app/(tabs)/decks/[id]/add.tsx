@@ -1,6 +1,12 @@
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckAddSectionStatus } from '@/components/deck/DeckAddSectionStatus';
 import { DeckAddScreenHeader } from '@/components/deck/DeckAddScreenHeader';
+import {
+  CatalogActiveFilterChips,
+  CatalogFilterSheet,
+  CatalogFilterTrigger,
+} from '@/components/catalog/FilterSheet';
+import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { memo, useCallback, useEffect, useState } from 'react';
 import {
@@ -30,8 +36,18 @@ import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { useDeckAddCatalog } from '@/hooks/useDeckAddCatalog';
 import { useDeckAutoSave } from '@/hooks/useDeckAutoSave';
 import { useDeckDetail } from '@/hooks/useDeckDetail';
-import { defaultDeckAddSearch } from '@/lib/deck-add-catalog';
-import { addCardToDeck } from '@/lib/deck-card';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
+import {
+  defaultDeckAddCatalogFilters,
+  defaultDeckAddSearch,
+} from '@/lib/deck-add-catalog';
+import {
+  catalogFiltersActive,
+  sanitizeCatalogFilters,
+  type CatalogFilters,
+} from '@/constants/catalogFilters';
+import { addCardToDeck, changeDeckCardQty, removeDeckCard } from '@/lib/deck-card';
+import { leaveDeckAddScreen } from '@/lib/deck-navigation';
 import { isCardEligibleForSection } from '@/lib/deck-eligibility';
 import { battlefieldsAtCapacity } from '@/lib/deck-limits';
 import {
@@ -43,6 +59,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { hapticPress } from '@/utils/haptics';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { openCard } from '@/utils/cardNavigation';
+import { cn } from '@/lib/utils';
 
 function normalizeSectionParam(value: string | undefined): DeckSectionKey {
   if (!value) return 'mainDeck';
@@ -55,6 +72,7 @@ const AddOneTile = memo(function AddOneTile({
   candidate,
   count,
   onAdd,
+  onRemove,
   onLongPressCard,
   showSelected,
   selected,
@@ -65,24 +83,37 @@ const AddOneTile = memo(function AddOneTile({
   candidate: DeckCard;
   count: number;
   onAdd: () => void;
+  onRemove: () => void;
   onLongPressCard: () => void;
   showSelected: boolean;
   selected: boolean;
   blocked?: boolean;
   blockedLabel?: string;
 }) {
-  const pressableDisabled = (showSelected && selected) || blocked;
+  const canAdd = !blocked && !(showSelected && selected);
+  const canRemove = count > 0;
 
   return (
     <View style={{ width: tileWidth }} className="gap-1.5">
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: pressableDisabled }}
-        className={blocked ? 'opacity-55' : 'active:opacity-95'}
+        accessibilityLabel={
+          canRemove && !canAdd
+            ? `Remove ${candidate.name}`
+            : `Add ${candidate.name}`
+        }
+        accessibilityState={{ disabled: !canAdd && !canRemove }}
+        className={blocked && !canRemove ? 'opacity-55' : 'active:opacity-95'}
         onPress={() => {
-          if (pressableDisabled) return;
-          void hapticPress();
-          onAdd();
+          if (canAdd) {
+            void hapticPress();
+            onAdd();
+            return;
+          }
+          if (showSelected && selected) {
+            void hapticPress();
+            onRemove();
+          }
         }}
         onLongPress={onLongPressCard}
       >
@@ -90,7 +121,11 @@ const AddOneTile = memo(function AddOneTile({
           className={[
             'relative aspect-[5/7] w-full overflow-hidden border bg-background',
             CARD_ART_RADIUS_CLASS,
-            selected ? 'border-primary/60' : blocked ? 'border-border/70' : 'border-white/10',
+            selected || count > 0
+              ? 'border-primary/60'
+              : blocked
+                ? 'border-border/70'
+                : 'border-white/10',
           ].join(' ')}
         >
           {candidate.imageUrl ? (
@@ -104,32 +139,54 @@ const AddOneTile = memo(function AddOneTile({
             </View>
           )}
 
-          {candidate.energy > 0 ? (
-            <View className="absolute left-1 top-1 rounded bg-background/90 px-1.5 py-0.5">
-              <Text className="font-mono text-[10px] font-bold text-foreground">
-                {candidate.energy}
-              </Text>
+          {canRemove && !showSelected ? (
+            <View className="absolute inset-x-0 bottom-0 flex-row items-stretch bg-background/80">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Remove one ${candidate.name}`}
+                className="min-h-9 flex-1 items-center justify-center active:bg-background/90"
+                onPress={(event) => {
+                  event.stopPropagation?.();
+                  void hapticPress();
+                  onRemove();
+                }}
+              >
+                <ThemedIonicon name="remove" size={16} color="foreground" />
+              </Pressable>
+              <View className="min-w-8 items-center justify-center px-1">
+                <Text className="font-mono text-[12px] font-bold text-foreground">×{count}</Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Add one ${candidate.name}`}
+                accessibilityState={{ disabled: !canAdd }}
+                className={cn(
+                  'min-h-9 flex-1 items-center justify-center',
+                  canAdd ? 'active:bg-background/90' : 'opacity-40'
+                )}
+                disabled={!canAdd}
+                onPress={(event) => {
+                  event.stopPropagation?.();
+                  if (!canAdd) return;
+                  void hapticPress();
+                  onAdd();
+                }}
+              >
+                <ThemedIonicon name="add" size={16} color="primary" />
+              </Pressable>
             </View>
-          ) : null}
-
-          {count > 1 ? (
-            <View className="absolute right-1 top-1 rounded bg-background/90 px-1.5 py-0.5">
-              <Text className="font-mono text-[10px] font-bold text-foreground">×{count}</Text>
-            </View>
-          ) : null}
-
-          {pressableDisabled ? (
+          ) : showSelected && selected ? (
             <View className="absolute inset-x-0 bottom-0 bg-background/80 p-1.5">
-              {selected ? (
-                <View className="flex-row items-center justify-center gap-1">
-                  <ThemedIonicon name="checkmark-circle" size={14} color="primary" />
-                  <Text className="text-center font-semibold text-primary">In deck</Text>
-                </View>
-              ) : (
-                <Text className="text-center text-[11px] font-medium text-muted-foreground">
-                  {blockedLabel}
-                </Text>
-              )}
+              <View className="flex-row items-center justify-center gap-1">
+                <ThemedIonicon name="remove-circle-outline" size={14} color="primary" />
+                <Text className="text-center font-semibold text-primary">Remove</Text>
+              </View>
+            </View>
+          ) : blocked ? (
+            <View className="absolute inset-x-0 bottom-0 bg-background/80 p-1.5">
+              <Text className="text-center text-[11px] font-medium text-muted-foreground">
+                {blockedLabel}
+              </Text>
             </View>
           ) : (
             <View className="absolute inset-x-0 bottom-0 bg-background/65 p-1.5">
@@ -145,10 +202,6 @@ const AddOneTile = memo(function AddOneTile({
       <Text className="px-0.5 text-[12px] font-semibold text-foreground" numberOfLines={2}>
         {candidate.name}
       </Text>
-
-      {count > 0 && !pressableDisabled ? (
-        <Text className="px-0.5 font-mono text-[10px] text-muted-foreground">In deck ×{count}</Text>
-      ) : null}
     </View>
   );
 });
@@ -170,6 +223,7 @@ export default function DeckAddScreen() {
   return (
     <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
       <DeckAddScreenBody
+        deckId={id}
         deck={deck}
         sectionParam={sectionParam}
         onPersist={persist}
@@ -180,11 +234,13 @@ export default function DeckAddScreen() {
 }
 
 function DeckAddScreenBody({
+  deckId,
   deck,
   sectionParam,
   onPersist,
   onFlushSave,
 }: {
+  deckId: string;
   deck: DeckState;
   sectionParam?: string;
   onPersist: (
@@ -194,6 +250,7 @@ function DeckAddScreenBody({
   onFlushSave: () => Promise<DeckState | null>;
 }) {
   const router = useRouter();
+  const isMobile = useMobileLayout();
   const section = normalizeSectionParam(sectionParam);
   const lockedSection = Boolean(sectionParam);
 
@@ -210,6 +267,19 @@ function DeckAddScreenBody({
   const [query, setQuery] = useState(() => defaultDeckAddSearch(section, deck));
   const debouncedQuery = useDebounce(query.trim(), 300);
 
+  const [catalogFilters, setCatalogFilters] = useState<CatalogFilters>(() =>
+    defaultDeckAddCatalogFilters(section, deck)
+  );
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  const applyCatalogFilters = useCallback((next: CatalogFilters) => {
+    setCatalogFilters(sanitizeCatalogFilters(next));
+  }, []);
+
+  useEffect(() => {
+    setCatalogFilters(defaultDeckAddCatalogFilters(activeSection, deck));
+  }, [activeSection, legendKey]);
+
   useEffect(() => {
     if (!legendKey || activeSection !== 'champion') return;
     setQuery(defaultDeckAddSearch('champion', deck));
@@ -223,16 +293,16 @@ function DeckAddScreenBody({
     }
   }, [activeSection, lockedSection]);
 
-  const catalog = useDeckAddCatalog(deck, activeSection, debouncedQuery);
+  const catalog = useDeckAddCatalog(deck, activeSection, debouncedQuery, catalogFilters);
   useDeckAutoSave(deck);
 
   const handleBack = useCallback(async () => {
     try {
       await onFlushSave();
     } finally {
-      router.back();
+      leaveDeckAddScreen(router, deckId);
     }
-  }, [onFlushSave, router]);
+  }, [deckId, onFlushSave, router]);
 
   const handleAddOne = useCallback(
     (candidate: DeckCard) => {
@@ -248,6 +318,24 @@ function DeckAddScreenBody({
       );
     },
     [deck, onPersist, activeSection]
+  );
+
+  const handleRemoveOne = useCallback(
+    (candidate: DeckCard) => {
+      if (activeSection === 'legend' || activeSection === 'champion') {
+        onPersist((prev) => removeDeckCard(prev, activeSection), { immediate: true });
+        return;
+      }
+
+      const entry = getDeckCandidateCount(deck, activeSection, candidate);
+      if (entry <= 0) return;
+
+      onPersist(
+        (prev) => changeDeckCardQty(prev, activeSection, candidate.name, -1),
+        { immediate: true }
+      );
+    },
+    [activeSection, deck, onPersist]
   );
 
   const usesSingleSelectUi = deckAddUsesSingleSelectUi(activeSection);
@@ -283,11 +371,22 @@ function DeckAddScreenBody({
           blocked={blocked}
           blockedLabel={blockedLabel}
           onAdd={() => handleAddOne(item)}
+          onRemove={() => handleRemoveOne(item)}
           onLongPressCard={() => openCard(router, item.variantNumber, 'modal')}
         />
       );
     },
-    [activeSection, deck, handleAddOne, membershipRevision, router, sectionFull, tileWidth, usesSingleSelectUi]
+    [
+      activeSection,
+      deck,
+      handleAddOne,
+      handleRemoveOne,
+      membershipRevision,
+      router,
+      sectionFull,
+      tileWidth,
+      usesSingleSelectUi,
+    ]
   );
 
   const listFooter =
@@ -326,30 +425,62 @@ function DeckAddScreenBody({
     </Empty>
   );
 
+  const filterActive = catalogFiltersActive(catalogFilters);
+
   return (
-    <View className="flex-1 gap-3">
+    <View className="flex-1 gap-2">
       <DeckAddScreenHeader deck={deck} section={activeSection} onBack={() => void handleBack()} />
 
-      <SearchInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder={catalog.sectionMeta.placeholder}
-        autoFocus
-      />
+      <View className="shrink-0 gap-1.5">
+        <View className={cn('gap-2', !isMobile && 'flex-row items-center gap-3')}>
+          <View className={cn('min-w-0 flex-1', !isMobile && 'flex-1')}>
+            <SearchInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder={catalog.sectionMeta.placeholder}
+              autoFocus
+            />
+          </View>
+          {isMobile ? (
+            <CatalogFilterTrigger
+              filters={catalogFilters}
+              onPress={() => setFilterSheetOpen(true)}
+              compact
+              mobile
+            />
+          ) : null}
+        </View>
 
-      {catalog.sectionMeta.contextLine ? (
-        <Text className="text-[12px] text-muted-foreground">{catalog.sectionMeta.contextLine}</Text>
-      ) : null}
+        {!isMobile ? (
+          <CatalogDesktopFilterBar
+            filters={catalogFilters}
+            onFiltersChange={applyCatalogFilters}
+          />
+        ) : null}
 
-      <DeckAddSectionStatus deck={deck} section={activeSection} />
+        {filterActive ? (
+          <CatalogActiveFilterChips
+            filters={catalogFilters}
+            onFiltersChange={applyCatalogFilters}
+          />
+        ) : null}
 
-      {!lockedSection ? (
-        <DeckSectionTabs
-          deck={deck}
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-        />
-      ) : null}
+        {catalog.sectionMeta.contextLine ? (
+          <Text className="text-[12px] text-muted-foreground">
+            {catalog.sectionMeta.contextLine}
+          </Text>
+        ) : null}
+
+        <DeckAddSectionStatus deck={deck} section={activeSection} />
+
+        {!lockedSection ? (
+          <DeckSectionTabs
+            deck={deck}
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+          />
+        ) : null}
+      </View>
 
       <FlatList
         data={catalog.cards}
@@ -387,6 +518,13 @@ function DeckAddScreenBody({
           <ActivityIndicator />
         </View>
       ) : null}
+
+      <CatalogFilterSheet
+        visible={filterSheetOpen}
+        filters={catalogFilters}
+        onClose={() => setFilterSheetOpen(false)}
+        onFiltersChange={applyCatalogFilters}
+      />
     </View>
   );
 }

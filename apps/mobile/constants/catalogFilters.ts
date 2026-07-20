@@ -234,6 +234,20 @@ function cardMatchesColorFilter(cardColors: string[], selected: string[]): boole
   return selected.every((color) => cardSet.has(color.toLowerCase()));
 }
 
+/**
+ * Riftbound domain identity: every card color must be in the selected set.
+ * Colorless cards match. Mind-only matches a Mind+Order selection.
+ */
+export function cardMatchesColorIdentity(
+  cardColors: string[],
+  allowed: string[]
+): boolean {
+  if (allowed.length === 0) return true;
+  if (cardColors.length === 0) return true;
+  const allowedSet = new Set(allowed.map((color) => color.toLowerCase()));
+  return cardColors.every((color) => allowedSet.has(color.toLowerCase()));
+}
+
 function isTokenCard(card: CardListItem): boolean {
   return card.type.trim().toLowerCase() === 'card' || /-T\d+$/i.test(card.variantNumber);
 }
@@ -260,7 +274,8 @@ export function cardOwnedQuantity(
 export function matchesCatalogFilters(
   card: CardListItem,
   filters: CatalogFilters,
-  collectionByVariant: ReadonlyMap<string, { quantity: number }>
+  collectionByVariant: ReadonlyMap<string, { quantity: number }>,
+  options?: { colorMode?: 'all' | 'within' }
 ): boolean {
   if (!catalogFiltersActive(filters)) return true;
 
@@ -272,8 +287,12 @@ export function matchesCatalogFilters(
     return false;
   }
 
-  if (filters.colors.length > 0 && !cardMatchesColorFilter(card.colors, filters.colors)) {
-    return false;
+  if (filters.colors.length > 0) {
+    const colorOk =
+      options?.colorMode === 'within'
+        ? cardMatchesColorIdentity(card.colors, filters.colors)
+        : cardMatchesColorFilter(card.colors, filters.colors);
+    if (!colorOk) return false;
   }
 
   if (filters.sets.length > 0) {

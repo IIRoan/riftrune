@@ -14,12 +14,21 @@ import {
   mergeHydratedLegend,
   type DeckAddCatalogStatus,
 } from '@/lib/deck-add-catalog';
+import {
+  catalogFiltersActive,
+  DEFAULT_CATALOG_FILTERS,
+  matchesCatalogFilters,
+  type CatalogFilters,
+} from '@/constants/catalogFilters';
+import { useCollection } from '@/hooks/useCollection';
+import { ownershipMapFromCollection } from '@/utils/collectionOwnership';
 import { api } from '@/src/api/client';
 
 export function useDeckAddCatalog(
   deck: DeckState,
   section: DeckSectionKey,
-  userQuery: string
+  userQuery: string,
+  filters: CatalogFilters = DEFAULT_CATALOG_FILTERS
 ) {
   const sectionMeta = useMemo(() => getDeckAddSectionMeta(section, deck), [section, deck]);
 
@@ -46,10 +55,18 @@ export function useDeckAddCatalog(
   const catalogEnabled =
     !sectionMeta.requiresLegend || Boolean(resolvedDeck.legend);
 
+  const ownedFilterActive = filters.collection === 'owned';
+  const { data: collectionEntries = [] } = useCollection({ enabled: ownedFilterActive });
+
+  const collectionByVariant = useMemo(() => {
+    if (!ownedFilterActive) return new Map<string, { quantity: number }>();
+    return ownershipMapFromCollection(collectionEntries);
+  }, [ownedFilterActive, collectionEntries]);
+
   const listQuery = useInfiniteQuery({
-    queryKey: deckAddInfiniteQueryKey(section, resolvedDeck, userQuery),
+    queryKey: deckAddInfiniteQueryKey(section, resolvedDeck, userQuery, filters),
     queryFn: ({ pageParam }) =>
-      fetchDeckAddListPage(section, resolvedDeck, userQuery, pageParam),
+      fetchDeckAddListPage(section, resolvedDeck, userQuery, filters, pageParam),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       const pagination = lastPage.meta.pagination;
@@ -69,14 +86,21 @@ export function useDeckAddCatalog(
     [listQuery.data]
   );
 
+  const filteredListItems = useMemo(() => {
+    if (!catalogFiltersActive(filters)) return listItems;
+    return listItems.filter((item) =>
+      matchesCatalogFilters(item, filters, collectionByVariant, { colorMode: 'within' })
+    );
+  }, [listItems, filters, collectionByVariant]);
+
   const candidateCards = useMemo(
     () =>
       buildDeckAddCandidates({
         section,
-        listItems,
+        listItems: filteredListItems,
         details: [],
       }),
-    [section, listItems]
+    [section, filteredListItems]
   );
 
   const displayCards = useMemo(

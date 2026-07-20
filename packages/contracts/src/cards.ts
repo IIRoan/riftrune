@@ -89,6 +89,12 @@ export const CardsListQuery = z.object({
   q: z.string().optional(),
   sets: z.string().optional(),
   colors: z.string().optional(),
+  /**
+   * How `colors` is matched.
+   * - `all` (default): card must include every listed color (search filters).
+   * - `within`: every card color must be in the listed set; colorless allowed (deck domain identity).
+   */
+  colorMode: z.enum(['all', 'within']).default('all'),
   types: z.string().optional(),
   super: z.string().optional(),
   variants: z.string().optional(),
