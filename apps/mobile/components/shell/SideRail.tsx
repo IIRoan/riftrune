@@ -49,7 +49,7 @@ export function SideRail() {
 
   return (
     <View
-      className="w-20 shrink-0 self-stretch items-center py-3"
+      className="shrink-0 self-stretch items-end py-3 pl-2 pr-0"
       style={{ paddingTop: insets.top + 12 }}
     >
       <View className="h-full w-12 items-center gap-1 overflow-hidden rounded-xl border border-border bg-card py-3 shadow-lg shadow-black/50">

@@ -5,6 +5,8 @@
 
 export const Layout = {
   screenPaddingHorizontal: 16,
+  /** Horizontal inset when desktop SideRail is visible (px). */
+  screenPaddingHorizontalRail: 8,
   gridGap: 16,
   /** Floating tab bar height (px). */
   tabBarHeight: 56,
