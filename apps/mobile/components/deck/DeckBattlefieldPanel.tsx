@@ -10,7 +10,6 @@ import { buildBattlefieldSlots } from '@/lib/deck-builder';
 import { BATTLEFIELD_MAX, battlefieldsAtCapacity } from '@/lib/deck-limits';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import type { DeckEntry, DeckState } from '@/lib/deck-types';
-import { ownedCountForCardName } from '@/lib/deck-validation';
 import { openCard } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
@@ -19,7 +18,6 @@ interface DeckBattlefieldPanelProps {
   deck: DeckState;
   readOnly?: boolean;
   imageByVariant: ReadonlyMap<string, string>;
-  collectionByName: ReadonlyMap<string, number>;
   onAdd: () => void;
   onRemove: (name: string) => void;
 }
@@ -31,7 +29,6 @@ function BattlefieldSlot({
   readOnly,
   canAdd,
   imageByVariant,
-  collectionByName,
   onAdd,
   onRemove,
 }: {
@@ -41,7 +38,6 @@ function BattlefieldSlot({
   readOnly?: boolean;
   canAdd: boolean;
   imageByVariant: ReadonlyMap<string, string>;
-  collectionByName: ReadonlyMap<string, number>;
   onAdd: () => void;
   onRemove: (name: string) => void;
 }) {
@@ -70,11 +66,6 @@ function BattlefieldSlot({
             interactive ? 'border-border' : 'border-border/60 opacity-60'
           )}
         >
-          <View className="absolute left-2 top-2 rounded-md bg-background/90 px-1.5 py-0.5">
-            <Text className="font-mono text-[10px] font-bold tabular-nums text-muted-foreground">
-              {slotNumber}
-            </Text>
-          </View>
           {interactive ? (
             <ThemedIonicon name="add" size={20} color="primary" />
           ) : (
@@ -87,9 +78,7 @@ function BattlefieldSlot({
 
   const { card } = slot;
   const imageUri = resolveSlotImage(card, imageByVariant);
-  const owned = ownedCountForCardName(card.name, collectionByName);
   const illegal = isCardTournamentIllegal(card, deck);
-  const shortfall = owned != null && owned < slot.count;
 
   return (
     <View className="min-w-0 flex-1 gap-1.5">
@@ -106,16 +95,10 @@ function BattlefieldSlot({
           className={cn(
             'relative aspect-[7/5] w-full overflow-hidden border bg-background',
             CARD_ART_RADIUS_CLASS,
-            illegal ? 'border-destructive' : 'border-white/10',
-            shortfall && !illegal && 'border-warning/50'
+            illegal ? 'border-destructive' : 'border-white/10'
           )}
         >
           <BattlefieldCardArt uri={imageUri} variantNumber={card.variantNumber} />
-          <View className="absolute left-1.5 top-1.5 rounded-md bg-background/90 px-1.5 py-0.5">
-            <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
-              {slotNumber}
-            </Text>
-          </View>
         </View>
       </Pressable>
 
@@ -139,7 +122,6 @@ export function DeckBattlefieldPanel({
   deck,
   readOnly = false,
   imageByVariant,
-  collectionByName,
   onAdd,
   onRemove,
 }: DeckBattlefieldPanelProps) {
@@ -188,7 +170,6 @@ export function DeckBattlefieldPanel({
             readOnly={readOnly}
             canAdd={canAdd}
             imageByVariant={imageByVariant}
-            collectionByName={collectionByName}
             onAdd={onAdd}
             onRemove={onRemove}
           />

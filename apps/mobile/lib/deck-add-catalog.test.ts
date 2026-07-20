@@ -304,6 +304,42 @@ describe('deck-add-catalog', () => {
     expect(displayed).toHaveLength(1);
   });
 
+  test('sideboard accepts main-deck card types and skips signatures', () => {
+    const unitItem = {
+      cardId: 'u1',
+      variantNumber: 'OGN-010',
+      name: 'Apprentice Mage',
+      type: 'Unit',
+      energy: 1,
+      might: 1,
+      power: 0,
+      rarity: 'Common',
+      setCode: 'OGN',
+      colors: ['Mind'],
+      imageUrl: null,
+      cardmarketId: null,
+      priceEur: null,
+      printings: [],
+      isBanned: false,
+    } as CardListItem;
+    const signatureItem = {
+      ...unitItem,
+      cardId: 's1',
+      variantNumber: 'OGN-011',
+      name: 'Signature Spell',
+      type: 'Spell',
+      rarity: 'Signature',
+    } as CardListItem;
+
+    const candidates = buildDeckAddCandidates({
+      section: 'sideboard',
+      listItems: [unitItem, signatureItem],
+      details: [],
+    });
+
+    expect(candidates.map((card) => card.name)).toEqual(['Apprentice Mage']);
+  });
+
   test('shows all champion catalog hits in the add picker', () => {
     const deck = createEmptyDeck();
     deck.legend = mockDeckCard({

@@ -6,6 +6,7 @@ import {
   findDeckEntryForCandidate,
   getDeckCandidateCount,
   isDeckCandidateInSection,
+  listDeckSectionCards,
 } from '@/lib/deck-membership';
 import type { DeckCard } from '@/lib/deck-types';
 
@@ -67,6 +68,23 @@ describe('deck-membership', () => {
 
     deck.mainDeck.delete(unit.name);
     expect(getDeckCandidateCount(deck, 'mainDeck', unit)).toBe(0);
+  });
+
+  test('lists section cards sorted by energy then name', () => {
+    const low = mockCard({ name: 'Zed', type: 'Unit', energy: 1 });
+    const mid = mockCard({ name: 'Annie', type: 'Unit', energy: 2 });
+    const high = mockCard({ name: 'Aatrox', type: 'Unit', energy: 2 });
+    const deck = createEmptyDeck();
+    deck.mainDeck.set(mid.name, { card: mid, count: 1 });
+    deck.mainDeck.set(low.name, { card: low, count: 3 });
+    deck.mainDeck.set(high.name, { card: high, count: 2 });
+
+    expect(listDeckSectionCards(deck, 'mainDeck').map((c) => c.name)).toEqual([
+      'Zed',
+      'Aatrox',
+      'Annie',
+    ]);
+    expect(listDeckSectionCards(deck, 'sideboard')).toEqual([]);
   });
 
   test('revision changes when membership changes', () => {

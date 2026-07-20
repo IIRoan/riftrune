@@ -55,6 +55,19 @@ export function isDeckCandidateInSection(
   return getDeckCandidateCount(deck, section, candidate) > 0;
 }
 
+/** Cards currently in a map section, sorted by energy then name (browse / composition). */
+export function listDeckSectionCards(
+  deck: DeckState,
+  section: Extract<DeckSectionKey, 'mainDeck' | 'sideboard' | 'runes' | 'battlefields'>
+): DeckCard[] {
+  return [...deck[section].values()]
+    .sort((a, b) => {
+      if (a.card.energy !== b.card.energy) return a.card.energy - b.card.energy;
+      return a.card.name.localeCompare(b.card.name);
+    })
+    .map((entry) => entry.card);
+}
+
 /** FlatList extraData key — changes when section membership or counts change. */
 export function deckMembershipRevision(deck: DeckState): string {
   const parts: string[] = [String(deck.updatedAt)];

@@ -5,6 +5,7 @@ import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
+import { XIcon } from '@/components/icons';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
@@ -129,45 +130,66 @@ function DeckCardSlotInner({
 
   if (!card) return null;
 
+  const showEnergy = !single && card.energy > 0;
+  const showArtRemove = single && Boolean(onRemove);
+
   return (
     <View style={{ width: tileWidth }} className="gap-1.5">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`View ${card.name}`}
-        className="active:opacity-90"
-        onPress={() => {
-          if (onPress) {
-            hapticPress();
-            onPress();
-            return;
-          }
-          hapticPress();
-          openCard(router, card.variantNumber, 'modal');
-        }}
+      <View
+        className={cn(
+          'relative aspect-[5/7] w-full overflow-hidden border bg-background',
+          CARD_ART_RADIUS_CLASS,
+          illegal ? 'border-destructive' : 'border-white/10'
+        )}
       >
-        <View
-          className={cn(
-            'relative aspect-[5/7] w-full overflow-hidden border bg-background',
-            CARD_ART_RADIUS_CLASS,
-            illegal ? 'border-destructive' : 'border-white/10',
-            shortfall && !illegal && 'border-warning/50'
-          )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`View ${card.name}`}
+          className="absolute inset-0 active:opacity-90"
+          onPress={() => {
+            if (onPress) {
+              hapticPress();
+              onPress();
+              return;
+            }
+            hapticPress();
+            openCard(router, card.variantNumber, 'modal');
+          }}
         >
           <DeckCardArt uri={imageUri} variantNumber={card.variantNumber} />
-          {illegal ? (
-            <View className="absolute left-1 top-1">
-              <StatusKeywordBadge status="illegal" compact />
-            </View>
-          ) : card.energy > 0 ? (
-            <View className="absolute right-1 top-1 rounded-md border border-white/10 bg-background/92 px-1.5 py-0.5">
-              <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
-                {card.energy}
-              </Text>
-            </View>
-          ) : null}
-          <DeckCardCountBadge count={count} />
-        </View>
-      </Pressable>
+        </Pressable>
+
+        {illegal ? (
+          <View className="absolute left-1 top-1" pointerEvents="none">
+            <StatusKeywordBadge status="illegal" compact />
+          </View>
+        ) : showEnergy ? (
+          <View
+            className="absolute right-1 top-1 rounded-md border border-white/10 bg-background/92 px-1.5 py-0.5"
+            pointerEvents="none"
+          >
+            <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
+              {card.energy}
+            </Text>
+          </View>
+        ) : null}
+
+        {!showArtRemove ? <DeckCardCountBadge count={count} /> : null}
+
+        {showArtRemove ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${card.name}`}
+            className="absolute bottom-1 left-1 z-10 size-7 items-center justify-center rounded-md border border-border bg-background/92 active:bg-destructive/15"
+            onPress={() => {
+              hapticPress();
+              onRemove?.();
+            }}
+          >
+            <XIcon className="size-3.5 text-destructive" />
+          </Pressable>
+        ) : null}
+      </View>
 
       <Text
         className={cn(
@@ -190,7 +212,7 @@ function DeckCardSlotInner({
         </Text>
       ) : null}
 
-      {onRemove ? (
+      {onRemove && !showArtRemove ? (
         <DeckQtyControl
           count={count}
           name={card.name}

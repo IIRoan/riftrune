@@ -4,7 +4,7 @@ import { toast } from '@/components/ui/toast';
 import type { DeckBrowseFilters, DeckBrowseSort } from '@/constants/deckBrowse';
 import { deckBrowseFiltersToQuery } from '@/constants/deckBrowse';
 import type { DeckState } from '@/lib/deck-types';
-import { setDeckDetailCache } from '@/lib/deck-state';
+import { applyDeckStateIfNewerToCache, setDeckDetailCache } from '@/lib/deck-state';
 import {
   createDeck,
   deleteDeck,
@@ -18,19 +18,44 @@ import { isRemoteDeckReadOnlyError } from '@/services/remoteDeckService';
 
 import { deckQueryKeys } from '@/src/api/queryKeys';
 
+const DECK_LIST_STALE_MS = 60_000;
+
+function seedDeckDetailCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  decks: DeckState[]
+): void {
+  for (const deck of decks) {
+    applyDeckStateIfNewerToCache(queryClient, deck.id, deck);
+  }
+}
+
 export function useOwnedDecks(query?: string) {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: deckQueryKeys.list('owned', query),
-    queryFn: () => listDecks({ source: 'owned', q: query }),
-    staleTime: 5_000,
+    queryFn: async () => {
+      const decks = await listDecks({ source: 'owned', q: query });
+      seedDeckDetailCaches(queryClient, decks);
+      return decks;
+    },
+    staleTime: DECK_LIST_STALE_MS,
+    placeholderData: (previous) => previous,
   });
 }
 
 export function useImportedDecks(query?: string) {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: deckQueryKeys.list('imported', query),
-    queryFn: () => listDecks({ source: 'imported', q: query }),
-    staleTime: 5_000,
+    queryFn: async () => {
+      const decks = await listDecks({ source: 'imported', q: query });
+      seedDeckDetailCaches(queryClient, decks);
+      return decks;
+    },
+    staleTime: DECK_LIST_STALE_MS,
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -58,7 +83,7 @@ export function useImportedDecksBrowse(options: {
     getNextPageParam: (lastPage) =>
       lastPage.pagination?.hasNext ? lastPage.pagination.page + 1 : undefined,
     placeholderData: (previousData) => previousData,
-    staleTime: 5_000,
+    staleTime: DECK_LIST_STALE_MS,
   });
 }
 
@@ -88,14 +113,30 @@ export function useDeckMutations() {
 
   const removeDeck = useMutation({
     mutationFn: (id: string) => deleteDeck(id),
-    onError: (error) => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: deckQueryKeys.all });
+      const previousLists = queryClient.getQueriesData<DeckState[]>({
+        queryKey: ['decks', 'list'],
+      });
+      queryClient.setQueriesData<DeckState[]>({ queryKey: ['decks', 'list'] }, (current) =>
+        current?.filter((deck) => deck.id !== id)
+      );
+      queryClient.removeQueries({ queryKey: deckQueryKeys.detail(id) });
+      return { previousLists };
+    },
+    onError: (error, _id, context) => {
+      if (context?.previousLists) {
+        for (const [key, data] of context.previousLists) {
+          queryClient.setQueryData(key, data);
+        }
+      }
       if (isRemoteDeckReadOnlyError(error)) {
         toast.error('Imported Piltover Archive decks cannot be deleted.');
         return;
       }
       toast.error('Could not delete deck.');
     },
-    onSuccess: invalidate,
+    onSettled: invalidate,
   });
 
   const importDeck = useMutation({

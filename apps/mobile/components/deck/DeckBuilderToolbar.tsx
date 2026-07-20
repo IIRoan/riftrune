@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
+import { DeckValidationMenu } from '@/components/deck/DeckValidationMenu';
 import { TextInput } from '@/components/ui/text-input';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
@@ -18,59 +18,12 @@ interface DeckBuilderToolbarProps {
   validationExpanded?: boolean;
   onImport?: () => void;
   onExport?: () => void;
-}
-
-function validationHeadline(messages: DeckValidationMessage[]): {
-  status: 'valid' | 'warning' | 'error';
-  label: string;
-} {
-  const errors = messages.filter((m) => m.type === 'error');
-  const warnings = messages.filter((m) => m.type === 'warning');
-  if (errors.length > 0) {
-    return {
-      status: 'error',
-      label: `${errors.length} issue${errors.length === 1 ? '' : 's'}`,
-    };
-  }
-  if (warnings.length > 0) {
-    return {
-      status: 'warning',
-      label: `${warnings.length} warning${warnings.length === 1 ? '' : 's'}`,
-    };
-  }
-  return { status: 'valid', label: 'Valid' };
-}
-
-function ValidationDropdown({ messages }: { messages: DeckValidationMessage[] }) {
-  return (
-    <View className="absolute right-0 top-full z-20 mt-1 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-      <View className="gap-1.5 px-3 py-2.5">
-        {messages.map((message) => (
-          <View key={message.message} className="flex-row items-start gap-2">
-            <Text
-              className={cn(
-                'mt-0.5 font-mono text-[10px] font-bold',
-                message.type === 'error' && 'text-destructive',
-                message.type === 'warning' && 'text-warning',
-                message.type === 'valid' && 'text-success'
-              )}
-            >
-              {message.type === 'error' ? '×' : message.type === 'warning' ? '!' : '✓'}
-            </Text>
-            <Text
-              className={cn(
-                'min-w-0 flex-1 text-[13px] leading-snug text-foreground',
-                message.type === 'error' && 'text-destructive',
-                message.type === 'warning' && 'text-warning'
-              )}
-            >
-              {message.message}
-            </Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
+  /** Desktop: collapse/expand left info drawer */
+  infoDrawerOpen?: boolean;
+  onToggleInfoDrawer?: () => void;
+  /** Mobile: open info / list sheets */
+  onOpenInfo?: () => void;
+  onOpenList?: () => void;
 }
 
 export function DeckBuilderToolbar({
@@ -83,11 +36,56 @@ export function DeckBuilderToolbar({
   validationExpanded = false,
   onImport,
   onExport,
+  infoDrawerOpen,
+  onToggleInfoDrawer,
+  onOpenInfo,
+  onOpenList,
 }: DeckBuilderToolbarProps) {
   const isMobile = useMobileLayout();
-  const headline = validationHeadline(validation);
-  const showValidation = validation.length > 0;
   const showIoActions = !readOnly && (onImport || onExport);
+
+  const panelActions = (
+    <View className="shrink-0 flex-row items-center gap-1">
+      {isMobile && onOpenInfo ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open deck info"
+          className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
+          onPress={onOpenInfo}
+        >
+          <ThemedIonicon name="information-circle-outline" size={18} color="foreground" />
+        </Pressable>
+      ) : null}
+      {isMobile && onOpenList ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open deck list"
+          className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
+          onPress={onOpenList}
+        >
+          <ThemedIonicon name="list-outline" size={18} color="foreground" />
+        </Pressable>
+      ) : null}
+      {!isMobile && onToggleInfoDrawer ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={infoDrawerOpen ? 'Hide deck info' : 'Show deck info'}
+          accessibilityState={{ selected: infoDrawerOpen === true }}
+          className={cn(
+            'size-9 items-center justify-center rounded-lg border bg-card active:bg-card-panel',
+            infoDrawerOpen ? 'border-primary/40' : 'border-border'
+          )}
+          onPress={onToggleInfoDrawer}
+        >
+          <ThemedIonicon
+            name={infoDrawerOpen ? 'menu' : 'menu-outline'}
+            size={18}
+            color={infoDrawerOpen ? 'primary' : 'foreground'}
+          />
+        </Pressable>
+      ) : null}
+    </View>
+  );
 
   const ioActions = showIoActions ? (
     <View className="shrink-0 flex-row items-center gap-1">
@@ -115,32 +113,23 @@ export function DeckBuilderToolbar({
   ) : null;
 
   const validationAction =
-    showValidation && onToggleValidation ? (
-      <View className="relative shrink-0">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: validationExpanded }}
-          accessibilityLabel="Toggle deck validation details"
-          className="flex-row items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-2 active:bg-card-panel"
-          onPress={onToggleValidation}
-        >
-          <StatusKeywordBadge status={headline.status} compact />
-          {!isMobile ? (
-            <Text className="text-[12px] font-semibold text-foreground">{headline.label}</Text>
-          ) : null}
-          <ThemedIonicon
-            name={validationExpanded ? 'chevron-up' : 'chevron-down'}
-            size={14}
-            color="muted-foreground"
-          />
-        </Pressable>
-        {validationExpanded ? <ValidationDropdown messages={validation} /> : null}
-      </View>
+    validation.length > 0 && onToggleValidation ? (
+      <DeckValidationMenu
+        messages={validation}
+        open={validationExpanded}
+        onOpenChange={() => onToggleValidation()}
+        showLabel={!isMobile}
+        align="end"
+      />
     ) : null;
 
+  const hasPanelActions =
+    (isMobile && (onOpenInfo || onOpenList)) || (!isMobile && onToggleInfoDrawer);
+
   const trailingActions =
-    ioActions || validationAction ? (
+    ioActions || validationAction || hasPanelActions ? (
       <View className="z-20 shrink-0 flex-row items-center gap-1">
+        {panelActions}
         {ioActions}
         {validationAction}
       </View>

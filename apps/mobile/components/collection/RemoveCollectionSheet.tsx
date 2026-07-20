@@ -1,12 +1,12 @@
 import {
-  BottomSheet,
-  BottomSheetBody,
-  BottomSheetContent,
-  BottomSheetHeader,
-  BottomSheetOverlay,
-  BottomSheetPortal,
-  BottomSheetTitle,
-} from '@/components/ui/bottom-sheet';
+  AppSheet,
+  AppSheetBody,
+  AppSheetContent,
+  AppSheetHeader,
+  AppSheetOverlay,
+  AppSheetPortal,
+  AppSheetTitle,
+} from '@/components/ui/app-sheet';
 import { Button, ButtonText } from '@/components/ui/button';
 import {
   InlineList,
@@ -36,19 +36,19 @@ export function RemoveCollectionSheet({
   onRemoveAll,
 }: Props) {
   return (
-    <BottomSheet
+    <AppSheet
       open={visible}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
     >
-      <BottomSheetPortal>
-        <BottomSheetOverlay />
-        <BottomSheetContent enableDynamicSizing enablePanDownToClose>
-          <BottomSheetHeader>
-            <BottomSheetTitle>Remove from collection</BottomSheetTitle>
-          </BottomSheetHeader>
-          <BottomSheetBody className="gap-3 pb-4">
+      <AppSheetPortal name="remove-collection">
+        <AppSheetOverlay />
+        <AppSheetContent enableDynamicSizing enablePanDownToClose>
+          <AppSheetHeader>
+            <AppSheetTitle>Remove from collection</AppSheetTitle>
+          </AppSheetHeader>
+          <AppSheetBody className="gap-3 pb-4">
             <Text className="text-sm leading-5 text-muted-foreground">
               You have multiple printings of {cardName}. Which should be removed?
             </Text>
@@ -85,9 +85,9 @@ export function RemoveCollectionSheet({
             <Button variant="ghost" onPress={onClose}>
               <ButtonText className="text-muted-foreground">Cancel</ButtonText>
             </Button>
-          </BottomSheetBody>
-        </BottomSheetContent>
-      </BottomSheetPortal>
-    </BottomSheet>
+          </AppSheetBody>
+        </AppSheetContent>
+      </AppSheetPortal>
+    </AppSheet>
   );
 }

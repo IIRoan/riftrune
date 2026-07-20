@@ -28,8 +28,10 @@ export function useDeckAddCatalog(
   deck: DeckState,
   section: DeckSectionKey,
   userQuery: string,
-  filters: CatalogFilters = DEFAULT_CATALOG_FILTERS
+  filters: CatalogFilters = DEFAULT_CATALOG_FILTERS,
+  options?: { enabled?: boolean }
 ) {
+  const hookEnabled = options?.enabled !== false;
   const sectionMeta = useMemo(() => getDeckAddSectionMeta(section, deck), [section, deck]);
 
   const legendHydrationQuery = useQuery({
@@ -38,7 +40,8 @@ export function useDeckAddCatalog(
       const response = await api.getCard(deck.legend!.variantNumber);
       return response.data;
     },
-    enabled: section === 'champion' && legendNeedsHydration(deck.legend),
+    enabled:
+      hookEnabled && section === 'champion' && legendNeedsHydration(deck.legend),
     staleTime: DECK_ADD_CATALOG_STALE_MS,
     gcTime: DECK_ADD_CATALOG_STALE_MS,
     refetchOnMount: false,
@@ -53,7 +56,7 @@ export function useDeckAddCatalog(
   }, [deck, legendHydrationQuery.data]);
 
   const catalogEnabled =
-    !sectionMeta.requiresLegend || Boolean(resolvedDeck.legend);
+    hookEnabled && (!sectionMeta.requiresLegend || Boolean(resolvedDeck.legend));
 
   const ownedFilterActive = filters.collection === 'owned';
   const { data: collectionEntries = [] } = useCollection({ enabled: ownedFilterActive });

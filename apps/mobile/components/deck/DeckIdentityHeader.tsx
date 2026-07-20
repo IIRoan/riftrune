@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { DeckCardSlot, resolveSlotImage } from '@/components/deck/DeckCardSlot';
 import { DeckRunePanel } from '@/components/deck/DeckRunePanel';
 import { Text } from '@/components/ui/text';
-import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 import { ownedCountForCardName } from '@/lib/deck-validation';
@@ -22,6 +21,7 @@ interface DeckIdentityHeaderProps {
   onAdjustRune: (domain: string, delta: number) => void;
 }
 
+/** Fixed header so legend/champion columns share the same card baseline. */
 function IdentitySlotBlock({
   title,
   subtitle,
@@ -34,12 +34,14 @@ function IdentitySlotBlock({
   className?: string;
 }) {
   return (
-    <View className={cn('min-w-0 gap-2.5', className)}>
-      <View className="min-w-0">
-        <Text className="text-sm font-semibold text-foreground">{title}</Text>
+    <View className={cn('min-w-0 flex-1 gap-2', className)}>
+      <View className="h-10 justify-start overflow-hidden">
+        <Text className="text-[13px] font-semibold leading-4 text-foreground" numberOfLines={1}>
+          {title}
+        </Text>
         <Text
-          className="mt-0.5 text-[12px] leading-snug text-muted-foreground"
-          numberOfLines={2}
+          className="mt-0.5 text-[11px] leading-4 text-muted-foreground"
+          numberOfLines={1}
         >
           {subtitle}
         </Text>
@@ -61,7 +63,6 @@ export function DeckIdentityHeader({
   onRemoveChampion,
   onAdjustRune,
 }: DeckIdentityHeaderProps) {
-  const isMobile = useMobileLayout();
   const legend = deck.legend;
   const tileWidth = legendTileWidth;
 
@@ -110,37 +111,27 @@ export function DeckIdentityHeader({
     ));
 
   return (
-    <View className="gap-4">
-      <View className="flex-row items-start gap-3">
-        <IdentitySlotBlock
-          className="flex-1"
-          title="Champion Legend"
-          subtitle="Defines domain identity and rune colors"
-        >
+    <View className="gap-3">
+      <View className="flex-row items-stretch gap-2">
+        <IdentitySlotBlock title="Legend" subtitle="Domain identity & runes">
           {legendSlot}
         </IdentitySlotBlock>
 
         {legend ? (
-          <IdentitySlotBlock
-            className="flex-1"
-            title="Chosen Champion"
-            subtitle="Same champion tag as your Legend"
-          >
+          <IdentitySlotBlock title="Champion" subtitle="Matching champion tag">
             {championSlot}
           </IdentitySlotBlock>
         ) : null}
       </View>
 
       {legend ? (
-        <View className="min-w-0">
-          <DeckRunePanel
-            deck={deck}
-            readOnly={readOnly}
-            runeCardsByDomain={runeCardsByDomain}
-            onAdjust={onAdjustRune}
-            compact={isMobile}
-          />
-        </View>
+        <DeckRunePanel
+          deck={deck}
+          readOnly={readOnly}
+          runeCardsByDomain={runeCardsByDomain}
+          onAdjust={onAdjustRune}
+          dense
+        />
       ) : null}
     </View>
   );

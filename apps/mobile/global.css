@@ -23,6 +23,10 @@
       --archive-accent-text: oklch(0.940 0.055 111);
       --archive-success: oklch(0.74 0.18 152);
       --archive-warning: oklch(0.70 0.08 55);
+      /* Deck ownership borders — keep red / amber clearly separated */
+      --ownership-missing: oklch(0.68 0.22 25);
+      --ownership-partial: oklch(0.82 0.18 75);
+      --ownership-complete: var(--archive-success);
 
       --background: var(--archive-bg);
       --foreground: var(--archive-ink);
@@ -72,6 +76,9 @@
       --archive-accent-text: oklch(0.45 0.14 112);
       --archive-success: oklch(0.55 0.16 152);
       --archive-warning: oklch(0.58 0.10 55);
+      --ownership-missing: oklch(0.52 0.22 25);
+      --ownership-partial: oklch(0.68 0.17 70);
+      --ownership-complete: var(--archive-success);
 
       --background: var(--archive-bg);
       --foreground: var(--archive-ink);
@@ -129,6 +136,9 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-ownership-missing: var(--ownership-missing);
+  --color-ownership-partial: var(--ownership-partial);
+  --color-ownership-complete: var(--ownership-complete);
   --color-info: var(--info);
   --color-border: var(--border);
   --color-input: var(--input);

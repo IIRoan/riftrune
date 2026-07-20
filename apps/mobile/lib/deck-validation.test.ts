@@ -4,8 +4,19 @@ import {
   createEmptyDeck,
   deckCardFromDetail,
 } from '@/lib/deck-card';
-import { validateDeck } from '@/lib/deck-validation';
+import { validateDeck, deckOwnershipBorderClass } from '@/lib/deck-validation';
 import type { DeckCard } from '@/lib/deck-types';
+
+describe('deckOwnershipBorderClass', () => {
+  test('maps owned coverage to border tokens', () => {
+    expect(deckOwnershipBorderClass(null, 3)).toBeNull();
+    expect(deckOwnershipBorderClass(0, 0)).toBeNull();
+    expect(deckOwnershipBorderClass(0, 1)).toBe('border-ownership-missing');
+    expect(deckOwnershipBorderClass(1, 3)).toBe('border-ownership-partial');
+    expect(deckOwnershipBorderClass(3, 3)).toBe('border-ownership-complete');
+    expect(deckOwnershipBorderClass(4, 3)).toBe('border-ownership-complete');
+  });
+});
 
 function mockCard(overrides: Partial<DeckCard> & Pick<DeckCard, 'name'>): DeckCard {
   return {
