@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { AppLoader } from '@/components/ui/app-loader';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   View,
@@ -477,7 +477,7 @@ export function DeckBuilderCatalogPanel({
         ListFooterComponent={
           !readOnly && catalog.isFetchingNextPage ? (
             <View className="items-center py-4">
-              <ActivityIndicator />
+              <AppLoader size="sm" />
             </View>
           ) : null
         }
@@ -506,7 +506,7 @@ export function DeckBuilderCatalogPanel({
 
       {showBlockingLoader ? (
         <View className="absolute inset-0 items-center justify-center">
-          <ActivityIndicator />
+          <AppLoader size="md" />
         </View>
       ) : null}
 

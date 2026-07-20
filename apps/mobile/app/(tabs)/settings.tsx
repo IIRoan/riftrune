@@ -1,4 +1,5 @@
 import { Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { Chip, ChipText } from '@/components/ui/chip';
@@ -12,12 +13,14 @@ import {
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Stack } from '@/components/ui/stack';
+import { Text } from '@/components/ui/text';
 import { useTheme, type ThemeType } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 
 const ACCENTS = ['#efffcc', '#5ecf8a', '#b8b8b8', '#c9a227', '#f5f5f5'];
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const {
     theme,
     setTheme,
@@ -95,6 +98,19 @@ export default function SettingsScreen() {
           </ChoiceboxItem>
         ))}
       </Choicebox>
+
+      {__DEV__ ? (
+        <>
+          <SectionLabel className="mt-6">Design</SectionLabel>
+          <Pressable
+            onPress={() => router.push('/loading')}
+            className="rounded-xl border border-border bg-card px-4 py-3"
+          >
+            <Text className="text-sm font-medium text-foreground">Rift Channel loader</Text>
+            <Text className="mt-0.5 text-sm text-muted-foreground">Open /loading preview</Text>
+          </Pressable>
+        </>
+      ) : null}
     </ScreenLayout>
   );
 }

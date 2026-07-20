@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Platform, useWindowDimensions, View } from 'react-native';
+import { Platform, useWindowDimensions, View } from 'react-native';
 import {
   CardModal,
   CardModalError,
@@ -11,6 +11,7 @@ import { CardDetailPage } from '@/components/cards/CardDetailPage';
 import { CardDetailDrawer } from '@/components/catalog/CardDetailDrawer';
 import { CatalogDetailPanel } from '@/components/catalog/CatalogDetailPanel';
 import { RemoveCollectionSheet } from '@/components/collection/RemoveCollectionSheet';
+import { AppLoader, AppLoadingScreen } from '@/components/ui/app-loader';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { useCardDetail } from '@/hooks/useCardDetail';
 import { useCardPresentation } from '@/hooks/useCardPresentation';
@@ -19,17 +20,13 @@ import { useWishlistPrices } from '@/hooks/useWishlistPrices';
 import type { CardOpenSource } from '@/utils/cardNavigation';
 
 function PageLoading() {
-  return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <ActivityIndicator size="large" className="accent-primary" />
-    </View>
-  );
+  return <AppLoadingScreen size="lg" />;
 }
 
 function DrawerLoading() {
   return (
     <View className="items-center justify-center py-16">
-      <ActivityIndicator size="large" className="accent-primary" />
+      <AppLoader size="lg" />
     </View>
   );
 }
@@ -95,7 +92,7 @@ export default function CardDetailScreen() {
     if (detail.isError || !detail.activeVariant) {
       return (
         <View className="items-center gap-3 py-12">
-          <ActivityIndicator size="small" className="accent-primary" />
+          <AppLoader size="sm" />
         </View>
       );
     }

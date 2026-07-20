@@ -8,9 +8,9 @@ import {
 } from '@/components/catalog/FilterSheet';
 import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { AppLoader } from '@/components/ui/app-loader';
 import { memo, useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   View,
@@ -214,7 +214,7 @@ export default function DeckAddScreen() {
     return (
       <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
+          <AppLoader size="md" />
         </View>
       </ScreenLayout>
     );
@@ -392,7 +392,7 @@ function DeckAddScreenBody({
   const listFooter =
     catalog.isFetchingNextPage ? (
       <View className="items-center py-4">
-        <ActivityIndicator />
+        <AppLoader size="sm" />
       </View>
     ) : null;
 
@@ -515,7 +515,7 @@ function DeckAddScreenBody({
 
       {showBlockingLoader ? (
         <View className="absolute inset-0 items-center justify-center">
-          <ActivityIndicator />
+          <AppLoader size="md" />
         </View>
       ) : null}
 

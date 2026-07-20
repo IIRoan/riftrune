@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +12,7 @@ import { isCardBannedAt } from '@riftbound/contracts';
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { PrintingPreviewStrip } from '@/components/cards/PrintingPreviewStrip';
 import { CollectionAddButton, CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
+import { AppLoader } from '@/components/ui/app-loader';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import {
@@ -534,7 +534,7 @@ export function CardModalLoading({ onClose }: { onClose: () => void }) {
         className="w-full items-center justify-center overflow-hidden rounded-2xl border border-border/50 bg-background"
         style={{ width: shellWidth, maxWidth: '100%', height: shellHeight }}
       >
-        <ActivityIndicator size="large" className="accent-primary" />
+        <AppLoader size="lg" />
       </View>
     </CardModalOverlay>
   );

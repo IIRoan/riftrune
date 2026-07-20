@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
+import { AppLoader } from '@/components/ui/app-loader';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
@@ -120,7 +121,7 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
 
       {loading && legends.length === 0 ? (
         <View className="flex-1 items-center justify-center py-16">
-          <ActivityIndicator />
+          <AppLoader size="md" />
         </View>
       ) : (
         <FlatList

@@ -10,10 +10,10 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { StatusBar, View } from 'react-native';
+import { StatusBar } from 'react-native';
 import { CatalogBootstrap } from '@/components/CatalogBootstrap';
-import { Text } from '@/components/ui/text';
 import { TetraProvider } from '@/components/TetraProvider';
+import { AppLoadingScreen } from '@/components/ui/app-loader';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useAppFonts } from '@/hooks/useAppFonts';
 import { createQueryClient } from '@/src/api/queryClient';
@@ -51,11 +51,7 @@ function RootNav() {
   }, [fontsLoaded, storageReady]);
 
   if (!storageReady || !fontsLoaded) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-muted-foreground">Loading…</Text>
-      </View>
-    );
+    return <AppLoadingScreen size="lg" />;
   }
 
   return (
@@ -63,6 +59,14 @@ function RootNav() {
       <StatusBar translucent backgroundColor="transparent" />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="loading"
+          options={{
+            title: 'Rift Channel',
+            headerShown: true,
+            headerBackTitle: 'Back',
+          }}
+        />
         <Stack.Screen
           name="card/[variantNumber]"
           options={{

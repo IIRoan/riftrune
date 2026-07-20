@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { FlatList, View } from 'react-native';
+import { AppLoader } from '@/components/ui/app-loader';
 import { DeckBrowseCard } from '@/components/deck/DeckBrowseCard';
 import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
 import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
@@ -128,7 +129,7 @@ export function DecksListScreen({
   const listFooter =
     infiniteScroll?.isFetchingNextPage || showRefreshing ? (
       <View className="items-center py-4">
-        <ActivityIndicator />
+        <AppLoader size="sm" />
       </View>
     ) : null;
 

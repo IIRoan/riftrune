@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
+import { AppLoader } from '@/components/ui/app-loader';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { useDeckMutations } from '@/hooks/useDecks';
 import { leaveDeckEditor } from '@/lib/deck-navigation';
@@ -29,7 +30,7 @@ export default function DeckCreateScreen() {
   return (
     <ScreenLayout mode="flex">
       <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+        <AppLoader size="md" />
       </View>
     </ScreenLayout>
   );

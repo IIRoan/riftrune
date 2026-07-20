@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CardArtImage } from '@/components/cards/CardArtImage';
+import { AppLoader } from '@/components/ui/app-loader';
 import {
-  ActivityIndicator,
   Modal,
   Platform,
   Pressable,
@@ -140,7 +140,7 @@ export function CatalogDetailPanel({
     if (detail.isLoading) {
       return (
         <View className="items-center justify-center rounded-xl border border-border bg-card p-8">
-          <ActivityIndicator size="large" className="accent-primary" />
+          <AppLoader size="lg" />
         </View>
       );
     }
