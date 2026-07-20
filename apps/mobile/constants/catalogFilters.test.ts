@@ -61,6 +61,27 @@ describe('matchesCatalogFilters', () => {
     ).toBe(true);
   });
 
+  test('within color mode matches deck domain identity', () => {
+    const mindOnly = { ...sampleCard, colors: ['Mind'] };
+    const mindOrder = { ...sampleCard, colors: ['Mind', 'Order'] };
+    const fury = { ...sampleCard, colors: ['Fury'] };
+    const colorless = { ...sampleCard, colors: [] };
+    const identity = { ...DEFAULT_CATALOG_FILTERS, colors: ['Mind', 'Order'] };
+
+    expect(matchesCatalogFilters(mindOnly, identity, new Map(), { colorMode: 'within' })).toBe(
+      true
+    );
+    expect(matchesCatalogFilters(mindOrder, identity, new Map(), { colorMode: 'within' })).toBe(
+      true
+    );
+    expect(matchesCatalogFilters(colorless, identity, new Map(), { colorMode: 'within' })).toBe(
+      true
+    );
+    expect(matchesCatalogFilters(fury, identity, new Map(), { colorMode: 'within' })).toBe(false);
+    // Default search mode still requires all selected colors.
+    expect(matchesCatalogFilters(mindOnly, identity, new Map())).toBe(false);
+  });
+
   test('type, rarity, and stat filters use exact match', () => {
     expect(
       matchesCatalogFilters(sampleCard, { ...DEFAULT_CATALOG_FILTERS, types: ['Unit'] }, new Map())

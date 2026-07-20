@@ -18,6 +18,13 @@ import {
   isCardEligibleForSection,
 } from '@/lib/deck-eligibility';
 import type { DeckCard, DeckSectionKey, DeckState } from '@/lib/deck-types';
+import {
+  catalogFiltersQueryKey,
+  catalogFiltersToQuery,
+  DEFAULT_CATALOG_FILTERS,
+  sanitizeCatalogFilters,
+  type CatalogFilters,
+} from '@/constants/catalogFilters';
 import { api } from '@/src/api/client';
 import { groupCardListItems, normalizeCardListItems } from '@/utils/variants';
 
@@ -145,51 +152,67 @@ export function deckCatalogColorsParam(deck: DeckState): string | undefined {
   return [...identity.allowedDomains].sort().join(',');
 }
 
+/** Initial catalog filters when opening a deck add section. */
+export function defaultDeckAddCatalogFilters(
+  section: DeckSectionKey,
+  deck: DeckState
+): CatalogFilters {
+  const legendColors = deck.legend?.colors ? [...deck.legend.colors].sort() : [];
+
+  switch (section) {
+    case 'mainDeck':
+    case 'sideboard':
+      return sanitizeCatalogFilters({
+        ...DEFAULT_CATALOG_FILTERS,
+        colors: legendColors,
+        excludeTokens: true,
+      });
+    case 'runes':
+      return sanitizeCatalogFilters({
+        ...DEFAULT_CATALOG_FILTERS,
+        colors: legendColors,
+      });
+    default:
+      return { ...DEFAULT_CATALOG_FILTERS };
+  }
+}
+
 export function buildDeckAddListQuery(
   section: DeckSectionKey,
   deck: DeckState,
   userQuery: string,
+  filters: CatalogFilters = DEFAULT_CATALOG_FILTERS,
   page = 1
 ): Partial<CardsListQuery> {
   const q = effectiveDeckAddSearch(section, deck, userQuery);
   const meta = getDeckAddSectionMeta(section, deck);
-  const identityColors = deckCatalogColorsParam(deck);
+  const sanitized = sanitizeCatalogFilters(filters);
+  const filterQuery = catalogFiltersToQuery(sanitized);
+  // Deck color chips use domain identity (within), not search "contains all".
   const base = {
     page,
     sortBy: 'name' as const,
     dir: 'asc' as const,
     limit: meta.pageSize,
+    ...filterQuery,
+    ...(filterQuery.colors ? { colorMode: 'within' as const } : {}),
+    ...(q ? { q } : {}),
   };
 
   switch (section) {
     case 'legend':
-      return { ...base, types: 'Legend', ...(q ? { q } : {}) };
+      return { ...base, types: filterQuery.types ?? 'Legend' };
     case 'champion':
-      return { ...base, types: 'Unit', super: 'Champion', ...(q ? { q } : {}) };
+      return { ...base, types: filterQuery.types ?? 'Unit', super: 'Champion' };
     case 'runes':
-      return {
-        ...base,
-        types: 'Rune',
-        ...(identityColors ? { colors: identityColors } : {}),
-        ...(q ? { q } : {}),
-      };
+      return { ...base, types: filterQuery.types ?? 'Rune' };
     case 'battlefields':
-      return { ...base, types: 'Battlefield', ...(q ? { q } : {}) };
+      return { ...base, types: filterQuery.types ?? 'Battlefield' };
     case 'mainDeck':
-      return {
-        ...base,
-        types: MAIN_DECK_CATALOG_TYPES,
-        excludeTokens: true,
-        ...(identityColors ? { colors: identityColors } : {}),
-        ...(q ? { q } : {}),
-      };
     case 'sideboard':
       return {
         ...base,
-        types: MAIN_DECK_CATALOG_TYPES,
-        excludeTokens: true,
-        ...(identityColors ? { colors: identityColors } : {}),
-        ...(q ? { q } : {}),
+        types: filterQuery.types ?? MAIN_DECK_CATALOG_TYPES,
       };
     default:
       return base;
@@ -199,7 +222,8 @@ export function buildDeckAddListQuery(
 export function deckAddListQueryKey(
   section: DeckSectionKey,
   query: Partial<CardsListQuery>,
-  deck?: Pick<DeckState, 'legend'>
+  deck?: Pick<DeckState, 'legend'>,
+  filters?: CatalogFilters
 ): string {
   return [
     section,
@@ -209,6 +233,8 @@ export function deckAddListQueryKey(
     query.types ?? '',
     query.super ?? '',
     query.colors ?? '',
+    query.colorMode ?? '',
+    catalogFiltersQueryKey(filters),
   ].join('|');
 }
 
@@ -217,19 +243,24 @@ export const DECK_ADD_CATALOG_STALE_MS = 30 * 60 * 1000;
 export function deckAddInfiniteQueryKey(
   section: DeckSectionKey,
   deck: DeckState,
-  userQuery: string
+  userQuery: string,
+  filters: CatalogFilters = DEFAULT_CATALOG_FILTERS
 ): readonly ['deck-add-list', string] {
-  const listQueryBase = buildDeckAddListQuery(section, deck, userQuery);
-  return ['deck-add-list', deckAddListQueryKey(section, listQueryBase, deck)] as const;
+  const listQueryBase = buildDeckAddListQuery(section, deck, userQuery, filters);
+  return [
+    'deck-add-list',
+    deckAddListQueryKey(section, listQueryBase, deck, filters),
+  ] as const;
 }
 
 export async function fetchDeckAddListPage(
   section: DeckSectionKey,
   deck: DeckState,
   userQuery: string,
+  filters: CatalogFilters,
   page: number
 ) {
-  return api.listCards(buildDeckAddListQuery(section, deck, userQuery, page));
+  return api.listCards(buildDeckAddListQuery(section, deck, userQuery, filters, page));
 }
 
 export function legendNeedsHydration(legend: DeckCard | null | undefined): boolean {

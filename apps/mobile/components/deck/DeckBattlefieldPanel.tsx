@@ -1,44 +1,136 @@
-import { View } from 'react-native';
-import { DeckCardSlot, resolveSlotImage } from '@/components/deck/DeckCardSlot';
-import { DeckSectionHeader } from '@/components/deck/DeckSectionHeader';
+import { useRouter } from 'expo-router';
+import { Pressable, View } from 'react-native';
+import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
+import { resolveSlotImage } from '@/components/deck/DeckCardSlot';
+import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
+import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { buildBattlefieldSlots } from '@/lib/deck-builder';
-import { deckSectionProgress } from '@/lib/deck-display';
 import { BATTLEFIELD_MAX, battlefieldsAtCapacity } from '@/lib/deck-limits';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
-import type { DeckState } from '@/lib/deck-types';
+import type { DeckEntry, DeckState } from '@/lib/deck-types';
 import { ownedCountForCardName } from '@/lib/deck-validation';
+import { openCard } from '@/utils/cardNavigation';
+import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
 interface DeckBattlefieldPanelProps {
   deck: DeckState;
   readOnly?: boolean;
-  tileWidth: number;
-  gap: number;
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
   onAdd: () => void;
   onRemove: (name: string) => void;
 }
 
-function BattlefieldProgress({ count }: { count: number }) {
-  const complete = count === BATTLEFIELD_MAX;
+function BattlefieldSlot({
+  index,
+  slot,
+  deck,
+  readOnly,
+  canAdd,
+  imageByVariant,
+  collectionByName,
+  onAdd,
+  onRemove,
+}: {
+  index: number;
+  slot: DeckEntry | null;
+  deck: DeckState;
+  readOnly?: boolean;
+  canAdd: boolean;
+  imageByVariant: ReadonlyMap<string, string>;
+  collectionByName: ReadonlyMap<string, number>;
+  onAdd: () => void;
+  onRemove: (name: string) => void;
+}) {
+  const router = useRouter();
+  const slotNumber = index + 1;
+
+  if (!slot) {
+    const interactive = !readOnly && canAdd;
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Battlefield slot ${slotNumber}`}
+        accessibilityState={{ disabled: !interactive }}
+        className={cn('min-w-0 flex-1', interactive && 'active:opacity-90')}
+        disabled={!interactive}
+        onPress={() => {
+          if (!interactive) return;
+          hapticPress();
+          onAdd();
+        }}
+      >
+        <View
+          className={cn(
+            'aspect-[7/5] w-full items-center justify-center border border-dashed bg-card-panel',
+            CARD_ART_RADIUS_CLASS,
+            interactive ? 'border-border' : 'border-border/60 opacity-60'
+          )}
+        >
+          <View className="absolute left-2 top-2 rounded-md bg-background/90 px-1.5 py-0.5">
+            <Text className="font-mono text-[10px] font-bold tabular-nums text-muted-foreground">
+              {slotNumber}
+            </Text>
+          </View>
+          {interactive ? (
+            <ThemedIonicon name="add" size={20} color="primary" />
+          ) : (
+            <ThemedIonicon name="lock-closed-outline" size={18} color="muted-foreground" />
+          )}
+        </View>
+      </Pressable>
+    );
+  }
+
+  const { card } = slot;
+  const imageUri = resolveSlotImage(card, imageByVariant);
+  const owned = ownedCountForCardName(card.name, collectionByName);
+  const illegal = isCardTournamentIllegal(card, deck);
+  const shortfall = owned != null && owned < slot.count;
 
   return (
-    <View className="flex-row gap-1.5">
-      {Array.from({ length: BATTLEFIELD_MAX }, (_, index) => {
-        const filled = index < count;
-        return (
-          <View
-            key={`bf-slot-${index}`}
-            className={cn(
-              'h-1.5 flex-1 rounded-full',
-              filled ? (complete ? 'bg-success' : 'bg-primary') : 'bg-border'
-            )}
-          />
-        );
-      })}
+    <View className="min-w-0 flex-1 gap-1.5">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`View ${card.name}`}
+        className="active:opacity-90"
+        onPress={() => {
+          hapticPress();
+          openCard(router, card.variantNumber, 'modal');
+        }}
+      >
+        <View
+          className={cn(
+            'relative aspect-[7/5] w-full overflow-hidden border bg-background',
+            CARD_ART_RADIUS_CLASS,
+            illegal ? 'border-destructive' : 'border-white/10',
+            shortfall && !illegal && 'border-warning/50'
+          )}
+        >
+          <BattlefieldCardArt uri={imageUri} variantNumber={card.variantNumber} />
+          <View className="absolute left-1.5 top-1.5 rounded-md bg-background/90 px-1.5 py-0.5">
+            <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
+              {slotNumber}
+            </Text>
+          </View>
+        </View>
+      </Pressable>
+
+      <Text className="px-0.5 text-[11px] font-semibold text-foreground" numberOfLines={1}>
+        {card.name}
+      </Text>
+
+      {readOnly ? null : (
+        <DeckQtyControl
+          count={1}
+          name={card.name}
+          single
+          onRemove={() => onRemove(card.name)}
+        />
+      )}
     </View>
   );
 }
@@ -46,79 +138,62 @@ function BattlefieldProgress({ count }: { count: number }) {
 export function DeckBattlefieldPanel({
   deck,
   readOnly = false,
-  tileWidth,
-  gap,
   imageByVariant,
   collectionByName,
   onAdd,
   onRemove,
 }: DeckBattlefieldPanelProps) {
   const slots = buildBattlefieldSlots(deck.battlefields);
-  const progress = deckSectionProgress(deck, 'battlefields');
-  const count = progress.current;
+  const count = slots.filter(Boolean).length;
   const atCapacity = battlefieldsAtCapacity(deck);
-  const complete = count === BATTLEFIELD_MAX;
-  const battlefieldHint =
-    !readOnly && !complete
-      ? `Add ${BATTLEFIELD_MAX - count} unique battlefield${BATTLEFIELD_MAX - count === 1 ? '' : 's'}`
-      : !readOnly && complete
-        ? 'All battlefield slots filled'
-        : undefined;
+  const canAdd = !atCapacity;
 
   return (
     <View className="gap-3">
-      <DeckSectionHeader
-        title="Battlefields"
-        current={progress.current}
-        target={progress.target}
-        hint={battlefieldHint}
-        readOnly={readOnly}
-        onAdd={readOnly ? undefined : onAdd}
-      />
-      {!readOnly ? <BattlefieldProgress count={count} /> : null}
-
-      <View className="flex-row" style={{ gap }}>
-        {slots.map((slot, index) => {
-          if (!slot) {
-            const canAdd = !atCapacity;
-            return (
-              <DeckCardSlot
-                key={`bf-empty-${index}`}
-                variant="empty"
-                tileWidth={tileWidth}
-                label={canAdd ? `Field ${index + 1}` : 'Full'}
-                onAdd={!readOnly && canAdd ? onAdd : undefined}
-              />
-            );
-          }
-
-          const owned = ownedCountForCardName(slot.card.name, collectionByName);
-          const illegal = isCardTournamentIllegal(slot.card, deck);
-          return (
-            <DeckCardSlot
-              key={slot.card.name}
-              variant="card"
-              tileWidth={tileWidth}
-              card={slot.card}
-              entry={slot}
-              imageUri={resolveSlotImage(slot.card, imageByVariant)}
-              owned={owned}
-              illegal={illegal}
-              single
-              onRemove={readOnly ? undefined : () => onRemove(slot.card.name)}
-            />
-          );
-        })}
-      </View>
-
-      {atCapacity && !readOnly ? (
-        <View className="flex-row items-center gap-2 rounded-lg border border-archive-soft-line bg-card-panel px-3 py-2">
-          <ThemedIonicon name="information-circle-outline" size={16} color="muted-foreground" />
-          <Text className="flex-1 text-[12px] text-muted-foreground">
-            Remove a battlefield to swap in a different one.
+      <View className="flex-row items-center justify-between gap-2">
+        <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
+          <Text className="text-sm font-semibold text-foreground">Battlefields</Text>
+          <Text
+            className={cn(
+              'font-mono text-[11px] font-bold tabular-nums',
+              count === BATTLEFIELD_MAX ? 'text-success' : 'text-muted-foreground'
+            )}
+          >
+            {count}/{BATTLEFIELD_MAX}
           </Text>
         </View>
-      ) : null}
+        {!readOnly && canAdd ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add battlefield"
+            className="h-8 shrink-0 flex-row items-center gap-1 rounded-lg border border-border bg-card-panel px-2.5 active:opacity-90"
+            onPress={() => {
+              hapticPress();
+              onAdd();
+            }}
+          >
+            <ThemedIonicon name="add" size={14} color="primary" />
+            <Text className="text-[12px] font-semibold text-primary">Add</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View className="flex-row gap-2">
+        {slots.map((slot, index) => (
+          <BattlefieldSlot
+            key={slot?.card.name ?? `bf-empty-${index}`}
+            index={index}
+            slot={slot}
+            deck={deck}
+            readOnly={readOnly}
+            canAdd={canAdd}
+            imageByVariant={imageByVariant}
+            collectionByName={collectionByName}
+            onAdd={onAdd}
+            onRemove={onRemove}
+          />
+        ))}
+      </View>
     </View>
   );
 }

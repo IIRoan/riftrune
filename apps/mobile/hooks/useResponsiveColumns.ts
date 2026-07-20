@@ -93,7 +93,7 @@ export function useResponsiveColumns(
       };
     }
 
-    if (isMobile && Platform.OS !== 'web') {
+    if (isMobile) {
       const horizontalPad = subtractScreenPadding ? Layout.screenPaddingHorizontal * 2 : 0;
       const gap = Layout.gridGap;
       const available = contentWidth - horizontalPad;

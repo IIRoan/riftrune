@@ -1,63 +1,36 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { View } from 'react-native';
-import { ScreenLayout, ScreenLayoutBody } from '@/components/shell/ScreenLayout';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { Button, ButtonText } from '@/components/ui/button';
-import { TextInput } from '@/components/ui/text-input';
-import { TextareaInput } from '@/components/ui/textarea-input';
+import { useEffect, useRef } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { useDeckMutations } from '@/hooks/useDecks';
-import { hapticPress } from '@/utils/haptics';
+import { leaveDeckEditor } from '@/lib/deck-navigation';
 
+/** Creates a deck immediately and jumps into the builder (legend picker). */
 export default function DeckCreateScreen() {
   const router = useRouter();
   const { createNewDeck } = useDeckMutations();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const startedRef = useRef(false);
 
-  const handleCreate = useCallback(async () => {
-    hapticPress();
-    const trimmed = name.trim() || 'Untitled deck';
-    const deck = await createNewDeck.mutateAsync({
-      name: trimmed,
-      description: description.trim(),
-    });
-    router.replace(`/decks/${deck.id}`);
-  }, [createNewDeck, description, name, router]);
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
+    void createNewDeck
+      .mutateAsync({})
+      .then((deck) => {
+        router.replace(`/decks/${deck.id}`);
+      })
+      .catch(() => {
+        startedRef.current = false;
+        leaveDeckEditor(router);
+      });
+  }, [createNewDeck, router]);
 
   return (
-    <ScreenLayout>
-      <ScreenLayoutBody>
-        <ScreenHeader
-          title="New deck"
-          subtitle="Name your deck, then choose a Legend to begin building."
-          className="mb-6"
-        />
-
-        <View className="gap-4">
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="Deck name"
-            autoFocus
-          />
-
-          <TextareaInput
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Description (strategy notes, matchup plans, etc.)"
-          />
-
-          <View className="flex-row flex-wrap gap-2 pt-2">
-            <Button onPress={() => void handleCreate()} busy={createNewDeck.isPending}>
-              <ButtonText>Create deck</ButtonText>
-            </Button>
-            <Button variant="outline" onPress={() => router.back()}>
-              <ButtonText>Cancel</ButtonText>
-            </Button>
-          </View>
-        </View>
-      </ScreenLayoutBody>
+    <ScreenLayout mode="flex">
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator />
+      </View>
     </ScreenLayout>
   );
 }

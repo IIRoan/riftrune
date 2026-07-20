@@ -5,6 +5,7 @@ import { createEmptyDeck } from './deck-card';
 import {
   buildDeckAddCandidates,
   buildDeckAddListQuery,
+  defaultDeckAddCatalogFilters,
   defaultDeckAddSearch,
   deckAddListQueryKey,
   effectiveDeckAddSearch,
@@ -13,6 +14,7 @@ import {
   legendNeedsHydration,
   uniqueCardListItems,
 } from './deck-add-catalog';
+import { DEFAULT_CATALOG_FILTERS } from '@/constants/catalogFilters';
 
 function mockDeckCard(overrides: Partial<DeckCard> & Pick<DeckCard, 'name'>): DeckCard {
   return {
@@ -164,10 +166,21 @@ describe('deck-add-catalog', () => {
     });
   });
 
-  test('builds main deck list query with all main-deck types', () => {
+  test('default main deck filters preselect legend colors', () => {
     const deck = createEmptyDeck();
     deck.legend = settLegend;
-    expect(buildDeckAddListQuery('mainDeck', deck, 'flame')).toEqual({
+    expect(defaultDeckAddCatalogFilters('mainDeck', deck)).toEqual({
+      ...DEFAULT_CATALOG_FILTERS,
+      colors: ['Body', 'Order'],
+      excludeTokens: true,
+    });
+  });
+
+  test('builds main deck list query from catalog filters', () => {
+    const deck = createEmptyDeck();
+    deck.legend = settLegend;
+    const filters = defaultDeckAddCatalogFilters('mainDeck', deck);
+    expect(buildDeckAddListQuery('mainDeck', deck, 'flame', filters)).toEqual({
       page: 1,
       sortBy: 'name',
       dir: 'asc',
@@ -175,14 +188,16 @@ describe('deck-add-catalog', () => {
       types: 'Unit,Gear,Spell',
       excludeTokens: true,
       colors: 'Body,Order',
+      colorMode: 'within',
       q: 'flame',
     });
   });
 
-  test('builds main deck browse query with type and identity colors', () => {
+  test('builds main deck browse query with filter defaults', () => {
     const deck = createEmptyDeck();
     deck.legend = settLegend;
-    expect(buildDeckAddListQuery('mainDeck', deck, '')).toEqual({
+    const filters = defaultDeckAddCatalogFilters('mainDeck', deck);
+    expect(buildDeckAddListQuery('mainDeck', deck, '', filters)).toEqual({
       page: 1,
       sortBy: 'name',
       dir: 'asc',
@@ -190,6 +205,7 @@ describe('deck-add-catalog', () => {
       types: 'Unit,Gear,Spell',
       excludeTokens: true,
       colors: 'Body,Order',
+      colorMode: 'within',
     });
   });
 

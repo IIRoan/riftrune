@@ -148,19 +148,22 @@ export function CatalogActiveFilterChips({
   if (!catalogFiltersActive(filters)) return null;
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerClassName="flex-row items-center gap-2 pr-1"
-    >
-      {catalogFilterChips(filters).map((chip) => (
-        <FilterKeywordChip
-          key={chip.id}
-          label={chip.label}
-          keywordBase={chip.keywordBase}
-          onClear={() => onFiltersChange(chip.clear())}
-        />
-      ))}
-    </ScrollView>
+    <View className="shrink-0">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        contentContainerClassName="flex-row items-center gap-2 pr-1"
+      >
+        {catalogFilterChips(filters).map((chip) => (
+          <FilterKeywordChip
+            key={chip.id}
+            label={chip.label}
+            keywordBase={chip.keywordBase}
+            onClear={() => onFiltersChange(chip.clear())}
+          />
+        ))}
+      </ScrollView>
+    </View>
   );
 }

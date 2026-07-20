@@ -39,6 +39,7 @@ export function upstreamCheckKey(query: CardsListQuery): string {
     variants: query.variants ?? '',
     sets: query.sets ?? '',
     colors: query.colors ?? '',
+    colorMode: query.colorMode ?? 'all',
     rarities: query.rarities ?? '',
     limit: query.limit,
     page: query.page,
