@@ -124,6 +124,8 @@ describe('collectionStats', () => {
       name: 'Vendetta',
       total: 30,
       owned: 1,
+      nonFoilOwned: 1,
+      foilOwned: 0,
     });
   });
 
@@ -135,5 +137,30 @@ describe('collectionStats', () => {
 
     expect(merged.map((set) => set.code)).toEqual(['OGN', 'VEN']);
     expect(merged[1]).toMatchObject({ code: 'VEN', name: 'VEN', owned: 1, total: 1 });
+  });
+
+  it('splits non-foil and foil ownership with separate denominators', () => {
+    const collection = [
+      entry({ variantNumber: 'OGN-001', name: 'Card A', setCode: 'OGN', isFoil: false }),
+      entry({
+        variantNumber: 'OGN-001-Foil',
+        name: 'Card A',
+        setCode: 'OGN',
+        isFoil: true,
+      }),
+      entry({ variantNumber: 'OGN-002', name: 'Card B', setCode: 'OGN', isFoil: false }),
+    ];
+
+    const [origins] = mergeSetStats(collection, [
+      { code: 'OGN', name: 'Origins', count: 544, foilCount: 172 },
+    ]);
+
+    expect(origins).toMatchObject({
+      owned: 3,
+      nonFoilOwned: 2,
+      foilOwned: 1,
+      nonFoilTotal: 372,
+      foilTotal: 172,
+    });
   });
 });

@@ -61,6 +61,13 @@ function createService(options?: ServiceOptions) {
         },
       },
     },
+    select: () => ({
+      from: () => ({
+        innerJoin: () => ({
+          groupBy: async () => [] as Array<{ code: string; foilPrintCount: number }>,
+        }),
+      }),
+    }),
     insert: () => ({
       values: async () => undefined,
     }),
