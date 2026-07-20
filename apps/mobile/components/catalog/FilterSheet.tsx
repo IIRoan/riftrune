@@ -6,7 +6,6 @@ import {
   CatalogToolbarButton,
 } from '@/components/catalog/CatalogToolbarButton';
 import { CatalogFilterSegmentPanel } from '@/components/catalog/CatalogFilterPanels';
-import { FilterCollectionSegment } from '@/components/filters/FilterPrimitives';
 import {
   FilterAccordionGroup,
   FilterAccordionSection,
@@ -70,12 +69,6 @@ export function CatalogFilterSheet({
       hasActiveFilters={catalogFiltersActive(filters)}
       onClear={() => onFiltersChange(DEFAULT_CATALOG_FILTERS)}
       portalName="catalog-filter-sheet"
-      stickyHeader={
-        <FilterCollectionSegment
-          value={filters.collection}
-          onChange={(collection) => onFiltersChange({ ...filters, collection })}
-        />
-      }
     >
       <FilterAccordionGroup key={accordionKey} defaultOpen={defaultOpen}>
         {MOBILE_FILTER_SEGMENTS.map((segment) => (

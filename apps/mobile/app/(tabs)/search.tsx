@@ -22,6 +22,10 @@ import {
   CatalogFilterSheet,
 } from '@/components/catalog/FilterSheet';
 import {
+  CatalogCollectionPillNav,
+  CATALOG_COLLECTION_PILL_CLEARANCE,
+} from '@/components/catalog/CatalogCollectionPillNav';
+import {
   catalogFiltersActive,
   DEFAULT_CATALOG_FILTERS,
   matchesCatalogFilters,
@@ -824,7 +828,7 @@ function SearchScreenBody() {
         contentContainerStyle={{
           width: splitLayout ? '100%' : contentWidth,
           maxWidth: '100%',
-          paddingBottom: paddingBottomInline,
+          paddingBottom: paddingBottomInline + CATALOG_COLLECTION_PILL_CLEARANCE,
           flexGrow: displayItems.length === 0 ? 1 : undefined,
         }}
         columnWrapperStyle={
@@ -855,7 +859,7 @@ function SearchScreenBody() {
   );
 
   return (
-    <>
+    <View className="relative min-h-0 flex-1">
       {splitLayout ? (
         <ScreenSplit
           asideWidth={DETAIL_PANEL_WIDTH}
@@ -875,6 +879,11 @@ function SearchScreenBody() {
           {catalogList}
         </ScreenLayoutBody>
       )}
+
+      <CatalogCollectionPillNav
+        value={catalogFilters.collection}
+        onChange={(collection) => applyCatalogFilters({ ...catalogFilters, collection })}
+      />
 
       {isMobile ? (
         <CatalogFilterSheet
@@ -910,6 +919,6 @@ function SearchScreenBody() {
           ) : null}
         </CardDetailDrawer>
       ) : null}
-    </>
+    </View>
   );
 }

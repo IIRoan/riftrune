@@ -11,7 +11,7 @@ export default function MyDecksScreen() {
   return (
     <DecksListScreen
       title="My decks"
-      subtitle="Build and validate your Riftbound decks"
+      subtitle="Your Riftbound lists"
       searchPlaceholder="Search your decks"
       query={query}
       onQueryChange={setQuery}

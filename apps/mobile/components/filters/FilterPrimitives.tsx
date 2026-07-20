@@ -133,49 +133,6 @@ export function FilterSegmentPill({
   );
 }
 
-export function FilterCollectionSegment({
-  value,
-  onChange,
-}: {
-  value: 'all' | 'owned';
-  onChange: (value: 'all' | 'owned') => void;
-}) {
-  const options: { id: 'all' | 'owned'; label: string }[] = [
-    { id: 'all', label: 'All cards' },
-    { id: 'owned', label: 'Owned' },
-  ];
-
-  return (
-    <View className="w-full flex-row items-center rounded-lg border border-border bg-card p-0.5">
-      {options.map((option) => {
-        const selected = value === option.id;
-        return (
-          <Pressable
-            key={option.id}
-            accessibilityRole="tab"
-            accessibilityState={{ selected }}
-            className={cn(
-              'h-9 min-w-0 flex-1 items-center justify-center rounded-md active:opacity-90',
-              selected ? 'bg-card-panel' : 'bg-transparent'
-            )}
-            onPress={() => onChange(option.id)}
-          >
-            <Text
-              className={cn(
-                'text-[13px] font-semibold',
-                selected ? 'text-foreground' : 'text-muted-foreground'
-              )}
-              numberOfLines={1}
-            >
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 type TriggerPosition = {
   pageX: number;
   pageY: number;
@@ -192,7 +149,7 @@ export type FilterPopoverBarItem<T extends string> = {
   maxHeight?: number;
 };
 
-function FilterPopoverTrigger({
+export function FilterPopoverTrigger({
   label,
   hasValue,
   open,

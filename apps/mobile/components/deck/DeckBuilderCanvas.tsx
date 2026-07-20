@@ -1,43 +1,57 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  DeckBattlefieldPanel,
-  DeckSectionGrid,
-} from '@/components/deck/DeckSectionGrid';
-import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
+  DeckBuilderInfoDrawer,
+  DECK_INFO_DRAWER_WIDTH,
+} from '@/components/deck/DeckBuilderInfoDrawer';
+import {
+  DeckCompositionList,
+  DECK_COMPOSITION_LIST_WIDTH,
+} from '@/components/deck/DeckCompositionList';
+import { DeckBuilderCatalogPanel } from '@/components/deck/DeckBuilderCatalogPanel';
 import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
-import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
-import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
+import { DeckBuilderToolbar } from '@/components/deck/DeckBuilderToolbar';
+import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import {
-  DeckBuilderSection,
-  DeckBuilderToolbar,
-} from '@/components/deck/DeckBuilderToolbar';
-import { DeckBuilderStatusStrip } from '@/components/deck/DeckBuilderStatusStrip';
-import { Button, ButtonText } from '@/components/ui/button';
+  BottomSheet,
+  BottomSheetContent,
+  BottomSheetOverlay,
+  BottomSheetPortal,
+  BottomSheetScrollView,
+} from '@/components/ui/bottom-sheet';
 import { Text } from '@/components/ui/text';
-import { TextareaInput } from '@/components/ui/textarea-input';
+import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
+import {
+  FLOATING_PILL_NAV_CLEARANCE,
+  FloatingPillNav,
+  type FloatingPillNavItem,
+} from '@/components/shell/FloatingPillNav';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useCollection } from '@/hooks/useCollection';
 import { useCollectionByCardName } from '@/hooks/useDeckCardResolver';
 import { useDeckCardImages } from '@/hooks/useDeckCardImages';
 import { useLegendRuneCards } from '@/hooks/useLegendRuneCards';
-import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import {
   changeDeckCardQty,
   deckVariantNumbersKey,
   removeDeckCard,
 } from '@/lib/deck-card';
+import { deckSectionProgress } from '@/lib/deck-display';
 import { adjustRuneCountForDomain, seedDefaultRuneSplit } from '@/lib/deck-runes';
 import type { DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { validateDeck } from '@/lib/deck-validation';
-import { deckHasBannedCards } from '@/lib/card-legality';
 import { prefetchDeckAddCatalog } from '@/lib/prefetchDeckAddCatalog';
 import { hapticPress } from '@/utils/haptics';
+import { cn } from '@/lib/utils';
 
 type IoMode = 'import' | 'export';
+type MobilePanel = 'info' | 'list' | null;
+type CatalogSection = 'mainDeck' | 'sideboard';
 
 interface DeckBuilderCanvasProps {
   deck: DeckState;
@@ -68,24 +82,13 @@ export function DeckBuilderCanvas({
   const router = useRouter();
   const queryClient = useQueryClient();
   const isMobile = useMobileLayout();
-  const { paddingBottomInline, contentWidth } = useScreenLayout();
+  const reduceMotion = useReduceMotion();
+  const insets = useSafeAreaInsets();
+  const { paddingBottomInline } = useScreenLayout();
   const [validationExpanded, setValidationExpanded] = useState(false);
-
-  const builderWidth = isMobile ? contentWidth : Math.max(320, (contentWidth - 24) / 2);
-  const { tileWidth: sectionTileWidth, gap, numColumns: gridColumns } = useResponsiveColumns(
-    'grid',
-    { measuredWidth: builderWidth }
-  );
-
-  const identityColumnWidth = isMobile ? contentWidth : Math.min(460, contentWidth);
-  const identityInnerWidth = Math.max(0, identityColumnWidth - 32);
-  const identityPairGap = 12;
-  const identityTileWidth = useMemo(() => {
-    if (!deck.legend) return identityInnerWidth;
-    const pairWidth = Math.floor((identityInnerWidth - identityPairGap) / 2);
-    if (isMobile) return pairWidth;
-    return Math.min(132, pairWidth);
-  }, [deck.legend, identityInnerWidth, isMobile]);
+  const [infoDrawerOpen, setInfoDrawerOpen] = useState(true);
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
+  const [catalogSection, setCatalogSection] = useState<CatalogSection>('mainDeck');
 
   const { data: collection = [] } = useCollection();
   const collectionByName = useCollectionByCardName(collection);
@@ -93,6 +96,7 @@ export function DeckBuilderCanvas({
 
   const variantKey = deckVariantNumbersKey(deck);
   const { data: imageByVariant } = useDeckCardImages(variantKey);
+  const images = imageByVariant ?? new Map<string, string>();
   const { data: runeCards } = useLegendRuneCards(deck.legend);
   const runeCardsByDomain = runeCards?.byDomain ?? new Map();
   const seededRunesForLegendRef = useRef<string | null>(null);
@@ -110,14 +114,31 @@ export function DeckBuilderCanvas({
     onPersist(seeded);
   }, [deck, onPersist, readOnly, runeCardsByDomain]);
 
-  const openAdd = useCallback(
+  const focusCatalogSection = useCallback((section: CatalogSection) => {
+    hapticPress();
+    setCatalogSection(section);
+    setMobilePanel(null);
+  }, []);
+
+  /** Champion / battlefields still use the dedicated add screen; main/side stay inline. */
+  const openSpecialAdd = useCallback(
     (section: DeckSectionKey) => {
       if (readOnly) return;
+      if (section === 'mainDeck' || section === 'sideboard') {
+        focusCatalogSection(section);
+        return;
+      }
+      if (section === 'runes') {
+        if (isMobile) setMobilePanel('info');
+        else setInfoDrawerOpen(true);
+        return;
+      }
       hapticPress();
+      setMobilePanel(null);
       void prefetchDeckAddCatalog(queryClient, deck, section);
       router.push(`/decks/${deck.id}/add?section=${section}`);
     },
-    [deck, queryClient, readOnly, router]
+    [deck, focusCatalogSection, isMobile, queryClient, readOnly, router]
   );
 
   const handleAdjustRune = useCallback(
@@ -134,165 +155,243 @@ export function DeckBuilderCanvas({
     onBack();
   }, [onBack]);
 
-  const identityColumn = (
-    <View className="gap-4">
-      <DeckBuilderSection>
-        <DeckIdentityHeader
-          deck={deck}
-          readOnly={readOnly}
-          legendTileWidth={identityTileWidth}
-          imageByVariant={imageByVariant ?? new Map()}
-          collectionByName={collectionByName}
-          runeCardsByDomain={runeCardsByDomain}
-          onChangeLegend={onChangeLegend}
-          onAddChampion={() => openAdd('champion')}
-          onRemoveChampion={() => onPersist(removeDeckCard(deck, 'champion'))}
-          onAdjustRune={handleAdjustRune}
-        />
-      </DeckBuilderSection>
+  const sheetPaddingBottom = Math.max(insets.bottom, 16) + 24;
 
-      <DeckBuilderSection>
-        <DeckBattlefieldPanel
-          deck={deck}
-          readOnly={readOnly}
-          imageByVariant={imageByVariant ?? new Map()}
-          collectionByName={collectionByName}
-          onAdd={() => openAdd('battlefields')}
-          onRemove={(name) => onPersist(removeDeckCard(deck, 'battlefields', name))}
-        />
-      </DeckBuilderSection>
-    </View>
+  const infoDrawer = (
+    <DeckBuilderInfoDrawer
+      deck={deck}
+      readOnly={readOnly}
+      imageByVariant={images}
+      collectionByName={collectionByName}
+      runeCardsByDomain={runeCardsByDomain}
+      onChangeLegend={onChangeLegend}
+      onAddChampion={() => openSpecialAdd('champion')}
+      onRemoveChampion={() => onPersist(removeDeckCard(deck, 'champion'))}
+      onAdjustRune={handleAdjustRune}
+      onAddBattlefield={() => openSpecialAdd('battlefields')}
+      onRemoveBattlefield={(name) =>
+        onPersist((prev) => removeDeckCard(prev, 'battlefields', name), { immediate: true })
+      }
+      onDescriptionChange={
+        readOnly
+          ? undefined
+          : (description) => onPersist({ ...deck, description, updatedAt: Date.now() })
+      }
+      paddingBottom={paddingBottomInline}
+      scrollEnabled={!isMobile}
+    />
   );
 
-  const deckColumn = (
-    <View className="gap-4">
-      <DeckBuilderSection>
-        <DeckSectionGrid
-          deck={deck}
-          section="mainDeck"
-          readOnly={readOnly}
-          title="Main deck"
-          tileWidth={sectionTileWidth}
-          gap={gap}
-          gridColumns={gridColumns}
-          imageByVariant={imageByVariant ?? new Map()}
-          collectionByName={collectionByName}
-          onAdd={() => openAdd('mainDeck')}
-          onMinus={(name) =>
-            onPersist((prev) => changeDeckCardQty(prev, 'mainDeck', name, -1), { immediate: true })
-          }
-          onPlus={(name) =>
-            onPersist((prev) => changeDeckCardQty(prev, 'mainDeck', name, 1), { immediate: true })
-          }
-          onRemove={(name) =>
-            onPersist((prev) => removeDeckCard(prev, 'mainDeck', name), { immediate: true })
-          }
-        />
-      </DeckBuilderSection>
-
-      <DeckBuilderSection>
-        <DeckSectionGrid
-          deck={deck}
-          section="sideboard"
-          readOnly={readOnly}
-          title="Sideboard"
-          tileWidth={sectionTileWidth}
-          gap={gap}
-          gridColumns={gridColumns}
-          imageByVariant={imageByVariant ?? new Map()}
-          collectionByName={collectionByName}
-          onAdd={() => openAdd('sideboard')}
-          onMinus={(name) => onPersist(changeDeckCardQty(deck, 'sideboard', name, -1))}
-          onPlus={(name) => onPersist(changeDeckCardQty(deck, 'sideboard', name, 1))}
-          onRemove={(name) => onPersist(removeDeckCard(deck, 'sideboard', name))}
-        />
-      </DeckBuilderSection>
-    </View>
+  const compositionList = (
+    <DeckCompositionList
+      deck={deck}
+      readOnly={readOnly}
+      imageByVariant={images}
+      collectionByName={collectionByName}
+      onMinus={(section, name) =>
+        onPersist((prev) => changeDeckCardQty(prev, section, name, -1), { immediate: true })
+      }
+      onPlus={(section, name) =>
+        onPersist((prev) => changeDeckCardQty(prev, section, name, 1), { immediate: true })
+      }
+      onRemove={(section, name) => {
+        if (section === 'legend') {
+          onChangeLegend();
+          return;
+        }
+        onPersist((prev) => removeDeckCard(prev, section, name), { immediate: true });
+      }}
+      onAddSection={(section) => openSpecialAdd(section)}
+      onSectionPress={(section) => openSpecialAdd(section)}
+      paddingBottom={isMobile ? sheetPaddingBottom : paddingBottomInline}
+      bordered={false}
+    />
   );
+
+  const catalogPanel = (
+    <DeckBuilderCatalogPanel
+      deck={deck}
+      readOnly={readOnly}
+      collectionByName={collectionByName}
+      onPersist={onPersist}
+      section={catalogSection}
+      onSectionChange={setCatalogSection}
+      paddingBottom={
+        paddingBottomInline + (readOnly ? FLOATING_PILL_NAV_CLEARANCE : 0)
+      }
+    />
+  );
+
+  const browseSectionNavItems = useMemo((): readonly FloatingPillNavItem<CatalogSection>[] => {
+    const main = deckSectionProgress(deck, 'mainDeck');
+    const side = deckSectionProgress(deck, 'sideboard');
+    return [
+      {
+        id: 'mainDeck',
+        label: 'Main',
+        accessibilityLabel: `Main deck ${main.current} of ${main.target}`,
+        icon: 'layers-outline',
+        iconActive: 'layers',
+        badge: `${main.current}/${main.target}`,
+      },
+      {
+        id: 'sideboard',
+        label: 'Side',
+        accessibilityLabel: `Sideboard ${side.current} of ${side.target}`,
+        icon: 'file-tray-outline',
+        iconActive: 'file-tray',
+        badge: `${side.current}/${side.target}`,
+      },
+    ];
+  }, [deck]);
+
+  const mobileSnapPoints = reduceMotion ? ['92%'] : ['72%', '92%'];
 
   return (
     <>
-      <ScrollView
-        className="min-h-0 flex-1"
-        contentContainerStyle={{ paddingBottom: paddingBottomInline }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View className="gap-4">
-          {readOnly ? (
-            <View className="gap-2 rounded-xl border border-border bg-card-panel px-4 py-3">
-              <Text className="text-sm text-muted-foreground">
-                Imported from Piltover Archive — view only
-              </Text>
-              {onImportToMyDecks ? (
-                <Button
-                  className="w-auto self-start"
-                  busy={importBusy}
-                  disabled={importBusy}
-                  onPress={onImportToMyDecks}
-                >
-                  <ButtonText>{importBusy ? 'Importing…' : 'Import to my decks'}</ButtonText>
-                </Button>
-              ) : null}
-            </View>
-          ) : null}
+      <View className="relative min-h-0 flex-1 gap-3">
+        {readOnly ? (
+          <View className="flex-row items-center gap-2 border-b border-border pb-2.5">
+            <StatusKeywordBadge status="imported" compact />
+            <Text className="min-w-0 flex-1 text-[12px] text-muted-foreground" numberOfLines={1}>
+              View only · from Piltover Archive
+            </Text>
+            {onImportToMyDecks ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={importBusy ? 'Importing deck' : 'Import to my decks'}
+                accessibilityState={{ disabled: importBusy, busy: importBusy }}
+                disabled={importBusy}
+                className={cn(
+                  'flex-row items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5',
+                  importBusy ? 'opacity-50' : 'active:bg-card-panel'
+                )}
+                onPress={() => {
+                  hapticPress();
+                  onImportToMyDecks();
+                }}
+              >
+                <ThemedIonicon name="download-outline" size={14} color="primary" />
+                <Text className="text-[12px] font-semibold text-primary">
+                  {importBusy ? 'Importing…' : 'Import'}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
 
-          <DeckBuilderToolbar
-            deckName={deck.name}
-            readOnly={readOnly}
-            validation={validation}
-            onBack={handleBack}
-            onNameChange={
-              readOnly
-                ? undefined
-                : (name) => onPersist({ ...deck, name, updatedAt: Date.now() })
-            }
-            onToggleValidation={() => setValidationExpanded((v) => !v)}
-            validationExpanded={validationExpanded}
-            onImport={readOnly ? undefined : () => onIoModeChange('import')}
-            onExport={readOnly ? undefined : () => onIoModeChange('export')}
-          />
-
-          {readOnly ? (
-            <DeckViewInfoPanel deck={deck} />
-          ) : (
-            <>
-              <TextareaInput
-                value={deck.description}
-                onChangeText={(description) =>
-                  onPersist({ ...deck, description, updatedAt: Date.now() })
+        <DeckBuilderToolbar
+          deckName={deck.name}
+          readOnly={readOnly}
+          validation={validation}
+          onBack={handleBack}
+          onNameChange={
+            readOnly
+              ? undefined
+              : (name) => onPersist({ ...deck, name, updatedAt: Date.now() })
+          }
+          onToggleValidation={() => setValidationExpanded((v) => !v)}
+          validationExpanded={validationExpanded}
+          onImport={readOnly ? undefined : () => onIoModeChange('import')}
+          onExport={readOnly ? undefined : () => onIoModeChange('export')}
+          infoDrawerOpen={infoDrawerOpen}
+          onToggleInfoDrawer={
+            isMobile
+              ? undefined
+              : () => {
+                  hapticPress();
+                  setInfoDrawerOpen((open) => !open);
                 }
-                placeholder="Deck description (optional)"
-              />
-              {deckHasBannedCards(deck) ? (
-                <View className="self-start">
-                  <DeckLegalityBadge isLegal={false} />
-                </View>
-              ) : null}
-            </>
-          )}
+          }
+          onOpenInfo={
+            isMobile
+              ? () => {
+                  hapticPress();
+                  setMobilePanel('info');
+                }
+              : undefined
+          }
+          onOpenList={
+            isMobile
+              ? () => {
+                  hapticPress();
+                  setMobilePanel('list');
+                }
+              : undefined
+          }
+        />
 
-          <DeckBuilderStatusStrip
-            deck={deck}
-            readOnly={readOnly}
-            onSectionPress={(section) => openAdd(section)}
+        {isMobile ? (
+          <View className="min-h-0 flex-1">{catalogPanel}</View>
+        ) : (
+          <View className="min-h-0 flex-1 flex-row gap-3">
+            <View
+              className={cn(
+                'min-h-0 overflow-hidden rounded-xl border border-border bg-card',
+                !infoDrawerOpen && 'border-0'
+              )}
+              style={{
+                width: infoDrawerOpen ? DECK_INFO_DRAWER_WIDTH : 0,
+                opacity: infoDrawerOpen ? 1 : 0,
+              }}
+              pointerEvents={infoDrawerOpen ? 'auto' : 'none'}
+            >
+              {infoDrawer}
+            </View>
+
+            <View className="min-h-0 min-w-0 flex-1">{catalogPanel}</View>
+
+            <View
+              className="min-h-0 overflow-hidden rounded-xl border border-border bg-card"
+              style={{ width: DECK_COMPOSITION_LIST_WIDTH }}
+            >
+              {compositionList}
+            </View>
+          </View>
+        )}
+
+        {readOnly ? (
+          <FloatingPillNav
+            items={browseSectionNavItems}
+            value={catalogSection}
+            onChange={setCatalogSection}
           />
+        ) : null}
+      </View>
 
-          {isMobile ? (
-            <View className="gap-4">
-              {identityColumn}
-              {deckColumn}
-            </View>
-          ) : (
-            <View className="flex-row items-start gap-4">
-              <View className="min-w-0 flex-1" style={{ maxWidth: 460 }}>
-                {identityColumn}
-              </View>
-              <View className="min-w-0 flex-1">{deckColumn}</View>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+      {isMobile ? (
+        <BottomSheet
+          open={mobilePanel != null}
+          onOpenChange={(next) => {
+            if (!next) setMobilePanel(null);
+          }}
+        >
+          <BottomSheetPortal>
+            <BottomSheetOverlay />
+            <BottomSheetContent
+              snapPoints={mobileSnapPoints}
+              defaultSnapIndex={0}
+              enablePanDownToClose
+              enableOverDrag={!reduceMotion}
+              enableContentPanningGesture
+            >
+              {mobilePanel === 'info' ? (
+                <BottomSheetScrollView
+                  className="flex-1"
+                  contentContainerStyle={{ paddingBottom: sheetPaddingBottom }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {infoDrawer}
+                </BottomSheetScrollView>
+              ) : null}
+              {mobilePanel === 'list' ? (
+                <View className="min-h-0 flex-1">{compositionList}</View>
+              ) : null}
+            </BottomSheetContent>
+          </BottomSheetPortal>
+        </BottomSheet>
+      ) : null}
 
       {ioMode && !readOnly ? (
         <DeckImportExportSheet

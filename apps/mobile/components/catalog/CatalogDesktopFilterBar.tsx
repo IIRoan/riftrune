@@ -1,11 +1,7 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { CatalogFilterSegmentPanel } from '@/components/catalog/CatalogFilterPanels';
-import {
-  FilterClearButton,
-  FilterCollectionSegment,
-  FilterPopoverBar,
-} from '@/components/filters/FilterPrimitives';
+import { FilterClearButton, FilterPopoverBar } from '@/components/filters/FilterPrimitives';
 import {
   CATALOG_FILTER_SEGMENTS,
   catalogFilterSegmentActive,
@@ -50,13 +46,6 @@ export function CatalogDesktopFilterBar({
 
   return (
     <View className="flex-row flex-wrap items-center gap-2">
-      <FilterCollectionSegment
-        value={filters.collection}
-        onChange={(collection) => onFiltersChange({ ...filters, collection })}
-      />
-
-      <View className="h-6 w-px bg-border" accessibilityElementsHidden />
-
       <FilterPopoverBar
         portalName="catalog-filter-bar"
         openId={openSegment}

@@ -313,6 +313,8 @@ export function matchesDeckAddSectionType(
 ): boolean {
   if (section === 'champion') return isChampionUnit(card);
   if (section === 'legend') return isLegendCard(card);
+  // Sideboard uses the same type pool as main deck (units/gear/spells).
+  if (section === 'sideboard') return cardMatchesSectionType(card, 'mainDeck');
   return cardMatchesSectionType(card, section);
 }
 

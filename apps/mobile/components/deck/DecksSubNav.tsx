@@ -1,56 +1,47 @@
 import { usePathname, useRouter } from 'expo-router';
-import { Pressable, View } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { cn } from '@/lib/utils';
-import { hapticPress } from '@/utils/haptics';
+import {
+  FLOATING_PILL_NAV_CLEARANCE,
+  FloatingPillNav,
+  type FloatingPillNavItem,
+} from '@/components/shell/FloatingPillNav';
 
-const NAV_ITEMS = [
-  { href: '/(tabs)/decks' as const, label: 'My decks' },
-  { href: '/(tabs)/decks/browse' as const, label: 'Browse decks' },
-] as const;
+/** @deprecated Prefer FLOATING_PILL_NAV_CLEARANCE — kept for existing deck list imports. */
+export const DECKS_SUB_NAV_CLEARANCE = FLOATING_PILL_NAV_CLEARANCE;
+
+const NAV_ITEMS: readonly FloatingPillNavItem<'mine' | 'browse'>[] = [
+  {
+    id: 'mine',
+    label: 'Mine',
+    accessibilityLabel: 'My decks',
+    icon: 'albums-outline',
+    iconActive: 'albums',
+  },
+  {
+    id: 'browse',
+    label: 'Browse',
+    accessibilityLabel: 'Browse decks',
+    icon: 'compass-outline',
+    iconActive: 'compass',
+  },
+];
 
 function isBrowseDecksPath(pathname: string): boolean {
   return pathname.includes('/decks/browse');
 }
 
+/** Decks Mine / Browse — shared FloatingPillNav. */
 export function DecksSubNav() {
   const router = useRouter();
   const pathname = usePathname();
   const browseActive = isBrowseDecksPath(pathname);
 
   return (
-    <View
-      accessibilityRole="tablist"
-      className="mb-4 flex-row rounded-xl border border-border bg-card p-1"
-    >
-      {NAV_ITEMS.map(({ href, label }) => {
-        const active = href.endsWith('/browse') ? browseActive : !browseActive;
-        return (
-          <Pressable
-            key={href}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            className={cn(
-              'min-w-0 flex-1 items-center rounded-lg px-3 py-2.5',
-              active ? 'bg-card-panel' : 'active:bg-card-panel/60'
-            )}
-            onPress={() => {
-              hapticPress();
-              router.push(href);
-            }}
-          >
-            <Text
-              className={cn(
-                'text-center text-sm font-semibold',
-                active ? 'text-foreground' : 'text-muted-foreground'
-              )}
-              numberOfLines={1}
-            >
-              {label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
+    <FloatingPillNav
+      items={NAV_ITEMS}
+      value={browseActive ? 'browse' : 'mine'}
+      onChange={(id) => {
+        router.push(id === 'browse' ? '/(tabs)/decks/browse' : '/(tabs)/decks');
+      }}
+    />
   );
 }

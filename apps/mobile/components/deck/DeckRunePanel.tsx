@@ -13,70 +13,104 @@ interface DeckRunePanelProps {
   readOnly?: boolean;
   runeCardsByDomain: ReadonlyMap<string, DeckCard>;
   onAdjust: (domain: string, delta: number) => void;
+  /** Tighter layout for narrow side drawers. */
+  dense?: boolean;
   compact?: boolean;
 }
 
 function RuneDomainRow({
   domain,
   count,
-  targetTotal: _targetTotal,
   readOnly,
+  dense,
   onAdjust,
 }: {
   domain: string;
   count: number;
-  targetTotal: number;
   readOnly?: boolean;
+  dense?: boolean;
   onAdjust: (delta: number) => void;
 }) {
   const icon = domainIconFor(domain);
+  const iconSize = dense ? 22 : 28;
 
   return (
-    <View className="flex-row items-center gap-3 rounded-xl border border-archive-soft-line bg-card-panel px-3 py-3">
+    <View
+      className={cn(
+        'min-w-0 flex-row items-center rounded-lg border border-archive-soft-line bg-card-panel',
+        dense ? 'gap-2 px-2 py-2' : 'gap-3 px-3 py-3'
+      )}
+    >
       {icon ? (
-        <Image source={icon} style={{ width: 28, height: 28 }} contentFit="contain" />
+        <Image
+          source={icon}
+          style={{ width: iconSize, height: iconSize }}
+          contentFit="contain"
+          className="shrink-0"
+        />
       ) : (
-        <View className="size-7 items-center justify-center rounded-full bg-background">
-          <ThemedIonicon name="ellipse" size={12} color="muted-foreground" />
+        <View
+          className={cn(
+            'shrink-0 items-center justify-center rounded-full bg-background',
+            dense ? 'size-5.5' : 'size-7'
+          )}
+          style={dense ? { width: 22, height: 22 } : undefined}
+        >
+          <ThemedIonicon name="ellipse" size={dense ? 10 : 12} color="muted-foreground" />
         </View>
       )}
 
       <View className="min-w-0 flex-1">
-        <Text className="text-sm font-semibold text-foreground">{domain}</Text>
-        <Text className="font-mono text-[11px] text-muted-foreground">
-          {count} rune{count === 1 ? '' : 's'}
+        <Text className="text-[13px] font-semibold text-foreground" numberOfLines={1}>
+          {domain}
         </Text>
+        {!dense ? (
+          <Text className="font-mono text-[11px] text-muted-foreground">
+            {count} rune{count === 1 ? '' : 's'}
+          </Text>
+        ) : null}
       </View>
 
-      <View className="min-w-[5.5rem] flex-row items-center overflow-hidden rounded-lg border border-border bg-background">
+      <View
+        className={cn(
+          'shrink-0 flex-row items-center overflow-hidden rounded-md border border-border bg-background',
+          !readOnly && (dense ? 'min-w-[4.75rem]' : 'min-w-[5.5rem]')
+        )}
+      >
         {readOnly ? (
-          <Text className="min-w-[2rem] px-2 text-center font-mono text-sm font-bold tabular-nums text-foreground">
+          <Text className="px-2 py-1 text-center font-mono text-sm font-bold tabular-nums text-foreground">
             {count}
           </Text>
         ) : (
           <>
             <Pressable
               accessibilityLabel={`Remove ${domain} rune`}
-              className="size-8 items-center justify-center active:bg-card-panel"
+              className={cn(
+                'items-center justify-center active:bg-card-panel',
+                dense ? 'size-7' : 'size-8'
+              )}
               onPress={() => {
                 hapticPress();
                 onAdjust(-1);
               }}
             >
-              <ThemedIonicon name="remove" size={16} color="foreground" />
+              <ThemedIonicon name="remove" size={dense ? 14 : 16} color="foreground" />
             </Pressable>
-            <Text className="min-w-[1.5rem] text-center font-mono text-sm font-bold tabular-nums text-foreground">
+            <Text className="min-w-[1.25rem] text-center font-mono text-[13px] font-bold tabular-nums text-foreground">
               {count}
             </Text>
             <Pressable
               accessibilityLabel={`Add ${domain} rune`}
-              className="size-8 items-center justify-center active:bg-card-panel"
+              className={cn(
+                'items-center justify-center active:bg-card-panel',
+                dense ? 'size-7' : 'size-8'
+              )}
               onPress={() => {
                 hapticPress();
                 onAdjust(1);
               }}
             >
-              <ThemedIonicon name="add" size={16} color="foreground" />
+              <ThemedIonicon name="add" size={dense ? 14 : 16} color="foreground" />
             </Pressable>
           </>
         )}
@@ -90,6 +124,7 @@ export function DeckRunePanel({
   readOnly = false,
   runeCardsByDomain,
   onAdjust,
+  dense = false,
   compact,
 }: DeckRunePanelProps) {
   if (!deck.legend) return null;
@@ -98,19 +133,17 @@ export function DeckRunePanel({
   const total = totalRuneCount(deck.runes);
   const target = 12;
   const complete = total === target;
+  const useDense = dense || compact === true;
 
   return (
-    <View className={cn('gap-3', compact ? 'flex-1' : undefined)}>
-      <View className="flex-row items-end justify-between gap-2">
-        <View>
-          <Text className="text-sm font-semibold text-foreground">Rune deck</Text>
-          <Text className="mt-0.5 text-[12px] text-muted-foreground">
-            Split {target} runes across your Legend domains
-          </Text>
-        </View>
+    <View className={cn('min-w-0 gap-2', compact ? 'flex-1' : undefined)}>
+      <View className="min-w-0 flex-row items-center justify-between gap-2">
+        <Text className="min-w-0 flex-1 text-[13px] font-semibold text-foreground" numberOfLines={1}>
+          Rune deck
+        </Text>
         <Text
           className={cn(
-            'font-mono text-sm font-bold tabular-nums',
+            'shrink-0 font-mono text-[12px] font-bold tabular-nums',
             complete ? 'text-success' : 'text-warning'
           )}
         >
@@ -118,20 +151,20 @@ export function DeckRunePanel({
         </Text>
       </View>
 
-      <View className="gap-2">
+      <View className="min-w-0 gap-1.5">
         <RuneDomainRow
           domain={firstDomain}
           count={countRunesForDomain(deck.runes, firstDomain)}
-          targetTotal={target}
           readOnly={readOnly}
+          dense={useDense}
           onAdjust={(delta) => onAdjust(firstDomain, delta)}
         />
         {secondDomain !== firstDomain ? (
           <RuneDomainRow
             domain={secondDomain}
             count={countRunesForDomain(deck.runes, secondDomain)}
-            targetTotal={target}
             readOnly={readOnly}
+            dense={useDense}
             onAdjust={(delta) => onAdjust(secondDomain, delta)}
           />
         ) : null}
