@@ -15,8 +15,8 @@ export const authClient = createAuthClient({
     ? []
     : [
         expoClient({
-          scheme: 'riftbound',
-          storagePrefix: 'riftbound',
+          scheme: 'riftrune',
+          storagePrefix: 'riftrune',
           storage: secureStorage,
         }),
       ],

@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import { authClient } from '@/src/lib/auth-client';
 import { secureStorage } from '@/src/lib/secure-storage';
 
-const AUTH_COOKIE_STORAGE_KEY = 'riftbound_cookie';
+const AUTH_COOKIE_STORAGE_KEY = 'riftrune_cookie';
 
 /**
  * Cookie header for authenticated API requests on native.

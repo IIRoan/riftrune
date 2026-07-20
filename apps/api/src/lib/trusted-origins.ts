@@ -11,8 +11,8 @@ export function resolveTrustedOrigins(env: Env): string[] {
   })();
 
   const origins = new Set<string>([
-    'riftbound://',
-    'riftbound://*',
+    'riftrune://',
+    'riftrune://*',
     ...env.TRUSTED_ORIGINS,
     ...(baseOrigin ? [baseOrigin] : []),
   ]);

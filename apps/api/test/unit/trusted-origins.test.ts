@@ -25,7 +25,7 @@ function baseEnv(overrides: Partial<Env> = {}): Env {
 describe('resolveTrustedOrigins', () => {
   test('includes app scheme, configured origins, and auth base URL', () => {
     const origins = resolveTrustedOrigins(baseEnv());
-    expect(origins).toContain('riftbound://');
+    expect(origins).toContain('riftrune://');
     expect(origins).toContain('https://riftrune.com');
     expect(origins).toContain('https://api.riftrune.com');
   });
