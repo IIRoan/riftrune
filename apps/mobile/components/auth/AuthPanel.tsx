@@ -1,24 +1,20 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import {
-  AccessibilityInfo,
   Keyboard,
   Platform,
   Pressable,
-  TextInput as RNTextInput,
+  type TextInput as RNTextInput,
   View,
-  type LayoutChangeEvent,
   type TextInputProps as RNTextInputProps,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
-import type { AuthPanelVariant, AuthScreenLayout, Mode } from '@/components/auth/auth-types';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
+import type {
+  AuthPanelVariant,
+  AuthPresentation,
+  AuthScreenLayout,
+  Mode,
+} from '@/components/auth/auth-types';
+import { Button, ButtonText } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -31,78 +27,64 @@ import { migrateLocalCollectionToRemote } from '@/services/collectionService';
 import { invalidateUserDataQueries, removeUserDataQueries } from '@/src/api/queryClient';
 import { authClient } from '@/src/lib/auth-client';
 
-const MODE_TRANSITION_MS = 220;
-
 type AuthPanelProps = {
   variant?: AuthPanelVariant;
   screenLayout?: AuthScreenLayout;
+  presentation?: AuthPresentation;
   mode?: Mode;
   onModeChange?: (mode: Mode) => void;
 };
 
-function useReduceMotion() {
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduceMotion
-    );
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
-  return reduceMotion;
-}
-
-function AuthModeTabs({
+function ModeSwitch({
   mode,
   onModeChange,
-  reduceMotion,
+  disabled,
+  immersive,
 }: {
   mode: Mode;
   onModeChange: (mode: Mode) => void;
-  reduceMotion: boolean;
+  disabled?: boolean;
+  immersive?: boolean;
 }) {
-  const [trackWidth, setTrackWidth] = useState(0);
-  const segmentIndex = useSharedValue(mode === 'sign-in' ? 0 : 1);
-
-  useEffect(() => {
-    segmentIndex.value = withTiming(mode === 'sign-in' ? 0 : 1, {
-      duration: reduceMotion ? 0 : MODE_TRANSITION_MS,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [mode, reduceMotion, segmentIndex]);
-
-  const segmentWidth = trackWidth > 0 ? (trackWidth - 4) / 2 : 0;
-  const segmentWidthSv = useSharedValue(segmentWidth);
-
-  useEffect(() => {
-    segmentWidthSv.value = segmentWidth;
-  }, [segmentWidth, segmentWidthSv]);
-
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: segmentIndex.value * segmentWidthSv.value }],
-    width: segmentWidthSv.value,
-  }));
+  if (immersive) {
+    return (
+      <View
+        className="flex-row gap-1 rounded-xl bg-card-panel p-1"
+        accessibilityRole="tablist"
+      >
+        {(['sign-in', 'sign-up'] as const).map((option) => {
+          const selected = mode === option;
+          return (
+            <Pressable
+              key={option}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              disabled={disabled}
+              className={cn(
+                'min-h-11 flex-1 items-center justify-center rounded-lg',
+                selected ? 'bg-primary' : 'bg-transparent'
+              )}
+              onPress={() => {
+                onModeChange(option);
+              }}
+            >
+              <Text
+                className={cn(
+                  'text-sm font-semibold',
+                  selected ? 'text-primary-foreground' : 'text-muted-foreground'
+                )}
+              >
+                {option === 'sign-in' ? 'Sign in' : 'Sign up'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
 
   return (
-    <View
-      className="relative flex-row gap-1 rounded-lg border border-border bg-card-panel p-1"
-      accessibilityRole="tablist"
-      onLayout={(event: LayoutChangeEvent) => {
-        setTrackWidth(event.nativeEvent.layout.width);
-      }}
-    >
-      {segmentWidth > 0 ? (
-        <Animated.View
-          pointerEvents="none"
-          className="absolute top-1 bottom-1 left-1 rounded-md bg-primary"
-          style={indicatorStyle}
-        />
-      ) : null}
+    <View className="flex-row gap-6 border-b border-border" accessibilityRole="tablist">
       {(['sign-in', 'sign-up'] as const).map((option) => {
         const selected = mode === option;
         return (
@@ -110,7 +92,8 @@ function AuthModeTabs({
             key={option}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            className="z-10 min-h-11 flex-1 items-center justify-center rounded-md"
+            disabled={disabled}
+            className="relative min-h-11 justify-end pb-2.5 active:opacity-70"
             onPress={() => {
               onModeChange(option);
             }}
@@ -118,40 +101,20 @@ function AuthModeTabs({
             <Text
               className={cn(
                 'text-sm font-semibold',
-                selected ? 'text-primary-foreground' : 'text-foreground'
+                selected ? 'text-foreground' : 'text-muted-foreground'
               )}
             >
-              {option === 'sign-in' ? 'Sign in' : 'Register'}
+              {option === 'sign-in' ? 'Sign in' : 'Sign up'}
             </Text>
+            <View
+              className={cn(
+                'absolute right-0 bottom-0 left-0 h-[2px] rounded-full',
+                selected ? 'bg-primary' : 'bg-transparent'
+              )}
+            />
           </Pressable>
         );
       })}
-    </View>
-  );
-}
-
-function AuthHeading({ mode, wide }: { mode: Mode; wide?: boolean }) {
-  const title =
-    mode === 'sign-in' ? 'Welcome back' : 'Create your account';
-  const subtitle =
-    mode === 'sign-in'
-      ? 'Sync your collection, prices, and printings across devices.'
-      : 'One account keeps ownership and prices aligned everywhere you collect.';
-
-  return (
-    <View className={cn('gap-2', wide ? 'min-h-[88px]' : 'min-h-[72px]')}>
-      <Text
-        className={cn(
-          'font-semibold text-foreground tracking-tight',
-          wide ? 'text-3xl' : 'text-2xl'
-        )}
-        accessibilityRole="header"
-      >
-        {title}
-      </Text>
-      <Text className={cn('text-muted-foreground leading-5', wide ? 'text-base' : 'text-sm')}>
-        {subtitle}
-      </Text>
     </View>
   );
 }
@@ -214,6 +177,7 @@ type AutofillPasswordProps = {
   onSubmitEditing?: RNTextInputProps['onSubmitEditing'];
   inputRef?: React.RefObject<RNTextInput | null>;
   disabled?: boolean;
+  immersive?: boolean;
 };
 
 function AutofillPasswordField({
@@ -223,6 +187,7 @@ function AutofillPasswordField({
   onSubmitEditing,
   inputRef,
   disabled,
+  immersive,
 }: AutofillPasswordProps) {
   const labelId = useId();
   const isSignUp = mode === 'sign-up';
@@ -246,7 +211,15 @@ function AutofillPasswordField({
         returnKeyType="go"
         submitBehavior="submit"
         enablesReturnKeyAutomatically
-        placeholder={isSignUp ? 'At least 8 characters' : 'Your password'}
+        placeholder={
+          immersive
+            ? isSignUp
+              ? '8+ characters'
+              : 'Your secret — keep it sleeved'
+            : isSignUp
+              ? 'At least 8 characters'
+              : 'Password'
+        }
         accessibilityLabelledBy={labelId}
         onSubmitEditing={onSubmitEditing}
       />
@@ -257,6 +230,7 @@ function AutofillPasswordField({
 export function AuthPanel({
   variant = 'inline',
   screenLayout = 'mobile',
+  presentation = 'classic',
   mode: controlledMode,
   onModeChange,
 }: AuthPanelProps) {
@@ -267,7 +241,7 @@ export function AuthPanel({
   const mode = controlledMode ?? internalMode;
   const isScreen = variant === 'screen';
   const isWideScreen = isScreen && screenLayout === 'wide';
-  const reduceMotion = useReduceMotion();
+  const immersive = presentation === 'immersive';
 
   const emailRef = useRef<RNTextInput>(null);
   const passwordRef = useRef<RNTextInput>(null);
@@ -339,7 +313,7 @@ export function AuthPanel({
 
   if (isPending) {
     return isScreen ? (
-      <View className="gap-2 rounded-xl border border-border bg-card px-5 py-6">
+      <View className="gap-2 px-1 py-2">
         <Text className="text-muted-foreground">Loading account…</Text>
       </View>
     ) : (
@@ -368,13 +342,29 @@ export function AuthPanel({
 
   const formBody = (
     <View
-      className={cn('gap-6', isWideScreen && 'gap-8')}
+      className={cn('gap-5', isWideScreen && 'gap-6')}
       {...(Platform.OS === 'web' ? ({ role: 'form' } as Record<string, string>) : null)}
     >
-      <AuthHeading mode={mode} wide={isWideScreen} />
+      {isScreen ? (
+        <ModeSwitch
+          mode={mode}
+          onModeChange={setMode}
+          disabled={busy}
+          immersive={immersive}
+        />
+      ) : null}
 
-      {isScreen && !isWideScreen ? (
-        <AuthModeTabs mode={mode} onModeChange={setMode} reduceMotion={reduceMotion} />
+      {!isScreen ? (
+        <View className="gap-1">
+          <Text className="text-xl font-semibold tracking-tight text-foreground">
+            {mode === 'sign-in' ? 'Sign in' : 'Sign up'}
+          </Text>
+          <Text className="text-sm text-muted-foreground">
+            {mode === 'sign-in'
+              ? 'Your collection is waiting on the other side of priority.'
+              : 'One account. Infinite “I definitely own that.” claims.'}
+          </Text>
+        </View>
       ) : null}
 
       <View className="gap-4">
@@ -392,56 +382,73 @@ export function AuthPanel({
           onChangeText={setPassword}
           inputRef={passwordRef}
           disabled={busy}
+          immersive={immersive}
           onSubmitEditing={() => {
             void handleSubmit();
           }}
         />
 
         {error ? (
-          <Text
-            className="text-sm text-destructive"
-            accessibilityLiveRegion="polite"
-            accessibilityRole="alert"
-          >
-            {error}
-          </Text>
+          <View className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5">
+            <Text
+              className="text-sm text-destructive"
+              accessibilityLiveRegion="polite"
+              accessibilityRole="alert"
+            >
+              {error}
+            </Text>
+          </View>
         ) : null}
 
         <Button
+          className="mt-1"
           onPress={() => {
             void handleSubmit();
           }}
           disabled={busy || email.trim().length === 0 || password.length === 0}
           busy={busy}
-          size={isScreen ? 'lg' : 'default'}
+          size="lg"
         >
-          <ButtonText>{mode === 'sign-in' ? 'Sign in' : 'Create account'}</ButtonText>
-          {isWideScreen ? (
-            <ButtonIcon>
-              <Ionicons name="arrow-forward" size={18} />
-            </ButtonIcon>
-          ) : null}
+          <ButtonText>
+            {immersive
+              ? mode === 'sign-in'
+                ? 'Pass priority'
+                : 'Enter the archive'
+              : mode === 'sign-in'
+                ? 'Sign in'
+                : 'Create account'}
+          </ButtonText>
         </Button>
+
+        {isScreen && immersive ? (
+          <Text className="text-center text-xs leading-4 text-muted-foreground">
+            {mode === 'sign-in'
+              ? 'Forgot password? Take a mulligan — feature not printed yet.'
+              : 'Free to register. Still more effort than tapping a land.'}
+          </Text>
+        ) : null}
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          mode === 'sign-in' ? 'Switch to create account' : 'Switch to sign in'
-        }
-        className="min-h-11 justify-center self-start active:opacity-70"
-        disabled={busy}
-        onPress={() => {
-          setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
-        }}
-      >
-        <Text className="text-sm text-muted-foreground">
-          {mode === 'sign-in' ? "Don't have an account? " : 'Already have an account? '}
-          <Text className="font-semibold text-foreground">
-            {mode === 'sign-in' ? 'Sign up' : 'Sign in'}
+      {!isScreen ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            mode === 'sign-in' ? 'Switch to create account' : 'Switch to sign in'
+          }
+          className="min-h-11 justify-center self-start active:opacity-70"
+          disabled={busy}
+          onPress={() => {
+            setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
+          }}
+        >
+          <Text className="text-sm text-muted-foreground">
+            {mode === 'sign-in' ? "Don't have an account? " : 'Already have an account? '}
+            <Text className="font-semibold text-foreground">
+              {mode === 'sign-in' ? 'Sign up' : 'Sign in'}
+            </Text>
           </Text>
-        </Text>
-      </Pressable>
+        </Pressable>
+      ) : null}
     </View>
   );
 

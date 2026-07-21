@@ -239,7 +239,7 @@ export function DeckBuilderCatalogPanel({
   collectionByName,
   onPersist,
   section: controlledSection,
-  onSectionChange,
+  onSectionChange: _onSectionChange,
   paddingBottom = 0,
 }: DeckBuilderCatalogPanelProps) {
   const router = useRouter();
@@ -252,13 +252,6 @@ export function DeckBuilderCatalogPanel({
 
   const [internalSection, setInternalSection] = useState<BuilderCatalogSection>('mainDeck');
   const section = controlledSection ?? internalSection;
-  const setSection = useCallback(
-    (next: BuilderCatalogSection) => {
-      onSectionChange?.(next);
-      if (controlledSection == null) setInternalSection(next);
-    },
-    [controlledSection, onSectionChange]
-  );
 
   useEffect(() => {
     if (controlledSection != null) setInternalSection(controlledSection);

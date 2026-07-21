@@ -10,16 +10,17 @@ import Animated, {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { Mode } from '@/components/auth/auth-types';
 
-const WALLPAPERS = {
+export const AUTH_WALLPAPERS = {
   'sign-in': require('@/assets/wallpapers/wallpaper2.jpg'),
   'sign-up': require('@/assets/wallpapers/wallpaper.jpg'),
 } as const;
 
-const TRANSITION_MS = 480;
+const TRANSITION_MS = 320;
 
 type AuthBackdropProps = {
   mode: Mode;
-  variant?: 'fullscreen' | 'contained';
+  /** hero = top cinematic strip; contained = framed card for wide layout */
+  variant?: 'hero' | 'contained';
 };
 
 function useReduceMotion() {
@@ -39,11 +40,11 @@ function useReduceMotion() {
   return reduceMotion;
 }
 
-export function AuthBackdrop({ mode, variant = 'fullscreen' }: AuthBackdropProps) {
+export function AuthBackdrop({ mode, variant = 'hero' }: AuthBackdropProps) {
   const reduceMotion = useReduceMotion();
   const signInOpacity = useSharedValue(mode === 'sign-in' ? 1 : 0);
   const signUpOpacity = useSharedValue(mode === 'sign-up' ? 1 : 0);
-  const isContained = variant === 'contained';
+  const isHero = variant === 'hero';
 
   useEffect(() => {
     const duration = reduceMotion ? 0 : TRANSITION_MS;
@@ -66,50 +67,46 @@ export function AuthBackdrop({ mode, variant = 'fullscreen' }: AuthBackdropProps
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Animated.View
-        className="absolute inset-0"
-        style={signInStyle}
-        pointerEvents="none"
-      >
+      <Animated.View className="absolute inset-0" style={signInStyle} pointerEvents="none">
         <Image
-          source={WALLPAPERS['sign-in']}
+          source={AUTH_WALLPAPERS['sign-in']}
           contentFit="cover"
-          contentPosition={isContained ? 'center' : 'top center'}
+          contentPosition={isHero ? 'top center' : 'center'}
           className="h-full w-full"
           accessibilityIgnoresInvertColors
         />
       </Animated.View>
-      <Animated.View
-        className="absolute inset-0"
-        style={signUpStyle}
-        pointerEvents="none"
-      >
+      <Animated.View className="absolute inset-0" style={signUpStyle} pointerEvents="none">
         <Image
-          source={WALLPAPERS['sign-up']}
+          source={AUTH_WALLPAPERS['sign-up']}
           contentFit="cover"
-          contentPosition={isContained ? 'center' : 'top center'}
+          contentPosition={isHero ? 'top center' : 'center'}
           className="h-full w-full"
           accessibilityIgnoresInvertColors
         />
       </Animated.View>
-      <View className="absolute inset-0 bg-black/30" pointerEvents="none" />
-      <Svg
-        pointerEvents="none"
-        width="100%"
-        height="100%"
-        preserveAspectRatio="none"
-        viewBox="0 0 100 100"
-        style={{ position: 'absolute', top: 0, left: 0 }}
-      >
-        <Defs>
-          <LinearGradient id="auth-scrim" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#000000" stopOpacity={isContained ? '0.2' : '0.35'} />
-            <Stop offset="0.55" stopColor="#000000" stopOpacity={isContained ? '0.45' : '0.62'} />
-            <Stop offset="1" stopColor="#000000" stopOpacity={isContained ? '0.78' : '0.92'} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100" height="100" fill="url(#auth-scrim)" />
-      </Svg>
+
+      {isHero ? (
+        <Svg
+          pointerEvents="none"
+          width="100%"
+          height="100%"
+          preserveAspectRatio="none"
+          viewBox="0 0 100 100"
+          style={{ position: 'absolute', top: 0, left: 0 }}
+        >
+          <Defs>
+            <LinearGradient id="auth-hero-scrim" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#000000" stopOpacity="0.15" />
+              <Stop offset="0.45" stopColor="#000000" stopOpacity="0.35" />
+              <Stop offset="1" stopColor="#0a0a0a" stopOpacity="1" />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100" height="100" fill="url(#auth-hero-scrim)" />
+        </Svg>
+      ) : (
+        <View className="absolute inset-0 bg-black/40" pointerEvents="none" />
+      )}
     </View>
   );
 }
