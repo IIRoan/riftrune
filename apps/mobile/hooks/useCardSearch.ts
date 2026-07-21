@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
@@ -8,8 +8,9 @@ import {
   cacheSearchResults,
   getCachedSearchResults,
 } from '@/services/searchHistoryService';
+import { mergeCatalogIndexItems } from '@/services/catalogIndexService';
 import { api } from '@/src/api/client';
-import { cardQueryKeys } from '@/src/api/queryKeys';
+import { cardQueryKeys, catalogQueryKeys } from '@/src/api/queryKeys';
 import { prefetchCardDetail } from '@/lib/prefetchCardDetail';
 import { CATALOG_NETWORK_PAGE_SIZE } from '@/lib/catalog-page-size';
 import {
@@ -52,6 +53,7 @@ export function useCardSearch(
     term: string;
     response: CardsListResponse;
   } | null>(null);
+  const localHitCountRef = useRef(0);
 
   const enabled = activeTerm.length >= MIN_SEARCH_LENGTH;
   const inputMatchesActive = trimmed === activeTerm;
@@ -62,6 +64,8 @@ export function useCardSearch(
     if (!indexReady || localActiveTerm.length < MIN_SEARCH_LENGTH) return null;
     return searchCatalogItems(catalogItems, localActiveTerm, sort);
   }, [indexReady, catalogItems, localActiveTerm, sort]);
+
+  localHitCountRef.current = localAllResults?.length ?? 0;
 
   const localVisibleCount = localPage * pageSize;
   const localResults = useMemo(() => {
@@ -100,6 +104,8 @@ export function useCardSearch(
     };
   }, [activeTerm, enabled]);
 
+  // Always query the API so upstream reconciliation can fill catalog gaps.
+  // Local index is only an instant preview until network results arrive.
   const result = useInfiniteQuery({
     queryKey: cardQueryKeys.searchInfinite(
       activeTerm,
@@ -114,6 +120,8 @@ export function useCardSearch(
         page: pageParam,
         sortBy: sort.sortBy,
         dir: sort.dir,
+        // Empty local hits: force server past search caches so upstream is checked.
+        ...(pageParam === 1 && localHitCountRef.current === 0 ? { refresh: true } : {}),
         ...catalogFiltersToQuery(filters),
       };
       const response = await api.listCards(params);
@@ -129,7 +137,7 @@ export function useCardSearch(
       const pagination = lastPage.meta.pagination;
       return pagination.hasNext ? pagination.page + 1 : undefined;
     },
-    enabled: enabled && !indexReady,
+    enabled,
     staleTime: STALE_MS,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: false,
@@ -144,13 +152,61 @@ export function useCardSearch(
     retry: 1,
   });
 
+  const apiItems = useMemo(
+    () => result.data?.pages.flatMap((page) => page.data) ?? [],
+    [result.data]
+  );
+
+  const preferNetwork =
+    enabled &&
+    inputMatchesActive &&
+    (apiItems.length > 0 || (result.isFetched && !result.isError));
+
+  // Fold newly discovered cards into the local catalog index so later
+  // offline/instant searches stay in sync with upstream-backed API results.
   useEffect(() => {
-    const cards = result.data?.pages.flatMap((page) => page.data) ?? localResults ?? [];
+    if (!preferNetwork || apiItems.length === 0) return;
+
+    let cancelled = false;
+    void (async () => {
+      const added = await mergeCatalogIndexItems(apiItems);
+      if (cancelled || added === 0) return;
+      const current = queryClient.getQueryData<{
+        catalogHash: string;
+        pricesCatalogHash: string;
+        cachedAt: number;
+        items: typeof apiItems;
+      }>(catalogQueryKeys.index);
+      if (!current) return;
+      queryClient.setQueryData(catalogQueryKeys.index, {
+        ...current,
+        items: [
+          ...current.items,
+          ...apiItems.filter(
+            (card) =>
+              !current.items.some(
+                (existing) =>
+                  existing.variantNumber.toLowerCase() ===
+                  card.variantNumber.toLowerCase()
+              )
+          ),
+        ],
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preferNetwork, apiItems, queryClient]);
+
+  useEffect(() => {
+    const cards =
+      (preferNetwork ? apiItems : null) ?? localResults ?? instantCacheForTerm?.data ?? [];
     if (!cards.length) return;
     for (const card of cards.slice(0, 12)) {
       prefetchCardDetail(queryClient, card);
     }
-  }, [result.data, localResults, queryClient]);
+  }, [preferNetwork, apiItems, localResults, instantCacheForTerm, queryClient]);
 
   const searchNow = useCallback(
     (override?: string) => {
@@ -162,47 +218,44 @@ export function useCardSearch(
     [trimmed]
   );
 
-  const apiItems = useMemo(
-    () => result.data?.pages.flatMap((page) => page.data) ?? [],
-    [result.data]
-  );
-
   const awaitingNetworkResults =
-    !indexReady &&
-    (!inputMatchesActive ||
-      (result.isFetching && result.data === undefined && instantCacheForTerm === null));
+    enabled &&
+    inputMatchesActive &&
+    result.isFetching &&
+    !preferNetwork &&
+    (localResults === null || localResults.length === 0) &&
+    instantCacheForTerm === null;
 
-  const rawItems =
-    indexReady && localResults
-      ? localResults
-      : awaitingNetworkResults && !instantCacheForTerm
-        ? []
-        : (apiItems.length > 0
-            ? apiItems
-            : (instantCacheForTerm?.data ?? localResults ?? []));
+  const rawItems = preferNetwork
+    ? apiItems
+    : awaitingNetworkResults
+      ? []
+      : (localResults ?? instantCacheForTerm?.data ?? apiItems);
 
   const items = useMemo(
     () => groupCardListItems(normalizeCardListItems(rawItems)),
     [rawItems]
   );
 
-  const hasInstantResults = localResults !== null || instantCacheForTerm !== null;
+  const hasInstantResults =
+    (localResults !== null && localResults.length > 0) || instantCacheForTerm !== null;
   const totalLocal = localAllResults?.length ?? 0;
-  const localHasMore = indexReady && localResults !== null && items.length < totalLocal;
-  const apiHasMore = !indexReady && (result.hasNextPage ?? false);
+  const localHasMore =
+    !preferNetwork && indexReady && localResults !== null && items.length < totalLocal;
+  const apiHasMore = preferNetwork && (result.hasNextPage ?? false);
 
   const fetchNextPage = useCallback(() => {
-    if (indexReady) {
-      if (localHasMore) {
-        setLocalPage((page) => page + 1);
+    if (preferNetwork) {
+      if (result.hasNextPage && !result.isFetchingNextPage) {
+        void result.fetchNextPage();
       }
       return;
     }
-    if (result.hasNextPage && !result.isFetchingNextPage) {
-      void result.fetchNextPage();
+    if (localHasMore) {
+      setLocalPage((page) => page + 1);
     }
   }, [
-    indexReady,
+    preferNetwork,
     localHasMore,
     result.hasNextPage,
     result.isFetchingNextPage,
@@ -220,7 +273,9 @@ export function useCardSearch(
     meta:
       awaitingNetworkResults && !localResults
         ? undefined
-        : (lastPage?.meta ?? firstPage?.meta ?? instantCacheForTerm?.meta),
+        : preferNetwork
+          ? (lastPage?.meta ?? firstPage?.meta ?? instantCacheForTerm?.meta)
+          : (instantCacheForTerm?.meta ?? lastPage?.meta ?? firstPage?.meta),
     isLoading:
       enabled &&
       !hasInstantResults &&
@@ -228,17 +283,17 @@ export function useCardSearch(
         (result.isPending && apiItems.length === 0 && !instantCacheForTerm)),
     isFetching:
       enabled &&
-      !indexReady &&
       awaitingNetworkResults &&
       result.isFetching &&
       apiItems.length === 0,
-    isFetchingNextPage: indexReady ? false : result.isFetchingNextPage,
+    isFetchingNextPage: preferNetwork ? result.isFetchingNextPage : false,
     hasNextPage: localHasMore || apiHasMore,
     fetchNextPage,
-    isError: result.isError,
+    isError: preferNetwork ? false : result.isError && !hasInstantResults,
     error: result.error,
     refetch: result.refetch,
     searchNow,
-    isLocalSearch: indexReady && Boolean(localResults),
+    isLocalSearch: !preferNetwork && indexReady && Boolean(localResults),
+    isReconciling: enabled && result.isFetching && hasInstantResults,
   };
 }

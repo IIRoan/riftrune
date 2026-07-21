@@ -68,31 +68,41 @@ describe('resolveUpstreamReconcileMode', () => {
     ).toBe('sync');
   });
 
-  test('syncs paginated empty page', () => {
+  test('syncs empty local even when upstream was previously checked', () => {
     expect(
       resolveUpstreamReconcileMode(
-        { ...baseQuery, page: 2, types: 'Battlefield' },
-        { items: [], total: 40 },
-        false
+        { ...baseQuery, q: 'Insightful Investigator' },
+        { items: [], total: 0 },
+        true
       )
     ).toBe('sync');
   });
 
-  test('background for search hits that already exist locally', () => {
+  test('syncs text search hits so upstream can fill gaps before respond', () => {
     expect(
       resolveUpstreamReconcileMode(
         { ...baseQuery, q: 'vi' },
         { items: [{ id: '1' }], total: 10 },
         false
       )
-    ).toBe('background');
+    ).toBe('sync');
   });
 
-  test('skips when upstream was already checked for this query', () => {
+  test('skips non-empty browse when upstream was already checked', () => {
     expect(
       resolveUpstreamReconcileMode(
         { ...baseQuery, types: 'Battlefield' },
-        { items: [], total: 0 },
+        { items: [{ id: '1' }], total: 40 },
+        true
+      )
+    ).toBe('skip');
+  });
+
+  test('skips already-checked text search when local already has hits', () => {
+    expect(
+      resolveUpstreamReconcileMode(
+        { ...baseQuery, q: 'vi' },
+        { items: [{ id: '1' }], total: 10 },
         true
       )
     ).toBe('skip');

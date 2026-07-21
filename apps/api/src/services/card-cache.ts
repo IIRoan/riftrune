@@ -541,10 +541,13 @@ export class CardCacheService {
       this.getPricesCatalogHash(),
     ]);
     const cacheKey = searchCacheKey(query, catalogHash, pricesCatalogHash);
+    const hasSearchQuery = Boolean(query.q?.trim() && query.q.trim().length >= 2);
 
     if (!query.refresh) {
       const cached = this.searchCache.get(cacheKey);
-      if (cached) return cached;
+      // Never serve a cached miss — a newly added upstream card must be
+      // discoverable on the next search. Positive hits may still re-reconcile below.
+      if (cached && cached.total > 0 && !hasSearchQuery) return cached;
     }
 
     let source: 'cache' | 'upstream' | 'mixed' = 'cache';
@@ -560,29 +563,16 @@ export class CardCacheService {
       const reconciled = await this.reconcileSearchWithUpstream(query, result);
       result = reconciled.result;
       source = reconciled.source;
-    } else if (reconcileMode === 'background') {
-      this.scheduleSearchReconciliation(query, cacheKey, result);
     }
 
     const response: SearchResult = { ...result, source };
-    this.searchCache.set(cacheKey, response);
+    // Cache confirmed hits (and confirmed upstream empties) briefly.
+    if (response.total > 0 || response.source === 'upstream') {
+      this.searchCache.set(cacheKey, response);
+    } else {
+      this.searchCache.delete(cacheKey);
+    }
     return response;
-  }
-
-  private scheduleSearchReconciliation(
-    query: CardsListQuery,
-    cacheKey: string,
-    localResult: { items: CardListItem[]; total: number }
-  ): void {
-    void this.reconcileSearchWithUpstream(query, localResult)
-      .then(async (reconciled) => {
-        if (reconciled.source === 'cache') return;
-        const refreshed = await this.searchLocal(query);
-        this.searchCache.set(cacheKey, { ...refreshed, source: reconciled.source });
-      })
-      .catch((err) => {
-        console.warn('Background search reconciliation failed:', err);
-      });
   }
 
   private async reconcileSearchWithUpstream(
@@ -593,20 +583,22 @@ export class CardCacheService {
     source: 'cache' | 'upstream' | 'mixed';
   }> {
     const checkKey = upstreamCheckKey(query);
-    if (this.upstreamCheckCache.has(checkKey) && !query.refresh) {
+    const localEmpty = (localResult?.total ?? 0) === 0 || (localResult?.items.length ?? 0) === 0;
+
+    // Prior successful checks may skip only when we already have local hits.
+    // Empty local results always re-query upstream.
+    if (this.upstreamCheckCache.has(checkKey) && !query.refresh && !localEmpty) {
       return { result: await this.searchLocal(query), source: 'cache' };
     }
 
-    this.upstreamCheckCache.set(checkKey, true);
-
     try {
       const upstream = await this.riftrune.listCards(buildUpstreamListParams(query));
+      this.upstreamCheckCache.set(checkKey, true);
 
-      const localVariantNumbers = new Set(
-        (localResult?.items ?? []).map((item) => item.variantNumber)
-      );
+      const upstreamVariantNumbers = upstream.data.map((item) => item.variantNumber);
+      const existingLocally = await this.findExistingVariantNumbers(upstreamVariantNumbers);
       const missing = upstream.data.filter(
-        (item) => !localVariantNumbers.has(item.variantNumber)
+        (item) => !existingLocally.has(item.variantNumber)
       );
 
       if (missing.length > 0) {
@@ -618,17 +610,21 @@ export class CardCacheService {
             console.warn(`Search backfill skipped ${item.variantNumber}:`, err);
           }
         }
+        this.invalidateSearchCache();
         const result = await this.searchLocal(query);
         return { result, source: 'mixed' };
       }
 
-      if ((localResult?.total ?? 0) === 0 && upstream.data.length === 0) {
+      if (localEmpty && upstream.data.length === 0) {
         return { result: await this.searchLocal(query), source: 'upstream' };
       }
 
-      if ((localResult?.total ?? 0) === 0 && upstream.data.length > 0) {
-        const result = await this.searchLocal(query);
-        return { result, source: result.total > 0 ? 'mixed' : 'upstream' };
+      // Upstream reports more matches than we do for the same query — our catalog
+      // is behind even if this page's rows already exist locally. Drop the check
+      // so the next search re-probes (and catalog sync can catch up).
+      const upstreamTotal = upstream.pagination?.total ?? upstream.data.length;
+      if (upstreamTotal > (localResult?.total ?? 0)) {
+        this.upstreamCheckCache.delete(checkKey);
       }
 
       return { result: await this.searchLocal(query), source: 'cache' };
@@ -636,6 +632,17 @@ export class CardCacheService {
       console.warn('Upstream search unavailable, using local cache only:', err);
       return { result: await this.searchLocal(query), source: 'cache' };
     }
+  }
+
+  private async findExistingVariantNumbers(
+    variantNumbers: string[]
+  ): Promise<Set<string>> {
+    if (variantNumbers.length === 0) return new Set();
+    const rows = await this.db
+      .select({ variantNumber: variants.variantNumber })
+      .from(variants)
+      .where(inArray(variants.variantNumber, variantNumbers));
+    return new Set(rows.map((row) => row.variantNumber));
   }
 
   private async searchLocal(query: CardsListQuery): Promise<{

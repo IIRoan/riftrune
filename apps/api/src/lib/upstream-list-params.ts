@@ -1,6 +1,6 @@
 import type { CardsListQuery } from '@riftbound/contracts';
 
-export type UpstreamReconcileMode = 'sync' | 'background' | 'skip';
+export type UpstreamReconcileMode = 'sync' | 'skip';
 
 /** Map our list query to riftrune.com external API params. */
 export function buildUpstreamListParams(
@@ -53,18 +53,19 @@ export function resolveUpstreamReconcileMode(
   localResult: { items: unknown[]; total: number },
   alreadyChecked: boolean
 ): UpstreamReconcileMode {
-  if (alreadyChecked && !query.refresh) return 'skip';
+  if (query.refresh) return 'sync';
 
   const q = query.q?.trim();
   const hasSearchQuery = Boolean(q && q.length >= 2);
   const localEmpty = localResult.total === 0 || localResult.items.length === 0;
 
-  if (query.refresh || localEmpty) return 'sync';
-  if (query.page > 1 && localResult.items.length === 0) return 'sync';
+  // Empty local results must always re-verify — never trust a prior miss.
+  if (localEmpty) return 'sync';
 
-  if (hasSearchQuery && query.page === 1) {
-    return 'background';
-  }
+  if (alreadyChecked) return 'skip';
+
+  // Text search awaits upstream so we never return a stale hit set.
+  if (hasSearchQuery) return 'sync';
 
   return 'skip';
 }

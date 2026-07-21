@@ -51,6 +51,7 @@ const {
   clearPersistedCatalogIndex,
   fetchAndPersistCatalogIndex,
   getInMemoryCatalogIndex,
+  mergeCatalogIndexItems,
   persistCatalogIndex,
   readPersistedCatalogIndex,
   syncCatalogIndex,
@@ -154,6 +155,24 @@ describe('catalogIndexService', () => {
 
     expect(getCatalogIndex).toHaveBeenCalledTimes(0);
     expect(result.items).toHaveLength(1);
+  });
+
+  test('mergeCatalogIndexItems appends cards missing from the local index', async () => {
+    await persistCatalogIndex('hash-v1', 'prices-v1', [sampleCard]);
+
+    const newCard = {
+      ...sampleCard,
+      cardId: '00000000-0000-0000-0000-000000000002',
+      variantNumber: 'UNL-135',
+      name: 'Insightful Investigator',
+    } satisfies CardListItem;
+
+    const added = await mergeCatalogIndexItems([newCard, sampleCard]);
+    expect(added).toBe(1);
+
+    const indexed = getInMemoryCatalogIndex();
+    expect(indexed?.items).toHaveLength(2);
+    expect(indexed?.items.some((card) => card.variantNumber === 'UNL-135')).toBe(true);
   });
 
   test('clearPersistedCatalogIndex removes memory and storage', async () => {
