@@ -1,17 +1,23 @@
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import type { CardListPrinting } from '@riftbound/contracts';
 import { useMemo } from 'react';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
-import { formatPrintingLabel, formatPrintingPrice } from '@/utils/variants';
+import {
+  buildPrintingPickerOptions,
+  getRemovePrintingPickerOptions,
+  shouldShowPrintingPicker,
+  shouldShowRemovePrintingPicker,
+  type PrintingPickerOption,
+  type PrintingWithOwned,
+} from '@/utils/collectionPrintingPicker';
 import { hapticPress } from '@/utils/haptics';
 
 interface Props {
   owned: number;
   name: string;
   busy?: boolean;
-  printings?: CardListPrinting[];
+  printings?: PrintingWithOwned[];
   fixedVariantNumber?: string;
   onAdd: (variantNumber?: string) => void;
   onRemove: (variantNumber?: string) => void;
@@ -19,7 +25,7 @@ interface Props {
 
 function wrapWithPicker(
   title: string,
-  options: { id: string; label: string; subtitle?: string; price?: string }[],
+  options: PrintingPickerOption[],
   onSelect: (id: string) => void,
   node: React.ReactElement<{ onPress?: () => void; disabled?: boolean }>
 ) {
@@ -44,25 +50,15 @@ export function GridCollectionControl({
   onRemove,
 }: Props) {
   const pickerOptions = useMemo(
-    () =>
-      (printings ?? []).map((p) => ({
-        id: p.variantNumber,
-        label: formatPrintingLabel(p.variantLabel, p.isFoil, p.variantNumber),
-        subtitle: p.variantNumber,
-        price: formatPrintingPrice(p.priceEur) ?? undefined,
-      })),
+    () => buildPrintingPickerOptions(printings ?? []),
     [printings]
   );
 
-  const ownedPrintings = useMemo(
-    () => printings?.filter((p) => (p as CardListPrinting & { owned?: number }).owned !== 0) ?? [],
-    [printings]
-  );
-
-  const multiple = fixedVariantNumber == null && (printings?.length ?? 0) > 1;
-  const showRemovePicker = multiple && ownedPrintings.length > 1;
-  const removeOptions = pickerOptions.filter((o) =>
-    ownedPrintings.some((p) => p.variantNumber === o.id)
+  const multiple = shouldShowPrintingPicker(printings, fixedVariantNumber);
+  const showRemovePicker = shouldShowRemovePrintingPicker(printings, fixedVariantNumber);
+  const removeOptions = useMemo(
+    () => getRemovePrintingPickerOptions(printings ?? [], pickerOptions),
+    [printings, pickerOptions]
   );
 
   const handleAdd = () => {

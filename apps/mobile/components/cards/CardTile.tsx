@@ -21,12 +21,14 @@ import {
   formatMarketTrend,
   formatPrintingPrice,
   getCardPrintings,
-  getPrintingsInSearchGroup,
-  getVariantFamiliesFromPrintings,
   hasMultiplePrintings,
   printingSummary,
   totalOwnedForCard,
 } from '@/utils/variants';
+import {
+  attachOwnedToPrintings,
+  resolveQuickAddPrintings,
+} from '@/utils/collectionPrintingPicker';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { hapticPress } from '@/utils/haptics';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
@@ -76,16 +78,10 @@ function CardTileInner({
   const { addCard, setQuantity } = useCollectionMutations();
 
   const allPrintings = getCardPrintings(card);
-  const variantFamilies = useMemo(
-    () => getVariantFamiliesFromPrintings(allPrintings),
-    [allPrintings]
+  const stepperPrintings = useMemo(
+    () => resolveQuickAddPrintings(card, familyContextVariantNumber),
+    [card, familyContextVariantNumber]
   );
-  const stepperPrintings = useMemo(() => {
-    if (familyContextVariantNumber) {
-      return getPrintingsInSearchGroup(allPrintings, familyContextVariantNumber);
-    }
-    return variantFamilies[0]?.variants ?? allPrintings;
-  }, [allPrintings, familyContextVariantNumber, variantFamilies]);
 
   const pricePrintings = familyContextVariantNumber ? stepperPrintings : allPrintings;
   const printings = stepperPrintings;
@@ -104,11 +100,7 @@ function CardTileInner({
   const showPrice = !hidePrice && (!isMobile || layout === 'grid');
 
   const printingsWithOwned = useMemo(
-    () =>
-      printings.map((p) => ({
-        ...p,
-        owned: collectionByVariant?.get(p.variantNumber)?.quantity ?? 0,
-      })),
+    () => attachOwnedToPrintings(printings, collectionByVariant),
     [printings, collectionByVariant]
   );
 

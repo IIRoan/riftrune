@@ -46,6 +46,11 @@ describe('getSearchGroupVariants', () => {
       'OGN-253-Release'
     );
   });
+
+  test('getSearchGroupKey groups rune-style foil siblings with their base printing', () => {
+    expect(getSearchGroupKey('SFD-R05', 'Standard')).toBe('SFD-R05');
+    expect(getSearchGroupKey('SFD-R05a', 'Foil')).toBe('SFD-R05');
+  });
 });
 
 describe('pickVariantDisplayPrice', () => {

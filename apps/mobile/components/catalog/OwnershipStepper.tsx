@@ -1,11 +1,16 @@
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import type { CardListPrinting } from '@riftbound/contracts';
 import { useMemo } from 'react';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
-import { formatPrintingLabel, formatPrintingPrice } from '@/utils/variants';
+import {
+  buildPrintingPickerOptions,
+  getRemovePrintingPickerOptions,
+  shouldShowPrintingPicker,
+  shouldShowRemovePrintingPicker,
+  type PrintingWithOwned,
+} from '@/utils/collectionPrintingPicker';
 import { cn } from '@/lib/utils';
 
 interface OwnershipStepperProps {
@@ -17,7 +22,7 @@ interface OwnershipStepperProps {
   /** Fill a fixed-width grid tile slot — Add and stepper share the same footprint. */
   gridSlot?: boolean;
   busy?: boolean;
-  printings?: CardListPrinting[];
+  printings?: PrintingWithOwned[];
   fixedVariantNumber?: string;
   onAdd: (variantNumber?: string) => void;
   onRemove: (variantNumber?: string) => void;
@@ -36,22 +41,16 @@ export function OwnershipStepper({
   onRemove,
 }: OwnershipStepperProps) {
   const pickerOptions = useMemo(
-    () =>
-      (printings ?? []).map((p) => ({
-        id: p.variantNumber,
-        label: formatPrintingLabel(p.variantLabel, p.isFoil, p.variantNumber),
-        subtitle: p.variantNumber,
-        price: formatPrintingPrice(p.priceEur) ?? undefined,
-      })),
+    () => buildPrintingPickerOptions(printings ?? []),
     [printings]
   );
 
-  const ownedPrintings = useMemo(
-    () => printings?.filter((p) => (p as CardListPrinting & { owned?: number }).owned !== 0) ?? [],
-    [printings]
+  const multiple = shouldShowPrintingPicker(printings, fixedVariantNumber);
+  const showRemovePicker = shouldShowRemovePrintingPicker(printings, fixedVariantNumber);
+  const removeOptions = useMemo(
+    () => getRemovePrintingPickerOptions(printings ?? [], pickerOptions),
+    [printings, pickerOptions]
   );
-
-  const multiple = fixedVariantNumber == null && (printings?.length ?? 0) > 1;
 
   const iconSize = relaxed ? 14 : compact ? 12 : 14;
   const controlHeight = relaxed ? 'h-9' : compact ? 'h-6' : 'h-8';
@@ -143,11 +142,6 @@ export function OwnershipStepper({
   };
 
   if (owned > 0) {
-    const showRemovePicker = multiple && ownedPrintings.length > 1;
-    const removeOptions = pickerOptions.filter((o) =>
-      ownedPrintings.some((p) => p.variantNumber === o.id)
-    );
-
     return (
       <View
         className={cn(
