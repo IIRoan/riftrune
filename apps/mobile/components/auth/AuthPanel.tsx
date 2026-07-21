@@ -7,19 +7,20 @@ import {
   View,
   type TextInputProps as RNTextInputProps,
 } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
-import type {
-  AuthPanelVariant,
-  AuthPresentation,
-  AuthScreenLayout,
-  Mode,
-} from '@/components/auth/auth-types';
+import type { AuthPanelVariant, AuthScreenLayout, Mode } from '@/components/auth/auth-types';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { PasswordInput } from '@/components/ui/password-input';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { cn } from '@/lib/utils';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
@@ -27,10 +28,15 @@ import { migrateLocalCollectionToRemote } from '@/services/collectionService';
 import { invalidateUserDataQueries, removeUserDataQueries } from '@/src/api/queryClient';
 import { authClient } from '@/src/lib/auth-client';
 
+const MODE_TRANSITION_MS = 280;
+const MODE_OPTIONS = [
+  { id: 'sign-in' as const, label: 'Sign in' },
+  { id: 'sign-up' as const, label: 'Sign up' },
+] as const;
+
 type AuthPanelProps = {
   variant?: AuthPanelVariant;
   screenLayout?: AuthScreenLayout;
-  presentation?: AuthPresentation;
   mode?: Mode;
   onModeChange?: (mode: Mode) => void;
 };
@@ -39,103 +45,112 @@ function ModeSwitch({
   mode,
   onModeChange,
   disabled,
-  immersive,
 }: {
   mode: Mode;
   onModeChange: (mode: Mode) => void;
   disabled?: boolean;
-  immersive?: boolean;
 }) {
-  if (immersive) {
-    return (
-      <View
-        className="flex-row gap-1 rounded-xl bg-card-panel p-1"
-        accessibilityRole="tablist"
-      >
-        {(['sign-in', 'sign-up'] as const).map((option) => {
-          const selected = mode === option;
+  const reduceMotion = useReduceMotion();
+  const [layouts, setLayouts] = useState<Partial<Record<Mode, { x: number; width: number }>>>({});
+  const indicatorX = useSharedValue(0);
+  const indicatorWidth = useSharedValue(0);
+  const hasMeasured = useSharedValue(0);
+
+  useEffect(() => {
+    const layout = layouts[mode];
+    if (!layout) return;
+    const duration = reduceMotion ? 0 : MODE_TRANSITION_MS;
+    const easing = Easing.out(Easing.cubic);
+    if (hasMeasured.value === 0) {
+      indicatorX.value = layout.x;
+      indicatorWidth.value = layout.width;
+      hasMeasured.value = 1;
+      return;
+    }
+    indicatorX.value = withTiming(layout.x, { duration, easing });
+    indicatorWidth.value = withTiming(layout.width, { duration, easing });
+  }, [hasMeasured, indicatorWidth, indicatorX, layouts, mode, reduceMotion]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    opacity: hasMeasured.value,
+    width: indicatorWidth.value,
+    transform: [{ translateX: indicatorX.value }],
+  }));
+
+  return (
+    <View accessibilityRole="tablist" className="relative border-b border-border">
+      <View className="flex-row gap-6">
+        {MODE_OPTIONS.map((option) => {
+          const selected = mode === option.id;
           return (
             <Pressable
-              key={option}
+              key={option.id}
               accessibilityRole="tab"
               accessibilityState={{ selected }}
               disabled={disabled}
-              className={cn(
-                'min-h-11 flex-1 items-center justify-center rounded-lg',
-                selected ? 'bg-primary' : 'bg-transparent'
-              )}
+              className="min-h-11 justify-center pb-3 active:opacity-70"
+              onLayout={(event) => {
+                const { x, width } = event.nativeEvent.layout;
+                setLayouts((current) => {
+                  const previous = current[option.id];
+                  if (previous?.x === x && previous.width === width) return current;
+                  return { ...current, [option.id]: { x, width } };
+                });
+              }}
               onPress={() => {
-                onModeChange(option);
+                onModeChange(option.id);
               }}
             >
               <Text
                 className={cn(
-                  'text-sm font-semibold',
-                  selected ? 'text-primary-foreground' : 'text-muted-foreground'
+                  'text-[15px] font-semibold tracking-tight',
+                  selected ? 'text-foreground' : 'text-muted-foreground'
                 )}
               >
-                {option === 'sign-in' ? 'Sign in' : 'Sign up'}
+                {option.label}
               </Text>
             </Pressable>
           );
         })}
       </View>
-    );
-  }
 
-  return (
-    <View className="flex-row gap-6 border-b border-border" accessibilityRole="tablist">
-      {(['sign-in', 'sign-up'] as const).map((option) => {
-        const selected = mode === option;
-        return (
-          <Pressable
-            key={option}
-            accessibilityRole="tab"
-            accessibilityState={{ selected }}
-            disabled={disabled}
-            className="relative min-h-11 justify-end pb-2.5 active:opacity-70"
-            onPress={() => {
-              onModeChange(option);
-            }}
-          >
-            <Text
-              className={cn(
-                'text-sm font-semibold',
-                selected ? 'text-foreground' : 'text-muted-foreground'
-              )}
-            >
-              {option === 'sign-in' ? 'Sign in' : 'Sign up'}
-            </Text>
-            <View
-              className={cn(
-                'absolute right-0 bottom-0 left-0 h-[2px] rounded-full',
-                selected ? 'bg-primary' : 'bg-transparent'
-              )}
-            />
-          </Pressable>
-        );
-      })}
+      <Animated.View
+        pointerEvents="none"
+        className="absolute bottom-0 left-0 h-0.5 bg-foreground"
+        style={indicatorStyle}
+      />
     </View>
   );
 }
 
-type AutofillEmailProps = {
-  value: string;
+/** Keep React state in sync when password managers fill without a reliable onChangeText. */
+function syncFieldText(
+  onChangeText: (value: string) => void
+): NonNullable<RNTextInputProps['onEndEditing']> {
+  return (event) => {
+    onChangeText(event.nativeEvent.text);
+  };
+}
+
+function webFieldProps(name: string, id: string): Record<string, string> | null {
+  if (Platform.OS !== 'web') return null;
+  return { name, id };
+}
+
+type AuthFieldProps = {
   onChangeText: (value: string) => void;
   onSubmitEditing?: RNTextInputProps['onSubmitEditing'];
   inputRef?: React.RefObject<RNTextInput | null>;
   disabled?: boolean;
-  nextFieldRef?: React.RefObject<RNTextInput | null>;
 };
 
-function AutofillEmailField({
-  value,
+function AuthEmailField({
   onChangeText,
   onSubmitEditing,
   inputRef,
   disabled,
   nextFieldRef,
-}: AutofillEmailProps) {
+}: AuthFieldProps & { nextFieldRef?: React.RefObject<RNTextInput | null> }) {
   const labelId = useId();
 
   return (
@@ -143,12 +158,14 @@ function AutofillEmailField({
       <Label nativeID={labelId}>Email</Label>
       <TextInput
         ref={inputRef}
-        value={value}
+        defaultValue=""
         onChangeText={onChangeText}
+        onEndEditing={syncFieldText(onChangeText)}
         disabled={disabled}
         autoCapitalize="none"
         autoCorrect={false}
-        autoComplete="email"
+        spellCheck={false}
+        autoComplete="username"
         textContentType="username"
         keyboardType="email-address"
         inputMode="email"
@@ -157,8 +174,11 @@ function AutofillEmailField({
         submitBehavior="submit"
         enablesReturnKeyAutomatically
         placeholder="you@example.com"
+        accessibilityLabel="Email"
         accessibilityLabelledBy={labelId}
+        {...webFieldProps('username', 'auth-username')}
         onSubmitEditing={(event) => {
+          onChangeText(event.nativeEvent.text);
           if (nextFieldRef?.current) {
             nextFieldRef.current.focus();
             return;
@@ -170,39 +190,32 @@ function AutofillEmailField({
   );
 }
 
-type AutofillPasswordProps = {
-  mode: Mode;
-  value: string;
-  onChangeText: (value: string) => void;
-  onSubmitEditing?: RNTextInputProps['onSubmitEditing'];
-  inputRef?: React.RefObject<RNTextInput | null>;
-  disabled?: boolean;
-  immersive?: boolean;
-};
-
-function AutofillPasswordField({
+function AuthPasswordField({
   mode,
-  value,
   onChangeText,
   onSubmitEditing,
   inputRef,
   disabled,
-  immersive,
-}: AutofillPasswordProps) {
+}: AuthFieldProps & { mode: Mode }) {
   const labelId = useId();
   const isSignUp = mode === 'sign-up';
 
   return (
     <View className="gap-2">
       <Label nativeID={labelId}>Password</Label>
-      <PasswordInput
+      <TextInput
         ref={inputRef}
-        value={value}
+        defaultValue=""
         onChangeText={onChangeText}
+        onEndEditing={syncFieldText(onChangeText)}
         disabled={disabled}
+        secureTextEntry
         autoCapitalize="none"
         autoCorrect={false}
-        autoComplete={isSignUp ? 'new-password' : 'password'}
+        spellCheck={false}
+        autoComplete={
+          isSignUp ? 'new-password' : Platform.OS === 'web' ? 'current-password' : 'password'
+        }
         textContentType={isSignUp ? 'newPassword' : 'password'}
         passwordRules={
           isSignUp ? 'minlength: 8; required: lower; required: upper; required: digit;' : undefined
@@ -211,37 +224,48 @@ function AutofillPasswordField({
         returnKeyType="go"
         submitBehavior="submit"
         enablesReturnKeyAutomatically
-        placeholder={
-          immersive
-            ? isSignUp
-              ? '8+ characters'
-              : 'Your secret — keep it sleeved'
-            : isSignUp
-              ? 'At least 8 characters'
-              : 'Password'
-        }
+        placeholder={isSignUp ? 'At least 8 characters' : 'Password'}
+        accessibilityLabel="Password"
         accessibilityLabelledBy={labelId}
-        onSubmitEditing={onSubmitEditing}
+        {...webFieldProps(
+          isSignUp ? 'new-password' : 'password',
+          isSignUp ? 'auth-new-password' : 'auth-password'
+        )}
+        onSubmitEditing={(event) => {
+          onChangeText(event.nativeEvent.text);
+          onSubmitEditing?.(event);
+        }}
       />
     </View>
   );
 }
 
+function readNativeInputValue(
+  ref: React.RefObject<RNTextInput | null>,
+  fallback: string
+): string {
+  if (Platform.OS === 'web') {
+    const node = ref.current as unknown as { value?: string } | null;
+    if (typeof node?.value === 'string' && node.value.length > 0) {
+      return node.value;
+    }
+  }
+  return fallback;
+}
+
 export function AuthPanel({
   variant = 'inline',
   screenLayout = 'mobile',
-  presentation = 'classic',
   mode: controlledMode,
   onModeChange,
 }: AuthPanelProps) {
   const queryClient = useQueryClient();
   const sessionQuery = authClient.useSession();
-  const { data: session, isPending } = sessionQuery;
+  const { data: session, isPending, isRefetching } = sessionQuery;
   const [internalMode, setInternalMode] = useState<Mode>('sign-in');
   const mode = controlledMode ?? internalMode;
   const isScreen = variant === 'screen';
   const isWideScreen = isScreen && screenLayout === 'wide';
-  const immersive = presentation === 'immersive';
 
   const emailRef = useRef<RNTextInput>(null);
   const passwordRef = useRef<RNTextInput>(null);
@@ -260,18 +284,28 @@ export function AuthPanel({
 
   useEffect(() => {
     setError(null);
+    setEmail('');
+    setPassword('');
   }, [mode]);
 
   const handleSubmit = async () => {
     Keyboard.dismiss();
     setError(null);
+    const emailValue = readNativeInputValue(emailRef, email).trim();
+    const passwordValue = readNativeInputValue(passwordRef, password);
+    setEmail(emailValue);
+    setPassword(passwordValue);
+    if (emailValue.length === 0 || passwordValue.length === 0) {
+      setError('Enter email and password');
+      return;
+    }
     setBusy(true);
     try {
       if (mode === 'sign-up') {
-        const localName = email.trim().split('@')[0]?.trim();
+        const localName = emailValue.split('@')[0]?.trim();
         const result = await authClient.signUp.email({
-          email: email.trim(),
-          password,
+          email: emailValue,
+          password: passwordValue,
           name: localName || 'Collector',
         });
         if (result.error) {
@@ -280,8 +314,8 @@ export function AuthPanel({
         }
       } else {
         const result = await authClient.signIn.email({
-          email: email.trim(),
-          password,
+          email: emailValue,
+          password: passwordValue,
         });
         if (result.error) {
           setError(result.error.message ?? 'Sign in failed');
@@ -311,7 +345,8 @@ export function AuthPanel({
     }
   };
 
-  if (isPending) {
+  // Skip loader during background session refetches so the form stays mounted.
+  if (isPending && !isRefetching) {
     return isScreen ? (
       <View className="gap-2 px-1 py-2">
         <Text className="text-muted-foreground">Loading account…</Text>
@@ -345,44 +380,21 @@ export function AuthPanel({
       className={cn('gap-5', isWideScreen && 'gap-6')}
       {...(Platform.OS === 'web' ? ({ role: 'form' } as Record<string, string>) : null)}
     >
-      {isScreen ? (
-        <ModeSwitch
-          mode={mode}
-          onModeChange={setMode}
-          disabled={busy}
-          immersive={immersive}
-        />
-      ) : null}
+      <ModeSwitch mode={mode} onModeChange={setMode} disabled={busy} />
 
-      {!isScreen ? (
-        <View className="gap-1">
-          <Text className="text-xl font-semibold tracking-tight text-foreground">
-            {mode === 'sign-in' ? 'Sign in' : 'Sign up'}
-          </Text>
-          <Text className="text-sm text-muted-foreground">
-            {mode === 'sign-in'
-              ? 'Your collection is waiting on the other side of priority.'
-              : 'One account. Infinite “I definitely own that.” claims.'}
-          </Text>
-        </View>
-      ) : null}
-
-      <View className="gap-4">
-        <AutofillEmailField
-          value={email}
+      <View key={mode} className="gap-4">
+        <AuthEmailField
           onChangeText={setEmail}
           inputRef={emailRef}
           nextFieldRef={passwordRef}
           disabled={busy}
         />
 
-        <AutofillPasswordField
+        <AuthPasswordField
           mode={mode}
-          value={password}
           onChangeText={setPassword}
           inputRef={passwordRef}
           disabled={busy}
-          immersive={immersive}
           onSubmitEditing={() => {
             void handleSubmit();
           }}
@@ -405,50 +417,13 @@ export function AuthPanel({
           onPress={() => {
             void handleSubmit();
           }}
-          disabled={busy || email.trim().length === 0 || password.length === 0}
+          disabled={busy}
           busy={busy}
           size="lg"
         >
-          <ButtonText>
-            {immersive
-              ? mode === 'sign-in'
-                ? 'Pass priority'
-                : 'Enter the archive'
-              : mode === 'sign-in'
-                ? 'Sign in'
-                : 'Create account'}
-          </ButtonText>
+          <ButtonText>{mode === 'sign-in' ? 'Sign in' : 'Create account'}</ButtonText>
         </Button>
-
-        {isScreen && immersive ? (
-          <Text className="text-center text-xs leading-4 text-muted-foreground">
-            {mode === 'sign-in'
-              ? 'Forgot password? Take a mulligan — feature not printed yet.'
-              : 'Free to register. Still more effort than tapping a land.'}
-          </Text>
-        ) : null}
       </View>
-
-      {!isScreen ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            mode === 'sign-in' ? 'Switch to create account' : 'Switch to sign in'
-          }
-          className="min-h-11 justify-center self-start active:opacity-70"
-          disabled={busy}
-          onPress={() => {
-            setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
-          }}
-        >
-          <Text className="text-sm text-muted-foreground">
-            {mode === 'sign-in' ? "Don't have an account? " : 'Already have an account? '}
-            <Text className="font-semibold text-foreground">
-              {mode === 'sign-in' ? 'Sign up' : 'Sign in'}
-            </Text>
-          </Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 

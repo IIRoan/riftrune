@@ -10,6 +10,10 @@ const isWeb = Platform.OS === 'web';
 
 export const authClient = createAuthClient({
   baseURL: API_URL,
+  // Avoid remounting login when password managers steal window focus.
+  sessionOptions: {
+    refetchOnWindowFocus: false,
+  },
   fetchOptions: {
     credentials: 'include',
     customFetchImpl: fetchWithApiWake,
