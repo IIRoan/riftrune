@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Platform, useWindowDimensions, View } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { Mode } from '@/components/auth/auth-types';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 export const AUTH_WALLPAPERS = {
   'sign-in': require('@/assets/wallpapers/wallpaper2.jpg'),
@@ -22,23 +23,6 @@ type AuthBackdropProps = {
   /** hero = top cinematic strip; contained = framed card for wide layout */
   variant?: 'hero' | 'contained';
 };
-
-function useReduceMotion() {
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    const subscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      setReduceMotion
-    );
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
-  return reduceMotion;
-}
 
 export function AuthBackdrop({ mode, variant = 'hero' }: AuthBackdropProps) {
   const reduceMotion = useReduceMotion();
