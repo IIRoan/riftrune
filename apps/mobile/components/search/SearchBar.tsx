@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/input';
 import { SearchInput } from '@/components/ui/search-input';
 import { XIcon } from '@/components/icons';
+import { useHoldResultsSearchInput } from '@/hooks/useHoldResultsSearchInput';
 import type { TextInputProps } from 'react-native';
 
 interface SearchBarProps extends Pick<TextInputProps, 'onSubmitEditing' | 'autoFocus'> {
@@ -25,10 +26,22 @@ export function SearchBar({
   onSubmitEditing,
   autoFocus,
 }: SearchBarProps) {
+  const {
+    draft,
+    onFocus,
+    onBlur,
+    onChangeText: onDraftChange,
+    onClear: clearDraftAndCommit,
+  } = useHoldResultsSearchInput(value, onChangeText);
+
+  const showClear = (draft.length > 0 || value.length > 0) && !isLoading;
+
   return (
     <SearchInput
-      value={value}
-      onChangeText={onChangeText}
+      value={draft}
+      onChangeText={onDraftChange}
+      onFocus={onFocus}
+      onBlur={onBlur}
       placeholder={placeholder}
       returnKeyType="search"
       autoCapitalize="none"
@@ -41,11 +54,14 @@ export function SearchBar({
           <ActivityIndicator size="small" className="accent-primary" />
         </InputAddon>
       ) : null}
-      {value.length > 0 && !isLoading ? (
+      {showClear ? (
         <InputAddon align="inline-end">
           <InputAddonButton
             accessibilityLabel="Clear search"
-            onPress={onClear}
+            onPress={() => {
+              clearDraftAndCommit();
+              onClear();
+            }}
             size="sm"
             variant="ghost"
           >
