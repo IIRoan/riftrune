@@ -1,6 +1,7 @@
 import { Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AuthPanel } from '@/components/auth/AuthPanel';
+import { UpdateChannelSection } from '@/components/settings/UpdateChannelSection';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { Chip, ChipText } from '@/components/ui/chip';
 import {
@@ -42,6 +43,8 @@ export default function SettingsScreen() {
 
       <SectionLabel className="mt-2">Account</SectionLabel>
       <AuthPanel />
+
+      <UpdateChannelSection />
 
       <SectionLabel className="mt-6">Theme</SectionLabel>
       <Stack direction="row" className="flex-wrap gap-2">
