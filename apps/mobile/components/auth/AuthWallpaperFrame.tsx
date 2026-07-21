@@ -8,10 +8,15 @@ type AuthWallpaperFrameProps = {
   className?: string;
 };
 
-/** Wallpaper clipped to a soft rounded frame (reference-style art panel). */
+/** Framed “single card” art for wide auth — not a full-bleed hero. */
 export function AuthWallpaperFrame({ mode, className }: AuthWallpaperFrameProps) {
   return (
-    <View className={cn('relative min-h-0 overflow-hidden rounded-3xl', className)}>
+    <View
+      className={cn(
+        'relative min-h-0 overflow-hidden rounded-xl border border-border bg-card',
+        className
+      )}
+    >
       <AuthBackdrop mode={mode} variant="contained" />
     </View>
   );
