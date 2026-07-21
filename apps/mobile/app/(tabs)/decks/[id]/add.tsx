@@ -1,4 +1,6 @@
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
+import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
+import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { DeckAddSectionStatus } from '@/components/deck/DeckAddSectionStatus';
 import { DeckAddScreenHeader } from '@/components/deck/DeckAddScreenHeader';
 import {
@@ -9,9 +11,10 @@ import {
 import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppLoader } from '@/components/ui/app-loader';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
+  Platform,
   Pressable,
   View,
   type ListRenderItem,
@@ -78,6 +81,7 @@ const AddOneTile = memo(function AddOneTile({
   selected,
   blocked,
   blockedLabel = 'Slots full',
+  horizontal = false,
 }: {
   tileWidth: number;
   candidate: DeckCard;
@@ -89,9 +93,13 @@ const AddOneTile = memo(function AddOneTile({
   selected: boolean;
   blocked?: boolean;
   blockedLabel?: string;
+  /** Battlefield cards use landscape art (same as builder). */
+  horizontal?: boolean;
 }) {
   const canAdd = !blocked && !(showSelected && selected);
   const canRemove = count > 0;
+  const imageUri = candidate.imageUrl ? resolveImageUrl(candidate.imageUrl) : '';
+  const showHoverInfo = Platform.OS === 'web' && Boolean(imageUri);
 
   return (
     <View style={{ width: tileWidth }} className="gap-1.5">
@@ -118,26 +126,48 @@ const AddOneTile = memo(function AddOneTile({
         onLongPress={onLongPressCard}
       >
         <View
-          className={[
-            'relative aspect-[5/7] w-full overflow-hidden border bg-background',
+          className={cn(
+            'relative w-full overflow-hidden border bg-background',
+            horizontal ? 'aspect-[7/5]' : 'aspect-[5/7]',
             CARD_ART_RADIUS_CLASS,
             selected || count > 0
               ? 'border-primary/60'
               : blocked
                 ? 'border-border/70'
-                : 'border-white/10',
-          ].join(' ')}
+                : 'border-white/10'
+          )}
         >
-          {candidate.imageUrl ? (
-            <DeckCardArt
-              uri={resolveImageUrl(candidate.imageUrl)}
-              variantNumber={candidate.variantNumber}
-            />
+          {imageUri ? (
+            horizontal ? (
+              <BattlefieldCardArt uri={imageUri} variantNumber={candidate.variantNumber} />
+            ) : (
+              <DeckCardArt uri={imageUri} variantNumber={candidate.variantNumber} />
+            )
           ) : (
             <View className="flex-1 items-center justify-center bg-card-panel">
               <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
             </View>
           )}
+
+          {showHoverInfo ? (
+            <View className="absolute right-1 top-1 z-10">
+              <CardArtHoverPreview
+                imageUri={imageUri}
+                variantNumber={candidate.variantNumber}
+                orientation={horizontal ? 'landscape' : 'portrait'}
+              >
+                <Pressable
+                  accessibilityLabel={`Preview ${candidate.name}`}
+                  className="size-7 items-center justify-center rounded-md border border-white/10 bg-background/92"
+                  onPress={(event) => {
+                    event.stopPropagation?.();
+                  }}
+                >
+                  <ThemedIonicon name="information-circle-outline" size={16} color="foreground" />
+                </Pressable>
+              </CardArtHoverPreview>
+            </View>
+          ) : null}
 
           {canRemove && !showSelected ? (
             <View className="absolute inset-x-0 bottom-0 flex-row items-stretch bg-background/80">
@@ -258,9 +288,21 @@ function DeckAddScreenBody({
   useEffect(() => setActiveSection(section), [section]);
 
   const { paddingBottomInline, contentWidth } = useScreenLayout();
-  const { tileWidth, gap, numColumns } = useResponsiveColumns('grid', {
+  const grid = useResponsiveColumns('grid', {
     measuredWidth: contentWidth,
   });
+  const isBattlefieldSection = activeSection === 'battlefields';
+  /** Wider tiles so landscape battlefield art matches the builder slots. */
+  const { tileWidth, gap, numColumns } = useMemo(() => {
+    if (!isBattlefieldSection) return grid;
+    const columns = Math.max(2, Math.min(isMobile ? 2 : 4, grid.numColumns));
+    const width = (contentWidth - grid.gap * (columns - 1)) / columns;
+    return {
+      numColumns: columns,
+      tileWidth: Math.max(120, width),
+      gap: grid.gap,
+    };
+  }, [contentWidth, grid, isBattlefieldSection, isMobile]);
 
   const legendKey = deck.legend?.variantNumber ?? '';
 
@@ -370,6 +412,7 @@ function DeckAddScreenBody({
           showSelected={usesSingleSelectUi}
           blocked={blocked}
           blockedLabel={blockedLabel}
+          horizontal={isBattlefieldSection}
           onAdd={() => handleAddOne(item)}
           onRemove={() => handleRemoveOne(item)}
           onLongPressCard={() => openCard(router, item.variantNumber, 'modal')}
@@ -381,6 +424,7 @@ function DeckAddScreenBody({
       deck,
       handleAddOne,
       handleRemoveOne,
+      isBattlefieldSection,
       membershipRevision,
       router,
       sectionFull,
@@ -484,7 +528,7 @@ function DeckAddScreenBody({
 
       <FlatList
         data={catalog.cards}
-        key={activeSection}
+        key={`${activeSection}-${numColumns}`}
         keyExtractor={(item) => item.variantNumber}
         numColumns={numColumns}
         renderItem={renderItem}

@@ -174,7 +174,6 @@ function CompositionRowView({
           <CardArtHoverPreview
             imageUri={imageUri}
             variantNumber={row.card.variantNumber}
-            label={row.name}
           >
             {thumb}
           </CardArtHoverPreview>

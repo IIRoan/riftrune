@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
+import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { resolveSlotImage } from '@/components/deck/DeckCardSlot';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
 import { Text } from '@/components/ui/text';
@@ -79,28 +80,46 @@ function BattlefieldSlot({
   const { card } = slot;
   const imageUri = resolveSlotImage(card, imageByVariant);
   const illegal = isCardTournamentIllegal(card, deck);
+  const showHoverInfo = Platform.OS === 'web' && Boolean(imageUri);
 
   return (
     <View className="min-w-0 flex-1 gap-1.5">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`View ${card.name}`}
-        className="active:opacity-90"
-        onPress={() => {
-          hapticPress();
-          openCard(router, card.variantNumber, 'modal');
-        }}
+      <View
+        className={cn(
+          'relative aspect-[7/5] w-full overflow-hidden border bg-background',
+          CARD_ART_RADIUS_CLASS,
+          illegal ? 'border-destructive' : 'border-white/10'
+        )}
       >
-        <View
-          className={cn(
-            'relative aspect-[7/5] w-full overflow-hidden border bg-background',
-            CARD_ART_RADIUS_CLASS,
-            illegal ? 'border-destructive' : 'border-white/10'
-          )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`View ${card.name}`}
+          className="absolute inset-0 active:opacity-90"
+          onPress={() => {
+            hapticPress();
+            openCard(router, card.variantNumber, 'modal');
+          }}
         >
           <BattlefieldCardArt uri={imageUri} variantNumber={card.variantNumber} />
-        </View>
-      </Pressable>
+        </Pressable>
+
+        {showHoverInfo ? (
+          <View className="absolute right-1 top-1 z-10">
+            <CardArtHoverPreview
+              imageUri={imageUri}
+              variantNumber={card.variantNumber}
+              orientation="landscape"
+            >
+              <View
+                accessibilityLabel={`Preview ${card.name}`}
+                className="size-7 items-center justify-center rounded-md border border-white/10 bg-background/92"
+              >
+                <ThemedIonicon name="information-circle-outline" size={16} color="foreground" />
+              </View>
+            </CardArtHoverPreview>
+          </View>
+        ) : null}
+      </View>
 
       <Text className="px-0.5 text-[11px] font-semibold text-foreground" numberOfLines={1}>
         {card.name}
