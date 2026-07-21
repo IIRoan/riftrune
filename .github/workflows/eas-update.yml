@@ -56,4 +56,9 @@ jobs:
       - name: Publish update
         env:
           EXPO_PUBLIC_API_URL: https://riftapi.solace.onl
-        run: eas update --branch main --message "${{ github.sha }}" --non-interactive
+        run: >
+          eas update
+          --branch main
+          --environment production
+          --message "${{ github.sha }}"
+          --non-interactive

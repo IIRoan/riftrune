@@ -12,11 +12,12 @@ import {
   PricesListResponse,
 } from '@riftbound/contracts';
 import type { z } from 'zod';
+import { getApiUrl } from '@/lib/api-url';
 
 // Unauthenticated JSON client for catalog, prices, and filters.
 // User data (collection, decks) goes through authedClient.ts instead.
 
-const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000');
+const API_URL = getApiUrl();
 
 export class ApiError extends Error {
   constructor(

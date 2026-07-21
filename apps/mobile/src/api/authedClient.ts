@@ -1,13 +1,11 @@
+import { getApiUrl } from '@/lib/api-url';
 import { getAuthCookieHeader } from '@/lib/auth-cookie';
 import { logActionFailure } from '@/lib/logger';
 
 // Public catalog routes use `api` in client.ts (no session cookies on native).
 // Collection, wishlist, and decks need Better Auth cookies attached manually.
 
-export const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000').replace(
-  /\/$/,
-  ''
-);
+export const API_URL = getApiUrl();
 
 const isBrowserRuntime = typeof document !== 'undefined';
 
