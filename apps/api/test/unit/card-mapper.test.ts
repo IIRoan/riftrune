@@ -170,6 +170,29 @@ describe('groupCardListItems', () => {
     expect(grouped[0]?.printings).toHaveLength(2);
     expect(grouped[0]?.variantNumber).toBe('OGN-001');
   });
+
+  test('splits catalog-grouped rows so promo and overnumbered stay separate', () => {
+    const rows = logical.variants.map((entry) => mapListItem(logical, entry, priceRows));
+    const catalogGrouped = groupCatalogListItems(rows);
+    expect(catalogGrouped).toHaveLength(1);
+
+    const grouped = groupCardListItems(catalogGrouped);
+    expect(grouped.length).toBeGreaterThan(1);
+    for (const row of grouped) {
+      const labels = new Set(row.printings.map((printing) => printing.variantLabel));
+      const hasStandardFamily = [...labels].some(
+        (label) => label === 'Standard' || /foil/i.test(label)
+      );
+      if (hasStandardFamily) {
+        expect(
+          row.printings.every(
+            (printing) =>
+              printing.variantLabel === 'Standard' || /foil/i.test(printing.variantLabel)
+          )
+        ).toBe(true);
+      }
+    }
+  });
 });
 
 describe('groupCatalogListItems', () => {

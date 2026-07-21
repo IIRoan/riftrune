@@ -259,27 +259,30 @@ export function groupCardListItems(items: CardListItem[]): CardListItem[] {
   const groups = new Map<string, CardListItem>();
 
   for (const item of items) {
-    const printing = getCardPrintings(item)[0];
-    if (!printing) continue;
+    const printings = getCardPrintings(item);
+    if (printings.length === 0) continue;
 
-    const key = `${item.cardId}:${getSearchGroupKey(
-      printing.variantNumber,
-      printing.variantLabel
-    )}`;
-    const existing = groups.get(key);
-    if (!existing) {
-      groups.set(key, {
-        ...item,
-        printings: [...getCardPrintings(item)],
-      });
-      continue;
-    }
+    for (const printing of printings) {
+      const key = `${item.cardId}:${getSearchGroupKey(
+        printing.variantNumber,
+        printing.variantLabel
+      )}`;
+      const existing = groups.get(key);
+      if (!existing) {
+        groups.set(key, {
+          ...item,
+          variantNumber: printing.variantNumber,
+          priceEur: printing.priceEur,
+          printings: [printing],
+        });
+        continue;
+      }
 
-    for (const row of getCardPrintings(item)) {
-      const already = existing.printings.some(
-        (p) => p.variantNumber === row.variantNumber
-      );
-      if (!already) existing.printings.push(row);
+      if (
+        !existing.printings.some((row) => row.variantNumber === printing.variantNumber)
+      ) {
+        existing.printings.push(printing);
+      }
     }
   }
 
@@ -363,11 +366,26 @@ export function pickVariantDisplayPrice<T extends VariantPriceLike>(
     variant.variantLabel,
     variant.variantType
   );
-  const rowsWithMarket = prices.filter((row) => row.market != null);
+  const rowsWithMarket = prices.filter(
+    (row) => row.market != null && row.market > 0
+  );
   const matching = rowsWithMarket.find((row) => row.isFoil === isFoil);
   if (matching) return matching;
-  if (rowsWithMarket.length === 1) return rowsWithMarket[0] ?? null;
-  return prices.find((row) => !row.isFoil) ?? rowsWithMarket[0] ?? prices[0] ?? null;
+
+  // Showcase / signed printings often only have foil trend data in Cardmarket's guide.
+  const foilTrend = rowsWithMarket.find((row) => row.isFoil);
+  if (foilTrend) return foilTrend;
+
+  const plainTrend = rowsWithMarket.find((row) => !row.isFoil);
+  if (plainTrend) return plainTrend;
+
+  const rowsWithLow = prices.filter((row) => row.low != null);
+  return (
+    rowsWithLow.find((row) => row.isFoil === isFoil) ??
+    rowsWithLow.find((row) => row.isFoil) ??
+    rowsWithLow[0] ??
+    null
+  );
 }
 
 export function toPriceEurSummary(

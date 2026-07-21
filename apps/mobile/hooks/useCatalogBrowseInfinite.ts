@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { CATALOG_NETWORK_PAGE_SIZE } from '@/lib/catalog-page-size';
 import { api } from '@/src/api/client';
-import { cardQueryKeys } from '@/src/api/queryKeys';
+import { cardQueryKeys, catalogQueryKeys } from '@/src/api/queryKeys';
 import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
+import { mergeCatalogIndexItems } from '@/services/catalogIndexService';
 import {
   cardOwnedQuantity,
   catalogFiltersToQuery,
@@ -25,6 +26,7 @@ export function useCatalogBrowseInfinite(
   filters: CatalogFilters = DEFAULT_CATALOG_FILTERS,
   collectionByVariant: ReadonlyMap<string, { quantity: number }> = new Map()
 ) {
+  const queryClient = useQueryClient();
   const catalogIndex = useCatalogIndex();
   const catalogItems = getCatalogIndexItems(catalogIndex.data);
   const indexReady = catalogItems.length > 0;
@@ -58,6 +60,8 @@ export function useCatalogBrowseInfinite(
     setVisibleCount(pageSize);
   }, [indexReady, pageSize, filters]);
 
+  // Always query the API so upstream reconciliation can fill catalog gaps.
+  // Local index is an instant preview until network results arrive.
   const listQuery = useInfiniteQuery({
     queryKey: cardQueryKeys.browse(filters),
     queryFn: async ({ pageParam }) => {
@@ -66,6 +70,7 @@ export function useCatalogBrowseInfinite(
         page: pageParam,
         sortBy: 'name',
         dir: 'asc',
+        ...(pageParam === 1 ? { refresh: true } : {}),
         ...catalogFiltersToQuery(filters),
       });
       const normalized = normalizeCardsListResponse(response);
@@ -83,7 +88,6 @@ export function useCatalogBrowseInfinite(
       const pagination = lastPage.meta.pagination;
       return pagination.hasNext ? pagination.page + 1 : undefined;
     },
-    enabled: !indexReady,
     staleTime: STALE_MS,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: false,
@@ -96,29 +100,67 @@ export function useCatalogBrowseInfinite(
     [listQuery.data]
   );
 
+  const preferNetwork =
+    apiItems.length > 0 || (listQuery.isFetched && !listQuery.isError);
+
+  useEffect(() => {
+    if (!preferNetwork || apiItems.length === 0) return;
+
+    let cancelled = false;
+    void (async () => {
+      const added = await mergeCatalogIndexItems(apiItems);
+      if (cancelled || added === 0) return;
+      const current = queryClient.getQueryData<{
+        catalogHash: string;
+        pricesCatalogHash: string;
+        cachedAt: number;
+        items: typeof apiItems;
+      }>(catalogQueryKeys.index);
+      if (!current) return;
+      queryClient.setQueryData(catalogQueryKeys.index, {
+        ...current,
+        items: [
+          ...current.items,
+          ...apiItems.filter(
+            (card) =>
+              !current.items.some(
+                (existing) =>
+                  existing.variantNumber.toLowerCase() ===
+                  card.variantNumber.toLowerCase()
+              )
+          ),
+        ],
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preferNetwork, apiItems, queryClient]);
+
   const localItems = useMemo(
     () => allBrowseItems?.slice(0, visibleCount) ?? [],
     [allBrowseItems, visibleCount]
   );
 
-  const items = indexReady ? localItems : apiItems;
+  const items = preferNetwork ? apiItems : localItems;
   const totalLocal = allBrowseItems?.length ?? 0;
-  const hasNextPage = indexReady
-    ? localItems.length < totalLocal
-    : (listQuery.hasNextPage ?? false);
+  const hasNextPage = preferNetwork
+    ? (listQuery.hasNextPage ?? false)
+    : localItems.length < totalLocal;
 
   const fetchNextPage = useCallback(() => {
-    if (indexReady) {
-      if (localItems.length < totalLocal) {
-        setVisibleCount((count) => Math.min(totalLocal, count + pageSize));
+    if (preferNetwork) {
+      if (listQuery.hasNextPage && !listQuery.isFetchingNextPage) {
+        void listQuery.fetchNextPage();
       }
       return;
     }
-    if (listQuery.hasNextPage && !listQuery.isFetchingNextPage) {
-      void listQuery.fetchNextPage();
+    if (localItems.length < totalLocal) {
+      setVisibleCount((count) => Math.min(totalLocal, count + pageSize));
     }
   }, [
-    indexReady,
+    preferNetwork,
     localItems.length,
     totalLocal,
     pageSize,
@@ -129,9 +171,17 @@ export function useCatalogBrowseInfinite(
 
   return {
     items,
-    isLoading: !indexReady && listQuery.isPending && apiItems.length === 0,
-    isFetching: !indexReady && listQuery.isFetching && apiItems.length === 0,
-    isFetchingNextPage: indexReady ? false : listQuery.isFetchingNextPage,
+    isLoading:
+      !preferNetwork &&
+      listQuery.isPending &&
+      localItems.length === 0 &&
+      apiItems.length === 0,
+    isFetching:
+      !preferNetwork &&
+      listQuery.isFetching &&
+      localItems.length === 0 &&
+      apiItems.length === 0,
+    isFetchingNextPage: preferNetwork ? listQuery.isFetchingNextPage : false,
     hasNextPage,
     fetchNextPage,
     refetch: listQuery.refetch,

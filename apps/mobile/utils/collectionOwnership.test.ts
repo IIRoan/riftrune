@@ -80,4 +80,23 @@ describe('collectionOwnership', () => {
       'OGN-003': 4,
     });
   });
+
+  test('ownership map from collection seeds list tiles before detail opens', () => {
+    const record = ownershipRecordFromCollection([
+      {
+        ...sampleEntries[0]!,
+        variantNumber: 'OGN-015',
+        quantity: 2,
+      },
+      {
+        ...sampleEntries[0]!,
+        variantNumber: 'OGN-015-Foil',
+        quantity: 1,
+      },
+    ]);
+    const map = ownershipMapFromRecord(record);
+    expect(map.get('OGN-015')?.quantity).toBe(2);
+    expect(map.get('OGN-015-Foil')?.quantity).toBe(1);
+    expect(map.size).toBe(2);
+  });
 });

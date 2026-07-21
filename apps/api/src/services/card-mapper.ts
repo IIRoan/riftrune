@@ -178,29 +178,31 @@ export function groupCardListItems(items: CardListItem[]): CardListItem[] {
   const groups = new Map<string, CardListItem>();
 
   for (const item of items) {
-    const printing = item.printings[0];
-    if (!printing) continue;
+    const printings = item.printings.length > 0 ? item.printings : [];
+    if (printings.length === 0) continue;
 
-    const key = `${item.cardId}:${getSearchGroupKey(
-      printing.variantNumber,
-      printing.variantLabel
-    )}`;
-    const existing = groups.get(key);
-    if (!existing) {
-      groups.set(key, {
-        ...item,
-        printings: [...item.printings],
-      });
-      continue;
-    }
+    for (const printing of printings) {
+      const key = `${item.cardId}:${getSearchGroupKey(
+        printing.variantNumber,
+        printing.variantLabel
+      )}`;
+      const existing = groups.get(key);
+      if (!existing) {
+        groups.set(key, {
+          ...item,
+          variantNumber: printing.variantNumber,
+          priceEur: printing.priceEur,
+          printings: [printing],
+        });
+        continue;
+      }
 
-    existing.isBanned = existing.isBanned || item.isBanned;
-
-    for (const row of item.printings) {
-      const already = existing.printings.some(
-        (p) => p.variantNumber === row.variantNumber
-      );
-      if (!already) existing.printings.push(row);
+      existing.isBanned = existing.isBanned || item.isBanned;
+      if (
+        !existing.printings.some((row) => row.variantNumber === printing.variantNumber)
+      ) {
+        existing.printings.push(printing);
+      }
     }
   }
 

@@ -34,8 +34,11 @@ import { Layout } from '@/constants/Layout';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { formatStat } from '@/utils/cardFormat';
 import { useCardDetail } from '@/hooks/useCardDetail';
-import { useCollectionMutations, useCollectionOwnership } from '@/hooks/useCollection';
-import { collectVariantNumbers } from '@/utils/collectionOwnership';
+import { useCollection, useCollectionMutations, useCollectionOwnership } from '@/hooks/useCollection';
+import {
+  collectVariantNumbers,
+  ownershipMapFromCollection,
+} from '@/utils/collectionOwnership';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWishlistMutations } from '@/hooks/useWishlistMutations';
 import {
@@ -72,11 +75,24 @@ export function CatalogDetailPanel({
 }: CatalogDetailPanelProps) {
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { setQuantity } = useCollectionMutations();
+  const { data: collectionEntries = [] } = useCollection();
   const detailVariants = useMemo(() => {
+    if (detail.card) {
+      return detail.card.variants.map((variant) => variant.variantNumber);
+    }
     if (catalogListItem) return collectVariantNumbers([catalogListItem], [variantNumber]);
     return [variantNumber];
-  }, [catalogListItem, variantNumber]);
-  const { collectionByVariant } = useCollectionOwnership(detailVariants);
+  }, [catalogListItem, detail.card, variantNumber]);
+  const { collectionByVariant: fetchedOwnership } = useCollectionOwnership(detailVariants);
+  const collectionByVariant = useMemo(() => {
+    const fromCollection = ownershipMapFromCollection(collectionEntries);
+    if (fromCollection.size === 0) return fetchedOwnership;
+    const merged = new Map(fromCollection);
+    for (const [vn, entry] of fetchedOwnership) {
+      merged.set(vn, entry);
+    }
+    return merged;
+  }, [collectionEntries, fetchedOwnership]);
   const [fullscreen, setFullscreen] = useState(false);
   const [wishlistPickerVisible, setWishlistPickerVisible] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);
@@ -198,9 +214,11 @@ export function CatalogDetailPanel({
   const showPrintingsSection = hasMultiplePrintings(printings);
   const singlePrinting = printings[0];
   const marketPrices = getVariantMarketPriceDisplays(activeVariant);
-  const singleMarketPrice =
-    !showPrintingsSection && marketPrices.length === 1 ? marketPrices[0] : null;
-  const singlePriceTrend = formatMarketTrend(singlePrinting?.priceEur ?? null);
+  // Always show the active printing's price in the header — never a range of every variant.
+  const singleMarketPrice = marketPrices[0] ?? null;
+  const singlePriceTrend = formatMarketTrend(
+    toPriceEurSummary(pickVariantDisplayPrice(activeVariant.prices, activeVariant))
+  );
   const isWatchingActive = wishlistVariants.has(activeVariant.variantNumber);
   const watchedElsewhereCount = card.variants.filter(
     (variant) =>

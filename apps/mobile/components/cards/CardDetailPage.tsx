@@ -67,8 +67,7 @@ export function CardDetailPage({
   const isDesktop = useIsDesktopLayout();
   const setCode = activeVariant.variantNumber.split('-')[0] ?? '';
   const marketPrices = getVariantMarketPriceDisplays(activeVariant);
-  const singleMarketPrice =
-    printingPreviews.length <= 1 && marketPrices.length === 1 ? marketPrices[0] : null;
+  const singleMarketPrice = marketPrices[0] ?? null;
   const activePrice = pickVariantDisplayPrice(activeVariant.prices, activeVariant);
   const singlePriceTrend = formatMarketTrend(toPriceEurSummary(activePrice));
 
