@@ -98,6 +98,26 @@ describe('resolveUpstreamReconcileMode', () => {
     ).toBe('skip');
   });
 
+  test('syncs first-page browse so partial catalogs backfill from upstream', () => {
+    expect(
+      resolveUpstreamReconcileMode(
+        { ...baseQuery, page: 1, types: 'Battlefield' },
+        { items: [{ id: '1' }], total: 40 },
+        false
+      )
+    ).toBe('sync');
+  });
+
+  test('skips later browse pages when local already has hits', () => {
+    expect(
+      resolveUpstreamReconcileMode(
+        { ...baseQuery, page: 2, types: 'Battlefield' },
+        { items: [{ id: '1' }], total: 40 },
+        false
+      )
+    ).toBe('skip');
+  });
+
   test('skips already-checked text search when local already has hits', () => {
     expect(
       resolveUpstreamReconcileMode(
@@ -106,5 +126,15 @@ describe('resolveUpstreamReconcileMode', () => {
         true
       )
     ).toBe('skip');
+  });
+
+  test('syncs deck-builder type filters on page 1 so missing legends backfill', () => {
+    expect(
+      resolveUpstreamReconcileMode(
+        { ...baseQuery, page: 1, types: 'Legend' },
+        { items: [{ id: 'legend-1' }], total: 12 },
+        false
+      )
+    ).toBe('sync');
   });
 });

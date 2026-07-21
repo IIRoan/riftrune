@@ -43,22 +43,37 @@ export class SyncEngine {
         enrichedFilters,
         existing?.rowCount ?? 0
       );
+      const localVariantCount = await this.cards.countVariants();
+      // Fingerprint alone is not enough — a truncated SYNC_MAX_PAGES run can
+      // write the full hash while the DB is still missing printings.
+      const catalogLooksComplete =
+        localVariantCount > 0 &&
+        (catalogPrintTotal <= 0 || localVariantCount >= catalogPrintTotal);
 
-      if (existing?.contentHash === fingerprint && (existing.rowCount ?? 0) > 0) {
+      if (
+        existing?.contentHash === fingerprint &&
+        catalogLooksComplete
+      ) {
         console.log(
-          `[sync] Catalog unchanged (hash=${fingerprint}), skipping card upsert — image mirroring will not run`
+          `[sync] Catalog unchanged (hash=${fingerprint}, variants=${String(localVariantCount)}), skipping card upsert — image mirroring will not run`
         );
         await this.setSyncStatus('catalog', 'idle', {
           contentHash: fingerprint,
-          rowCount: Math.max(existing.rowCount ?? 0, catalogPrintTotal),
+          rowCount: Math.max(existing.rowCount ?? 0, catalogPrintTotal, localVariantCount),
           lastSuccessAt: existing.lastSuccessAt ?? now,
         });
         return {
           changed: false,
           pages: 0,
-          variantCount: Math.max(existing.rowCount ?? 0, catalogPrintTotal),
+          variantCount: Math.max(existing.rowCount ?? 0, catalogPrintTotal, localVariantCount),
           hash: fingerprint,
         };
+      }
+
+      if (existing?.contentHash === fingerprint && !catalogLooksComplete) {
+        console.warn(
+          `[sync] Catalog hash matches but local variants (${String(localVariantCount)}) are below expected printings (${String(catalogPrintTotal)}) — forcing full upsert`
+        );
       }
 
       let page = 1;
@@ -66,6 +81,7 @@ export class SyncEngine {
       const limit = 100;
       let hasMore = true;
       const maxPages = Number(process.env.SYNC_MAX_PAGES ?? 0) || Infinity;
+      const truncatedByMaxPages = Number.isFinite(maxPages);
       const syncedCardIds = new Set<string>();
       const setPrintTotals = new Map<string, number>();
 
@@ -111,20 +127,31 @@ export class SyncEngine {
         computeCatalogTotal(enrichedFilters, 0),
         syncedVariantRows
       );
+      // Never lock an incomplete catalog behind the full upstream fingerprint.
+      const contentHash =
+        truncatedByMaxPages && syncedVariantRows < finalPrintTotal
+          ? `partial:${fingerprint}:pages=${String(pages)}`
+          : fingerprint;
+
+      if (contentHash !== fingerprint) {
+        console.warn(
+          `[sync] Truncated sync (pages=${String(pages)}, variants=${String(syncedVariantRows)}/${String(finalPrintTotal)}) — storing partial hash so the next run continues`
+        );
+      }
 
       await this.setSyncStatus('catalog', 'idle', {
-        contentHash: fingerprint,
-        rowCount: finalPrintTotal,
+        contentHash,
+        rowCount: syncedVariantRows,
         lastSuccessAt: now,
       });
 
       this.cards.invalidateSearchCache();
 
       console.log(
-        `[sync] Catalog sync complete: ${String(syncedCardIds.size)} logical cards, ${String(pages)} pages, ${String(finalPrintTotal)} printings`
+        `[sync] Catalog sync complete: ${String(syncedCardIds.size)} logical cards, ${String(pages)} pages, ${String(syncedVariantRows)} printings`
       );
 
-      return { changed: true, pages, variantCount: finalPrintTotal, hash: fingerprint };
+      return { changed: true, pages, variantCount: syncedVariantRows, hash: contentHash };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await this.setSyncStatus('catalog', 'failed', { lastError: message });

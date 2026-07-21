@@ -276,10 +276,17 @@ export class PriceCacheService {
         cardmarketId: variants.cardmarketId,
       })
       .from(variants)
-      .where(inArray(variants.variantNumber, variantNumbers));
+      .where(
+        sql`lower(${variants.variantNumber}) in (${sql.join(
+          variantNumbers.map((value) => sql`${value.toLowerCase()}`),
+          sql`, `
+        )})`
+      );
 
     const variantByNumber = new Map(
-      variantRows.map((row) => [row.variantNumber, row.cardmarketId] as const)
+      variantRows.map(
+        (row) => [row.variantNumber.toLowerCase(), row.cardmarketId] as const
+      )
     );
 
     return Promise.all(
@@ -292,7 +299,7 @@ export class PriceCacheService {
           targetPriceCents?: number | null;
         } = {
           variantNumber: item.variantNumber,
-          cardmarketId: variantByNumber.get(item.variantNumber) ?? null,
+          cardmarketId: variantByNumber.get(item.variantNumber.toLowerCase()) ?? null,
           isFoil: item.isFoil ?? false,
           days,
         };

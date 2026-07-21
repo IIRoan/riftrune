@@ -260,7 +260,12 @@ export async function fetchDeckAddListPage(
   filters: CatalogFilters,
   page: number
 ) {
-  return api.listCards(buildDeckAddListQuery(section, deck, userQuery, filters, page));
+  const query = buildDeckAddListQuery(section, deck, userQuery, filters, page);
+  return api.listCards({
+    ...query,
+    // Force upstream reconcile on the first page so deck sections show real PA cards.
+    ...(page === 1 ? { refresh: true } : {}),
+  });
 }
 
 export function legendNeedsHydration(legend: DeckCard | null | undefined): boolean {

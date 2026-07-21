@@ -1,5 +1,38 @@
 import { describe, expect, test } from 'bun:test';
-import { getSearchGroupKey, getSearchGroupVariants, getVariantFamiliesFromPrintings, getVariantMarketPriceDisplays, getPrintingsInSearchGroup, pickVariantDisplayPrice } from '@/utils/variants';
+import {
+  formatListPrice,
+  formatPrintingPrice,
+  getSearchGroupKey,
+  getSearchGroupVariants,
+  getVariantFamiliesFromPrintings,
+  getVariantMarketPriceDisplays,
+  getPrintingsInSearchGroup,
+  groupCardListItems,
+  pickVariantDisplayPrice,
+  totalOwnedForCard,
+} from '@/utils/variants';
+import type { CardListItem } from '@riftbound/contracts';
+
+function listCard(
+  partial: Partial<CardListItem> & Pick<CardListItem, 'variantNumber' | 'printings'>
+): CardListItem {
+  return {
+    cardId: 'c1',
+    name: 'Test',
+    type: 'Unit',
+    energy: 1,
+    might: 1,
+    power: 0,
+    rarity: 'Common',
+    setCode: 'OGN',
+    colors: ['Body'],
+    imageUrl: '',
+    cardmarketId: 1,
+    priceEur: null,
+    isBanned: false,
+    ...partial,
+  };
+}
 
 describe('getSearchGroupVariants', () => {
   const dariusVariants = [
@@ -97,6 +130,117 @@ describe('getVariantMarketPriceDisplays', () => {
   });
 });
 
+describe('groupCardListItems', () => {
+  test('merges foil and non-foil search rows', () => {
+    expect(
+      groupCardListItems([
+        {
+          cardId: 'c1',
+          variantNumber: 'OGN-253',
+          name: 'Darius',
+          type: 'Unit',
+          energy: 5,
+          might: 5,
+          power: 0,
+          rarity: 'Rare',
+          setCode: 'OGN',
+          colors: ['Body'],
+          imageUrl: '',
+          cardmarketId: 1,
+          priceEur: null,
+          printings: [
+            {
+              variantNumber: 'OGN-253',
+              variantLabel: 'Standard',
+              isFoil: false,
+              priceEur: null,
+            },
+          ],
+          isBanned: false,
+        },
+        {
+          cardId: 'c1',
+          variantNumber: 'OGN-253-Foil',
+          name: 'Darius',
+          type: 'Unit',
+          energy: 5,
+          might: 5,
+          power: 0,
+          rarity: 'Rare',
+          setCode: 'OGN',
+          colors: ['Body'],
+          imageUrl: '',
+          cardmarketId: 1,
+          priceEur: null,
+          printings: [
+            {
+              variantNumber: 'OGN-253-Foil',
+              variantLabel: 'Standard',
+              isFoil: true,
+              priceEur: null,
+            },
+          ],
+          isBanned: false,
+        },
+      ])
+    ).toHaveLength(1);
+  });
+
+  test('splits a catalog-grouped card so alternate printings are separate rows', () => {
+    const grouped = groupCardListItems([
+      {
+        cardId: 'c1',
+        variantNumber: 'OGN-253',
+        name: 'Darius',
+        type: 'Unit',
+        energy: 5,
+        might: 5,
+        power: 0,
+        rarity: 'Rare',
+        setCode: 'OGN',
+        colors: ['Body'],
+        imageUrl: '',
+        cardmarketId: 1,
+        priceEur: { currency: 'EUR', low: 1, market: 2, avg7d: 2, isFoil: false },
+        printings: [
+          {
+            variantNumber: 'OGN-253',
+            variantLabel: 'Standard',
+            isFoil: false,
+            priceEur: { currency: 'EUR', low: 1, market: 2, avg7d: 2, isFoil: false },
+          },
+          {
+            variantNumber: 'OGN-253-Foil',
+            variantLabel: 'Standard',
+            isFoil: true,
+            priceEur: { currency: 'EUR', low: 3, market: 4, avg7d: 4, isFoil: true },
+          },
+          {
+            variantNumber: 'OGN-253-Release',
+            variantLabel: 'Release Event Promo',
+            isFoil: false,
+            priceEur: { currency: 'EUR', low: 5, market: 6, avg7d: 6, isFoil: false },
+          },
+          {
+            variantNumber: 'OGN-302',
+            variantLabel: 'Overnumbered',
+            isFoil: false,
+            priceEur: { currency: 'EUR', low: 10, market: 12, avg7d: 12, isFoil: false },
+          },
+        ],
+        isBanned: false,
+      },
+    ]);
+
+    expect(grouped.map((row) => row.variantNumber).sort()).toEqual([
+      'OGN-253',
+      'OGN-253-Release',
+      'OGN-302',
+    ]);
+    expect(grouped.find((row) => row.variantNumber === 'OGN-253')?.printings).toHaveLength(2);
+  });
+});
+
 describe('getVariantFamiliesFromPrintings', () => {
   const daringPoroPrintings = [
     { variantNumber: 'OGN-210', variantLabel: 'Standard', isFoil: false, priceEur: null },
@@ -133,5 +277,97 @@ describe('getVariantFamiliesFromPrintings', () => {
     const scoped = getPrintingsInSearchGroup(daringPoroPrintings, 'OGN-210-ON');
 
     expect(scoped.map((p) => p.variantNumber)).toEqual(['OGN-210-ON']);
+  });
+});
+
+describe('formatListPrice / totalOwnedForCard', () => {
+  const stdFoilCard = listCard({
+    variantNumber: 'OGN-015',
+    priceEur: { currency: 'EUR', low: 0.05, market: 0.1, avg7d: 0.1, isFoil: false },
+    printings: [
+      {
+        variantNumber: 'OGN-015',
+        variantLabel: 'Standard',
+        isFoil: false,
+        priceEur: { currency: 'EUR', low: 0.05, market: 0.1, avg7d: 0.1, isFoil: false },
+      },
+      {
+        variantNumber: 'OGN-015-Foil',
+        variantLabel: 'Standard',
+        isFoil: true,
+        priceEur: { currency: 'EUR', low: 0.2, market: 0.4, avg7d: 0.4, isFoil: true },
+      },
+    ],
+  });
+
+  test('formatListPrice ranges std and foil finishes only', () => {
+    expect(formatListPrice(stdFoilCard)).toBe('€0.10–0.40');
+  });
+
+  test('formatListPrice ignores alternate-art printings not on the row', () => {
+    const standardOnly = listCard({
+      variantNumber: 'OGN-253',
+      priceEur: { currency: 'EUR', low: 1, market: 2, avg7d: 2, isFoil: false },
+      printings: [
+        {
+          variantNumber: 'OGN-253',
+          variantLabel: 'Standard',
+          isFoil: false,
+          priceEur: { currency: 'EUR', low: 1, market: 2, avg7d: 2, isFoil: false },
+        },
+      ],
+    });
+    expect(formatListPrice(standardOnly)).toBe('€2.00');
+    expect(formatPrintingPrice(standardOnly.printings[0]?.priceEur ?? null)).toBe('€2.00');
+  });
+
+  test('totalOwnedForCard sums only printings on the scoped row', () => {
+    const ownership = new Map([
+      ['OGN-015', { quantity: 2 }],
+      ['OGN-015-Foil', { quantity: 1 }],
+      ['OGN-999', { quantity: 9 }],
+    ]);
+    expect(totalOwnedForCard(stdFoilCard, ownership)).toBe(3);
+  });
+
+  test('totalOwnedForCard is zero when ownership map is missing', () => {
+    expect(totalOwnedForCard(stdFoilCard)).toBe(0);
+  });
+});
+
+describe('pickVariantDisplayPrice foil/showcase rules', () => {
+  test('prefers matching non-foil guide when both finishes exist', () => {
+    const row = pickVariantDisplayPrice(
+      [
+        { market: 2, low: 1, isFoil: false },
+        { market: 8, low: 7, isFoil: true },
+      ],
+      { variantNumber: 'OGN-015', variantLabel: 'Standard', variantType: 'Standard' }
+    );
+    expect(row?.market).toBe(2);
+    expect(row?.isFoil).toBe(false);
+  });
+
+  test('prefers matching foil guide for foil printings', () => {
+    const row = pickVariantDisplayPrice(
+      [
+        { market: 2, low: 1, isFoil: false },
+        { market: 8, low: 7, isFoil: true },
+      ],
+      { variantNumber: 'OGN-015-Foil', variantLabel: 'Foil', variantType: 'Standard' }
+    );
+    expect(row?.market).toBe(8);
+    expect(row?.isFoil).toBe(true);
+  });
+
+  test('ignores zero-market plain rows when foil has the real trend', () => {
+    const row = pickVariantDisplayPrice(
+      [
+        { market: 0, low: 0.01, isFoil: false },
+        { market: 12.5, low: 10, isFoil: true },
+      ],
+      { variantNumber: 'OGN-302*', variantLabel: 'Showcase', variantType: 'signed' }
+    );
+    expect(row?.market).toBe(12.5);
   });
 });

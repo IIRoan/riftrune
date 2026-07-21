@@ -20,7 +20,6 @@ import {
   formatListPrice,
   formatMarketTrend,
   formatPrintingPrice,
-  getCardPrintings,
   hasMultiplePrintings,
   printingSummary,
   totalOwnedForCard,
@@ -78,13 +77,14 @@ function CardTileInner({
   const collectionByVariant = collectionByVariantProp ?? ownershipFromStore;
   const { addCard, setQuantity } = useCollectionMutations();
 
-  const allPrintings = getCardPrintings(card);
   const stepperPrintings = useMemo(
     () => resolveQuickAddPrintings(card, familyContextVariantNumber),
     [card, familyContextVariantNumber]
   );
 
-  const pricePrintings = familyContextVariantNumber ? stepperPrintings : allPrintings;
+  // Always scope list prices + owned counts to the active family (std/foil),
+  // never dump every alternate/promo/overnumbered printing onto the tile.
+  const pricePrintings = stepperPrintings;
   const printings = stepperPrintings;
   const multiplePricePrintings = hasMultiplePrintings(pricePrintings);
   const scopedCard = useMemo(

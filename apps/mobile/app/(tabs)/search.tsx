@@ -232,7 +232,9 @@ function SearchScreenBody() {
   );
 
   const ownedFilterActive = catalogFilters.collection === 'owned';
-  const { data: collectionEntries = [] } = useCollection({ enabled: ownedFilterActive });
+  // Keep full collection warm so list tiles show owned counts without waiting
+  // for a detail click / per-variant quantities round-trip.
+  const { data: collectionEntries = [] } = useCollection();
 
   const ownershipVariants = useMemo(() => {
     void ownershipRevision;
@@ -243,7 +245,17 @@ function SearchScreenBody() {
     return variants.sort();
   }, [ownershipRevision, selectedVariant]);
 
-  const { collectionByVariant } = useCollectionOwnership(ownershipVariants);
+  const { collectionByVariant: fetchedOwnership } = useCollectionOwnership(ownershipVariants);
+
+  const collectionByVariant = useMemo(() => {
+    const fromCollection = ownershipMapFromCollection(collectionEntries);
+    if (fromCollection.size === 0) return fetchedOwnership;
+    const merged = new Map(fromCollection);
+    for (const [variantNumber, entry] of fetchedOwnership) {
+      merged.set(variantNumber, entry);
+    }
+    return merged;
+  }, [collectionEntries, fetchedOwnership]);
 
   const filterOwnership = useMemo(() => {
     if (!ownedFilterActive) return collectionByVariant;
@@ -547,6 +559,7 @@ function SearchScreenBody() {
               enableQuickAdd
               selected={tileSelected}
               hidePrice={hideTilePrice}
+              collectionByVariant={collectionByVariant}
               familyContextVariantNumber={
                 splitLayout && tileSelected ? selectedVariant : undefined
               }
@@ -572,6 +585,7 @@ function SearchScreenBody() {
             enableQuickAdd
             selected={tileSelected}
             hidePrice={hideTilePrice}
+            collectionByVariant={collectionByVariant}
             familyContextVariantNumber={
               splitLayout && tileSelected ? selectedVariant : undefined
             }
@@ -582,7 +596,27 @@ function SearchScreenBody() {
         </View>
       );
     },
-    [isList, tileWidth, compact, selectedVariant, splitLayout, handleSelectCard, hasSearchInput]
+    [
+      isList,
+      tileWidth,
+      compact,
+      selectedVariant,
+      splitLayout,
+      handleSelectCard,
+      hasSearchInput,
+      collectionByVariant,
+      displayItems.length,
+    ]
+  );
+
+  const listExtraData = useMemo(
+    () => ({
+      selectedVariant,
+      // FlatList skips cell updates unless extraData changes — ownership must be included
+      // or tiles keep showing Add after collection mutations.
+      ownership: collectionByVariant,
+    }),
+    [selectedVariant, collectionByVariant]
   );
 
   const listEmpty = useMemo(() => {
@@ -820,7 +854,7 @@ function SearchScreenBody() {
         numColumns={isList ? 1 : numColumns}
         keyExtractor={(item) => item.variantNumber}
         renderItem={renderItem}
-        extraData={selectedVariant}
+        extraData={listExtraData}
         ListHeaderComponent={null}
         ListFooterComponent={listFooter}
         contentContainerClassName={cn('flex-grow', !splitLayout && 'self-center')}

@@ -188,6 +188,14 @@ describe('resolveQuickAddPrintings', () => {
       'OGN-253-Foil',
     ]);
   });
+
+  test('rune foil siblings stay in one quick-add family', () => {
+    const card = cardWithPrintings(runePrintings, 'SFD-R05');
+    expect(resolveQuickAddPrintings(card).map((p) => p.variantNumber)).toEqual([
+      'SFD-R05',
+      'SFD-R05a',
+    ]);
+  });
 });
 
 describe('resolvePrintingPickerState', () => {

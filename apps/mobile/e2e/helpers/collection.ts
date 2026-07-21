@@ -8,15 +8,36 @@ export const FOIL_CARD = {
   foilId: 'OGN-015-Foil',
 } as const;
 
+/** Multi-family card used to assert promo/overnumbered stay off the standard row. */
+export const MULTI_FAMILY_CARD = {
+  query: 'OGN-253',
+  name: 'Darius, Hand of Noxus',
+  standardId: 'OGN-253',
+  promoId: 'OGN-253-Release',
+  promoLabel: 'Release Event Promo',
+} as const;
+
 export async function searchForCard(page: Page, query: string, cardName: string): Promise<void> {
   const search = page.getByPlaceholder('Search cards, artists, tags, or set numbers');
   await search.fill(query);
   await expect(cardTile(page, cardName, query)).toBeVisible({ timeout: 30_000 });
 }
 
+export async function switchToListView(page: Page): Promise<void> {
+  const listToggle = page.getByLabel('List view', { exact: true });
+  if (await listToggle.count()) {
+    await listToggle.click();
+  }
+}
+
 /** Search-result tile (not the detail panel, which duplicates steppers). */
 export function cardTile(page: Page, cardName: string, variantNumber: string): Locator {
-  return page.getByRole('button', { name: new RegExp(`${escapeRegExp(cardName)}.*${escapeRegExp(variantNumber)}`) });
+  // Negative lookahead so OGN-253 does not also match OGN-253-Release / OGN-253-Foil.
+  return page.getByRole('button', {
+    name: new RegExp(
+      `${escapeRegExp(cardName)}.*${escapeRegExp(variantNumber)}(?![\\w-])`
+    ),
+  });
 }
 
 export function addToCollectionButton(page: Page, cardName: string, variantNumber: string): Locator {
@@ -43,6 +64,10 @@ export async function pickPrinting(page: Page, variantNumber: string): Promise<v
   const option = printingOption(page, variantNumber);
   await expect(option).toBeVisible();
   await option.click();
+}
+
+export function detailWishlistButton(page: Page): Locator {
+  return page.getByRole('button', { name: /Wishlist card|Wishlisted/ });
 }
 
 function escapeRegExp(value: string): string {

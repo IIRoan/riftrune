@@ -7,7 +7,6 @@ import type { RiftruneClient } from '../upstream/riftrune-client.js';
 import {
   mapCardDetail,
   mapListItem,
-  groupCatalogListItems,
   groupCardListItems,
   paCardHash,
   paVariantHash,
@@ -481,9 +480,11 @@ export class CardCacheService {
   }
 
   private async loadCardDetailFromDb(variantNumber: string) {
-    const variantRow = await this.db.query.variants.findFirst({
-      where: eq(variants.variantNumber, variantNumber),
-    });
+    const [variantRow] = await this.db
+      .select()
+      .from(variants)
+      .where(sql`lower(${variants.variantNumber}) = ${variantNumber.toLowerCase()}`)
+      .limit(1);
     if (!variantRow) return null;
 
     const cardRow = await this.db.query.cards.findFirst({
@@ -592,42 +593,71 @@ export class CardCacheService {
     }
 
     try {
-      const upstream = await this.riftrune.listCards(buildUpstreamListParams(query));
-      this.upstreamCheckCache.set(checkKey, true);
+      let upserted = 0;
+      let page = query.page;
+      let upstreamTotal = 0;
+      let pagesScanned = 0;
+      // Text search stays on the requested page; browse/deck filters may walk a
+      // few pages when local totals lag upstream so later alphabet cards appear.
+      const maxBackfillPages = query.q?.trim() ? 1 : 5;
 
-      const upstreamVariantNumbers = upstream.data.map((item) => item.variantNumber);
-      const existingLocally = await this.findExistingVariantNumbers(upstreamVariantNumbers);
-      const missing = upstream.data.filter(
-        (item) => !existingLocally.has(item.variantNumber)
-      );
+      while (pagesScanned < maxBackfillPages) {
+        const upstream = await this.riftrune.listCards(
+          buildUpstreamListParams({ ...query, page })
+        );
+        pagesScanned += 1;
+        upstreamTotal = upstream.pagination?.total ?? upstream.data.length;
 
-      if (missing.length > 0) {
+        const upstreamVariantNumbers = upstream.data.map((item) => item.variantNumber);
+        const existingLocally = await this.findExistingVariantNumbers(upstreamVariantNumbers);
+        const missing = upstream.data.filter(
+          (item) => !existingLocally.has(item.variantNumber.toLowerCase())
+        );
+
         for (const item of missing) {
           try {
             const logical = await this.riftrune.getCard(item.variantNumber);
             await this.upsertFromUpstream(logical);
+            upserted += 1;
           } catch (err) {
             console.warn(`Search backfill skipped ${item.variantNumber}:`, err);
           }
         }
+
+        const localTotal = (localResult?.total ?? 0) + upserted;
+        const stillBehind = upstreamTotal > localTotal;
+        const hasNext =
+          Boolean(upstream.pagination?.hasNext) &&
+          page < (upstream.pagination?.totalPages ?? page);
+
+        if (!stillBehind || !hasNext) break;
+        page += 1;
+      }
+
+      if (upserted > 0) {
         this.invalidateSearchCache();
-        const result = await this.searchLocal(query);
+      }
+
+      const result = await this.searchLocal(query);
+
+      if (upserted > 0) {
+        this.upstreamCheckCache.set(checkKey, true);
         return { result, source: 'mixed' };
       }
 
-      if (localEmpty && upstream.data.length === 0) {
-        return { result: await this.searchLocal(query), source: 'upstream' };
+      if (localEmpty && upstreamTotal === 0) {
+        this.upstreamCheckCache.set(checkKey, true);
+        return { result, source: 'upstream' };
       }
 
-      // Upstream reports more matches than we do for the same query — our catalog
-      // is behind even if this page's rows already exist locally. Drop the check
-      // so the next search re-probes (and catalog sync can catch up).
-      const upstreamTotal = upstream.pagination?.total ?? upstream.data.length;
-      if (upstreamTotal > (localResult?.total ?? 0)) {
+      // Upstream reports more matches than we do — keep probing on the next request.
+      if (upstreamTotal > result.total) {
         this.upstreamCheckCache.delete(checkKey);
+      } else {
+        this.upstreamCheckCache.set(checkKey, true);
       }
 
-      return { result: await this.searchLocal(query), source: 'cache' };
+      return { result, source: 'cache' };
     } catch (err) {
       console.warn('Upstream search unavailable, using local cache only:', err);
       return { result: await this.searchLocal(query), source: 'cache' };
@@ -641,8 +671,13 @@ export class CardCacheService {
     const rows = await this.db
       .select({ variantNumber: variants.variantNumber })
       .from(variants)
-      .where(inArray(variants.variantNumber, variantNumbers));
-    return new Set(rows.map((row) => row.variantNumber));
+      .where(
+        sql`lower(${variants.variantNumber}) in (${sql.join(
+          variantNumbers.map((value) => sql`${value.toLowerCase()}`),
+          sql`, `
+        )})`
+      );
+    return new Set(rows.map((row) => row.variantNumber.toLowerCase()));
   }
 
   private async searchLocal(query: CardsListQuery): Promise<{
@@ -814,7 +849,7 @@ export class CardCacheService {
       };
     }
 
-    const grouped = groupCatalogListItems(rawItems);
+    const grouped = groupCardListItems(rawItems);
 
     const [totalRow] = await this.db
       .select({

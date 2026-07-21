@@ -67,5 +67,9 @@ export function resolveUpstreamReconcileMode(
   // Text search awaits upstream so we never return a stale hit set.
   if (hasSearchQuery) return 'sync';
 
+  // First page of browse / deck-builder filters must also reconcile — otherwise
+  // a partial catalog stays incomplete forever when local already has some hits.
+  if (query.page === 1) return 'sync';
+
   return 'skip';
 }
