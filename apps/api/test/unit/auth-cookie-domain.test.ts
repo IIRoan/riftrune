@@ -14,6 +14,7 @@ function env(overrides: Partial<Env>): Env {
     BETTER_AUTH_SECRET: 'x'.repeat(32),
     BETTER_AUTH_URL: 'https://api.example.com',
     TRUSTED_ORIGINS: ['https://app.example.com'],
+    PUBLIC_APP_URL: 'https://app.example.com',
     SWAGGER_ENABLED: false,
     CATALOG_WARMUP_ON_START: false,
     DB_POOL_MAX: 5,

@@ -49,7 +49,7 @@ export class CollectionService {
     this.variantResolver = new VariantResolver(db, cardCache, riftrune);
   }
 
-  async listForUser(userId: string): Promise<{
+  async listForCollection(collectionId: string): Promise<{
     items: CollectionItemDto[];
     total: number;
     totalQuantity: number;
@@ -82,7 +82,7 @@ export class CollectionService {
       .innerJoin(variants, eq(collectionItems.variantNumber, variants.variantNumber))
       .innerJoin(cards, eq(variants.cardId, cards.id))
       .innerJoin(sets, eq(variants.setId, sets.id))
-      .where(eq(collectionItems.userId, userId))
+      .where(eq(collectionItems.collectionId, collectionId))
       .orderBy(sql`${collectionItems.updatedAt} desc`);
 
     const items: CollectionItemDto[] = rows.map((row) => ({
@@ -118,7 +118,7 @@ export class CollectionService {
   }
 
   async quantitiesForVariants(
-    userId: string,
+    collectionId: string,
     variantNumbers: string[]
   ): Promise<Array<{ variantNumber: string; quantity: number }>> {
     const unique = [...new Set(variantNumbers)];
@@ -131,7 +131,10 @@ export class CollectionService {
       })
       .from(collectionItems)
       .where(
-        and(eq(collectionItems.userId, userId), inArray(collectionItems.variantNumber, unique))
+        and(
+          eq(collectionItems.collectionId, collectionId),
+          inArray(collectionItems.variantNumber, unique)
+        )
       );
 
     const byVariant = new Map(rows.map((row) => [row.variantNumber, row.quantity]));
@@ -142,7 +145,7 @@ export class CollectionService {
   }
 
   async upsert(
-    userId: string,
+    collectionId: string,
     input: {
       variantNumber: string;
       quantity: number;
@@ -157,7 +160,7 @@ export class CollectionService {
     }
   ): Promise<CollectionItemDto | null> {
     if (input.quantity <= 0) {
-      await this.remove(userId, input.variantNumber, input.condition, input.language);
+      await this.remove(collectionId, input.variantNumber, input.condition, input.language);
       return null;
     }
 
@@ -175,7 +178,7 @@ export class CollectionService {
     if (!variant) {
       logActionFailure('collection.upsert.variant_not_found', new Error('Variant not found'), {
         variantNumber: input.variantNumber,
-        userId,
+        collectionId,
       });
       throw new Error(`Variant ${input.variantNumber} not found`);
     }
@@ -191,7 +194,7 @@ export class CollectionService {
     await this.db
       .insert(collectionItems)
       .values({
-        userId,
+        collectionId,
         variantNumber: input.variantNumber,
         quantity: input.quantity,
         condition: input.condition,
@@ -206,7 +209,7 @@ export class CollectionService {
       })
       .onConflictDoUpdate({
         target: [
-          collectionItems.userId,
+          collectionItems.collectionId,
           collectionItems.variantNumber,
           collectionItems.condition,
           collectionItems.language,
@@ -224,7 +227,7 @@ export class CollectionService {
         },
       });
 
-    const list = await this.listForUser(userId);
+    const list = await this.listForCollection(collectionId);
     return (
       list.items.find(
         (item) =>
@@ -236,7 +239,7 @@ export class CollectionService {
   }
 
   async adjustQuantity(
-    userId: string,
+    collectionId: string,
     variantNumber: string,
     delta: number,
     options?: { condition?: CardCondition; language?: string }
@@ -249,7 +252,7 @@ export class CollectionService {
       .from(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userId),
+          eq(collectionItems.collectionId, collectionId),
           eq(collectionItems.variantNumber, variantNumber),
           eq(collectionItems.condition, condition),
           eq(collectionItems.language, language)
@@ -258,7 +261,7 @@ export class CollectionService {
       .limit(1);
 
     const nextQty = (existing?.quantity ?? 0) + delta;
-    return this.upsert(userId, {
+    return this.upsert(collectionId, {
       variantNumber,
       quantity: nextQty,
       condition,
@@ -273,7 +276,7 @@ export class CollectionService {
   }
 
   async remove(
-    userId: string,
+    collectionId: string,
     variantNumber: string,
     condition = 'near_mint',
     language = 'en'
@@ -282,7 +285,7 @@ export class CollectionService {
       .delete(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userId),
+          eq(collectionItems.collectionId, collectionId),
           eq(collectionItems.variantNumber, variantNumber),
           eq(collectionItems.condition, condition),
           eq(collectionItems.language, language)
@@ -290,20 +293,20 @@ export class CollectionService {
       );
   }
 
-  async removeMany(userId: string, variantNumbers: string[]): Promise<void> {
+  async removeMany(collectionId: string, variantNumbers: string[]): Promise<void> {
     if (variantNumbers.length === 0) return;
     await this.db
       .delete(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userId),
+          eq(collectionItems.collectionId, collectionId),
           inArray(collectionItems.variantNumber, variantNumbers)
         )
       );
   }
 
   async batchSync(
-    userId: string,
+    collectionId: string,
     items: Array<{
       variantNumber: string;
       quantity: number;
@@ -319,7 +322,7 @@ export class CollectionService {
   ): Promise<{ synced: number }> {
     let synced = 0;
     for (const item of items) {
-      await this.upsert(userId, {
+      await this.upsert(collectionId, {
         variantNumber: item.variantNumber,
         quantity: item.quantity,
         condition: item.condition,
@@ -336,7 +339,7 @@ export class CollectionService {
     return { synced };
   }
 
-  async exportForUser(userId: string): Promise<string> {
+  async exportForCollection(collectionId: string): Promise<string> {
     const rows = await this.db
       .select({
         variantNumber: collectionItems.variantNumber,
@@ -358,7 +361,7 @@ export class CollectionService {
       .innerJoin(variants, eq(collectionItems.variantNumber, variants.variantNumber))
       .innerJoin(cards, eq(variants.cardId, cards.id))
       .innerJoin(sets, eq(variants.setId, sets.id))
-      .where(eq(collectionItems.userId, userId))
+      .where(eq(collectionItems.collectionId, collectionId))
       .orderBy(
         sql`${sets.code} asc`,
         sql`${collectionItems.variantNumber} asc`,
@@ -390,20 +393,22 @@ export class CollectionService {
     return exportRowsToCsv(exportRows);
   }
 
-  async clearAll(userId: string): Promise<{ removed: number }> {
+  async clearAll(collectionId: string): Promise<{ removed: number }> {
     const rows = await this.db
       .select({ id: collectionItems.id })
       .from(collectionItems)
-      .where(eq(collectionItems.userId, userId));
+      .where(eq(collectionItems.collectionId, collectionId));
     if (rows.length === 0) {
       return { removed: 0 };
     }
-    await this.db.delete(collectionItems).where(eq(collectionItems.userId, userId));
+    await this.db
+      .delete(collectionItems)
+      .where(eq(collectionItems.collectionId, collectionId));
     return { removed: rows.length };
   }
 
   async importCsv(
-    userId: string,
+    collectionId: string,
     csv: string
   ): Promise<{
     imported: number;
@@ -425,7 +430,7 @@ export class CollectionService {
       };
     }
 
-    const result = await this.importItems(userId, parsed.items);
+    const result = await this.importItems(collectionId, parsed.items);
     return {
       ...result,
       rowsProcessed: parsed.rowsProcessed,
@@ -435,7 +440,7 @@ export class CollectionService {
   }
 
   async importItems(
-    userId: string,
+    collectionId: string,
     items: CollectionImportItem[]
   ): Promise<{
     imported: number;
@@ -487,7 +492,7 @@ export class CollectionService {
     let totalCopies = 0;
     const chunks = chunkArray(validItems, COLLECTION_IMPORT_BATCH_SIZE);
     for (const chunk of chunks) {
-      const result = await this.batchSync(userId, chunk);
+      const result = await this.batchSync(collectionId, chunk);
       imported += result.synced;
       totalCopies += chunk.reduce((sum, item) => sum + item.quantity, 0);
     }

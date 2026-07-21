@@ -1,6 +1,7 @@
 import { Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AuthPanel } from '@/components/auth/AuthPanel';
+import { SharedCollectionSection } from '@/components/settings/SharedCollectionSection';
 import { UpdateChannelSection } from '@/components/settings/UpdateChannelSection';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { Chip, ChipText } from '@/components/ui/chip';
@@ -43,6 +44,9 @@ export default function SettingsScreen() {
 
       <SectionLabel className="mt-2">Account</SectionLabel>
       <AuthPanel />
+
+      <SectionLabel className="mt-6">Shared collection</SectionLabel>
+      <SharedCollectionSection />
 
       <UpdateChannelSection />
 

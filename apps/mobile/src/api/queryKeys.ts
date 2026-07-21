@@ -40,6 +40,7 @@ export const collectionQueryKeys = {
   ownership: (variantNumbers: string[]) =>
     ['collection', 'ownership', [...variantNumbers].sort().join(',')] as const,
   ownershipRoot: ['collection', 'ownership'] as const,
+  share: ['collection', 'share'] as const,
 };
 
 export const wishlistQueryKeys = {

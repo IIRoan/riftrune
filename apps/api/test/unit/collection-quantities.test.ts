@@ -25,7 +25,7 @@ describe('CollectionService.quantitiesForVariants', () => {
   test('returns zero for missing variants and deduplicates input', async () => {
     const service = createCollectionHarness([{ variantNumber: 'OGN-001', quantity: 3 }]);
 
-    const result = await service.quantitiesForVariants('user-1', [
+    const result = await service.quantitiesForVariants('collection-1', [
       'OGN-001',
       'OGN-001',
       'OGN-999',
@@ -40,6 +40,6 @@ describe('CollectionService.quantitiesForVariants', () => {
   test('returns an empty array for no variant numbers', async () => {
     const service = createCollectionHarness([]);
 
-    expect(await service.quantitiesForVariants('user-1', [])).toEqual([]);
+    expect(await service.quantitiesForVariants('collection-1', [])).toEqual([]);
   });
 });
