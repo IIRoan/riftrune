@@ -23,17 +23,20 @@ function baseEnv(overrides: Partial<Env> = {}): Env {
 }
 
 describe('resolveTrustedOrigins', () => {
-  test('includes app scheme, configured origins, and auth base URL', () => {
+  test('includes app scheme, Expo Go, configured origins, and auth base URL', () => {
     const origins = resolveTrustedOrigins(baseEnv());
     expect(origins).toContain('riftrune://');
+    expect(origins).toContain('exp://');
+    expect(origins).toContain('exp://**');
+    expect(origins).toContain('https://u.expo.dev');
     expect(origins).toContain('https://riftrune.com');
     expect(origins).toContain('https://api.riftrune.com');
   });
 
-  test('adds Expo dev origins in development', () => {
+  test('adds localhost origins in development', () => {
     const origins = resolveTrustedOrigins(baseEnv({ NODE_ENV: 'development' }));
-    expect(origins).toContain('exp://');
     expect(origins).toContain('http://localhost:7001');
+    expect(origins).toContain('exp://');
   });
 });
 
@@ -44,6 +47,8 @@ describe('resolveCorsOrigins', () => {
 
   test('returns browser origins in production', () => {
     expect(resolveCorsOrigins(baseEnv())).toEqual([
+      'https://u.expo.dev',
+      'https://*.u.expo.dev',
       'https://riftrune.com',
       'https://api.riftrune.com',
     ]);

@@ -1,5 +1,14 @@
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Pressable, View, type LayoutChangeEvent } from 'react-native';
+import { useEffect, useId, useRef, useState } from 'react';
+import {
+  AccessibilityInfo,
+  Keyboard,
+  Platform,
+  Pressable,
+  TextInput as RNTextInput,
+  View,
+  type LayoutChangeEvent,
+  type TextInputProps as RNTextInputProps,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   Easing,
@@ -7,22 +16,22 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useQueryClient } from '@tanstack/react-query';
 import type { AuthPanelVariant, AuthScreenLayout, Mode } from '@/components/auth/auth-types';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { TextInput } from '@/components/ui/text-input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Text } from '@/components/ui/text';
-import { migrateLocalCollectionToRemote } from '@/services/collectionService';
-import { clearPersistedCollection } from '@/services/collectionCacheService';
-import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
-import { authClient } from '@/src/lib/auth-client';
-import { invalidateUserDataQueries, removeUserDataQueries } from '@/src/api/queryClient';
+import { TextInput } from '@/components/ui/text-input';
 import { cn } from '@/lib/utils';
-import { useQueryClient } from '@tanstack/react-query';
+import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
+import { clearPersistedCollection } from '@/services/collectionCacheService';
+import { migrateLocalCollectionToRemote } from '@/services/collectionService';
+import { invalidateUserDataQueries, removeUserDataQueries } from '@/src/api/queryClient';
+import { authClient } from '@/src/lib/auth-client';
 
-const MODE_TRANSITION_MS = 480;
+const MODE_TRANSITION_MS = 220;
 
 type AuthPanelProps = {
   variant?: AuthPanelVariant;
@@ -61,9 +70,8 @@ function AuthModeTabs({
   const segmentIndex = useSharedValue(mode === 'sign-in' ? 0 : 1);
 
   useEffect(() => {
-    const duration = reduceMotion ? 0 : MODE_TRANSITION_MS;
     segmentIndex.value = withTiming(mode === 'sign-in' ? 0 : 1, {
-      duration,
+      duration: reduceMotion ? 0 : MODE_TRANSITION_MS,
       easing: Easing.out(Easing.cubic),
     });
   }, [mode, reduceMotion, segmentIndex]);
@@ -102,7 +110,7 @@ function AuthModeTabs({
             key={option}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            className="z-10 min-h-10 flex-1 items-center justify-center rounded-md"
+            className="z-10 min-h-11 flex-1 items-center justify-center rounded-md"
             onPress={() => {
               onModeChange(option);
             }}
@@ -122,65 +130,126 @@ function AuthModeTabs({
   );
 }
 
-function AuthModeCopy({
-  mode,
-  isScreen,
-  wide,
-}: {
-  mode: Mode;
-  isScreen: boolean;
-  wide?: boolean;
-}) {
-  const reduceMotion = useReduceMotion();
-  const signInOpacity = useSharedValue(mode === 'sign-in' ? 1 : 0);
-  const signUpOpacity = useSharedValue(mode === 'sign-up' ? 1 : 0);
-
-  useEffect(() => {
-    const duration = reduceMotion ? 0 : MODE_TRANSITION_MS;
-    const easing = Easing.out(Easing.cubic);
-    signInOpacity.value = withTiming(mode === 'sign-in' ? 1 : 0, { duration, easing });
-    signUpOpacity.value = withTiming(mode === 'sign-up' ? 1 : 0, { duration, easing });
-  }, [mode, reduceMotion, signInOpacity, signUpOpacity]);
-
-  const signInStyle = useAnimatedStyle(() => ({
-    opacity: signInOpacity.value,
-    transform: [{ translateY: (1 - signInOpacity.value) * 6 }],
-  }));
-
-  const signUpStyle = useAnimatedStyle(() => ({
-    opacity: signUpOpacity.value,
-    transform: [{ translateY: (1 - signUpOpacity.value) * 6 }],
-  }));
-
-  const titleClass = cn(
-    'font-bold text-foreground',
-    wide ? 'text-3xl tracking-tight' : isScreen ? 'text-xl font-semibold' : 'text-base font-semibold'
-  );
-  const subtitleClass = cn(
-    'text-muted-foreground',
-    wide ? 'mt-2 text-base leading-relaxed' : 'text-sm'
-  );
+function AuthHeading({ mode, wide }: { mode: Mode; wide?: boolean }) {
+  const title =
+    mode === 'sign-in' ? 'Welcome back' : 'Create your account';
+  const subtitle =
+    mode === 'sign-in'
+      ? 'Sync your collection, prices, and printings across devices.'
+      : 'One account keeps ownership and prices aligned everywhere you collect.';
 
   return (
-    <View className={cn('justify-center', wide ? 'min-h-[96px]' : 'min-h-[52px]')}>
-      <Animated.View
-        style={[{ position: 'absolute', left: 0, right: 0 }, signInStyle]}
-        pointerEvents="none"
+    <View className={cn('gap-2', wide ? 'min-h-[88px]' : 'min-h-[72px]')}>
+      <Text
+        className={cn(
+          'font-semibold text-foreground tracking-tight',
+          wide ? 'text-3xl' : 'text-2xl'
+        )}
+        accessibilityRole="header"
       >
-        <Text className={titleClass}>Welcome back</Text>
-        <Text className={subtitleClass}>
-          Sign in to sync your collection, prices, and printings across every device.
-        </Text>
-      </Animated.View>
-      <Animated.View
-        style={[{ position: 'absolute', left: 0, right: 0 }, signUpStyle]}
-        pointerEvents="none"
-      >
-        <Text className={titleClass}>Create your account</Text>
-        <Text className={subtitleClass}>
-          One account keeps your archive aligned everywhere you collect.
-        </Text>
-      </Animated.View>
+        {title}
+      </Text>
+      <Text className={cn('text-muted-foreground leading-5', wide ? 'text-base' : 'text-sm')}>
+        {subtitle}
+      </Text>
+    </View>
+  );
+}
+
+type AutofillEmailProps = {
+  value: string;
+  onChangeText: (value: string) => void;
+  onSubmitEditing?: RNTextInputProps['onSubmitEditing'];
+  inputRef?: React.RefObject<RNTextInput | null>;
+  disabled?: boolean;
+  nextFieldRef?: React.RefObject<RNTextInput | null>;
+};
+
+function AutofillEmailField({
+  value,
+  onChangeText,
+  onSubmitEditing,
+  inputRef,
+  disabled,
+  nextFieldRef,
+}: AutofillEmailProps) {
+  const labelId = useId();
+
+  return (
+    <View className="gap-2">
+      <Label nativeID={labelId}>Email</Label>
+      <TextInput
+        ref={inputRef}
+        value={value}
+        onChangeText={onChangeText}
+        disabled={disabled}
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="email"
+        textContentType="username"
+        keyboardType="email-address"
+        inputMode="email"
+        importantForAutofill="yes"
+        returnKeyType="next"
+        submitBehavior="submit"
+        enablesReturnKeyAutomatically
+        placeholder="you@example.com"
+        accessibilityLabelledBy={labelId}
+        onSubmitEditing={(event) => {
+          if (nextFieldRef?.current) {
+            nextFieldRef.current.focus();
+            return;
+          }
+          onSubmitEditing?.(event);
+        }}
+      />
+    </View>
+  );
+}
+
+type AutofillPasswordProps = {
+  mode: Mode;
+  value: string;
+  onChangeText: (value: string) => void;
+  onSubmitEditing?: RNTextInputProps['onSubmitEditing'];
+  inputRef?: React.RefObject<RNTextInput | null>;
+  disabled?: boolean;
+};
+
+function AutofillPasswordField({
+  mode,
+  value,
+  onChangeText,
+  onSubmitEditing,
+  inputRef,
+  disabled,
+}: AutofillPasswordProps) {
+  const labelId = useId();
+  const isSignUp = mode === 'sign-up';
+
+  return (
+    <View className="gap-2">
+      <Label nativeID={labelId}>Password</Label>
+      <PasswordInput
+        ref={inputRef}
+        value={value}
+        onChangeText={onChangeText}
+        disabled={disabled}
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete={isSignUp ? 'new-password' : 'password'}
+        textContentType={isSignUp ? 'newPassword' : 'password'}
+        passwordRules={
+          isSignUp ? 'minlength: 8; required: lower; required: upper; required: digit;' : undefined
+        }
+        importantForAutofill="yes"
+        returnKeyType="go"
+        submitBehavior="submit"
+        enablesReturnKeyAutomatically
+        placeholder={isSignUp ? 'At least 8 characters' : 'Your password'}
+        accessibilityLabelledBy={labelId}
+        onSubmitEditing={onSubmitEditing}
+      />
     </View>
   );
 }
@@ -200,6 +269,9 @@ export function AuthPanel({
   const isWideScreen = isScreen && screenLayout === 'wide';
   const reduceMotion = useReduceMotion();
 
+  const emailRef = useRef<RNTextInput>(null);
+  const passwordRef = useRef<RNTextInput>(null);
+
   const setMode = (next: Mode) => {
     if (controlledMode === undefined) {
       setInternalMode(next);
@@ -217,13 +289,14 @@ export function AuthPanel({
   }, [mode]);
 
   const handleSubmit = async () => {
+    Keyboard.dismiss();
     setError(null);
     setBusy(true);
     try {
       if (mode === 'sign-up') {
         const localName = email.trim().split('@')[0]?.trim();
         const result = await authClient.signUp.email({
-          email,
+          email: email.trim(),
           password,
           name: localName || 'Collector',
         });
@@ -232,7 +305,10 @@ export function AuthPanel({
           return;
         }
       } else {
-        const result = await authClient.signIn.email({ email, password });
+        const result = await authClient.signIn.email({
+          email: email.trim(),
+          password,
+        });
         if (result.error) {
           setError(result.error.message ?? 'Sign in failed');
           return;
@@ -279,13 +355,9 @@ export function AuthPanel({
     return isScreen ? null : (
       <Card>
         <CardContent className="gap-3 py-4">
-          <Text className="text-base font-semibold text-foreground">
-            {session.user.name}
-          </Text>
+          <Text className="text-base font-semibold text-foreground">{session.user.name}</Text>
           <Text className="text-sm text-muted-foreground">{session.user.email}</Text>
-          <Text className="text-xs text-muted-foreground">
-            Collection synced to your account
-          </Text>
+          <Text className="text-xs text-muted-foreground">Collection synced to your account</Text>
           <Button variant="outline" onPress={handleSignOut} disabled={busy} busy={busy}>
             <ButtonText>Sign out</ButtonText>
           </Button>
@@ -295,56 +367,54 @@ export function AuthPanel({
   }
 
   const formBody = (
-    <>
-      {isScreen ? (
-        <AuthModeCopy mode={mode} isScreen={isScreen} wide={isWideScreen} />
-      ) : (
-        <View className="gap-1">
-          <Text className="text-base font-semibold text-foreground">
-            {mode === 'sign-in' ? 'Welcome back' : 'Create your account'}
-          </Text>
-          <Text className="text-sm text-muted-foreground">
-            {mode === 'sign-in'
-              ? 'Pick up where you left off with your collection.'
-              : 'One account keeps printings and prices in sync everywhere.'}
-          </Text>
-        </View>
-      )}
+    <View
+      className={cn('gap-6', isWideScreen && 'gap-8')}
+      {...(Platform.OS === 'web' ? ({ role: 'form' } as Record<string, string>) : null)}
+    >
+      <AuthHeading mode={mode} wide={isWideScreen} />
 
       {isScreen && !isWideScreen ? (
         <AuthModeTabs mode={mode} onModeChange={setMode} reduceMotion={reduceMotion} />
       ) : null}
 
-      <View className="gap-5">
-        <View className="gap-2">
-          <Label>Email</Label>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder="you@example.com"
-            autoComplete="email"
-          />
-        </View>
+      <View className="gap-4">
+        <AutofillEmailField
+          value={email}
+          onChangeText={setEmail}
+          inputRef={emailRef}
+          nextFieldRef={passwordRef}
+          disabled={busy}
+        />
 
-        <View className="gap-2">
-          <Label>Password</Label>
-          <PasswordInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="At least 8 characters"
-            autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
-          />
-        </View>
+        <AutofillPasswordField
+          mode={mode}
+          value={password}
+          onChangeText={setPassword}
+          inputRef={passwordRef}
+          disabled={busy}
+          onSubmitEditing={() => {
+            void handleSubmit();
+          }}
+        />
 
         {error ? (
-          <Text className="text-sm text-destructive" accessibilityLiveRegion="polite">
+          <Text
+            className="text-sm text-destructive"
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+          >
             {error}
           </Text>
         ) : null}
 
-        <Button onPress={handleSubmit} disabled={busy} busy={busy} size={isScreen ? 'lg' : 'default'}>
+        <Button
+          onPress={() => {
+            void handleSubmit();
+          }}
+          disabled={busy || email.trim().length === 0 || password.length === 0}
+          busy={busy}
+          size={isScreen ? 'lg' : 'default'}
+        >
           <ButtonText>{mode === 'sign-in' ? 'Sign in' : 'Create account'}</ButtonText>
           {isWideScreen ? (
             <ButtonIcon>
@@ -354,46 +424,29 @@ export function AuthPanel({
         </Button>
       </View>
 
-      {isScreen && isWideScreen ? (
-        <Pressable
-          accessibilityRole="button"
-          className="self-start active:opacity-70"
-          onPress={() => {
-            setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
-          }}
-        >
-          <Text className="text-sm text-muted-foreground">
-            {mode === 'sign-in' ? "Don't have an account? " : 'Already have an account? '}
-            <Text className="font-semibold text-foreground">
-              {mode === 'sign-in' ? 'Sign up' : 'Sign in'}
-            </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          mode === 'sign-in' ? 'Switch to create account' : 'Switch to sign in'
+        }
+        className="min-h-11 justify-center self-start active:opacity-70"
+        disabled={busy}
+        onPress={() => {
+          setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
+        }}
+      >
+        <Text className="text-sm text-muted-foreground">
+          {mode === 'sign-in' ? "Don't have an account? " : 'Already have an account? '}
+          <Text className="font-semibold text-foreground">
+            {mode === 'sign-in' ? 'Sign up' : 'Sign in'}
           </Text>
-        </Pressable>
-      ) : null}
-
-      {!isScreen ? (
-        <Button
-          variant="ghost"
-          onPress={() => {
-            setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in');
-          }}
-        >
-          <ButtonText>
-            {mode === 'sign-in'
-              ? 'Need an account? Sign up'
-              : 'Already have an account? Sign in'}
-          </ButtonText>
-        </Button>
-      ) : null}
-    </>
+        </Text>
+      </Pressable>
+    </View>
   );
 
   if (isScreen) {
-    if (isWideScreen) {
-      return <View className="w-full gap-8">{formBody}</View>;
-    }
-
-    return <View className="gap-6">{formBody}</View>;
+    return <View className="w-full">{formBody}</View>;
   }
 
   return (

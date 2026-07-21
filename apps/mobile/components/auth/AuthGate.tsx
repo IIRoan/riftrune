@@ -19,8 +19,14 @@ import { prefetchCatalogIndex } from '@/hooks/useCatalogIndex';
 
 function AuthBrandMark() {
   return (
-    <View className="size-9 items-center justify-center rounded-lg bg-primary">
-      <Text className="font-mono text-sm font-bold text-primary-foreground">r</Text>
+    <View className="flex-row items-center gap-3">
+      <View className="size-10 items-center justify-center rounded-lg bg-primary">
+        <Text className="font-mono text-base font-bold text-primary-foreground">r</Text>
+      </View>
+      <View className="gap-0.5">
+        <Text className="text-base font-semibold tracking-tight text-foreground">Riftrune</Text>
+        <Text className="text-xs text-muted-foreground">Collection & deck companion</Text>
+      </View>
     </View>
   );
 }
@@ -47,6 +53,7 @@ function AuthWideSplit({
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           className="min-h-0 flex-1"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
         >
           <ScrollView
             className="flex-1"
@@ -57,6 +64,8 @@ function AuthWideSplit({
               paddingBottom: insets.bottom + 40,
             }}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
             showsVerticalScrollIndicator={false}
           >
             <View className="w-full max-w-[420px]">
@@ -123,39 +132,40 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
 
     return (
-      <View
-        className="flex-1 bg-background"
-        style={{
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
-        }}
-      >
+      <View className="flex-1 bg-background">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           className="min-h-0 flex-1"
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
           <ScrollView
             className="flex-1"
             contentContainerStyle={{
               flexGrow: 1,
               paddingHorizontal: 20,
-              paddingTop: 16,
-              paddingBottom: 16,
+              paddingTop: insets.top + 20,
+              paddingBottom: insets.bottom + 24,
             }}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
             showsVerticalScrollIndicator={false}
           >
-            <View className="mb-6">
+            <View className="mb-8">
               <AuthBrandMark />
             </View>
+
             <AuthPanel
               variant="screen"
               screenLayout="mobile"
               mode={mode}
               onModeChange={setMode}
             />
-            <View className="mt-6 h-[340px] w-full">
-              <AuthWallpaperFrame mode={mode} className="h-full w-full" />
+
+            <View className="mt-auto pt-10">
+              <View className="h-[220px] w-full">
+                <AuthWallpaperFrame mode={mode} className="h-full w-full" />
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
