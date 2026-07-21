@@ -105,7 +105,12 @@ export function getSearchGroupKey(
   if (!foil && variantLabel !== 'Standard') {
     return variantNumber;
   }
-  return variantNumber.replace(/-Foil$/i, '');
+  let key = variantNumber.replace(/-Foil$/i, '');
+  // Rune-style foil siblings (e.g. SFD-R05a) share a finish family with the base number.
+  if (foil && key === variantNumber && variantLabel === 'Foil') {
+    key = variantNumber.replace(/[a-z]$/i, '');
+  }
+  return key;
 }
 
 export type VariantLike = {
