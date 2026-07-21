@@ -7,6 +7,7 @@ import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   buildPrintingPickerOptions,
   getRemovePrintingPickerOptions,
+  resolveQuickRemoveVariantNumber,
   shouldShowPrintingPicker,
   shouldShowRemovePrintingPicker,
   type PrintingWithOwned,
@@ -153,7 +154,7 @@ export function OwnershipStepper({
       >
         {renderStepButton(
           'remove',
-          () => onRemove(fixedVariantNumber),
+          () => onRemove(resolveQuickRemoveVariantNumber(printings, fixedVariantNumber)),
           showRemovePicker,
           'Remove printing',
           removeOptions,

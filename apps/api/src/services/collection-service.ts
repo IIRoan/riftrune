@@ -37,6 +37,14 @@ function toIso(value: Date | null): string | null {
   return value ? value.toISOString() : null;
 }
 
+/**
+ * Next stack quantity after an add/remove delta.
+ * Callers treat values <= 0 as "delete this stack".
+ */
+export function nextStackQuantity(existingQuantity: number | undefined, delta: number): number {
+  return (existingQuantity ?? 0) + delta;
+}
+
 export class CollectionService {
   private readonly variantResolver: VariantResolver;
 
@@ -260,7 +268,7 @@ export class CollectionService {
       )
       .limit(1);
 
-    const nextQty = (existing?.quantity ?? 0) + delta;
+    const nextQty = nextStackQuantity(existing?.quantity, delta);
     return this.upsert(collectionId, {
       variantNumber,
       quantity: nextQty,

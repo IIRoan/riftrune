@@ -7,6 +7,8 @@ import {
   getRemovePrintingPickerOptions,
   resolvePrintingPickerState,
   resolveQuickAddPrintings,
+  resolveQuickAddVariantNumber,
+  resolveQuickRemoveVariantNumber,
   shouldShowPrintingPicker,
   shouldShowRemovePrintingPicker,
 } from '@/utils/collectionPrintingPicker';
@@ -235,12 +237,120 @@ describe('resolvePrintingPickerState', () => {
   });
 });
 
-describe('rune foil sibling quick add', () => {
-  test('includes std and foil finishes for SFD-R05 / SFD-R05a cards', () => {
-    const card = cardWithPrintings(runePrintings, 'SFD-R05');
-    const stepperPrintings = resolveQuickAddPrintings(card);
+describe('resolveQuickRemoveVariantNumber', () => {
+  test('when only foil is owned, remove targets the foil stack not standard', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([['OGN-253-Foil', { quantity: 1 }]])
+    );
 
-    expect(stepperPrintings.map((p) => p.variantNumber)).toEqual(['SFD-R05', 'SFD-R05a']);
-    expect(shouldShowPrintingPicker(stepperPrintings)).toBe(true);
+    expect(resolveQuickRemoveVariantNumber(printings)).toBe('OGN-253-Foil');
+    expect(shouldShowRemovePrintingPicker(printings)).toBe(false);
+  });
+
+  test('when only standard is owned, remove targets standard', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([['OGN-253', { quantity: 2 }]])
+    );
+
+    expect(resolveQuickRemoveVariantNumber(printings)).toBe('OGN-253');
+  });
+
+  test('honors an explicit preferred variant when provided', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([
+        ['OGN-253', { quantity: 1 }],
+        ['OGN-253-Foil', { quantity: 1 }],
+      ])
+    );
+
+    expect(resolveQuickRemoveVariantNumber(printings, 'OGN-253-Foil')).toBe('OGN-253-Foil');
+  });
+
+  test('returns undefined when nothing is owned', () => {
+    const printings = attachOwnedToPrintings(stdFoilPrintings);
+    expect(resolveQuickRemoveVariantNumber(printings)).toBeUndefined();
+  });
+
+  test('with both finishes owned and no preference, uses the first owned stack', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([
+        ['OGN-253', { quantity: 1 }],
+        ['OGN-253-Foil', { quantity: 3 }],
+      ])
+    );
+
+    expect(resolveQuickRemoveVariantNumber(printings)).toBe('OGN-253');
+  });
+});
+
+describe('resolveQuickAddVariantNumber', () => {
+  test('single printing adds that variant', () => {
+    expect(resolveQuickAddVariantNumber([stdFoilPrintings[0]!])).toBe('OGN-253');
+  });
+
+  test('std+foil without picker choice prefers non-foil primary', () => {
+    expect(resolveQuickAddVariantNumber(stdFoilPrintings)).toBe('OGN-253');
+  });
+
+  test('honors an explicit preferred finish (foil)', () => {
+    expect(resolveQuickAddVariantNumber(stdFoilPrintings, 'OGN-253-Foil')).toBe('OGN-253-Foil');
+  });
+
+  test('foil-only card group still resolves a variant', () => {
+    expect(resolveQuickAddVariantNumber([stdFoilPrintings[1]!])).toBe('OGN-253-Foil');
+  });
+});
+
+describe('foil-only ownership search quick-add scenarios', () => {
+  test('owned badge can be 1 while only foil is collected', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([['OGN-253-Foil', { quantity: 1 }]])
+    );
+    const ownedSum = printings.reduce((sum, p) => sum + (p.owned ?? 0), 0);
+
+    expect(ownedSum).toBe(1);
+    expect(shouldShowPrintingPicker(printings)).toBe(true);
+    expect(shouldShowRemovePrintingPicker(printings)).toBe(false);
+    expect(resolveQuickRemoveVariantNumber(printings)).toBe('OGN-253-Foil');
+  });
+
+  test('adding foil then removing without picker decrements foil only', () => {
+    let ownership = new Map<string, { quantity: number }>();
+
+    const addTarget = resolveQuickAddVariantNumber(stdFoilPrintings, 'OGN-253-Foil');
+    expect(addTarget).toBe('OGN-253-Foil');
+    ownership.set(addTarget!, { quantity: 1 });
+
+    const afterAdd = attachOwnedToPrintings(stdFoilPrintings, ownership);
+    expect(afterAdd.find((p) => p.variantNumber === 'OGN-253')?.owned).toBe(0);
+    expect(afterAdd.find((p) => p.variantNumber === 'OGN-253-Foil')?.owned).toBe(1);
+
+    const removeTarget = resolveQuickRemoveVariantNumber(afterAdd);
+    expect(removeTarget).toBe('OGN-253-Foil');
+    ownership.set(removeTarget!, { quantity: 0 });
+
+    const afterRemove = attachOwnedToPrintings(stdFoilPrintings, ownership);
+    expect(afterRemove.find((p) => p.variantNumber === 'OGN-253-Foil')?.owned).toBe(0);
+    expect(afterRemove.reduce((sum, p) => sum + (p.owned ?? 0), 0)).toBe(0);
+  });
+
+  test('standard owned + foil add keeps stacks independent for remove picker', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([
+        ['OGN-253', { quantity: 1 }],
+        ['OGN-253-Foil', { quantity: 1 }],
+      ])
+    );
+    const state = resolvePrintingPickerState({ printings });
+
+    expect(state.showAddPicker).toBe(true);
+    expect(state.showRemovePicker).toBe(true);
+    expect(state.removeOptions.map((o) => o.id)).toEqual(['OGN-253', 'OGN-253-Foil']);
   });
 });

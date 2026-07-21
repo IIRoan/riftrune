@@ -36,7 +36,9 @@ describe('resolveTrustedOrigins', () => {
 
   test('adds localhost origins in development', () => {
     const origins = resolveTrustedOrigins(baseEnv({ NODE_ENV: 'development' }));
+    expect(origins).toContain('http://localhost:7000');
     expect(origins).toContain('http://localhost:7001');
+    expect(origins).toContain('http://localhost:7011');
     expect(origins).toContain('exp://');
   });
 });

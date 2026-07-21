@@ -6,6 +6,7 @@ import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   buildPrintingPickerOptions,
   getRemovePrintingPickerOptions,
+  resolveQuickRemoveVariantNumber,
   shouldShowPrintingPicker,
   shouldShowRemovePrintingPicker,
   type PrintingPickerOption,
@@ -68,7 +69,7 @@ export function GridCollectionControl({
 
   const handleRemove = () => {
     void hapticPress();
-    onRemove(fixedVariantNumber);
+    onRemove(resolveQuickRemoveVariantNumber(printings, fixedVariantNumber));
   };
 
   if (owned === 0) {

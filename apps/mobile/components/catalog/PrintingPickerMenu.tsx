@@ -49,6 +49,8 @@ function PrintingMenuItems({
           <PopoverClose key={option.id} asChild>
             <Pressable
               accessibilityRole="menuitem"
+              accessibilityLabel={`Select ${option.label} printing ${option.id}`}
+              testID={`printing-option-${option.id}`}
               className="flex-row items-center justify-between gap-3 rounded-md px-2.5 py-2 active:bg-accent"
               onPress={() => {
                 onSelect(option.id);

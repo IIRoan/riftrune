@@ -28,6 +28,7 @@ import {
 import {
   attachOwnedToPrintings,
   resolveQuickAddPrintings,
+  resolveQuickRemoveVariantNumber,
 } from '@/utils/collectionPrintingPicker';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { hapticPress } from '@/utils/haptics';
@@ -126,7 +127,7 @@ function CardTileInner({
   const onRemove = useCallback(
     (variantNumber?: string) => {
       void hapticPress();
-      const vn = variantNumber ?? primaryPrinting?.variantNumber;
+      const vn = resolveQuickRemoveVariantNumber(printingsWithOwned, variantNumber);
       if (!vn) return;
       const entry = collectionByVariant?.get(vn);
       if (!entry) return;
@@ -135,7 +136,7 @@ function CardTileInner({
         quantity: Math.max(0, entry.quantity - 1),
       });
     },
-    [collectionByVariant, primaryPrinting?.variantNumber, setQuantity]
+    [collectionByVariant, printingsWithOwned, setQuantity]
   );
 
   const listCompact = isMobile && layout === 'list';
