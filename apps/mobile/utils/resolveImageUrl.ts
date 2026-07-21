@@ -1,7 +1,6 @@
-const API_URL = String(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:7000').replace(
-  /\/$/,
-  ''
-);
+import { getApiUrl } from '@/lib/api-url';
+
+const API_URL = getApiUrl();
 const LOCAL_API_DEFAULT = 'http://localhost:7000';
 const API_IMAGES_PREFIX = '/api/v1/images/';
 const CDN_HOST = 'cdn.piltoverarchive.com';
