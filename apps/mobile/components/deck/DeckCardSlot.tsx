@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
+import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
@@ -132,6 +133,7 @@ function DeckCardSlotInner({
 
   const showEnergy = !single && card.energy > 0;
   const showArtRemove = single && Boolean(onRemove);
+  const showHoverInfo = Platform.OS === 'web' && Boolean(imageUri);
 
   return (
     <View style={{ width: tileWidth }} className="gap-1.5">
@@ -165,12 +167,28 @@ function DeckCardSlotInner({
           </View>
         ) : showEnergy ? (
           <View
-            className="absolute right-1 top-1 rounded-md border border-white/10 bg-background/92 px-1.5 py-0.5"
+            className="absolute left-1 top-1 rounded-md border border-white/10 bg-background/92 px-1.5 py-0.5"
             pointerEvents="none"
           >
             <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
               {card.energy}
             </Text>
+          </View>
+        ) : null}
+
+        {showHoverInfo ? (
+          <View className="absolute right-1 top-1 z-10">
+            <CardArtHoverPreview
+              imageUri={imageUri}
+              variantNumber={card.variantNumber}
+            >
+              <View
+                accessibilityLabel={`Preview ${card.name}`}
+                className="size-7 items-center justify-center rounded-md border border-white/10 bg-background/92"
+              >
+                <ThemedIonicon name="information-circle-outline" size={16} color="foreground" />
+              </View>
+            </CardArtHoverPreview>
           </View>
         ) : null}
 

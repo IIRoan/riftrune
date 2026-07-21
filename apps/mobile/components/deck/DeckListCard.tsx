@@ -38,14 +38,12 @@ function CardThumb({
   imageUri,
   variantNumber,
   count,
-  label,
   fallbackIcon = false,
   size,
 }: {
   imageUri: string;
   variantNumber?: string;
   count?: number;
-  label?: string;
   fallbackIcon?: boolean;
   size: number;
 }) {
@@ -79,11 +77,7 @@ function CardThumb({
   if (!imageUri || !variantNumber) return thumb;
 
   return (
-    <CardArtHoverPreview
-      imageUri={imageUri}
-      variantNumber={variantNumber}
-      label={label}
-    >
+    <CardArtHoverPreview imageUri={imageUri} variantNumber={variantNumber}>
       {thumb}
     </CardArtHoverPreview>
   );
@@ -155,7 +149,6 @@ function DeckListCardInner({
             <CardThumb
               imageUri={legendUri}
               variantNumber={deck.legend?.variantNumber}
-              label={deck.legend?.name}
               fallbackIcon
               size={LEGEND_SIZE}
             />
@@ -163,7 +156,6 @@ function DeckListCardInner({
               <CardThumb
                 imageUri={championUri}
                 variantNumber={deck.champion.variantNumber}
-                label={deck.champion.name}
                 size={Math.round(LEGEND_SIZE * 0.72)}
               />
             ) : null}
@@ -243,9 +235,6 @@ function DeckListCardInner({
                 imageUri={resolveDeckCardImageUrl(entry.card, imageByVariant)}
                 variantNumber={entry.card.variantNumber}
                 count={entry.count}
-                label={
-                  entry.count > 1 ? `${entry.count}× ${entry.card.name}` : entry.card.name
-                }
                 size={PREVIEW_SIZE}
               />
             ))}

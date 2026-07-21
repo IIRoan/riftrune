@@ -1,13 +1,15 @@
 import { useId, useRef, useState, type ReactNode } from 'react';
 import { Platform, useWindowDimensions, View } from 'react-native';
+import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { Portal } from '@/components/ui/portal';
-import { Text } from '@/components/ui/text';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { cn } from '@/lib/utils';
 
-const PREVIEW_HEIGHT = 340;
-const PREVIEW_WIDTH = Math.round(PREVIEW_HEIGHT * (5 / 7));
+const PORTRAIT_PREVIEW_HEIGHT = 460;
+const PORTRAIT_PREVIEW_WIDTH = Math.round(PORTRAIT_PREVIEW_HEIGHT * (5 / 7));
+const LANDSCAPE_PREVIEW_WIDTH = 560;
+const LANDSCAPE_PREVIEW_HEIGHT = Math.round(LANDSCAPE_PREVIEW_WIDTH * (5 / 7));
 const EDGE_PAD = 12;
 const GAP = 10;
 
@@ -18,10 +20,13 @@ type Anchor = {
   height: number;
 };
 
+export type CardArtHoverOrientation = 'portrait' | 'landscape';
+
 interface CardArtHoverPreviewProps {
   imageUri: string;
   variantNumber: string;
-  label?: string;
+  /** Battlefield cards render landscape (rotated art). */
+  orientation?: CardArtHoverOrientation;
   children: ReactNode;
   className?: string;
 }
@@ -34,7 +39,7 @@ interface CardArtHoverPreviewProps {
 export function CardArtHoverPreview({
   imageUri,
   variantNumber,
-  label,
+  orientation = 'portrait',
   children,
   className,
 }: CardArtHoverPreviewProps) {
@@ -46,6 +51,16 @@ export function CardArtHoverPreview({
   if (Platform.OS !== 'web' || !imageUri) {
     return <>{children}</>;
   }
+
+  const baseWidth =
+    orientation === 'landscape' ? LANDSCAPE_PREVIEW_WIDTH : PORTRAIT_PREVIEW_WIDTH;
+  const baseHeight =
+    orientation === 'landscape' ? LANDSCAPE_PREVIEW_HEIGHT : PORTRAIT_PREVIEW_HEIGHT;
+  const maxWidth = Math.max(160, windowWidth - EDGE_PAD * 2);
+  const maxHeight = Math.max(200, windowHeight - EDGE_PAD * 2);
+  const fitScale = Math.min(1, maxWidth / baseWidth, maxHeight / baseHeight);
+  const previewWidth = Math.round(baseWidth * fitScale);
+  const previewHeight = Math.round(baseHeight * fitScale);
 
   const show = (next: Anchor | null) => {
     setAnchor(next);
@@ -62,20 +77,20 @@ export function CardArtHoverPreview({
   if (anchor) {
     const rightSpace = windowWidth - (anchor.x + anchor.width) - EDGE_PAD;
     const leftSpace = anchor.x - EDGE_PAD;
-    if (rightSpace >= PREVIEW_WIDTH + GAP) {
+    if (rightSpace >= previewWidth + GAP) {
       previewLeft = anchor.x + anchor.width + GAP;
-    } else if (leftSpace >= PREVIEW_WIDTH + GAP) {
-      previewLeft = anchor.x - PREVIEW_WIDTH - GAP;
+    } else if (leftSpace >= previewWidth + GAP) {
+      previewLeft = anchor.x - previewWidth - GAP;
     } else {
       previewLeft = Math.max(
         EDGE_PAD,
-        Math.min(anchor.x + anchor.width / 2 - PREVIEW_WIDTH / 2, windowWidth - PREVIEW_WIDTH - EDGE_PAD)
+        Math.min(anchor.x + anchor.width / 2 - previewWidth / 2, windowWidth - previewWidth - EDGE_PAD)
       );
     }
 
     previewTop = Math.max(
       EDGE_PAD,
-      Math.min(anchor.y + anchor.height / 2 - PREVIEW_HEIGHT / 2, windowHeight - PREVIEW_HEIGHT - EDGE_PAD)
+      Math.min(anchor.y + anchor.height / 2 - previewHeight / 2, windowHeight - previewHeight - EDGE_PAD)
     );
   }
 
@@ -99,7 +114,7 @@ export function CardArtHoverPreview({
               position: 'fixed',
               left: previewLeft,
               top: previewTop,
-              width: PREVIEW_WIDTH,
+              width: previewWidth,
               zIndex: 50,
             }}
           >
@@ -108,20 +123,14 @@ export function CardArtHoverPreview({
                 'overflow-hidden border border-border bg-background shadow-lg',
                 CARD_ART_RADIUS_CLASS
               )}
-              style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT }}
+              style={{ width: previewWidth, height: previewHeight }}
             >
-              <DeckCardArt uri={imageUri} variantNumber={variantNumber} />
+              {orientation === 'landscape' ? (
+                <BattlefieldCardArt uri={imageUri} variantNumber={variantNumber} />
+              ) : (
+                <DeckCardArt uri={imageUri} variantNumber={variantNumber} />
+              )}
             </View>
-            {label ? (
-              <View className="mt-1.5 rounded-md border border-border bg-popover px-2 py-1">
-                <Text
-                  className="text-center text-[12px] font-medium text-popover-foreground"
-                  numberOfLines={2}
-                >
-                  {label}
-                </Text>
-              </View>
-            ) : null}
           </View>
         </Portal>
       ) : null}

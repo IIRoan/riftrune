@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { AppLoader } from '@/components/ui/app-loader';
 import {
   FlatList,
+  Platform,
   Pressable,
   View,
   type LayoutChangeEvent,
@@ -16,6 +17,7 @@ import {
   CatalogFilterTrigger,
 } from '@/components/catalog/FilterSheet';
 import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
+import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
@@ -98,6 +100,8 @@ const CatalogTile = memo(function CatalogTile({
   const canAdd = !readOnly && !blocked;
   const canRemove = !readOnly && count > 0;
   const ownershipBorder = deckOwnershipBorderClass(owned, count);
+  const imageUri = candidate.imageUrl ? resolveImageUrl(candidate.imageUrl) : '';
+  const showHoverInfo = Platform.OS === 'web' && Boolean(imageUri);
 
   return (
     <View style={{ width: tileWidth }} className="gap-1.5">
@@ -146,11 +150,8 @@ const CatalogTile = memo(function CatalogTile({
                     : 'border-white/10'
           )}
         >
-          {candidate.imageUrl ? (
-            <DeckCardArt
-              uri={resolveImageUrl(candidate.imageUrl)}
-              variantNumber={candidate.variantNumber}
-            />
+          {imageUri ? (
+            <DeckCardArt uri={imageUri} variantNumber={candidate.variantNumber} />
           ) : (
             <View className="flex-1 items-center justify-center bg-card-panel">
               <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
@@ -160,6 +161,25 @@ const CatalogTile = memo(function CatalogTile({
           {illegal ? (
             <View className="absolute left-1 top-1" pointerEvents="none">
               <StatusKeywordBadge status="illegal" compact />
+            </View>
+          ) : null}
+
+          {showHoverInfo ? (
+            <View className="absolute right-1 top-1 z-10">
+              <CardArtHoverPreview
+                imageUri={imageUri}
+                variantNumber={candidate.variantNumber}
+              >
+                <Pressable
+                  accessibilityLabel={`Preview ${candidate.name}`}
+                  className="size-7 items-center justify-center rounded-md border border-white/10 bg-background/92"
+                  onPress={(event) => {
+                    event.stopPropagation?.();
+                  }}
+                >
+                  <ThemedIonicon name="information-circle-outline" size={16} color="foreground" />
+                </Pressable>
+              </CardArtHoverPreview>
             </View>
           ) : null}
 
