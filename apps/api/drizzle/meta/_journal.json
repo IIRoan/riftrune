@@ -43,6 +43,13 @@
       "when": 1784516580000,
       "tag": "0005_collection_is_foil_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784610000000,
+      "tag": "0006_shared_collections",
+      "breakpoints": true
     }
   ]
 }

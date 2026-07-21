@@ -214,18 +214,81 @@ export const CARD_CONDITIONS = [
 
 export type CardCondition = (typeof CARD_CONDITIONS)[number];
 
+export const COLLECTION_MEMBER_ROLES = ['owner', 'member'] as const;
+export type CollectionMemberRole = (typeof COLLECTION_MEMBER_ROLES)[number];
+
+export const COLLECTION_INVITE_STATUSES = [
+  'pending',
+  'accepted',
+  'revoked',
+  'expired',
+] as const;
+export type CollectionInviteStatus = (typeof COLLECTION_INVITE_STATUSES)[number];
+
+/** Shared (or solo) inventory container. Items hang off this, not directly off user. */
+export const collections = pgTable('collections', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /**
- * A user's owned stack of a specific printing.
- * Uniqueness is per user + variant + condition + language so you can track
+ * Exactly one active membership per user. A collection may have at most 2 members
+ * (enforced in application logic).
+ */
+export const collectionMembers = pgTable(
+  'collection_members',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    collectionId: uuid('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: text('role').notNull().default('owner'),
+    joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('collection_members_user_id_idx').on(t.userId),
+    index('collection_members_collection_id_idx').on(t.collectionId),
+  ]
+);
+
+export const collectionInvites = pgTable(
+  'collection_invites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    token: text('token').notNull(),
+    collectionId: uuid('collection_id')
+      .notNull()
+      .references(() => collections.id, { onDelete: 'cascade' }),
+    inviterUserId: text('inviter_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('pending'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('collection_invites_token_idx').on(t.token),
+    index('collection_invites_collection_id_idx').on(t.collectionId),
+    index('collection_invites_inviter_user_id_idx').on(t.inviterUserId),
+  ]
+);
+
+/**
+ * Owned stack of a specific printing within a collection.
+ * Uniqueness is per collection + variant + condition + language so you can track
  * NM vs LP copies of the same card separately.
  */
 export const collectionItems = pgTable(
   'collection_items',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: text('user_id')
+    collectionId: uuid('collection_id')
       .notNull()
-      .references(() => user.id, { onDelete: 'cascade' }),
+      .references(() => collections.id, { onDelete: 'cascade' }),
     variantNumber: text('variant_number')
       .notNull()
       .references(() => variants.variantNumber, { onDelete: 'restrict' }),
@@ -243,13 +306,13 @@ export const collectionItems = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex('collection_items_user_variant_condition_lang_idx').on(
-      t.userId,
+    uniqueIndex('collection_items_collection_variant_condition_lang_idx').on(
+      t.collectionId,
       t.variantNumber,
       t.condition,
       t.language
     ),
-    index('collection_items_user_id_idx').on(t.userId),
+    index('collection_items_collection_id_idx').on(t.collectionId),
     index('collection_items_variant_number_idx').on(t.variantNumber),
   ]
 );
@@ -275,8 +338,36 @@ export const wishlistItems = pgTable(
   ]
 );
 
+export const collectionsRelations = relations(collections, ({ many }) => ({
+  members: many(collectionMembers),
+  items: many(collectionItems),
+  invites: many(collectionInvites),
+}));
+
+export const collectionMembersRelations = relations(collectionMembers, ({ one }) => ({
+  collection: one(collections, {
+    fields: [collectionMembers.collectionId],
+    references: [collections.id],
+  }),
+  user: one(user, { fields: [collectionMembers.userId], references: [user.id] }),
+}));
+
+export const collectionInvitesRelations = relations(collectionInvites, ({ one }) => ({
+  collection: one(collections, {
+    fields: [collectionInvites.collectionId],
+    references: [collections.id],
+  }),
+  inviter: one(user, {
+    fields: [collectionInvites.inviterUserId],
+    references: [user.id],
+  }),
+}));
+
 export const collectionItemsRelations = relations(collectionItems, ({ one }) => ({
-  user: one(user, { fields: [collectionItems.userId], references: [user.id] }),
+  collection: one(collections, {
+    fields: [collectionItems.collectionId],
+    references: [collections.id],
+  }),
   variant: one(variants, {
     fields: [collectionItems.variantNumber],
     references: [variants.variantNumber],

@@ -14,6 +14,7 @@ import {
   CollectionImportExportStatus,
   CollectionImportExportToolbar,
 } from '@/components/collection/CollectionImportExportActions';
+import { SharedCollectionBanner } from '@/components/collection/SharedCollectionBanner';
 import { ScreenLayout, ScreenLayoutBody, useScreenLayout } from '@/components/shell/ScreenLayout';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
@@ -104,6 +105,7 @@ function CollectionScreenBody() {
 
   const dashboardHeader = (
     <View className="pb-6">
+      <SharedCollectionBanner />
       <View className="mb-8">
         <Text className="text-xl font-semibold tracking-tight text-foreground">
           Collection Dashboard

@@ -76,6 +76,20 @@ function RootNav() {
             contentStyle: { backgroundColor: 'transparent' },
           }}
         />
+        <Stack.Screen
+          name="collection/invite/[token]"
+          options={{
+            title: 'Join collection',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="invite/[token]"
+          options={{
+            title: 'Open invite',
+            headerShown: false,
+          }}
+        />
       </Stack>
     </NavThemeProvider>
   );

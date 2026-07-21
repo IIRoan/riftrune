@@ -11,6 +11,7 @@ import { errorPlugin } from './plugins/error-handler.js';
 import { createCardsRoutes } from './routes/cards.js';
 import { createImagesRoutes } from './routes/images.js';
 import { createCollectionRoutes } from './routes/collection.js';
+import { createCollectionShareRoutes } from './routes/collection-share.js';
 import { createFiltersRoutes } from './routes/filters.js';
 import { createPricesRoutes } from './routes/prices.js';
 import { createHealthRoutes, createSyncRoutes } from './routes/sync.js';
@@ -21,6 +22,7 @@ import { CardCacheService } from './services/card-cache.js';
 import { ImageStoreService } from './services/image-store.js';
 import { CatalogMetadataService } from './services/catalog-metadata.js';
 import { CollectionService } from './services/collection-service.js';
+import { CollectionShareService } from './services/collection-share-service.js';
 import { PriceCacheService } from './services/price-cache.js';
 import { SyncEngine } from './services/sync-engine.js';
 import { WishlistService } from './services/wishlist-service.js';
@@ -38,6 +40,7 @@ export interface AppContext {
   priceCache: PriceCacheService;
   syncEngine: SyncEngine;
   collectionService: CollectionService;
+  collectionShareService: CollectionShareService;
   wishlistService: WishlistService;
   deckService: DeckService;
 }
@@ -53,6 +56,7 @@ function buildApp(env: Env): AppContext {
   const catalogMetadata = new CatalogMetadataService(db, riftrune);
   const syncEngine = new SyncEngine(db, riftrune, cardCache, catalogMetadata);
   const collectionService = new CollectionService(db, cardCache, imageStore, riftrune);
+  const collectionShareService = new CollectionShareService(db, env.PUBLIC_APP_URL);
   const wishlistService = new WishlistService(db, imageStore);
   const upstreamDeckWriteExtraHeader =
     env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME && env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE
@@ -96,7 +100,8 @@ function buildApp(env: Env): AppContext {
     .use(createCardsRoutes(cardCache, env))
     .use(createPricesRoutes(priceCache, db))
     .use(createFiltersRoutes(catalogMetadata))
-    .use(createCollectionRoutes(collectionService, auth))
+    .use(createCollectionShareRoutes(collectionShareService, auth))
+    .use(createCollectionRoutes(collectionService, auth, db))
     .use(createWishlistRoutes(wishlistService, auth))
     .use(createDeckRulesRoutes())
     .use(createDecksRoutes(deckService, auth))
@@ -119,6 +124,7 @@ function buildApp(env: Env): AppContext {
     priceCache,
     syncEngine,
     collectionService,
+    collectionShareService,
     wishlistService,
     deckService,
   } as unknown as AppContext;

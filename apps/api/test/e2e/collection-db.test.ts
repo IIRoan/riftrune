@@ -7,7 +7,7 @@ import {
 import { and, eq, sql } from 'drizzle-orm';
 import { authFetch, cleanupTestUsers, signUpTestUser } from './helpers/auth.js';
 import { getContext } from './support.js';
-import { collectionItems } from '../../src/db/schema.js';
+import { collectionItems, collectionMembers } from '../../src/db/schema.js';
 
 setDefaultTimeout(120_000);
 
@@ -33,12 +33,24 @@ afterAll(async () => {
   await cleanupTestUsers('test-db-collection-%');
 });
 
+async function collectionIdForUser(uid: string): Promise<string> {
+  const { db } = getContext();
+  const [row] = await db
+    .select({ collectionId: collectionMembers.collectionId })
+    .from(collectionMembers)
+    .where(eq(collectionMembers.userId, uid))
+    .limit(1);
+  if (!row) throw new Error(`No collection membership for ${uid}`);
+  return row.collectionId;
+}
+
 async function countCollectionRows() {
   const { db } = getContext();
+  const collectionId = await collectionIdForUser(userId);
   const [row] = await db
     .select({ value: sql<number>`count(*)::int` })
     .from(collectionItems)
-    .where(eq(collectionItems.userId, userId));
+    .where(eq(collectionItems.collectionId, collectionId));
   return row?.value ?? 0;
 }
 
@@ -81,7 +93,7 @@ describe('collection database workflows', () => {
         quantity: collectionItems.quantity,
       })
       .from(collectionItems)
-      .where(eq(collectionItems.userId, userId));
+      .where(eq(collectionItems.collectionId, await collectionIdForUser(userId)));
 
     expect(rows).toEqual(
       expect.arrayContaining([
@@ -120,7 +132,7 @@ describe('collection database workflows', () => {
     const rows = await db
       .select({ variantNumber: collectionItems.variantNumber })
       .from(collectionItems)
-      .where(eq(collectionItems.userId, userId));
+      .where(eq(collectionItems.collectionId, await collectionIdForUser(userId)));
 
     expect(rows.some((row) => row.variantNumber === variantNumber)).toBe(false);
   });
@@ -150,7 +162,7 @@ describe('collection database workflows', () => {
       .from(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userId),
+          eq(collectionItems.collectionId, await collectionIdForUser(userId)),
           eq(collectionItems.variantNumber, variantNumber)
         )
       );
@@ -167,7 +179,7 @@ describe('collection database workflows', () => {
       .from(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userId),
+          eq(collectionItems.collectionId, await collectionIdForUser(userId)),
           eq(collectionItems.variantNumber, variantNumber)
         )
       );
@@ -220,7 +232,7 @@ describe('collection database workflows', () => {
       .from(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userId),
+          eq(collectionItems.collectionId, await collectionIdForUser(userId)),
           eq(collectionItems.variantNumber, variantNumber)
         )
       );
@@ -258,7 +270,7 @@ describe('collection database workflows', () => {
         quantity: collectionItems.quantity,
       })
       .from(collectionItems)
-      .where(eq(collectionItems.userId, userId));
+      .where(eq(collectionItems.collectionId, await collectionIdForUser(userId)));
 
     expect(rows).toEqual(
       expect.arrayContaining([
@@ -293,7 +305,7 @@ describe('collection database workflows', () => {
         condition: collectionItems.condition,
       })
       .from(collectionItems)
-      .where(eq(collectionItems.userId, userId));
+      .where(eq(collectionItems.collectionId, await collectionIdForUser(userId)));
 
     expect(rows).toEqual(
       expect.arrayContaining([
@@ -327,7 +339,7 @@ describe('collection database workflows', () => {
       .from(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userId),
+          eq(collectionItems.collectionId, await collectionIdForUser(userId)),
           eq(collectionItems.variantNumber, 'OGN-004')
         )
       );
@@ -367,7 +379,7 @@ describe('collection database workflows', () => {
       .from(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userId),
+          eq(collectionItems.collectionId, await collectionIdForUser(userId)),
           eq(collectionItems.variantNumber, variantNumber)
         )
       );

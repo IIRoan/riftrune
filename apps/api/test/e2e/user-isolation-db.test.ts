@@ -7,7 +7,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { authFetch, cleanupTestUsers, signUpTestUser } from './helpers/auth.js';
 import { getContext } from './support.js';
-import { collectionItems, userDecks, wishlistItems } from '../../src/db/schema.js';
+import { collectionItems, collectionMembers, userDecks, wishlistItems } from '../../src/db/schema.js';
 
 setDefaultTimeout(120_000);
 
@@ -42,6 +42,17 @@ afterAll(async () => {
   await cleanupTestUsers('test-db-isolation-%');
 });
 
+
+async function collectionIdForUser(uid: string): Promise<string | null> {
+  const { db } = getContext();
+  const [row] = await db
+    .select({ collectionId: collectionMembers.collectionId })
+    .from(collectionMembers)
+    .where(eq(collectionMembers.userId, uid))
+    .limit(1);
+  return row?.collectionId ?? null;
+}
+
 describe('per-user database isolation', () => {
   test('collection rows are scoped to the authenticated user', async () => {
     const variantNumber = 'OGN-100';
@@ -69,24 +80,29 @@ describe('per-user database isolation', () => {
     expect(listB.data.some((item) => item.variantNumber === variantNumber)).toBe(false);
 
     const { db } = getContext();
+    const collectionIdA = await collectionIdForUser(userIdA);
+    expect(collectionIdA).toBeTruthy();
     const rowsA = await db
       .select({ quantity: collectionItems.quantity })
       .from(collectionItems)
       .where(
         and(
-          eq(collectionItems.userId, userIdA),
+          eq(collectionItems.collectionId, collectionIdA!),
           eq(collectionItems.variantNumber, variantNumber)
         )
       );
-    const rowsB = await db
-      .select({ quantity: collectionItems.quantity })
-      .from(collectionItems)
-      .where(
-        and(
-          eq(collectionItems.userId, userIdB),
-          eq(collectionItems.variantNumber, variantNumber)
-        )
-      );
+    const collectionIdB = await collectionIdForUser(userIdB);
+    const rowsB = collectionIdB
+      ? await db
+          .select({ quantity: collectionItems.quantity })
+          .from(collectionItems)
+          .where(
+            and(
+              eq(collectionItems.collectionId, collectionIdB),
+              eq(collectionItems.variantNumber, variantNumber)
+            )
+          )
+      : [];
 
     expect(rowsA[0]?.quantity).toBe(4);
     expect(rowsB).toHaveLength(0);

@@ -44,6 +44,11 @@ const EnvSchema = z.object({
     .string()
     .optional()
     .transform((value) => parseCsv(value)),
+  /**
+   * Public Expo web origin used for shareable HTTPS invite links
+   * (e.g. https://rift.solace.onl → /invite/:token linking page).
+   */
+  PUBLIC_APP_URL: z.string().url().optional(),
   SWAGGER_ENABLED: z
     .string()
     .optional()
@@ -61,7 +66,9 @@ const EnvSchema = z.object({
   S3_REGION: z.string().min(1).optional(),
 });
 
-export type Env = z.infer<typeof EnvSchema>;
+export type Env = Omit<z.infer<typeof EnvSchema>, 'PUBLIC_APP_URL'> & {
+  PUBLIC_APP_URL: string;
+};
 
 export function loadEnv(): Env {
   const parsed = EnvSchema.safeParse(process.env);
@@ -75,6 +82,11 @@ export function loadEnv(): Env {
     ...env,
     DB_POOL_MAX:
       env.DB_POOL_MAX ?? (env.NODE_ENV === 'production' ? 5 : 20),
+    PUBLIC_APP_URL:
+      env.PUBLIC_APP_URL ??
+      (env.NODE_ENV === 'production'
+        ? 'https://rift.solace.onl'
+        : 'http://localhost:7001'),
     SWAGGER_ENABLED:
       env.SWAGGER_ENABLED || env.NODE_ENV === 'development',
     CATALOG_WARMUP_ON_START:
