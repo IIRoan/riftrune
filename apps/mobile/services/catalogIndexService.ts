@@ -118,6 +118,38 @@ export function getInMemoryCatalogIndex(): PersistedCatalogIndex | null {
   return memoryIndex;
 }
 
+/** Merge newly discovered list items into the in-memory / persisted catalog index. */
+export async function mergeCatalogIndexItems(items: CardListItem[]): Promise<number> {
+  if (items.length === 0) return 0;
+
+  const current =
+    memoryIndex ??
+    (await readPersistedCatalogIndex()) ??
+    null;
+  if (!current) return 0;
+
+  const byVariant = new Map(
+    current.items.map((item) => [item.variantNumber.toLowerCase(), item] as const)
+  );
+  let added = 0;
+  for (const item of normalizeCardListItems(items)) {
+    const key = item.variantNumber.toLowerCase();
+    if (!byVariant.has(key)) {
+      byVariant.set(key, item);
+      added += 1;
+    }
+  }
+
+  if (added === 0) return 0;
+
+  await persistCatalogIndex(
+    current.catalogHash,
+    current.pricesCatalogHash,
+    [...byVariant.values()]
+  );
+  return added;
+}
+
 /** Resolve cache validity and download the catalog index only when stale. */
 export async function syncCatalogIndex(
   resolveCacheKey: () => Promise<CatalogIndexCacheKey>
