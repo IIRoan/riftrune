@@ -33,7 +33,14 @@ export function resolveTrustedOrigins(env: Env): string[] {
   ]);
 
   if (env.NODE_ENV === 'development') {
-    for (const origin of ['http://localhost:7000', 'http://localhost:7001']) {
+    for (const origin of [
+      'http://localhost:7000',
+      'http://localhost:7001',
+      // Playwright UI e2e spins Expo web on a dedicated port so it can force
+      // EXPO_PUBLIC_API_URL=http://localhost:7000 without fighting the tunneled
+      // `bun run web` session on :7001.
+      'http://localhost:7011',
+    ]) {
       origins.add(origin);
     }
   }

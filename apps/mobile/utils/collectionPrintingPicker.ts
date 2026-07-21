@@ -46,6 +46,34 @@ export function getOwnedPrintingsForPicker(
   return (printings ?? []).filter((printing) => (printing.owned ?? 0) > 0);
 }
 
+/**
+ * Resolve which variant to decrement when the UI calls remove without a picker choice.
+ * Prefer the single owned finish (e.g. foil-only) over the card's primary/standard printing.
+ */
+export function resolveQuickRemoveVariantNumber(
+  printings: readonly PrintingWithOwned[] | undefined,
+  preferredVariantNumber?: string
+): string | undefined {
+  if (preferredVariantNumber) return preferredVariantNumber;
+  const owned = getOwnedPrintingsForPicker(printings);
+  if (owned.length === 0) return undefined;
+  return owned[0]?.variantNumber;
+}
+
+/**
+ * Resolve which variant to increment when add is pressed without a picker choice.
+ * Single printing → that id; multiple → non-foil primary (matches catalog list primary).
+ */
+export function resolveQuickAddVariantNumber(
+  printings: readonly CardListPrinting[] | undefined,
+  preferredVariantNumber?: string
+): string | undefined {
+  if (preferredVariantNumber) return preferredVariantNumber;
+  if (!printings?.length) return undefined;
+  if (printings.length === 1) return printings[0]?.variantNumber;
+  return printings.find((printing) => !printing.isFoil)?.variantNumber ?? printings[0]?.variantNumber;
+}
+
 export function shouldShowRemovePrintingPicker(
   printings: readonly PrintingWithOwned[] | undefined,
   fixedVariantNumber?: string

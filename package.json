@@ -17,6 +17,7 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
     "check": "bun run typecheck && bun run lint && bun run format:check",
     "test": "bun scripts/test.mjs",
+    "test:ui-e2e": "bun run --cwd apps/mobile test:ui-e2e",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "bun run --filter @riftbound/api db:migrate",
