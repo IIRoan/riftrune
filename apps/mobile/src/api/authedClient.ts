@@ -1,3 +1,4 @@
+import { fetchWithApiWake } from '@/lib/api-fetch';
 import { getApiUrl } from '@/lib/api-url';
 import { getAuthCookieHeader } from '@/lib/auth-cookie';
 import { logActionFailure } from '@/lib/logger';
@@ -46,7 +47,7 @@ export async function authedFetch<T>(
 
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await fetchWithApiWake(`${API_URL}${path}`, {
       method,
       credentials: 'include',
       headers,
@@ -88,7 +89,7 @@ export async function authedFetchText(
 
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await fetchWithApiWake(`${API_URL}${path}`, {
       method,
       credentials: 'include',
       headers,

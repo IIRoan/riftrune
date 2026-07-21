@@ -12,6 +12,7 @@ import {
   PricesListResponse,
 } from '@riftbound/contracts';
 import type { z } from 'zod';
+import { fetchWithApiWake } from '@/lib/api-fetch';
 import { getApiUrl } from '@/lib/api-url';
 
 // Unauthenticated JSON client for catalog, prices, and filters.
@@ -34,7 +35,7 @@ async function apiFetch<T>(
   schema: z.ZodType<T>,
   init?: Pick<RequestInit, 'method' | 'body'>
 ): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetchWithApiWake(`${API_URL}${path}`, {
     method: init?.method,
     body: init?.body,
     headers: {
