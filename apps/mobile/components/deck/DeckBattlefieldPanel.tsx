@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
-import { Platform, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
-import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { resolveSlotImage } from '@/components/deck/DeckCardSlot';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
 import { Text } from '@/components/ui/text';
@@ -80,7 +79,6 @@ function BattlefieldSlot({
   const { card } = slot;
   const imageUri = resolveSlotImage(card, imageByVariant);
   const illegal = isCardTournamentIllegal(card, deck);
-  const showHoverInfo = Platform.OS === 'web' && Boolean(imageUri);
 
   return (
     <View className="min-w-0 flex-1 gap-1.5">
@@ -103,22 +101,6 @@ function BattlefieldSlot({
           <BattlefieldCardArt uri={imageUri} variantNumber={card.variantNumber} />
         </Pressable>
 
-        {showHoverInfo ? (
-          <View className="absolute right-1 top-1 z-10">
-            <CardArtHoverPreview
-              imageUri={imageUri}
-              variantNumber={card.variantNumber}
-              orientation="landscape"
-            >
-              <View
-                accessibilityLabel={`Preview ${card.name}`}
-                className="size-7 items-center justify-center rounded-md border border-white/10 bg-background/92"
-              >
-                <ThemedIonicon name="information-circle-outline" size={16} color="foreground" />
-              </View>
-            </CardArtHoverPreview>
-          </View>
-        ) : null}
       </View>
 
       <Text className="px-0.5 text-[11px] font-semibold text-foreground" numberOfLines={1}>

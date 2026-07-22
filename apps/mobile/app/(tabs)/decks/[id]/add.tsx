@@ -1,6 +1,4 @@
-import { DeckCardArt } from '@/components/deck/DeckCardArt';
-import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
-import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
+import { DeckCatalogGridTile } from '@/components/deck/DeckCatalogGridTile';
 import { DeckAddSectionStatus } from '@/components/deck/DeckAddSectionStatus';
 import { DeckAddScreenHeader } from '@/components/deck/DeckAddScreenHeader';
 import {
@@ -14,8 +12,6 @@ import { AppLoader } from '@/components/ui/app-loader';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
-  Platform,
-  Pressable,
   View,
   type ListRenderItem,
   type NativeScrollEvent,
@@ -33,7 +29,6 @@ import {
 } from '@/lib/deck-types';
 import { DeckSectionTabs } from '@/components/deck/DeckSectionList';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
-import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { useDeckAddCatalog } from '@/hooks/useDeckAddCatalog';
@@ -59,8 +54,6 @@ import {
   getDeckCandidateCount,
 } from '@/lib/deck-membership';
 import { useDebounce } from '@/hooks/useDebounce';
-import { hapticPress } from '@/utils/haptics';
-import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { openCard } from '@/utils/cardNavigation';
 import { cn } from '@/lib/utils';
 
@@ -76,7 +69,7 @@ const AddOneTile = memo(function AddOneTile({
   count,
   onAdd,
   onRemove,
-  onLongPressCard,
+  onOpenCard,
   showSelected,
   selected,
   blocked,
@@ -88,151 +81,30 @@ const AddOneTile = memo(function AddOneTile({
   count: number;
   onAdd: () => void;
   onRemove: () => void;
-  onLongPressCard: () => void;
+  onOpenCard: () => void;
   showSelected: boolean;
   selected: boolean;
   blocked?: boolean;
   blockedLabel?: string;
-  /** Battlefield cards use landscape art (same as builder). */
   horizontal?: boolean;
 }) {
   const canAdd = !blocked && !(showSelected && selected);
-  const canRemove = count > 0;
-  const imageUri = candidate.imageUrl ? resolveImageUrl(candidate.imageUrl) : '';
-  const showHoverInfo = Platform.OS === 'web' && Boolean(imageUri);
 
   return (
-    <View style={{ width: tileWidth }} className="gap-1.5">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          canRemove && !canAdd
-            ? `Remove ${candidate.name}`
-            : `Add ${candidate.name}`
-        }
-        accessibilityState={{ disabled: !canAdd && !canRemove }}
-        className={blocked && !canRemove ? 'opacity-55' : 'active:opacity-95'}
-        onPress={() => {
-          if (canAdd) {
-            void hapticPress();
-            onAdd();
-            return;
-          }
-          if (showSelected && selected) {
-            void hapticPress();
-            onRemove();
-          }
-        }}
-        onLongPress={onLongPressCard}
-      >
-        <View
-          className={cn(
-            'relative w-full overflow-hidden border bg-background',
-            horizontal ? 'aspect-[7/5]' : 'aspect-[5/7]',
-            CARD_ART_RADIUS_CLASS,
-            selected || count > 0
-              ? 'border-primary/60'
-              : blocked
-                ? 'border-border/70'
-                : 'border-white/10'
-          )}
-        >
-          {imageUri ? (
-            horizontal ? (
-              <BattlefieldCardArt uri={imageUri} variantNumber={candidate.variantNumber} />
-            ) : (
-              <DeckCardArt uri={imageUri} variantNumber={candidate.variantNumber} />
-            )
-          ) : (
-            <View className="flex-1 items-center justify-center bg-card-panel">
-              <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
-            </View>
-          )}
-
-          {showHoverInfo ? (
-            <View className="absolute right-1 top-1 z-10">
-              <CardArtHoverPreview
-                imageUri={imageUri}
-                variantNumber={candidate.variantNumber}
-                orientation={horizontal ? 'landscape' : 'portrait'}
-              >
-                <Pressable
-                  accessibilityLabel={`Preview ${candidate.name}`}
-                  className="size-7 items-center justify-center rounded-md border border-white/10 bg-background/92"
-                  onPress={(event) => {
-                    event.stopPropagation?.();
-                  }}
-                >
-                  <ThemedIonicon name="information-circle-outline" size={16} color="foreground" />
-                </Pressable>
-              </CardArtHoverPreview>
-            </View>
-          ) : null}
-
-          {canRemove && !showSelected ? (
-            <View className="absolute inset-x-0 bottom-0 flex-row items-stretch bg-background/80">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Remove one ${candidate.name}`}
-                className="min-h-9 flex-1 items-center justify-center active:bg-background/90"
-                onPress={(event) => {
-                  event.stopPropagation?.();
-                  void hapticPress();
-                  onRemove();
-                }}
-              >
-                <ThemedIonicon name="remove" size={16} color="foreground" />
-              </Pressable>
-              <View className="min-w-8 items-center justify-center px-1">
-                <Text className="font-mono text-[12px] font-bold text-foreground">×{count}</Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Add one ${candidate.name}`}
-                accessibilityState={{ disabled: !canAdd }}
-                className={cn(
-                  'min-h-9 flex-1 items-center justify-center',
-                  canAdd ? 'active:bg-background/90' : 'opacity-40'
-                )}
-                disabled={!canAdd}
-                onPress={(event) => {
-                  event.stopPropagation?.();
-                  if (!canAdd) return;
-                  void hapticPress();
-                  onAdd();
-                }}
-              >
-                <ThemedIonicon name="add" size={16} color="primary" />
-              </Pressable>
-            </View>
-          ) : showSelected && selected ? (
-            <View className="absolute inset-x-0 bottom-0 bg-background/80 p-1.5">
-              <View className="flex-row items-center justify-center gap-1">
-                <ThemedIonicon name="remove-circle-outline" size={14} color="primary" />
-                <Text className="text-center font-semibold text-primary">Remove</Text>
-              </View>
-            </View>
-          ) : blocked ? (
-            <View className="absolute inset-x-0 bottom-0 bg-background/80 p-1.5">
-              <Text className="text-center text-[11px] font-medium text-muted-foreground">
-                {blockedLabel}
-              </Text>
-            </View>
-          ) : (
-            <View className="absolute inset-x-0 bottom-0 bg-background/65 p-1.5">
-              <View className="flex-row items-center justify-center gap-1">
-                <ThemedIonicon name="add" size={14} color="primary" />
-                <Text className="font-semibold text-primary">Add</Text>
-              </View>
-            </View>
-          )}
-        </View>
-      </Pressable>
-
-      <Text className="px-0.5 text-[12px] font-semibold text-foreground" numberOfLines={2}>
-        {candidate.name}
-      </Text>
-    </View>
+    <DeckCatalogGridTile
+      tileWidth={tileWidth}
+      candidate={candidate}
+      count={count}
+      blocked={blocked}
+      blockedLabel={blockedLabel}
+      selected={selected}
+      horizontal={horizontal}
+      canAdd={canAdd}
+      canRemove={count > 0}
+      onAdd={onAdd}
+      onRemove={onRemove}
+      onOpenCard={onOpenCard}
+    />
   );
 });
 
@@ -415,7 +287,7 @@ function DeckAddScreenBody({
           horizontal={isBattlefieldSection}
           onAdd={() => handleAddOne(item)}
           onRemove={() => handleRemoveOne(item)}
-          onLongPressCard={() => openCard(router, item.variantNumber, 'modal')}
+          onOpenCard={() => openCard(router, item.variantNumber, 'modal')}
         />
       );
     },

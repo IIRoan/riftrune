@@ -32,6 +32,10 @@ interface PillNavProps<T extends string> {
   className?: string;
   /** Stretch segments to fill the container width. */
   fill?: boolean;
+  /** Shorter inline layout for toolbars (single row, ~36px tall). */
+  compact?: boolean;
+  /** Compact toolbar: icons only (counts stay in accessibility labels). */
+  iconOnly?: boolean;
 }
 
 /**
@@ -43,12 +47,15 @@ export function PillNav<T extends string>({
   onChange,
   className,
   fill = false,
+  compact = false,
+  iconOnly = false,
 }: PillNavProps<T>) {
   return (
     <View
       accessibilityRole="tablist"
       className={cn(
-        'flex-row items-stretch rounded-2xl border border-border bg-card p-1',
+        'flex-row items-stretch border border-border bg-card',
+        compact ? 'h-9 rounded-lg p-0.5' : 'rounded-2xl p-1',
         fill && 'w-full',
         className
       )}
@@ -62,8 +69,14 @@ export function PillNav<T extends string>({
             accessibilityState={{ selected: active }}
             accessibilityLabel={item.accessibilityLabel ?? item.label}
             className={cn(
-              'items-center justify-center gap-0.5 rounded-xl px-4 py-2',
-              fill ? 'min-w-0 flex-1' : 'min-w-[5.5rem]',
+              'items-center justify-center',
+              compact
+                ? cn(
+                    'min-w-0 rounded-md',
+                    iconOnly ? 'size-8' : 'flex-row gap-1 px-2',
+                    fill ? 'flex-1' : 'shrink-0'
+                  )
+                : cn('gap-0.5 rounded-xl px-4 py-2', fill ? 'min-w-0 flex-1' : 'min-w-[5.5rem]'),
               active ? 'bg-card-panel' : 'active:bg-card-panel/50'
             )}
             onPress={() => {
@@ -72,31 +85,69 @@ export function PillNav<T extends string>({
               onChange(item.id);
             }}
           >
-            <ThemedIonicon
-              name={active ? item.iconActive : item.icon}
-              size={18}
-              color={active ? 'primary' : 'muted-foreground'}
-            />
-            <Text
-              className={cn(
-                'text-[10px] font-semibold',
-                active ? 'text-primary' : 'text-muted-foreground'
-              )}
-              numberOfLines={1}
-            >
-              {item.label}
-            </Text>
-            {item.badge ? (
-              <Text
-                className={cn(
-                  'font-mono text-[9px] font-semibold tabular-nums',
-                  active ? 'text-primary/80' : 'text-muted-foreground'
-                )}
-                numberOfLines={1}
-              >
-                {item.badge}
-              </Text>
-            ) : null}
+            {compact && iconOnly ? (
+              <ThemedIonicon
+                name={active ? item.iconActive : item.icon}
+                size={16}
+                color={active ? 'primary' : 'muted-foreground'}
+              />
+            ) : compact ? (
+              <>
+                <ThemedIonicon
+                  name={active ? item.iconActive : item.icon}
+                  size={14}
+                  color={active ? 'primary' : 'muted-foreground'}
+                />
+                <Text
+                  className={cn(
+                    'text-[11px] font-semibold',
+                    active ? 'text-primary' : 'text-muted-foreground'
+                  )}
+                  numberOfLines={1}
+                >
+                  {item.label}
+                </Text>
+                {item.badge ? (
+                  <Text
+                    className={cn(
+                      'font-mono text-[10px] font-semibold tabular-nums',
+                      active ? 'text-primary/80' : 'text-muted-foreground'
+                    )}
+                    numberOfLines={1}
+                  >
+                    {item.badge}
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <ThemedIonicon
+                  name={active ? item.iconActive : item.icon}
+                  size={18}
+                  color={active ? 'primary' : 'muted-foreground'}
+                />
+                <Text
+                  className={cn(
+                    'text-[10px] font-semibold',
+                    active ? 'text-primary' : 'text-muted-foreground'
+                  )}
+                  numberOfLines={1}
+                >
+                  {item.label}
+                </Text>
+                {item.badge ? (
+                  <Text
+                    className={cn(
+                      'font-mono text-[9px] font-semibold tabular-nums',
+                      active ? 'text-primary/80' : 'text-muted-foreground'
+                    )}
+                    numberOfLines={1}
+                  >
+                    {item.badge}
+                  </Text>
+                ) : null}
+              </>
+            )}
           </Pressable>
         );
       })}
