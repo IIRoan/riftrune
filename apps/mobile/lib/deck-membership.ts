@@ -2,10 +2,15 @@ import type { DeckCard, DeckEntry, DeckSectionKey, DeckState } from '@/lib/deck-
 
 type DeckCardRef = Pick<DeckCard, 'cardId' | 'variantNumber' | 'name'>;
 
-/** Whether two catalog/deck cards refer to the same logical card. */
+/**
+ * Whether two cards are the same printing (deck-builder “in deck” UI).
+ * Alternate arts share a name/cardId but must not count as the same tile.
+ */
 export function deckCardsMatch(a: DeckCardRef, b: DeckCardRef): boolean {
+  if (a.variantNumber && b.variantNumber) {
+    return a.variantNumber === b.variantNumber;
+  }
   if (a.cardId && b.cardId && a.cardId === b.cardId) return true;
-  if (a.variantNumber && b.variantNumber && a.variantNumber === b.variantNumber) return true;
   return a.name === b.name;
 }
 
@@ -29,9 +34,6 @@ export function findDeckEntryForCandidate(
       ? { card: deck.champion, count: 1 }
       : null;
   }
-
-  const byName = deck[section].get(candidate.name);
-  if (byName) return byName;
 
   for (const entry of deck[section].values()) {
     if (deckCardsMatch(entry.card, candidate)) return entry;

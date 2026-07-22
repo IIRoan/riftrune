@@ -359,13 +359,16 @@ export function buildDeckAddCandidates(args: {
   if (!listItems.length) return [];
 
   const detailByKey = detailMapFromBatch(details);
-  const primaryItems = uniqueCardListItems(listItems);
+  // Keep alternate arts as separate tiles (API search grouping); only foil
+  // finishes stay merged onto their base printing.
+  const primaryItems = pickPrimaryListItems(listItems);
   const candidates: DeckCard[] = [];
-  const seenCardIds = new Set<string>();
+  const seenVariants = new Set<string>();
 
   for (const item of primaryItems) {
     if (!matchesSectionFromListItem(item, section)) continue;
     if (isTokenVariantNumber(item.variantNumber)) continue;
+    if (seenVariants.has(item.variantNumber)) continue;
 
     const detail = detailByKey.get(item.variantNumber) ?? detailByKey.get(item.cardId);
     const card = detail
@@ -380,9 +383,8 @@ export function buildDeckAddCandidates(args: {
       continue;
     }
     if (section === 'sideboard' && card.isSignature) continue;
-    if (seenCardIds.has(card.cardId)) continue;
 
-    seenCardIds.add(card.cardId);
+    seenVariants.add(card.variantNumber);
     candidates.push(card);
   }
 

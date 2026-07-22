@@ -241,7 +241,7 @@ describe('deck-add-catalog', () => {
     ).toBe(true);
   });
 
-  test('dedupes printings and resolves champion candidates', () => {
+  test('keeps alternate arts as separate candidates', () => {
     const unique = uniqueCardListItems(settListItems);
     expect(unique).toHaveLength(1);
 
@@ -251,9 +251,9 @@ describe('deck-add-catalog', () => {
       details: [settBrawlerDetail],
     });
 
-    expect(candidates).toHaveLength(1);
-    expect(candidates[0]?.name).toBe('Sett, Brawler');
-    expect(candidates[0]?.super).toBe('Champion');
+    expect(candidates).toHaveLength(2);
+    expect(candidates.map((c) => c.variantNumber).sort()).toEqual(['OGN-164', 'OGN-164a']);
+    expect(candidates.every((c) => c.super === 'Champion')).toBe(true);
   });
 
   test('filters Sett champion for Sett legend deck', () => {
@@ -267,8 +267,8 @@ describe('deck-add-catalog', () => {
     });
 
     const eligible = filterEligibleDeckAddCards(deck, 'champion', candidates);
-    expect(eligible).toHaveLength(1);
-    expect(eligible[0]?.name).toBe('Sett, Brawler');
+    expect(eligible).toHaveLength(2);
+    expect(eligible.every((c) => c.name === 'Sett, Brawler')).toBe(true);
   });
 
   test('filters Sett champion when legend tags are missing but name matches', () => {
@@ -287,7 +287,7 @@ describe('deck-add-catalog', () => {
     });
 
     const eligible = filterEligibleDeckAddCards(deck, 'champion', candidates);
-    expect(eligible).toHaveLength(1);
+    expect(eligible).toHaveLength(2);
   });
 
   test('keeps added battlefields in the add picker list', () => {
