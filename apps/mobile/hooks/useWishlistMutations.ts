@@ -12,6 +12,7 @@ export function useWishlistMutations() {
 
   const invalidateWishlist = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all });
+    void queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.prices });
   }, [queryClient]);
 
   const add = useMutation({

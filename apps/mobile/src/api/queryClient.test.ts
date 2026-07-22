@@ -85,11 +85,39 @@ describe('query invalidation helpers', () => {
     const client = new QueryClient();
     client.setQueryData(collectionQueryKeys.all, [{ variantNumber: 'OGN-001', quantity: 1 }]);
     client.setQueryData(wishlistQueryKeys.all, [{ variantNumber: 'OGN-001' }]);
+    client.setQueryData(wishlistQueryKeys.prices, [{ variantNumber: 'OGN-001' }]);
 
     removeUserDataQueries(client);
 
     expect(client.getQueryData(collectionQueryKeys.all)).toBeUndefined();
     expect(client.getQueryData(wishlistQueryKeys.all)).toBeUndefined();
+    expect(client.getQueryData(wishlistQueryKeys.prices)).toBeUndefined();
+  });
+
+  test('wishlist prices refetch reads fresh membership after invalidation', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { staleTime: 60_000 } },
+    });
+    let wishlistFetches = 0;
+
+    client.setQueryData(wishlistQueryKeys.all, [{ variantNumber: 'OLD' }]);
+    client.setQueryData(wishlistQueryKeys.prices, [{ variantNumber: 'OLD' }]);
+
+    await client.invalidateQueries({ queryKey: wishlistQueryKeys.all });
+    await client.invalidateQueries({ queryKey: wishlistQueryKeys.prices });
+
+    // ensureQueryData would return the invalidated cache; fetchQuery must refetch.
+    const membership = await client.fetchQuery({
+      queryKey: wishlistQueryKeys.all,
+      queryFn: async () => {
+        wishlistFetches += 1;
+        return [{ variantNumber: 'NEW' }];
+      },
+    });
+
+    expect(membership).toEqual([{ variantNumber: 'NEW' }]);
+    expect(wishlistFetches).toBe(1);
+    expect(client.getQueryState(wishlistQueryKeys.prices)?.isInvalidated).toBe(true);
   });
 
   test('invalidateCatalogQueries targets catalog and browse keys', async () => {

@@ -41,6 +41,8 @@ import {
 } from '@/utils/collectionOwnership';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWishlistMutations } from '@/hooks/useWishlistMutations';
+import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
+import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import {
   formatMarketTrend,
   formatPrintingPrice,
@@ -68,6 +70,9 @@ interface CatalogDetailPanelProps {
   embedded?: 'panel' | 'drawer';
   /** Hide add/remove collection controls (e.g. deck view-only preview). */
   hideCollectionActions?: boolean;
+  /** When opened from wishlist, show daily trend history with exact day prices. */
+  wishlistItem?: WishlistPriceItem | null;
+  showWishlistHistory?: boolean;
 }
 
 export function CatalogDetailPanel({
@@ -75,6 +80,8 @@ export function CatalogDetailPanel({
   catalogListItem = null,
   embedded = 'panel',
   hideCollectionActions = false,
+  wishlistItem = null,
+  showWishlistHistory = false,
 }: CatalogDetailPanelProps) {
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { setQuantity } = useCollectionMutations();
@@ -427,6 +434,21 @@ export function CatalogDetailPanel({
             ) : card.description ? (
               <View className="rounded-xl bg-card-panel p-3">
                 <CardRulesText text={card.description} />
+              </View>
+            ) : null}
+
+            {showWishlistHistory ? (
+              <View className="gap-2">
+                <Text className="text-sm font-semibold text-foreground">Daily trend</Text>
+                {wishlistItem ? (
+                  <WishlistPriceHistoryPanel item={wishlistItem} />
+                ) : (
+                  <View className="rounded-xl border border-border bg-card p-3">
+                    <Text className="text-xs leading-5 text-muted-foreground">
+                      Loading daily trend history…
+                    </Text>
+                  </View>
+                )}
               </View>
             ) : null}
 

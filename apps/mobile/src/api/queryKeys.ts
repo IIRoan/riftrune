@@ -2,8 +2,6 @@ import type { CatalogFilters } from '@/constants/catalogFilters';
 import { catalogFiltersQueryKey } from '@/constants/catalogFilters';
 import type { DeckBrowseFilters, DeckBrowseSort } from '@/constants/deckBrowse';
 
-export type WishlistRange = '1d' | '7d' | '30d';
-
 export const catalogQueryKeys = {
   meta: ['catalog', 'meta'] as const,
   index: ['catalog', 'index'] as const,
@@ -45,7 +43,7 @@ export const collectionQueryKeys = {
 
 export const wishlistQueryKeys = {
   all: ['wishlist'] as const,
-  prices: (range: WishlistRange) => ['wishlist', 'prices', range] as const,
+  prices: ['wishlist', 'prices', '30d'] as const,
 };
 
 export const deckQueryKeys = {

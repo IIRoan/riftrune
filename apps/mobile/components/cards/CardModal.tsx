@@ -35,15 +35,15 @@ import { Heading } from '@/components/ui/heading';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
-import { formatCardPrice, formatStat } from '@/utils/cardFormat';
+import { formatStat } from '@/utils/cardFormat';
 import {
   formatMarketTrend,
   getVariantMarketPriceDisplays,
-  isFoilVariant,
   pickVariantDisplayPrice,
   toPriceEurSummary,
 } from '@/utils/variants';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
+import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import { cn } from '@/lib/utils';
 import type { CardOpenSource } from '@/utils/cardNavigation';
 
@@ -226,19 +226,7 @@ function ModalInfoPanel({
   onSelectPrinting,
 }: Props & { isWide: boolean }) {
   const setCode = activeVariant.variantNumber.split('-')[0] ?? '';
-  const activeIsFoil = isFoilVariant(
-    activeVariant.variantNumber,
-    activeVariant.variantLabel,
-    activeVariant.variantType
-  );
-  const activeFinish = activeIsFoil ? 'Foil' : 'Normal';
   const activePrice = pickVariantDisplayPrice(activeVariant.prices, activeVariant);
-  const activePriceText =
-    wishlistItem?.currentPrice != null
-      ? `€${wishlistItem.currentPrice.toFixed(2)}`
-      : activePrice
-        ? formatCardPrice(activeVariant.prices, activeVariant)
-        : null;
   const wishlistContext = source === 'wishlist';
   const marketPrices = getVariantMarketPriceDisplays(activeVariant);
   const singleMarketPrice =
@@ -347,42 +335,15 @@ function ModalInfoPanel({
   const wishlistBlock = wishlistContext ? (
     <Stack gap="sm">
       <SectionLabel>Wishlist tracking</SectionLabel>
-      <View className="rounded-xl border border-border bg-card p-3">
-        <Stack direction="row" className="items-start justify-between gap-4">
-          <Stack gap="xs" className="min-w-0 flex-1">
-            <Text className="text-sm font-semibold text-foreground">
-              {activeFinish} printing
-            </Text>
-            <Text className="font-mono text-[11px] text-muted-foreground">
-              {activeVariant.variantLabel} · {activeVariant.variantNumber}
-            </Text>
-          </Stack>
-          <Stack gap="xs" className="items-end">
-            <Text className="font-mono text-lg font-black tabular-nums text-foreground">
-              {activePriceText ?? '—'}
-            </Text>
-            <Text className="text-xs font-semibold text-muted-foreground">
-              {wishlistItem?.trend ?? 'Flat'}
-            </Text>
-          </Stack>
-        </Stack>
-        <View className="mt-3 flex-row flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3">
-          <Text className="font-mono text-[11px] text-muted-foreground">
-            7D baseline{' '}
-            <Text className="font-bold text-foreground">
-              {wishlistItem?.baselinePrice != null
-                ? `€${wishlistItem.baselinePrice.toFixed(2)}`
-                : '—'}
-            </Text>
-          </Text>
-          <Text className="font-mono text-[11px] text-muted-foreground">
-            Stored points{' '}
-            <Text className="font-bold text-foreground">
-              {String(wishlistItem?.points.length ?? 0)}
-            </Text>
+      {wishlistItem ? (
+        <WishlistPriceHistoryPanel item={wishlistItem} />
+      ) : (
+        <View className="rounded-xl border border-border bg-card p-3">
+          <Text className="text-xs leading-5 text-muted-foreground">
+            Loading daily trend history…
           </Text>
         </View>
-      </View>
+      )}
     </Stack>
   ) : null;
 

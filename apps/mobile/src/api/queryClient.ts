@@ -42,6 +42,7 @@ export async function invalidateUserDataQueries(queryClient: QueryClient): Promi
     queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all }),
     queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot }),
     queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.prices }),
     queryClient.invalidateQueries({ queryKey: deckQueryKeys.all }),
   ]);
 }
@@ -52,6 +53,7 @@ export function removeUserDataQueries(queryClient: QueryClient): void {
     collectionQueryKeys.all,
     collectionQueryKeys.ownershipRoot,
     wishlistQueryKeys.all,
+    wishlistQueryKeys.prices,
     deckQueryKeys.all,
   ]) {
     queryClient.removeQueries({ queryKey: key });

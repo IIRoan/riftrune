@@ -47,7 +47,7 @@ export default function CardDetailScreen() {
   const hideCollectionActions = source === 'deck-view';
 
   const detail = useCardDetail(variantNumber);
-  const wishlistPrices = useWishlistPrices('7d', source === 'wishlist');
+  const wishlistPrices = useWishlistPrices(source === 'wishlist');
   const wishlistItem = wishlistPrices.data?.find(
     (item) => item.variantNumber === detail.activeVariant?.variantNumber
   );
@@ -100,6 +100,8 @@ export default function CardDetailScreen() {
         variantNumber={detail.activeVariant.variantNumber}
         embedded="drawer"
         hideCollectionActions={hideCollectionActions}
+        showWishlistHistory={source === 'wishlist'}
+        wishlistItem={wishlistItem ?? null}
       />
     );
   })();
