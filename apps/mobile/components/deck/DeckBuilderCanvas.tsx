@@ -25,11 +25,8 @@ import {
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
-import {
-  FLOATING_PILL_NAV_CLEARANCE,
-  FloatingPillNav,
-  type FloatingPillNavItem,
-} from '@/components/shell/FloatingPillNav';
+import type { CatalogFilters } from '@/constants/catalogFilters';
+import type { PillNavItem } from '@/components/shell/FloatingPillNav';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useCollection } from '@/hooks/useCollection';
 import { useCollectionByCardName } from '@/hooks/useDeckCardResolver';
@@ -89,6 +86,17 @@ export function DeckBuilderCanvas({
   const [infoDrawerOpen, setInfoDrawerOpen] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
   const [catalogSection, setCatalogSection] = useState<CatalogSection>('mainDeck');
+  const [mobileFilterChrome, setMobileFilterChrome] = useState<{
+    filters: CatalogFilters;
+    onOpen: () => void;
+  } | null>(null);
+
+  const handleMobileFilterChromeChange = useCallback(
+    (chrome: { filters: CatalogFilters; onOpen: () => void } | null) => {
+      setMobileFilterChrome(chrome);
+    },
+    []
+  );
 
   const { data: collection = [] } = useCollection();
   const collectionByName = useCollectionByCardName(collection);
@@ -216,11 +224,12 @@ export function DeckBuilderCanvas({
       onPersist={onPersist}
       section={catalogSection}
       onSectionChange={setCatalogSection}
-      paddingBottom={paddingBottomInline + FLOATING_PILL_NAV_CLEARANCE}
+      paddingBottom={paddingBottomInline}
+      onMobileFilterChromeChange={handleMobileFilterChromeChange}
     />
   );
 
-  const browseSectionNavItems = useMemo((): readonly FloatingPillNavItem<CatalogSection>[] => {
+  const browseSectionNavItems = useMemo((): readonly PillNavItem<CatalogSection>[] => {
     const main = deckSectionProgress(deck, 'mainDeck');
     const side = deckSectionProgress(deck, 'sideboard');
     return [
@@ -317,6 +326,11 @@ export function DeckBuilderCanvas({
                 }
               : undefined
           }
+          catalogSection={catalogSection}
+          onCatalogSectionChange={focusCatalogSection}
+          catalogSectionItems={browseSectionNavItems}
+          catalogFilters={mobileFilterChrome?.filters}
+          onOpenCatalogFilters={mobileFilterChrome?.onOpen}
         />
 
         {isMobile ? (
@@ -348,11 +362,6 @@ export function DeckBuilderCanvas({
           </View>
         )}
 
-        <FloatingPillNav
-          items={browseSectionNavItems}
-          value={catalogSection}
-          onChange={setCatalogSection}
-        />
       </View>
 
       {isMobile ? (

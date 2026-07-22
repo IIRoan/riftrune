@@ -3,8 +3,6 @@ import { useRouter } from 'expo-router';
 import { AppLoader } from '@/components/ui/app-loader';
 import {
   FlatList,
-  Platform,
-  Pressable,
   View,
   type LayoutChangeEvent,
   type ListRenderItem,
@@ -14,17 +12,13 @@ import {
 import {
   CatalogActiveFilterChips,
   CatalogFilterSheet,
-  CatalogFilterTrigger,
 } from '@/components/catalog/FilterSheet';
 import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
-import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
-import { DeckCardArt } from '@/components/deck/DeckCardArt';
-import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
+import { DeckCatalogGridTile } from '@/components/deck/DeckCatalogGridTile';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
-import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import {
   catalogFiltersActive,
   sanitizeCatalogFilters,
@@ -47,14 +41,8 @@ import {
   listDeckSectionCards,
 } from '@/lib/deck-membership';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
-import {
-  deckOwnershipBorderClass,
-  ownedCountForCardName,
-} from '@/lib/deck-validation';
+import { ownedCountForCardName } from '@/lib/deck-validation';
 import { openCard } from '@/utils/cardNavigation';
-import { hapticPress } from '@/utils/haptics';
-import { resolveImageUrl } from '@/utils/resolveImageUrl';
-import { cn } from '@/lib/utils';
 
 type BuilderCatalogSection = 'mainDeck' | 'sideboard';
 
@@ -70,6 +58,9 @@ interface DeckBuilderCatalogPanelProps {
   section?: BuilderCatalogSection;
   onSectionChange?: (section: BuilderCatalogSection) => void;
   paddingBottom?: number;
+  onMobileFilterChromeChange?: (
+    chrome: { filters: CatalogFilters; onOpen: () => void } | null
+  ) => void;
 }
 
 const CatalogTile = memo(function CatalogTile({
@@ -83,7 +74,7 @@ const CatalogTile = memo(function CatalogTile({
   readOnly,
   onAdd,
   onRemove,
-  onLongPressCard,
+  onOpenCard,
 }: {
   tileWidth: number;
   candidate: DeckCard;
@@ -95,161 +86,22 @@ const CatalogTile = memo(function CatalogTile({
   readOnly?: boolean;
   onAdd: () => void;
   onRemove: () => void;
-  onLongPressCard: () => void;
+  onOpenCard: () => void;
 }) {
-  const canAdd = !readOnly && !blocked;
-  const canRemove = !readOnly && count > 0;
-  const ownershipBorder = deckOwnershipBorderClass(owned, count);
-  const imageUri = candidate.imageUrl ? resolveImageUrl(candidate.imageUrl) : '';
-  const showHoverInfo = Platform.OS === 'web' && Boolean(imageUri);
-
   return (
-    <View style={{ width: tileWidth }} className="gap-1.5">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          readOnly
-            ? `${candidate.name}${count > 0 ? `, ${count} in deck` : ''}${
-                owned != null && count > 0 ? `, own ${Math.min(owned, count)} of ${count}` : ''
-              }${illegal ? ', illegal' : ''}`
-            : canRemove && !canAdd
-              ? `Remove ${candidate.name}`
-              : `Add ${candidate.name}`
-        }
-        accessibilityState={{ disabled: readOnly ? false : !canAdd && !canRemove }}
-        className={blocked && !canRemove ? 'opacity-55' : 'active:opacity-95'}
-        onPress={() => {
-          if (readOnly) {
-            onLongPressCard();
-            return;
-          }
-          if (canAdd) {
-            void hapticPress();
-            onAdd();
-            return;
-          }
-          if (canRemove && blocked) {
-            void hapticPress();
-            onRemove();
-          }
-        }}
-        onLongPress={onLongPressCard}
-      >
-        <View
-          className={cn(
-            'relative aspect-[5/7] w-full overflow-hidden border-2 bg-background',
-            CARD_ART_RADIUS_CLASS,
-            ownershipBorder
-              ? ownershipBorder
-              : illegal
-                ? 'border-destructive'
-                : count > 0
-                  ? 'border-primary/60'
-                  : blocked
-                    ? 'border-border/70'
-                    : 'border-white/10'
-          )}
-        >
-          {imageUri ? (
-            <DeckCardArt uri={imageUri} variantNumber={candidate.variantNumber} />
-          ) : (
-            <View className="flex-1 items-center justify-center bg-card-panel">
-              <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
-            </View>
-          )}
-
-          {illegal ? (
-            <View className="absolute left-1 top-1" pointerEvents="none">
-              <StatusKeywordBadge status="illegal" compact />
-            </View>
-          ) : null}
-
-          {showHoverInfo ? (
-            <View className="absolute right-1 top-1 z-10">
-              <CardArtHoverPreview
-                imageUri={imageUri}
-                variantNumber={candidate.variantNumber}
-              >
-                <Pressable
-                  accessibilityLabel={`Preview ${candidate.name}`}
-                  className="size-7 items-center justify-center rounded-md border border-white/10 bg-background/92"
-                  onPress={(event) => {
-                    event.stopPropagation?.();
-                  }}
-                >
-                  <ThemedIonicon name="information-circle-outline" size={16} color="foreground" />
-                </Pressable>
-              </CardArtHoverPreview>
-            </View>
-          ) : null}
-
-          {canRemove ? (
-            <View className="absolute inset-x-0 bottom-0 flex-row items-stretch bg-background/80">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Remove one ${candidate.name}`}
-                className="min-h-9 flex-1 items-center justify-center active:bg-background/90"
-                onPress={(event) => {
-                  event.stopPropagation?.();
-                  void hapticPress();
-                  onRemove();
-                }}
-              >
-                <ThemedIonicon name="remove" size={16} color="foreground" />
-              </Pressable>
-              <View className="min-w-8 items-center justify-center px-1">
-                <Text className="font-mono text-[12px] font-bold text-foreground">×{count}</Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Add one ${candidate.name}`}
-                accessibilityState={{ disabled: !canAdd }}
-                className={cn(
-                  'min-h-9 flex-1 items-center justify-center',
-                  canAdd ? 'active:bg-background/90' : 'opacity-40'
-                )}
-                disabled={!canAdd}
-                onPress={(event) => {
-                  event.stopPropagation?.();
-                  if (!canAdd) return;
-                  void hapticPress();
-                  onAdd();
-                }}
-              >
-                <ThemedIonicon name="add" size={16} color="primary" />
-              </Pressable>
-            </View>
-          ) : blocked ? (
-            <View className="absolute inset-x-0 bottom-0 bg-background/80 p-1.5">
-              <Text className="text-center text-[11px] font-medium text-muted-foreground">
-                {blockedLabel}
-              </Text>
-            </View>
-          ) : readOnly && count > 0 ? (
-            <View className="absolute bottom-1.5 right-1.5 rounded-md bg-background/90 px-1.5 py-0.5">
-              <Text className="font-mono text-[12px] font-bold text-foreground">×{count}</Text>
-            </View>
-          ) : readOnly ? null : (
-            <View className="absolute inset-x-0 bottom-0 bg-background/65 p-1.5">
-              <View className="flex-row items-center justify-center gap-1">
-                <ThemedIonicon name="add" size={14} color="primary" />
-                <Text className="font-semibold text-primary">Add</Text>
-              </View>
-            </View>
-          )}
-        </View>
-      </Pressable>
-
-      <Text
-        className={cn(
-          'px-0.5 text-[12px] font-semibold',
-          illegal ? 'text-destructive' : 'text-foreground'
-        )}
-        numberOfLines={2}
-      >
-        {candidate.name}
-      </Text>
-    </View>
+    <DeckCatalogGridTile
+      tileWidth={tileWidth}
+      candidate={candidate}
+      count={count}
+      owned={owned}
+      blocked={blocked}
+      blockedLabel={blockedLabel}
+      illegal={illegal}
+      readOnly={readOnly}
+      onAdd={onAdd}
+      onRemove={onRemove}
+      onOpenCard={onOpenCard}
+    />
   );
 });
 
@@ -261,6 +113,7 @@ export function DeckBuilderCatalogPanel({
   section: controlledSection,
   onSectionChange: _onSectionChange,
   paddingBottom = 0,
+  onMobileFilterChromeChange,
 }: DeckBuilderCatalogPanelProps) {
   const router = useRouter();
   const isMobile = useMobileLayout();
@@ -299,6 +152,26 @@ export function DeckBuilderCatalogPanel({
   });
   const membershipRevision = deckMembershipRevision(deck);
   const filterActive = !readOnly && catalogFiltersActive(catalogFilters);
+
+  const openFilterSheet = useCallback(() => {
+    setFilterSheetOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!onMobileFilterChromeChange) return;
+    if (readOnly || !isMobile) {
+      onMobileFilterChromeChange(null);
+      return;
+    }
+    onMobileFilterChromeChange({ filters: catalogFilters, onOpen: openFilterSheet });
+    return () => onMobileFilterChromeChange(null);
+  }, [
+    catalogFilters,
+    isMobile,
+    onMobileFilterChromeChange,
+    openFilterSheet,
+    readOnly,
+  ]);
 
   const browseCards = useMemo(() => {
     if (!readOnly) return [] as DeckCard[];
@@ -381,7 +254,7 @@ export function DeckBuilderCatalogPanel({
           readOnly={readOnly}
           onAdd={() => handleAddOne(item)}
           onRemove={() => handleRemoveOne(item)}
-          onLongPressCard={() => openCard(router, item.variantNumber, 'modal')}
+          onOpenCard={() => openCard(router, item.variantNumber, 'modal')}
         />
       );
     },
@@ -442,23 +315,11 @@ export function DeckBuilderCatalogPanel({
   return (
     <View className="min-h-0 flex-1 gap-2" onLayout={onLayout}>
       <View className="shrink-0 gap-1.5">
-        <View className={cn('gap-2', !isMobile && 'flex-row items-center gap-3')}>
-          <View className="min-w-0 flex-1">
-            <SearchInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder={searchPlaceholder}
-            />
-          </View>
-          {!readOnly && isMobile ? (
-            <CatalogFilterTrigger
-              filters={catalogFilters}
-              onPress={() => setFilterSheetOpen(true)}
-              compact
-              mobile
-            />
-          ) : null}
-        </View>
+        <SearchInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder={searchPlaceholder}
+        />
 
         {!readOnly && !isMobile ? (
           <CatalogDesktopFilterBar
