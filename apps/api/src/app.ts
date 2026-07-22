@@ -157,15 +157,19 @@ export function startSyncCrons(ctx: AppContext, env: Env): void {
   }, SIX_HOURS);
 
   setInterval(() => {
+    console.log(
+      `[prices] In-process cron tick — starting Cardmarket sync (game=${String(env.CARDMARKET_GAME_ID)})`
+    );
     void ctx.priceCache
-      .syncFromCardmarket(env.CARDMARKET_GAME_ID)
+      .syncFromCardmarket(env.CARDMARKET_GAME_ID, { trigger: 'cron' })
       .then((result) => {
         if (result.changed) {
           ctx.cardCache.invalidateSearchCache();
+          console.log('[prices] Search cache invalidated after cron price change');
         }
       })
       .catch((err: unknown) => {
-        console.error('Price sync failed:', err);
+        console.error('[prices] Cron Cardmarket sync failed:', err);
       });
   }, ONE_DAY);
 }

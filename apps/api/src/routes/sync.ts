@@ -28,8 +28,18 @@ export function createSyncRoutes(
     })
     .post('/prices', async ({ headers }) => {
       assertAdmin(env, headers.authorization);
-      const result = await prices.syncFromCardmarket(env.CARDMARKET_GAME_ID);
-      cards.invalidateSearchCache();
+      console.log(
+        `[prices] Admin sync requested via POST /api/v1/sync/prices (game=${String(env.CARDMARKET_GAME_ID)})`
+      );
+      const result = await prices.syncFromCardmarket(env.CARDMARKET_GAME_ID, {
+        trigger: 'http',
+      });
+      if (result.changed) {
+        cards.invalidateSearchCache();
+        console.log('[prices] Search cache invalidated after price change');
+      } else {
+        console.log('[prices] Prices unchanged; search cache left intact');
+      }
       return { data: result };
     });
 }

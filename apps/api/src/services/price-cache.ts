@@ -16,7 +16,12 @@ import {
   type DailyPricePoint,
   utcDateString,
 } from '../lib/price-stats.js';
-import { fetchCardmarketPriceGuide } from '../upstream/cardmarket-export.js';
+import {
+  fetchCardmarketPriceGuide,
+  priceGuideDownloadUrl,
+} from '../upstream/cardmarket-export.js';
+
+export type PriceSyncTrigger = 'http' | 'cron' | 'script' | 'test';
 
 function toNumber(value: string | null): number | null {
   return value === null ? null : Number(value);
@@ -343,7 +348,10 @@ export class PriceCacheService {
     ];
   }
 
-  async syncFromCardmarket(gameId: number): Promise<{
+  async syncFromCardmarket(
+    gameId: number,
+    options?: { trigger?: PriceSyncTrigger }
+  ): Promise<{
     changed: boolean;
     rowCount: number;
     productCount: number;
@@ -352,22 +360,92 @@ export class PriceCacheService {
     gameId: number;
     exportCreatedAt: string;
   }> {
-    const exportData = await fetchCardmarketPriceGuide(gameId);
-    const upstream = mapPriceGuideExportToRows(exportData);
-    return this.persistPriceRows(upstream, {
-      hashInput: upstream.map((row) => ({
-        cardmarketId: row.cardmarketId,
-        isFoil: row.isFoil,
-        lastUpdated: row.lastUpdated.toISOString(),
-        marketPrice: row.marketPrice,
-      })),
-      productCount: exportData.priceGuides.length,
-      sourceMeta: {
-        source: 'cardmarket' as const,
-        gameId,
-        exportCreatedAt: exportData.createdAt,
-      },
-    });
+    const trigger = options?.trigger ?? 'http';
+    const startedAt = Date.now();
+    const downloadUrl = priceGuideDownloadUrl(gameId);
+
+    console.log(
+      `[prices] Cardmarket sync starting (trigger=${trigger}, game=${String(gameId)})`
+    );
+    await this.setSyncStatus('running');
+
+    try {
+      console.log(`[prices] Downloading price guide: ${downloadUrl}`);
+      const exportData = await fetchCardmarketPriceGuide(gameId);
+      console.log(
+        `[prices] Downloaded price guide: createdAt=${exportData.createdAt} products=${String(exportData.priceGuides.length)} version=${String(exportData.version)}`
+      );
+
+      const upstream = mapPriceGuideExportToRows(exportData);
+      console.log(
+        `[prices] Mapped ${String(upstream.length)} foil/non-foil rows; persisting to database…`
+      );
+
+      const result = await this.persistPriceRows(upstream, {
+        hashInput: upstream.map((row) => ({
+          cardmarketId: row.cardmarketId,
+          isFoil: row.isFoil,
+          lastUpdated: row.lastUpdated.toISOString(),
+          marketPrice: row.marketPrice,
+        })),
+        productCount: exportData.priceGuides.length,
+        sourceMeta: {
+          source: 'cardmarket' as const,
+          gameId,
+          exportCreatedAt: exportData.createdAt,
+        },
+        trigger,
+        startedAt,
+      });
+
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[prices] Cardmarket sync failed (trigger=${trigger}, game=${String(gameId)}, elapsedMs=${String(Date.now() - startedAt)}):`,
+        err
+      );
+      await this.setSyncStatus('failed', { lastError: message });
+      throw err;
+    }
+  }
+
+  private async setSyncStatus(
+    status: 'idle' | 'running' | 'failed',
+    extra?: {
+      contentHash?: string;
+      rowCount?: number;
+      lastSuccessAt?: Date;
+      lastError?: string | null;
+    }
+  ) {
+    const now = new Date();
+    await this.db
+      .insert(syncState)
+      .values({
+        key: 'prices',
+        status,
+        contentHash: extra?.contentHash ?? '',
+        rowCount: extra?.rowCount ?? 0,
+        lastAttemptAt: now,
+        lastSuccessAt: extra?.lastSuccessAt ?? null,
+        lastError: extra?.lastError ?? null,
+      })
+      .onConflictDoUpdate({
+        target: syncState.key,
+        set: {
+          status,
+          lastAttemptAt: now,
+          ...(extra?.contentHash !== undefined
+            ? { contentHash: extra.contentHash }
+            : {}),
+          ...(extra?.rowCount !== undefined ? { rowCount: extra.rowCount } : {}),
+          ...(extra?.lastSuccessAt !== undefined
+            ? { lastSuccessAt: extra.lastSuccessAt }
+            : {}),
+          ...(extra?.lastError !== undefined ? { lastError: extra.lastError } : {}),
+        },
+      });
   }
 
   async persistPriceRows(
@@ -385,6 +463,8 @@ export class PriceCacheService {
         gameId: number;
         exportCreatedAt: string;
       };
+      trigger?: PriceSyncTrigger;
+      startedAt?: number;
     }
   ): Promise<{
     changed: boolean;
@@ -404,6 +484,11 @@ export class PriceCacheService {
     const now = new Date();
     const priceDate = utcDateString(now);
     const changed = existing?.contentHash !== hash;
+    const trigger = meta.trigger ?? 'http';
+
+    console.log(
+      `[prices] Persisting ${String(upstream.length)} rows (changed=${String(changed)}, previousHash=${existing?.contentHash?.slice(0, 12) ?? 'none'}, newHash=${hash.slice(0, 12)})`
+    );
 
     const dailyRows = upstream.map((row) => ({
       cardmarketId: row.cardmarketId,
@@ -538,8 +623,12 @@ export class PriceCacheService {
         });
     });
 
+    const elapsed =
+      meta.startedAt !== undefined
+        ? ` elapsedMs=${String(Date.now() - meta.startedAt)}`
+        : '';
     console.log(
-      `[prices] Cardmarket sync complete: game=${String(meta.sourceMeta.gameId)} products=${String(meta.productCount)} rows=${String(upstream.length)} changed=${String(changed)} export=${meta.sourceMeta.exportCreatedAt}`
+      `[prices] Cardmarket sync complete: trigger=${trigger} game=${String(meta.sourceMeta.gameId)} products=${String(meta.productCount)} rows=${String(upstream.length)} changed=${String(changed)} export=${meta.sourceMeta.exportCreatedAt}${elapsed}`
     );
 
     return {

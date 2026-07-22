@@ -104,7 +104,9 @@ async function main() {
     if (args.prices) {
       console.log('[db:reset] Syncing Cardmarket prices…');
       const prices = new PriceCacheService(ctx.db);
-      const result = await prices.syncFromCardmarket(env.CARDMARKET_GAME_ID);
+      const result = await prices.syncFromCardmarket(env.CARDMARKET_GAME_ID, {
+        trigger: 'script',
+      });
       console.log('[db:reset] Price sync:', result);
     }
 
