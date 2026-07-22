@@ -1,371 +1,372 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Keyboard, Pressable, View } from 'react-native';
 import { TrendTag } from '@/components/catalog/TrendTag';
-import { CollectionListPanel, WishlistRow } from '@/components/collection/CollectionDashboard';
-import { ScreenLayout } from '@/components/shell/ScreenLayout';
+import {
+  ScreenLayout,
+  ScreenLayoutBody,
+  useScreenLayout,
+} from '@/components/shell/ScreenLayout';
 import { Button, ButtonText } from '@/components/ui/button';
+import { SearchInput } from '@/components/ui/search-input';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
+import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import {
   useWishlistPrices,
   type WishlistPriceItem,
-  type WishlistRange,
 } from '@/hooks/useWishlistPrices';
-import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
 import { openCard } from '@/utils/cardNavigation';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { CARDMARKET_PRICE_DETAIL_NOTE } from '@riftbound/contracts';
 
-const RANGES: { value: WishlistRange; label: string; title: string }[] = [
-  { value: '1d', label: '1D', title: 'Today' },
-  { value: '7d', label: '7D', title: '7 days' },
-  { value: '30d', label: '30D', title: '30 days' },
-];
+type SortMode = 'move' | 'price' | 'name';
 
 function formatPrice(value: number | null): string {
   return value == null ? '—' : `€${value.toFixed(2)}`;
-}
-
-function rangeMeta(range: WishlistRange) {
-  return RANGES.find((option) => option.value === range) ?? RANGES[1]!;
 }
 
 function trendDelta(item: WishlistPriceItem): number {
   return item.changePercent ?? 0;
 }
 
-function PriceStatCell({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function matchesQuery(item: WishlistPriceItem, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
   return (
-    <View className="min-w-0 flex-1 rounded-lg bg-card-panel px-2.5 py-2">
-      <Text className="text-[10px] font-medium text-muted-foreground">{label}</Text>
-      <Text className="mt-0.5 font-mono text-[13px] font-semibold tabular-nums text-foreground">
-        {value}
-      </Text>
-      {hint ? (
-        <Text className="mt-0.5 text-[9px] leading-4 text-archive-subtle">{hint}</Text>
-      ) : null}
-    </View>
+    item.name.toLowerCase().includes(q) ||
+    item.variantNumber.toLowerCase().includes(q) ||
+    (item.priceFilterLabel?.toLowerCase().includes(q) ?? false)
   );
 }
 
-function TrendHistoryChart({ item }: { item: WishlistPriceItem }) {
-  const values = item.points
-    .map((point) => point.value)
-    .filter((value): value is number => value != null);
+function sortItems(items: WishlistPriceItem[], mode: SortMode): WishlistPriceItem[] {
+  const next = [...items];
+  if (mode === 'name') {
+    return next.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  if (mode === 'price') {
+    return next.sort((a, b) => (b.currentPrice ?? -1) - (a.currentPrice ?? -1));
+  }
+  return next.sort((a, b) => Math.abs(trendDelta(b)) - Math.abs(trendDelta(a)));
+}
 
-  if (values.length === 0) {
-    return (
-      <View className="mt-3 rounded-lg bg-card-panel px-3 py-3">
-        <Text className="text-xs leading-5 text-muted-foreground">
-          No daily trend history yet. Cardmarket prices sync once per day — check back after the
-          next sync.
-        </Text>
-      </View>
-    );
+function MiniSparkline({ points }: { points: WishlistPriceItem['points'] }) {
+  if (points.length < 2) {
+    return <View className="h-7 justify-center" />;
   }
 
+  const values = points.map((point) => point.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = Math.max(max - min, 0.01);
 
   return (
-    <View className="mt-3">
-      <View className="mb-2 flex-row items-center justify-between">
-        <Text className="font-mono text-[10px] text-archive-subtle">
-          Trend low {formatPrice(min)}
-        </Text>
-        <Text className="font-mono text-[10px] text-archive-subtle">
-          Trend high {formatPrice(max)}
-        </Text>
-      </View>
-      <View className="flex-row items-end gap-1.5">
-        {item.points.map((point, index) => {
-          const pct = point.value == null ? 0 : (point.value - min) / span;
-          const height = point.value == null ? 6 : 10 + pct * 48;
-          const active = index === item.points.length - 1;
-          return (
-            <View key={`${point.label}-${String(index)}`} className="flex-1 items-center gap-1">
-              <View
-                className={cn(
-                  'w-full rounded-sm bg-archive-soft-line',
-                  active && 'bg-primary'
-                )}
-                style={{ height }}
-                accessibilityLabel={
-                  point.value == null
-                    ? `${point.label || 'day'}: no trend`
-                    : `${point.label || 'day'} trend ${formatPrice(point.value)}`
-                }
-              />
-              {point.label ? (
-                <Text className="font-mono text-[9px] text-archive-subtle" numberOfLines={1}>
-                  {point.label}
-                </Text>
-              ) : (
-                <View className="h-[11px]" />
-              )}
-            </View>
-          );
-        })}
-      </View>
+    <View className="h-7 flex-row items-end gap-px" accessibilityElementsHidden>
+      {points.map((point, index) => {
+        const pct = (point.value - min) / span;
+        const height = 3 + pct * 22;
+        const isLatest = index === points.length - 1;
+        return (
+          <View
+            key={point.priceDate}
+            className={cn(
+              'min-w-0 flex-1 rounded-t-[1px]',
+              isLatest ? 'bg-primary' : 'bg-muted-foreground/25'
+            )}
+            style={{ height }}
+          />
+        );
+      })}
     </View>
   );
 }
 
-function WishlistCard({
+function WishlistRow({
   item,
-  range,
+  expanded,
+  onToggle,
+  onOpen,
 }: {
   item: WishlistPriceItem;
-  range: WishlistRange;
+  expanded: boolean;
+  onToggle: () => void;
+  onOpen: () => void;
 }) {
-  const router = useRouter();
-  const meta = rangeMeta(range);
-  const targetPrice =
-    item.targetPriceCents != null ? item.targetPriceCents / 100 : null;
-
   return (
-    <Pressable
-      className="rounded-xl border border-border bg-card p-3 active:opacity-90"
-      onPress={() => {
-        openCard(router, item.variantNumber, 'modal', 'wishlist');
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={`${item.name}, trend ${formatPrice(item.currentPrice)}, ${item.trend}`}
-    >
-      <View className="flex-row gap-3">
+    <View className="border-b border-border">
+      <Pressable
+        onPress={onToggle}
+        onLongPress={onOpen}
+        className="min-h-14 flex-row items-center gap-3 py-3 active:opacity-90"
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        accessibilityLabel={`${item.name}, ${formatPrice(item.currentPrice)}, ${item.trend}`}
+        accessibilityHint="Opens price details. Long press opens the card."
+      >
         {item.imageUrl ? (
           <Image
             source={{ uri: resolveImageUrl(item.imageUrl) }}
-            className="h-[92px] w-[66px] rounded-md"
+            className="h-14 w-10 rounded-md bg-card-panel"
             contentFit="cover"
             contentPosition="top"
             cachePolicy="memory-disk"
-            accessibilityLabel={item.name}
           />
         ) : (
-          <View className="h-[92px] w-[66px] items-center justify-center rounded-md bg-card-panel">
-            <ThemedIonicon name="bookmark-outline" size={20} color="muted-foreground" />
+          <View className="h-14 w-10 items-center justify-center rounded-md bg-card-panel">
+            <ThemedIonicon name="bookmark-outline" size={16} color="muted-foreground" />
           </View>
         )}
 
         <View className="min-w-0 flex-1">
-          <View className="flex-row items-start justify-between gap-3">
-            <View className="min-w-0 flex-1">
-              <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                {item.name}
-              </Text>
-              <Text className="mt-0.5 font-mono text-[11px] text-archive-subtle">
-                {item.variantNumber}
-              </Text>
-              <Text className="mt-1 font-mono text-[10px] text-archive-subtle">
-                {item.priceFilterLabel}
-              </Text>
-            </View>
-            <View className="items-end">
-              <Text className="font-mono text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                Trend
-              </Text>
-              <Text className="font-mono text-lg font-bold tabular-nums text-foreground">
-                {formatPrice(item.currentPrice)}
-              </Text>
-              <TrendTag trend={item.trend} />
-            </View>
-          </View>
-
-          <TrendHistoryChart item={item} />
-
-          <View className="mt-3 flex-row flex-wrap gap-2">
-            <PriceStatCell
-              label={`${meta.title} start`}
-              value={formatPrice(item.baselinePrice)}
-              hint="trend"
-            />
-            <PriceStatCell label="Avg trend" value={formatPrice(item.avgPrice)} />
-            <PriceStatCell
-              label="Cheapest listing"
-              value={formatPrice(item.listingLow)}
-              hint="any language"
-            />
-          </View>
-
-          {targetPrice != null ? (
-            <View className="mt-3 flex-row items-center justify-between rounded-lg bg-card-panel px-3 py-2">
-              <Text className="text-xs text-muted-foreground">Target (trend)</Text>
-              <View className="flex-row items-center gap-2">
-                <Text className="font-mono text-xs font-semibold tabular-nums text-foreground">
-                  {formatPrice(targetPrice)}
-                </Text>
-                {item.belowTarget ? (
-                  <Text className="font-mono text-[11px] font-semibold text-success">At target</Text>
-                ) : item.currentPrice != null && item.currentPrice > targetPrice ? (
-                  <Text className="font-mono text-[11px] text-archive-subtle">
-                    +{formatPrice(item.currentPrice - targetPrice)} above
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          ) : null}
-
-          <Text className="mt-2 text-[10px] leading-4 text-archive-subtle">{item.priceSourceNote}</Text>
+          <Text className="text-[15px] font-medium text-foreground" numberOfLines={1}>
+            {item.name}
+          </Text>
+          <Text className="mt-0.5 font-mono text-[11px] text-muted-foreground" numberOfLines={1}>
+            {item.variantNumber}
+            {item.belowTarget ? ' · at target' : ''}
+          </Text>
         </View>
-      </View>
-    </Pressable>
+
+        <View className="w-[88px] shrink-0">
+          <MiniSparkline points={item.points} />
+        </View>
+
+        <View className="min-w-[72px] items-end">
+          <Text className="font-mono text-[15px] font-semibold tabular-nums text-foreground">
+            {formatPrice(item.currentPrice)}
+          </Text>
+          <TrendTag trend={item.trend} className="mt-0.5" />
+        </View>
+
+        <ThemedIonicon
+          name={expanded ? 'chevron-up' : 'chevron-down'}
+          size={16}
+          color="muted-foreground"
+        />
+      </Pressable>
+
+      {expanded ? (
+        <View className="gap-3 border-t border-border/60 bg-card-panel/40 pb-3.5 pt-3">
+          <WishlistPriceHistoryPanel item={item} />
+          <Button size="sm" variant="outline" className="self-start" onPress={onOpen}>
+            <ButtonText>Open card</ButtonText>
+          </Button>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
 function WishlistLoadingSkeleton() {
   return (
     <SkeletonGroup>
-      <View className="gap-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-[200px] w-full rounded-xl" />
+      <View className="gap-0">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <View key={index} className="flex-row items-center gap-3 border-b border-border py-3">
+            <Skeleton className="h-14 w-10 rounded-md" />
+            <View className="min-w-0 flex-1 gap-2">
+              <Skeleton className="h-4 w-2/3 rounded" />
+              <Skeleton className="h-3 w-1/3 rounded" />
+            </View>
+            <Skeleton className="h-7 w-20 rounded" />
+            <Skeleton className="h-4 w-14 rounded" />
+          </View>
         ))}
       </View>
     </SkeletonGroup>
   );
 }
 
-export default function WishlistScreen() {
+function WishlistScreenBody() {
   const router = useRouter();
-  const isMobile = useMobileLayout();
-  const [range, setRange] = useState<WishlistRange>('7d');
-  const wishlist = useWishlistPrices(range);
+  const { contentWidth, paddingBottomInline } = useScreenLayout();
+  const [sort, setSort] = useState<SortMode>('move');
+  const [query, setQuery] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const wishlist = useWishlistPrices();
   const items = wishlist.data ?? [];
-  const meta = rangeMeta(range);
 
-  const movers = useMemo(
-    () =>
-      [...items]
-        .sort((a, b) => Math.abs(trendDelta(b)) - Math.abs(trendDelta(a)))
-        .slice(0, 5),
+  const filtered = useMemo(
+    () => sortItems(items.filter((item) => matchesQuery(item, query)), sort),
+    [items, query, sort]
+  );
+
+  const atTargetCount = useMemo(
+    () => items.filter((item) => item.belowTarget).length,
     [items]
   );
 
-  const subtitle =
-    items.length === 0
-      ? 'Track cards you want · Cardmarket EUR trend prices'
-      : `${String(items.length)} ${items.length === 1 ? 'card' : 'cards'} on your wishlist`;
+  const dismissKeyboard = useCallback(() => {
+    Keyboard.dismiss();
+  }, []);
 
-  return (
-    <ScreenLayout>
-      <View className="pb-4">
-        <View className={isMobile ? 'gap-4' : 'flex-row items-start justify-between gap-4'}>
-          <View className="min-w-0 flex-1">
-            <Text
-              className={
-                isMobile
-                  ? 'text-lg font-semibold tracking-tight text-foreground'
-                  : 'text-xl font-semibold tracking-tight text-foreground'
-              }
-            >
-              Wishlist
-            </Text>
-            <Text className="mt-1 font-mono text-[13px] text-muted-foreground">{subtitle}</Text>
-          </View>
-          <View
-            className={cn(
-              'flex-row rounded-lg border border-border bg-card p-0.5',
-              isMobile ? 'self-start' : 'shrink-0'
-            )}
-            accessibilityRole="tablist"
-          >
-            {RANGES.map((option) => {
-              const active = option.value === range;
-              return (
-                <Button
-                  key={option.value}
-                  size="sm"
-                  variant="ghost"
-                  className={cn(
-                    'min-h-11 w-auto rounded-md px-4',
-                    active ? 'bg-primary' : 'bg-transparent'
-                  )}
-                  onPress={() => {
-                    setRange(option.value);
-                  }}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                >
-                  <ButtonText
-                    className={cn(
-                      'font-mono text-xs',
-                      active ? 'text-primary-foreground' : 'text-muted-foreground'
-                    )}
-                  >
-                    {option.label}
-                  </ButtonText>
-                </Button>
-              );
-            })}
-          </View>
-        </View>
+  const openItem = useCallback(
+    (variantNumber: string) => {
+      openCard(router, variantNumber, 'modal', 'wishlist');
+    },
+    [router]
+  );
 
-        <Text className="mt-3 text-xs leading-5 text-muted-foreground">
-          {CARDMARKET_PRICE_DETAIL_NOTE}
+  const listHeader = (
+    <View className="gap-4 pb-2">
+      <View>
+        <Text className="text-xl font-semibold tracking-tight text-foreground">Wishlist</Text>
+        <Text className="mt-1 text-sm text-muted-foreground">
+          {items.length === 0
+            ? 'Track cards you want and watch Cardmarket trend prices.'
+            : `${String(items.length)} ${items.length === 1 ? 'card' : 'cards'}${
+                atTargetCount > 0 ? ` · ${String(atTargetCount)} at target` : ''
+              }`}
         </Text>
       </View>
 
-      <View className="gap-3 pb-8">
-        <CollectionListPanel title="Top movers" subtitle={`${meta.title} · trend`}>
-          {wishlist.isLoading ? (
-            <Text className="py-6 text-center text-sm text-muted-foreground">Loading movers…</Text>
-          ) : movers.length > 0 ? (
-            movers.map((item, i) => (
-              <View key={item.variantNumber}>
-                {i > 0 ? <View className="h-hairline bg-archive-soft-line" /> : null}
-                <WishlistRow
-                  name={item.name}
-                  variantNumber={item.variantNumber}
-                  price={`Trend ${formatPrice(item.currentPrice)}`}
-                  trend={item.trend}
-                  onPress={() => {
-                    openCard(router, item.variantNumber, 'modal', 'wishlist');
-                  }}
-                />
-                <Text className="px-1 pb-2 font-mono text-[10px] text-archive-subtle">
-                  Trend {formatPrice(item.baselinePrice)} → {formatPrice(item.currentPrice)} ·{' '}
-                  {item.priceFilterLabel}
+      <SearchInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search by name or variant"
+        accessibilityLabel="Search wishlist"
+        className="min-h-12 rounded-xl border-border bg-card"
+      />
+
+      <View className="flex-row flex-wrap items-center justify-between gap-3">
+        <Text className="text-xs text-muted-foreground">Last 30 days</Text>
+        <View className="flex-row items-center gap-1" accessibilityRole="tablist">
+          {(
+            [
+              { value: 'move', label: 'Move' },
+              { value: 'price', label: 'Price' },
+              { value: 'name', label: 'Name' },
+            ] as const
+          ).map((option) => {
+            const active = sort === option.value;
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => {
+                  setSort(option.value);
+                }}
+                className={cn(
+                  'min-h-9 rounded-md px-2.5 py-1.5',
+                  active ? 'bg-secondary' : 'active:opacity-70'
+                )}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+              >
+                <Text
+                  className={cn(
+                    'text-[12px]',
+                    active ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                  )}
+                >
+                  {option.label}
                 </Text>
-              </View>
-            ))
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      {items.length > 0 ? (
+        <View className="flex-row items-baseline justify-between border-b border-border pb-2">
+          <Text className="text-xs text-muted-foreground">
+            {query.trim()
+              ? `${String(filtered.length)} match${filtered.length === 1 ? '' : 'es'}`
+              : 'Tap a row for history'}
+          </Text>
+          <Text className="font-mono text-[10px] text-archive-subtle">EUR trend</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+
+  if (wishlist.isLoading) {
+    return (
+      <View style={{ width: contentWidth }} className="gap-4">
+        {listHeader}
+        <WishlistLoadingSkeleton />
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={filtered}
+      keyExtractor={(item) => item.variantNumber}
+      ListHeaderComponent={listHeader}
+      renderItem={({ item }) => (
+        <WishlistRow
+          item={item}
+          expanded={expandedId === item.variantNumber}
+          onToggle={() => {
+            setExpandedId((current) =>
+              current === item.variantNumber ? null : item.variantNumber
+            );
+          }}
+          onOpen={() => {
+            openItem(item.variantNumber);
+          }}
+        />
+      )}
+      ListEmptyComponent={
+        <View className="py-10">
+          {items.length === 0 ? (
+            <View className="gap-3">
+              <Text className="text-base font-semibold text-foreground">
+                No wishlist cards yet
+              </Text>
+              <Text className="max-w-md text-sm leading-6 text-muted-foreground">
+                Save a printing from the catalog. Your list stays compact so you can scan prices
+                quickly, then expand a row when you want history.
+              </Text>
+              <Button
+                className="mt-2 self-start"
+                onPress={() => {
+                  router.push('/(tabs)/search');
+                }}
+              >
+                <ButtonText>Browse catalog</ButtonText>
+              </Button>
+            </View>
           ) : (
-            <Text className="py-6 text-center text-sm leading-6 text-muted-foreground">
-              {items.length > 0
-                ? 'No meaningful trend movement in this period. Need at least two daily snapshots.'
-                : 'Add cards to your wishlist to track Cardmarket trend prices.'}
+            <Text className="text-center text-sm text-muted-foreground">
+              No cards match “{query.trim()}”.
             </Text>
           )}
-        </CollectionListPanel>
-
-        <View className="flex-row items-baseline justify-between pt-3">
-          <Text className="text-sm font-semibold text-foreground">Wishlisted cards</Text>
-          <Text className="font-mono text-xs text-archive-subtle">
-            {items.length} {items.length === 1 ? 'card' : 'cards'}
-          </Text>
         </View>
+      }
+      ListFooterComponent={
+        items.length > 0 ? (
+          <Text className="pb-2 pt-5 text-xs leading-5 text-muted-foreground">
+            {CARDMARKET_PRICE_DETAIL_NOTE}
+          </Text>
+        ) : null
+      }
+      contentContainerStyle={{
+        width: contentWidth,
+        maxWidth: '100%',
+        paddingBottom: paddingBottomInline,
+      }}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      onScrollBeginDrag={dismissKeyboard}
+      showsVerticalScrollIndicator={false}
+      extraData={expandedId}
+      initialNumToRender={16}
+      windowSize={9}
+    />
+  );
+}
 
-        {wishlist.isLoading ? (
-          <WishlistLoadingSkeleton />
-        ) : items.length > 0 ? (
-          items.map((item) => (
-            <WishlistCard key={item.variantNumber} item={item} range={range} />
-          ))
-        ) : (
-          <View className="rounded-xl border border-dashed border-border p-6">
-            <Text className="text-base font-semibold text-foreground">No wishlist cards yet</Text>
-            <Text className="mt-2 text-sm leading-6 text-muted-foreground">
-              Add a card from the catalog. We track Cardmarket trend daily and show the cheapest
-              marketplace listing separately so foreign-language copies do not skew the headline
-              price.
-            </Text>
-          </View>
-        )}
-      </View>
+export default function WishlistScreen() {
+  return (
+    <ScreenLayout mode="flex" contentClassName="flex-1">
+      <ScreenLayoutBody>
+        <WishlistScreenBody />
+      </ScreenLayoutBody>
     </ScreenLayout>
   );
 }

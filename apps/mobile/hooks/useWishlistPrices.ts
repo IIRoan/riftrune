@@ -7,15 +7,22 @@ import {
 } from '@riftbound/contracts';
 import { getWishlist, type WishlistEntry } from '@/services/wishlistService';
 import { api } from '@/src/api/client';
-import { wishlistQueryKeys, type WishlistRange } from '@/src/api/queryKeys';
+import { wishlistQueryKeys } from '@/src/api/queryKeys';
+import {
+  toWishlistChartPoints,
+  type WishlistPricePoint,
+} from '@/lib/wishlist-price-points';
 import { isFoilVariant } from '@/utils/variants';
 
-export type { WishlistRange } from '@/src/api/queryKeys';
+/** Fixed history window for wishlist price charts. */
+export const WISHLIST_PRICE_DAYS = 30;
 
-export interface WishlistPricePoint {
-  label: string;
-  value: number | null;
-}
+export type { WishlistPricePoint } from '@/lib/wishlist-price-points';
+export {
+  formatPricePointDate,
+  shouldShowPricePointLabel,
+  toWishlistChartPoints,
+} from '@/lib/wishlist-price-points';
 
 export interface WishlistPriceItem extends WishlistEntry {
   currentPrice: number | null;
@@ -35,19 +42,6 @@ export interface WishlistPriceItem extends WishlistEntry {
   points: WishlistPricePoint[];
 }
 
-function rangeDays(range: WishlistRange): number {
-  if (range === '1d') return 1;
-  if (range === '30d') return 30;
-  return 7;
-}
-
-function pointLabel(value: string, index: number, total: number): string {
-  if (total <= 4) return index === total - 1 ? 'Now' : value;
-  if (index === 0) return value;
-  if (index === total - 1) return 'Now';
-  return '';
-}
-
 function toWishlistPriceItem(
   entry: WishlistEntry & {
     priority?: number;
@@ -55,17 +49,7 @@ function toWishlistPriceItem(
   },
   stats: PriceStats | undefined
 ): WishlistPriceItem {
-  const points =
-    stats?.points.map((point, index, all) => {
-      const date = new Date(`${point.priceDate}T00:00:00.000Z`);
-      const label = Number.isNaN(date.getTime())
-        ? ''
-        : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      return {
-        label: pointLabel(label, index, all.length),
-        value: point.marketPrice ?? point.midPrice,
-      };
-    }) ?? [];
+  const points = toWishlistChartPoints(stats?.points);
 
   return {
     ...entry,
@@ -80,21 +64,22 @@ function toWishlistPriceItem(
     trendDirection: stats?.trend ?? 'flat',
     belowTarget: stats?.belowTarget ?? false,
     targetPriceCents: stats?.targetPriceCents ?? entry.targetPriceCents ?? null,
-    priceFilterLabel:
-      stats?.priceFilterLabel ?? cardmarketPriceScopeLabel(false),
+    priceFilterLabel: stats?.priceFilterLabel ?? cardmarketPriceScopeLabel(false),
     priceSourceNote: stats?.priceSourceNote ?? CARDMARKET_PRICE_SCOPE_NOTE,
     dataPointCount: points.length,
     points,
   };
 }
 
-export function useWishlistPrices(range: WishlistRange, enabled = true) {
+export function useWishlistPrices(enabled = true) {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: wishlistQueryKeys.prices(range),
+    queryKey: wishlistQueryKeys.prices,
     queryFn: async (): Promise<WishlistPriceItem[]> => {
-      const wishlist = await queryClient.ensureQueryData({
+      // fetchQuery (not ensureQueryData): after wishlist add/remove, membership
+      // may be invalidated but still cached — ensureQueryData would reuse it.
+      const wishlist = await queryClient.fetchQuery({
         queryKey: wishlistQueryKeys.all,
         queryFn: getWishlist,
       });
@@ -115,7 +100,7 @@ export function useWishlistPrices(range: WishlistRange, enabled = true) {
       }
 
       const statsResponse = await api.getPriceStatsBatch({
-        days: rangeDays(range),
+        days: WISHLIST_PRICE_DAYS,
         items: wishlist.map((item) => {
           const variant = variantByNumber.get(item.variantNumber);
           const isFoil =
