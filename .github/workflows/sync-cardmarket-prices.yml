@@ -1,0 +1,61 @@
+name: Sync Cardmarket Prices
+
+# Pulls Cardmarket's daily Riftbound price guide into the production DB via
+# POST /api/v1/sync/prices (same path as `bun run sync:prices` against a running API).
+on:
+  schedule:
+    # Daily 03:00 UTC — matches SPEC.md syncPrices schedule
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-cardmarket-prices
+  cancel-in-progress: false
+
+jobs:
+  sync-prices:
+    name: Import Cardmarket price guide
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check for ADMIN_SYNC_TOKEN
+        run: |
+          if [ -z "${{ secrets.ADMIN_SYNC_TOKEN }}" ]; then
+            echo "Set repository secret ADMIN_SYNC_TOKEN to the same value as the API ADMIN_SYNC_TOKEN."
+            exit 1
+          fi
+
+      - name: Sync prices from Cardmarket
+        env:
+          ADMIN_SYNC_TOKEN: ${{ secrets.ADMIN_SYNC_TOKEN }}
+          # Optional repo variable; defaults to production API.
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          set -euo pipefail
+
+          API_BASE_URL="${API_BASE_URL:-https://riftapi.solace.onl}"
+          tmp="$(mktemp)"
+          http_code="$(
+            curl -sS -o "$tmp" -w '%{http_code}' \
+              --connect-timeout 30 \
+              --max-time 600 \
+              -X POST "${API_BASE_URL}/api/v1/sync/prices" \
+              -H "Authorization: Bearer ${ADMIN_SYNC_TOKEN}" \
+              -H "Accept: application/json"
+          )"
+
+          echo "HTTP ${http_code}"
+          cat "$tmp"
+          echo
+
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Price sync failed with HTTP ${http_code}"
+            exit 1
+          fi
+
+          if ! grep -q '"data"' "$tmp"; then
+            echo "::error::Unexpected response body (missing data)"
+            exit 1
+          fi
+
+          echo "Cardmarket price sync succeeded."
