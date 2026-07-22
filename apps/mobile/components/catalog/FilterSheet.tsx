@@ -1,18 +1,20 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import {
   CatalogToolbarBadgeDot,
   CatalogToolbarButton,
 } from '@/components/catalog/CatalogToolbarButton';
-import { CatalogFilterSegmentPanel } from '@/components/catalog/CatalogFilterPanels';
+import { CatalogFilterSegmentPanel, useCatalogFilterOptions } from '@/components/catalog/CatalogFilterPanels';
 import {
   FilterAccordionGroup,
   FilterAccordionSection,
   MobileFilterSheet,
 } from '@/components/filters/MobileFilterSheet';
 import { FilterKeywordChip } from '@/components/riftbound/RiftboundBadges';
+import { DomainIcon } from '@/components/riftbound/CardIcons';
 import { Text } from '@/components/ui/text';
+import { hapticPress } from '@/utils/haptics';
 import {
   CATALOG_FILTER_SEGMENTS,
   catalogFilterChips,
@@ -138,6 +140,12 @@ export function CatalogActiveFilterChips({
   filters: CatalogFilters;
   onFiltersChange: (filters: CatalogFilters) => void;
 }) {
+  const { colorOptions } = useCatalogFilterOptions();
+  const colorByName = useMemo(
+    () => new Map(colorOptions.map((color) => [color.name, color])),
+    [colorOptions]
+  );
+
   if (!catalogFiltersActive(filters)) return null;
 
   return (
@@ -153,6 +161,36 @@ export function CatalogActiveFilterChips({
             key={chip.id}
             label={chip.label}
             keywordBase={chip.keywordBase}
+            trailing={
+              chip.colorNames && chip.colorNames.length > 0 ? (
+                <View className="flex-row items-center gap-2">
+                  {chip.colorNames.map((name) => (
+                    <Pressable
+                      key={name}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${name} color filter`}
+                      className="flex-row items-center gap-1 rounded-md px-1 py-0.5 active:bg-accent/80"
+                      onPress={() => {
+                        hapticPress();
+                        onFiltersChange({
+                          ...filters,
+                          colors: filters.colors.filter((color) => color !== name),
+                        });
+                      }}
+                    >
+                      <DomainIcon
+                        name={name}
+                        imageUrl={colorByName.get(name)?.imageUrl}
+                        size={14}
+                      />
+                      <Text className="text-[11px] font-semibold text-muted-foreground">
+                        {name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : undefined
+            }
             onClear={() => onFiltersChange(chip.clear())}
           />
         ))}

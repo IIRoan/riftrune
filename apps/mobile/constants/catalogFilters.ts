@@ -331,6 +331,8 @@ export type CatalogFilterChip = {
   id: string;
   label: string;
   keywordBase: string;
+  /** When set, active chip UI shows a domain icon beside each color name. */
+  colorNames?: string[];
   clear: () => CatalogFilters;
 };
 
@@ -340,8 +342,9 @@ export function catalogFilterChips(filters: CatalogFilters): CatalogFilterChip[]
   if (filters.colors.length > 0) {
     chips.push({
       id: 'colors',
-      label: `Colors: ${filters.colors.join(', ')}`,
+      label: 'Colors',
       keywordBase: 'REACTION',
+      colorNames: [...filters.colors],
       clear: () => ({ ...filters, colors: [] }),
     });
   }

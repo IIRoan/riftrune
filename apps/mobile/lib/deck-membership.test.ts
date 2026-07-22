@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createEmptyDeck } from '@/lib/deck-card';
+import { addCardToDeck, createEmptyDeck } from '@/lib/deck-card';
 import {
   deckCardsMatch,
   deckMembershipRevision,
@@ -28,18 +28,68 @@ function mockCard(overrides: Partial<DeckCard> & Pick<DeckCard, 'name'>): DeckCa
 }
 
 describe('deck-membership', () => {
-  test('matches cards by cardId when names differ slightly', () => {
-    const a = mockCard({
-      name: 'Obelisk of Power',
-      cardId: 'bf-1',
-      variantNumber: 'OGN-001',
+  test('matches printings by variantNumber, not shared cardId or name', () => {
+    const standard = mockCard({
+      name: 'Sett, Brawler',
+      cardId: 'sett-1',
+      variantNumber: 'OGN-164',
+      type: 'Unit',
     });
-    const b = mockCard({
-      name: 'Obelisk of Power ',
-      cardId: 'bf-1',
-      variantNumber: 'OGN-001',
+    const altArt = mockCard({
+      name: 'Sett, Brawler',
+      cardId: 'sett-1',
+      variantNumber: 'OGN-164a',
+      type: 'Unit',
     });
-    expect(deckCardsMatch(a, b)).toBe(true);
+    expect(deckCardsMatch(standard, altArt)).toBe(false);
+    expect(deckCardsMatch(standard, { ...standard, name: 'Sett, Brawler ' })).toBe(true);
+  });
+
+  test('only the added printing counts as in-deck', () => {
+    const standard = mockCard({
+      name: 'Sett, Brawler',
+      cardId: 'sett-1',
+      variantNumber: 'OGN-164',
+      type: 'Unit',
+    });
+    const altArt = mockCard({
+      name: 'Sett, Brawler',
+      cardId: 'sett-1',
+      variantNumber: 'OGN-164a',
+      type: 'Unit',
+    });
+    const deck = createEmptyDeck();
+    deck.mainDeck.set(standard.name, { card: standard, count: 2 });
+
+    expect(getDeckCandidateCount(deck, 'mainDeck', standard)).toBe(2);
+    expect(isDeckCandidateInSection(deck, 'mainDeck', standard)).toBe(true);
+    expect(getDeckCandidateCount(deck, 'mainDeck', altArt)).toBe(0);
+    expect(isDeckCandidateInSection(deck, 'mainDeck', altArt)).toBe(false);
+    expect(findDeckEntryForCandidate(deck, 'mainDeck', altArt)).toBeNull();
+  });
+
+  test('adding a different printing switches deck art to that variant', () => {
+    const standard = mockCard({
+      name: 'Sett, Brawler',
+      cardId: 'sett-1',
+      variantNumber: 'OGN-164',
+      type: 'Unit',
+    });
+    const altArt = mockCard({
+      name: 'Sett, Brawler',
+      cardId: 'sett-1',
+      variantNumber: 'OGN-164a',
+      type: 'Unit',
+    });
+    let deck = createEmptyDeck();
+    deck = addCardToDeck(deck, standard, { section: 'mainDeck', count: 2 });
+    deck = addCardToDeck(deck, altArt, { section: 'mainDeck' });
+
+    const entry = deck.mainDeck.get(standard.name);
+    expect(entry?.count).toBe(3);
+    expect(entry?.card.variantNumber).toBe('OGN-164a');
+    expect(getDeckCandidateCount(deck, 'mainDeck', standard)).toBe(0);
+    expect(getDeckCandidateCount(deck, 'mainDeck', altArt)).toBe(3);
   });
 
   test('tracks battlefield membership and removal', () => {

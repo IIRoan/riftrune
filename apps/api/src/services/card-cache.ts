@@ -21,6 +21,7 @@ import {
 import { TtlCache } from '../lib/ttl-cache.js';
 import {
   buildUpstreamListParams,
+  maxUpstreamBackfillPages,
   resolveUpstreamReconcileMode,
   upstreamCheckKey,
 } from '../lib/upstream-list-params.js';
@@ -28,8 +29,10 @@ import {
 const SEARCH_RESULT_TTL_MS = 5 * 60 * 1000;
 const UPSTREAM_CHECK_TTL_MS = 15 * 60 * 1000;
 const VARIANT_ID_RESOLVE_TTL_MS = 30 * 60 * 1000;
-/** Cap variant rows loaded for text search before in-memory grouping. */
+/** Cap variant rows loaded before in-memory printing grouping + pagination. */
 const SEARCH_VARIANT_FETCH_CAP = 500;
+/** Filtered browse (deck builder) materializes the full matching set, then pages. */
+const FILTERED_BROWSE_VARIANT_FETCH_CAP = 5000;
 
 type SearchResult = {
   items: CardListItem[];
@@ -597,9 +600,12 @@ export class CardCacheService {
       let page = query.page;
       let upstreamTotal = 0;
       let pagesScanned = 0;
-      // Text search stays on the requested page; browse/deck filters may walk a
-      // few pages when local totals lag upstream so later alphabet cards appear.
-      const maxBackfillPages = query.q?.trim() ? 1 : 5;
+      let consecutiveCleanPages = 0;
+      // Walk until local catches upstream (or hit the hard cap). Deck-builder
+      // identity filters previously stopped after 5 pages and missed later cards.
+      const maxBackfillPages = maxUpstreamBackfillPages(query);
+      const colorsOmittedForWithin =
+        query.colorMode === 'within' && Boolean(query.colors);
 
       while (pagesScanned < maxBackfillPages) {
         const upstream = await this.riftrune.listCards(
@@ -624,13 +630,22 @@ export class CardCacheService {
           }
         }
 
+        if (missing.length === 0) consecutiveCleanPages += 1;
+        else consecutiveCleanPages = 0;
+
         const localTotal = (localResult?.total ?? 0) + upserted;
         const stillBehind = upstreamTotal > localTotal;
         const hasNext =
           Boolean(upstream.pagination?.hasNext) &&
           page < (upstream.pagination?.totalPages ?? page);
 
-        if (!stillBehind || !hasNext) break;
+        // When colors are omitted for within-mode, upstream totals are broader than
+        // the local filtered total — use clean-page streaks instead.
+        const caughtUp = colorsOmittedForWithin
+          ? consecutiveCleanPages >= 5
+          : !stillBehind;
+
+        if (caughtUp || !hasNext) break;
         page += 1;
       }
 
@@ -651,7 +666,8 @@ export class CardCacheService {
       }
 
       // Upstream reports more matches than we do — keep probing on the next request.
-      if (upstreamTotal > result.total) {
+      // Skip this when within-mode omitted colors (upstream total is a broader pool).
+      if (!colorsOmittedForWithin && upstreamTotal > result.total) {
         this.upstreamCheckCache.delete(checkKey);
       } else {
         this.upstreamCheckCache.set(checkKey, true);
@@ -796,9 +812,23 @@ export class CardCacheService {
 
     const offset = (query.page - 1) * query.limit;
     const hasSearch = Boolean(query.q?.trim());
-    const orderBy = query.q && query.q.trim().length > 0
-      ? [asc(buildSearchRelevanceOrder(query.q)), asc(cards.name)]
-      : [order];
+    const hasDeckBuilderFilters = Boolean(
+      query.types ||
+        query.colors ||
+        query.sets ||
+        query.super ||
+        query.variants ||
+        query.rarities ||
+        query.excludeTokens
+    );
+    // Materialize then group so alternate arts / foil merges never split across
+    // SQL pages (deck builder scroll must see every matching printing).
+    const materializeThenPage = hasSearch || hasDeckBuilderFilters;
+    const fetchCap = hasSearch ? SEARCH_VARIANT_FETCH_CAP : FILTERED_BROWSE_VARIANT_FETCH_CAP;
+    const orderBy =
+      query.q && query.q.trim().length > 0
+        ? [asc(buildSearchRelevanceOrder(query.q)), asc(cards.name)]
+        : [order];
 
     const baseQuery = this.db
       .select({
@@ -812,8 +842,8 @@ export class CardCacheService {
       .where(where)
       .orderBy(...orderBy);
 
-    const rows = hasSearch
-      ? await baseQuery.limit(SEARCH_VARIANT_FETCH_CAP)
+    const rows = materializeThenPage
+      ? await baseQuery.limit(fetchCap)
       : await baseQuery.limit(query.limit).offset(offset);
 
     const priceRows = await this.prices.getRowsForCardmarketIds(
@@ -828,11 +858,11 @@ export class CardCacheService {
       return this.mapItem(logical, variant, priceRows);
     });
 
-    if (hasSearch) {
+    if (materializeThenPage) {
       const grouped = groupCardListItems(rawItems);
       let total = grouped.length;
 
-      if (rows.length >= SEARCH_VARIANT_FETCH_CAP) {
+      if (rows.length >= fetchCap) {
         const [countRow] = await this.db
           .select({ value: count() })
           .from(variants)

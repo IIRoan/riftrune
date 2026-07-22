@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { KeywordBadge } from '@/components/riftbound/KeywordBadge';
 import { Text } from '@/components/ui/text';
@@ -61,24 +62,29 @@ export function FilterKeywordChip({
   label,
   keywordBase,
   onClear,
+  trailing,
 }: {
   label: string;
   keywordBase: string;
   onClear: () => void;
+  trailing?: ReactNode;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Clear ${label} filter`}
-      className="flex-row items-center gap-1.5 active:opacity-80"
-      onPress={() => {
-        hapticPress();
-        onClear();
-      }}
-    >
+    <View className="flex-row items-center gap-1.5">
       <KeywordBadge label={label} keywordBase={keywordBase} compact />
-      <Text className="text-sm font-semibold text-muted-foreground">×</Text>
-    </Pressable>
+      {trailing}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Clear ${label} filter`}
+        className="active:opacity-80"
+        onPress={() => {
+          hapticPress();
+          onClear();
+        }}
+      >
+        <Text className="text-sm font-semibold text-muted-foreground">×</Text>
+      </Pressable>
+    </View>
   );
 }
 

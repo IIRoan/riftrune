@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { CardsListQuery } from '@riftbound/contracts';
 import {
   buildUpstreamListParams,
+  maxUpstreamBackfillPages,
   resolveUpstreamReconcileMode,
   upstreamCheckKey,
 } from '../../src/lib/upstream-list-params.js';
@@ -41,6 +42,33 @@ describe('buildUpstreamListParams', () => {
     ).toMatchObject({
       q: 'flame',
       types: 'Battlefield',
+    });
+  });
+
+  test('passes colors for default colorMode all', () => {
+    expect(
+      buildUpstreamListParams({
+        ...baseQuery,
+        colors: 'Mind,Order',
+        colorMode: 'all',
+      }).colors
+    ).toBe('Mind,Order');
+  });
+
+  test('omits colors for within mode so deck identity pools are not under-backfilled', () => {
+    expect(
+      buildUpstreamListParams({
+        ...baseQuery,
+        types: 'Unit,Gear,Spell',
+        colors: 'Mind,Order',
+        colorMode: 'within',
+      })
+    ).toEqual({
+      page: 1,
+      limit: 40,
+      sortBy: 'name',
+      dir: 'asc',
+      types: 'Unit,Gear,Spell',
     });
   });
 });
@@ -136,5 +164,22 @@ describe('resolveUpstreamReconcileMode', () => {
         false
       )
     ).toBe('sync');
+  });
+});
+
+describe('maxUpstreamBackfillPages', () => {
+  test('allows multi-page text search backfill for alternate arts', () => {
+    expect(maxUpstreamBackfillPages({ ...baseQuery, q: 'ahri' })).toBe(20);
+  });
+
+  test('allows deep browse backfill for deck-builder identity pools', () => {
+    expect(
+      maxUpstreamBackfillPages({
+        ...baseQuery,
+        types: 'Unit,Gear,Spell',
+        colors: 'Mind,Order',
+        colorMode: 'within',
+      })
+    ).toBe(100);
   });
 });

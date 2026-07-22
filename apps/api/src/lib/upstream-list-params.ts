@@ -2,6 +2,9 @@ import type { CardsListQuery } from '@riftbound/contracts';
 
 export type UpstreamReconcileMode = 'sync' | 'skip';
 
+/** Hard cap so a broken upstream total cannot loop forever. */
+export const UPSTREAM_BACKFILL_PAGE_CAP = 100;
+
 /** Map our list query to riftrune.com external API params. */
 export function buildUpstreamListParams(
   query: CardsListQuery
@@ -19,7 +22,11 @@ export function buildUpstreamListParams(
   if (query.super) params.supertypes = query.super;
   if (query.variants) params.variants = query.variants;
   if (query.sets) params.sets = query.sets;
-  if (query.colors) params.colors = query.colors;
+  // PA has no colorMode=within. Passing colors uses PA's stricter "contains all"
+  // match and under-backfills deck-builder identity pools — omit for within.
+  if (query.colors && query.colorMode !== 'within') {
+    params.colors = query.colors;
+  }
   if (query.rarities) params.rarities = query.rarities;
   if (query.energyMin != null) params.energyMin = query.energyMin;
   if (query.energyMax != null) params.energyMax = query.energyMax;
@@ -46,6 +53,16 @@ export function upstreamCheckKey(query: CardsListQuery): string {
     sortBy: query.sortBy,
     dir: query.dir,
   });
+}
+
+/**
+ * How many upstream pages to walk while local totals lag.
+ * Text search still multi-pages when behind so alt arts on later pages are not missed.
+ */
+export function maxUpstreamBackfillPages(query: CardsListQuery): number {
+  const q = query.q?.trim();
+  if (q && q.length >= 2) return 20;
+  return UPSTREAM_BACKFILL_PAGE_CAP;
 }
 
 export function resolveUpstreamReconcileMode(
