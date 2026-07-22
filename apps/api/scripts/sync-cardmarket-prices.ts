@@ -19,7 +19,9 @@ async function main() {
   const prices = new PriceCacheService(db);
 
   try {
-    const result = await prices.syncFromCardmarket(env.CARDMARKET_GAME_ID);
+    const result = await prices.syncFromCardmarket(env.CARDMARKET_GAME_ID, {
+      trigger: 'script',
+    });
     console.log(
       JSON.stringify(
         {
