@@ -66,12 +66,15 @@ interface CatalogDetailPanelProps {
   catalogListItem?: CardListItem | null;
   /** `drawer` — inside mobile bottom sheet (no outer chrome / nested scroll). */
   embedded?: 'panel' | 'drawer';
+  /** Hide add/remove collection controls (e.g. deck view-only preview). */
+  hideCollectionActions?: boolean;
 }
 
 export function CatalogDetailPanel({
   variantNumber,
   catalogListItem = null,
   embedded = 'panel',
+  hideCollectionActions = false,
 }: CatalogDetailPanelProps) {
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { setQuantity } = useCollectionMutations();
@@ -302,7 +305,8 @@ export function CatalogDetailPanel({
     />
   ) : null;
 
-  const collectionCta = !showPrintingsSection && singlePrinting ? (
+  const collectionCta =
+    !hideCollectionActions && !showPrintingsSection && singlePrinting ? (
     singlePrintingQty > 0 ? (
       <View
         className={cn(
@@ -464,24 +468,30 @@ export function CatalogDetailPanel({
                         </View>
                       </View>
                       <View className="shrink-0 self-center">
-                        <OwnershipStepper
-                          owned={qty}
-                          name={`${card.name} ${printing.variantLabel}`}
-                          compact
-                          printings={listItem.printings}
-                          fixedVariantNumber={printing.variantNumber}
-                          onAdd={() => {
-                            void detail.onAddToCollection(printing.variantNumber);
-                          }}
-                          onRemove={() => {
-                            const entry = collectionByVariant.get(printing.variantNumber);
-                            if (!entry) return;
-                            void setQuantity.mutateAsync({
-                              variantNumber: printing.variantNumber,
-                              quantity: Math.max(0, entry.quantity - 1),
-                            });
-                          }}
-                        />
+                        {!hideCollectionActions ? (
+                          <OwnershipStepper
+                            owned={qty}
+                            name={`${card.name} ${printing.variantLabel}`}
+                            compact
+                            printings={listItem.printings}
+                            fixedVariantNumber={printing.variantNumber}
+                            onAdd={() => {
+                              void detail.onAddToCollection(printing.variantNumber);
+                            }}
+                            onRemove={() => {
+                              const entry = collectionByVariant.get(printing.variantNumber);
+                              if (!entry) return;
+                              void setQuantity.mutateAsync({
+                                variantNumber: printing.variantNumber,
+                                quantity: Math.max(0, entry.quantity - 1),
+                              });
+                            }}
+                          />
+                        ) : qty > 0 ? (
+                          <Text className="font-mono text-xs tabular-nums text-muted-foreground">
+                            Own {qty}
+                          </Text>
+                        ) : null}
                       </View>
                     </View>
                   );

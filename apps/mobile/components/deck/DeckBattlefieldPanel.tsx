@@ -10,7 +10,7 @@ import { buildBattlefieldSlots } from '@/lib/deck-builder';
 import { BATTLEFIELD_MAX, battlefieldsAtCapacity } from '@/lib/deck-limits';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import type { DeckEntry, DeckState } from '@/lib/deck-types';
-import { openCard } from '@/utils/cardNavigation';
+import { openCard, type CardOpenSource } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +18,7 @@ interface DeckBattlefieldPanelProps {
   deck: DeckState;
   readOnly?: boolean;
   imageByVariant: ReadonlyMap<string, string>;
+  openSource?: CardOpenSource;
   onAdd: () => void;
   onRemove: (name: string) => void;
 }
@@ -29,6 +30,7 @@ function BattlefieldSlot({
   readOnly,
   canAdd,
   imageByVariant,
+  openSource,
   onAdd,
   onRemove,
 }: {
@@ -38,6 +40,7 @@ function BattlefieldSlot({
   readOnly?: boolean;
   canAdd: boolean;
   imageByVariant: ReadonlyMap<string, string>;
+  openSource?: CardOpenSource;
   onAdd: () => void;
   onRemove: (name: string) => void;
 }) {
@@ -95,7 +98,7 @@ function BattlefieldSlot({
           className="absolute inset-0 active:opacity-90"
           onPress={() => {
             hapticPress();
-            openCard(router, card.variantNumber, 'modal');
+            openCard(router, card.variantNumber, 'modal', openSource);
           }}
         >
           <BattlefieldCardArt uri={imageUri} variantNumber={card.variantNumber} />
@@ -123,6 +126,7 @@ export function DeckBattlefieldPanel({
   deck,
   readOnly = false,
   imageByVariant,
+  openSource,
   onAdd,
   onRemove,
 }: DeckBattlefieldPanelProps) {
@@ -171,6 +175,7 @@ export function DeckBattlefieldPanel({
             readOnly={readOnly}
             canAdd={canAdd}
             imageByVariant={imageByVariant}
+            openSource={openSource}
             onAdd={onAdd}
             onRemove={onRemove}
           />

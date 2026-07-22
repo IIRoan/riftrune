@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import {
   getKeywordBadgeClassName,
@@ -13,20 +14,27 @@ export function KeywordBadge({
   label,
   keywordBase,
   compact = false,
+  trailing,
 }: {
   label: string;
   keywordBase?: string;
   compact?: boolean;
+  /** Rendered inside the badge after the label (e.g. REPEAT cost pips). */
+  trailing?: ReactNode;
 }) {
   const base = keywordBase ?? label;
 
   return (
     <View
-      className={cn('mx-0.5 justify-center', getKeywordBadgeClassName(base))}
+      className={cn(
+        'mx-0.5 flex-row items-center justify-center',
+        getKeywordBadgeClassName(base)
+      )}
       style={{
         transform: [{ skewX: `${KEYWORD_SKEW_DEG}deg` }],
         paddingHorizontal: compact ? 5 : 6,
         paddingVertical: compact ? 1 : 2,
+        gap: trailing ? (compact ? 3 : 4) : 0,
       }}
     >
       <Text
@@ -39,6 +47,17 @@ export function KeywordBadge({
       >
         {label.toUpperCase()}
       </Text>
+      {trailing ? (
+        <View
+          className="flex-row items-center"
+          style={{
+            transform: [{ skewX: `${-KEYWORD_SKEW_DEG}deg` }],
+            gap: compact ? 2 : 3,
+          }}
+        >
+          {trailing}
+        </View>
+      ) : null}
     </View>
   );
 }

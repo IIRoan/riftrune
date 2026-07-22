@@ -55,13 +55,18 @@ export function PillNav<T extends string>({
       accessibilityRole="tablist"
       className={cn(
         'flex-row items-stretch border border-border bg-card',
-        compact ? 'h-9 rounded-lg p-0.5' : 'rounded-2xl p-1',
+        compact
+          ? iconOnly
+            ? 'h-9 overflow-hidden rounded-lg p-0'
+            : 'h-9 rounded-lg p-0.5'
+          : 'rounded-2xl p-1',
         fill && 'w-full',
         className
       )}
     >
-      {items.map((item) => {
+      {items.map((item, index) => {
         const active = value === item.id;
+        const isLast = index === items.length - 1;
         return (
           <Pressable
             key={item.id}
@@ -71,11 +76,16 @@ export function PillNav<T extends string>({
             className={cn(
               'items-center justify-center',
               compact
-                ? cn(
-                    'min-w-0 rounded-md',
-                    iconOnly ? 'size-8' : 'flex-row gap-1 px-2',
-                    fill ? 'flex-1' : 'shrink-0'
-                  )
+                ? iconOnly
+                  ? cn(
+                      'h-full aspect-square',
+                      !isLast && 'border-r border-border',
+                      fill ? 'min-w-0 flex-1' : 'shrink-0'
+                    )
+                  : cn(
+                      'h-full min-w-0 flex-row gap-1 rounded-md px-2.5',
+                      fill ? 'flex-1' : 'shrink-0'
+                    )
                 : cn('gap-0.5 rounded-xl px-4 py-2', fill ? 'min-w-0 flex-1' : 'min-w-[5.5rem]'),
               active ? 'bg-card-panel' : 'active:bg-card-panel/50'
             )}
@@ -88,7 +98,7 @@ export function PillNav<T extends string>({
             {compact && iconOnly ? (
               <ThemedIonicon
                 name={active ? item.iconActive : item.icon}
-                size={16}
+                size={18}
                 color={active ? 'primary' : 'muted-foreground'}
               />
             ) : compact ? (

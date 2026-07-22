@@ -66,31 +66,33 @@ export function MobileFilterSheet({
           enableOverDrag={!reduceMotion}
           className="bg-card-panel"
         >
-          <BottomSheetHeader className="border-b border-border bg-card-panel px-4 pb-3">
-            <View className="flex-row items-center justify-between gap-3">
-              <View className="min-w-0 flex-1 flex-row items-center gap-2">
-                <BottomSheetTitle>{title}</BottomSheetTitle>
+          <BottomSheetHeader className="border-b border-border bg-card-panel">
+            <View className="gap-3">
+              <View className="flex-row items-center gap-2">
+                <View className="min-w-0 flex-1 flex-row items-center gap-2">
+                  <BottomSheetTitle>{title}</BottomSheetTitle>
+                  {hasActiveFilters ? (
+                    <View className="h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5">
+                      <Text className="font-mono text-[11px] font-semibold text-primary-foreground">
+                        {activeCount}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
                 {hasActiveFilters ? (
-                  <View className="h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5">
-                    <Text className="font-mono text-[11px] font-semibold text-primary-foreground">
-                      {activeCount}
-                    </Text>
-                  </View>
+                  <Pressable
+                    onPress={onClear}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear all filters"
+                    className="shrink-0 active:opacity-70"
+                  >
+                    <Text className="text-sm font-semibold text-primary">Clear all</Text>
+                  </Pressable>
                 ) : null}
               </View>
-              {hasActiveFilters ? (
-                <Pressable
-                  onPress={onClear}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear all filters"
-                  className="shrink-0 active:opacity-70"
-                >
-                  <Text className="text-sm font-semibold text-primary">Clear all</Text>
-                </Pressable>
-              ) : null}
+              {stickyHeader ? <View>{stickyHeader}</View> : null}
             </View>
-            {stickyHeader ? <View className="mt-3">{stickyHeader}</View> : null}
           </BottomSheetHeader>
 
           <BottomSheetScrollView
@@ -101,7 +103,7 @@ export function MobileFilterSheet({
             {children}
           </BottomSheetScrollView>
 
-          <BottomSheetFooter className="border-t border-border bg-card-panel px-4 pb-4 pt-3">
+          <BottomSheetFooter className="border-border border-t bg-card-panel pt-3">
             <Button className="w-full" onPress={onClose}>
               <ButtonText>{doneLabel}</ButtonText>
             </Button>

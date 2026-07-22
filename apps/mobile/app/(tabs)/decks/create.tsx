@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { AppLoader } from '@/components/ui/app-loader';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { useDeckMutations } from '@/hooks/useDecks';
-import { leaveDeckEditor } from '@/lib/deck-navigation';
+import { deckEditHref, leaveDeckEditor } from '@/lib/deck-navigation';
 
 /** Creates a deck immediately and jumps into the builder (legend picker). */
 export default function DeckCreateScreen() {
@@ -19,7 +19,7 @@ export default function DeckCreateScreen() {
     void createNewDeck
       .mutateAsync({})
       .then((deck) => {
-        router.replace(`/decks/${deck.id}`);
+        router.replace(deckEditHref(deck.id));
       })
       .catch(() => {
         startedRef.current = false;

@@ -34,6 +34,9 @@ export type InlineSegment =
   | { type: 'rune'; value: string }
   | { type: 'stat'; value: string };
 
+/** Keywords that print trailing energy/domain/rune costs inside the badge. */
+export const KEYWORD_BANNER_COST_BASES = new Set(['REPEAT', 'EQUIP']);
+
 function classifyBracketToken(inner: string): CardRulesPart {
   const trimmed = inner.trim();
 
@@ -80,6 +83,71 @@ function classifyBracketToken(inner: string): CardRulesPart {
   };
 }
 
+/**
+ * Printed cards show REPEAT costs as energy/domain/rune icons beside the badge,
+ * never as "REPEAT 2" text inside it. Expand fused tokens like `[Repeat 2]`.
+ */
+function expandRepeatKeyword(part: CardRulesPart): CardRulesPart[] {
+  if (part.type !== 'keyword' || part.keywordBase !== 'REPEAT') {
+    return [part];
+  }
+
+  const match = part.value.trim().match(/^repeat\s+(\d+)$/i);
+  if (!match) {
+    return [{ ...part, display: 'REPEAT' }];
+  }
+
+  return [
+    {
+      type: 'keyword',
+      value: part.value,
+      keywordBase: 'REPEAT',
+      display: 'REPEAT',
+    },
+    { type: 'energy', value: match[1]! },
+  ];
+}
+
+export function isKeywordBannerCostPart(
+  part: CardRulesPart
+): part is Extract<CardRulesPart, { type: 'energy' | 'domain' | 'rune' }> {
+  return part.type === 'energy' || part.type === 'domain' || part.type === 'rune';
+}
+
+/** @deprecated Prefer isKeywordBannerCostPart */
+export const isRepeatCostPart = isKeywordBannerCostPart;
+
+/**
+ * Collect energy / domain / rune costs that follow a banner keyword
+ * (REPEAT, EQUIP) until reminder text or another token.
+ */
+export function takeKeywordBannerCosts(
+  parts: CardRulesPart[],
+  startIndex: number
+): { costs: CardRulesPart[]; nextIndex: number } {
+  const costs: CardRulesPart[] = [];
+  let index = startIndex;
+
+  while (index < parts.length) {
+    const part = parts[index]!;
+    if (isKeywordBannerCostPart(part)) {
+      costs.push(part);
+      index++;
+      continue;
+    }
+    if (part.type === 'text' && part.value.trim() === '') {
+      index++;
+      continue;
+    }
+    break;
+  }
+
+  return { costs, nextIndex: index };
+}
+
+/** @deprecated Prefer takeKeywordBannerCosts */
+export const takeRepeatCosts = takeKeywordBannerCosts;
+
 export function parseCardRules(text: string): CardRulesPart[] {
   const parts: CardRulesPart[] = [];
   const re = /\[([^\]]+)\]/g;
@@ -90,7 +158,7 @@ export function parseCardRules(text: string): CardRulesPart[] {
     if (match.index > lastIndex) {
       parts.push({ type: 'text', value: text.slice(lastIndex, match.index) });
     }
-    parts.push(classifyBracketToken(match[1]));
+    parts.push(...expandRepeatKeyword(classifyBracketToken(match[1])));
     lastIndex = re.lastIndex;
   }
 

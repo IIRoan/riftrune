@@ -7,6 +7,7 @@ import { deckSectionProgress } from '@/lib/deck-display';
 import type { DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import { ownedCountForCardName } from '@/lib/deck-validation';
+import type { CardOpenSource } from '@/utils/cardNavigation';
 
 interface DeckSectionGridProps {
   deck: DeckState;
@@ -18,6 +19,7 @@ interface DeckSectionGridProps {
   gridColumns: number;
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
+  openSource?: CardOpenSource;
   onAdd: () => void;
   onMinus: (name: string) => void;
   onPlus: (name: string) => void;
@@ -32,6 +34,7 @@ function DeckGridRow({
   collectionByName,
   readOnly,
   deck,
+  openSource,
   onAdd,
   onMinus,
   onPlus,
@@ -44,6 +47,7 @@ function DeckGridRow({
   collectionByName: ReadonlyMap<string, number>;
   readOnly?: boolean;
   deck: DeckState;
+  openSource?: CardOpenSource;
   onAdd: () => void;
   onMinus: (name: string) => void;
   onPlus: (name: string) => void;
@@ -73,6 +77,7 @@ function DeckGridRow({
             imageUri={resolveSlotImage(entry.card, imageByVariant)}
             owned={owned}
             illegal={illegal}
+            openSource={openSource}
             onMinus={() => onMinus(entry.card.name)}
             onPlus={() => onPlus(entry.card.name)}
             onRemove={readOnly ? undefined : () => onRemove(entry.card.name)}
@@ -97,6 +102,7 @@ export function DeckSectionGrid({
   onMinus,
   onPlus,
   onRemove,
+  openSource,
 }: DeckSectionGridProps) {
   const entries = [...deck[section].values()].sort((a, b) => {
     if (a.card.energy !== b.card.energy) return a.card.energy - b.card.energy;
@@ -132,6 +138,7 @@ export function DeckSectionGrid({
             collectionByName={collectionByName}
             readOnly={readOnly}
             deck={deck}
+            openSource={openSource}
             onAdd={onAdd}
             onMinus={onMinus}
             onPlus={onPlus}

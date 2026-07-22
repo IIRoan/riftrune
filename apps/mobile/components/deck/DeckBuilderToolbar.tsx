@@ -1,28 +1,35 @@
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import { CatalogFilterTrigger } from '@/components/catalog/FilterSheet';
 import { DeckValidationMenu } from '@/components/deck/DeckValidationMenu';
 import { PillNav, type PillNavItem } from '@/components/shell/FloatingPillNav';
 import { TextInput } from '@/components/ui/text-input';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
-import type { CatalogFilters } from '@/constants/catalogFilters';
+import { countCatalogFilters, type CatalogFilters } from '@/constants/catalogFilters';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import type { DeckValidationMessage } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
+import { hapticPress } from '@/utils/haptics';
 
 type DeckCatalogSection = 'mainDeck' | 'sideboard';
+
+/** Shared size for every deck-builder toolbar control (36×36). */
+const TOOLBAR_CONTROL =
+  'size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel';
 
 interface DeckBuilderToolbarProps {
   deckName: string;
   readOnly?: boolean;
   validation: DeckValidationMessage[];
   onBack: () => void;
+  backAccessibilityLabel?: string;
   onNameChange?: (name: string) => void;
   onToggleValidation?: () => void;
   validationExpanded?: boolean;
   onImport?: () => void;
   onExport?: () => void;
+  /** Owned view mode → enter the deck builder */
+  onEdit?: () => void;
   /** Desktop: collapse/expand left info drawer */
   infoDrawerOpen?: boolean;
   onToggleInfoDrawer?: () => void;
@@ -41,11 +48,13 @@ export function DeckBuilderToolbar({
   readOnly = false,
   validation,
   onBack,
+  backAccessibilityLabel = 'Back to decks',
   onNameChange,
   onToggleValidation,
   validationExpanded = false,
   onImport,
   onExport,
+  onEdit,
   infoDrawerOpen,
   onToggleInfoDrawer,
   onOpenInfo,
@@ -57,15 +66,19 @@ export function DeckBuilderToolbar({
   onOpenCatalogFilters,
 }: DeckBuilderToolbarProps) {
   const isMobile = useMobileLayout();
-  const showIoActions = !readOnly && (onImport || onExport);
+  const showIoActions = Boolean(onImport || onExport);
+  const showCatalogFilters =
+    isMobile && !readOnly && catalogFilters != null && onOpenCatalogFilters != null;
+  const filterCount = showCatalogFilters ? countCatalogFilters(catalogFilters) : 0;
+  const filterActive = filterCount > 0;
 
   const panelActions = (
-    <View className="shrink-0 flex-row items-center gap-1">
+    <>
       {isMobile && onOpenInfo ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Open deck info"
-          className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
+          className={TOOLBAR_CONTROL}
           onPress={onOpenInfo}
         >
           <ThemedIonicon name="information-circle-outline" size={18} color="foreground" />
@@ -75,7 +88,7 @@ export function DeckBuilderToolbar({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Open deck list"
-          className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
+          className={TOOLBAR_CONTROL}
           onPress={onOpenList}
         >
           <ThemedIonicon name="list-outline" size={18} color="foreground" />
@@ -86,10 +99,7 @@ export function DeckBuilderToolbar({
           accessibilityRole="button"
           accessibilityLabel={infoDrawerOpen ? 'Hide deck info' : 'Show deck info'}
           accessibilityState={{ selected: infoDrawerOpen === true }}
-          className={cn(
-            'size-9 items-center justify-center rounded-lg border bg-card active:bg-card-panel',
-            infoDrawerOpen ? 'border-primary/40' : 'border-border'
-          )}
+          className={cn(TOOLBAR_CONTROL, infoDrawerOpen && 'border-primary/40')}
           onPress={onToggleInfoDrawer}
         >
           <ThemedIonicon
@@ -99,16 +109,31 @@ export function DeckBuilderToolbar({
           />
         </Pressable>
       ) : null}
-    </View>
+    </>
   );
 
+  const editAction = onEdit ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Edit deck"
+      className="h-9 shrink-0 flex-row items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2.5 active:bg-primary/20"
+      onPress={() => {
+        hapticPress();
+        onEdit();
+      }}
+    >
+      <ThemedIonicon name="create-outline" size={16} color="primary" />
+      <Text className="text-[13px] font-semibold text-primary">Edit</Text>
+    </Pressable>
+  ) : null;
+
   const ioActions = showIoActions ? (
-    <View className="shrink-0 flex-row items-center gap-1">
+    <>
       {onImport ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Import deck list"
-          className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
+          className={TOOLBAR_CONTROL}
           onPress={onImport}
         >
           <ThemedIonicon name="download-outline" size={18} color="foreground" />
@@ -118,13 +143,13 @@ export function DeckBuilderToolbar({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Export deck list"
-          className="size-9 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
+          className={TOOLBAR_CONTROL}
           onPress={onExport}
         >
           <ThemedIonicon name="share-outline" size={18} color="foreground" />
         </Pressable>
       ) : null}
-    </View>
+    </>
   ) : null;
 
   const validationAction =
@@ -135,33 +160,56 @@ export function DeckBuilderToolbar({
         onOpenChange={() => onToggleValidation()}
         showLabel={!isMobile}
         align="end"
+        className={isMobile ? 'h-9' : undefined}
       />
     ) : null;
 
-  const hasPanelActions =
-    (isMobile && (onOpenInfo || onOpenList)) || (!isMobile && onToggleInfoDrawer);
-
-  const showCatalogFilters =
-    isMobile && !readOnly && catalogFilters != null && onOpenCatalogFilters != null;
-
   const catalogFilterAction = showCatalogFilters ? (
-    <CatalogFilterTrigger
-      filters={catalogFilters}
-      onPress={onOpenCatalogFilters}
-      compact
-      mobile
-    />
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Open filters"
+      className={cn(TOOLBAR_CONTROL, 'relative', filterActive && 'border-ring/50 bg-card-panel')}
+      onPress={() => {
+        hapticPress();
+        onOpenCatalogFilters();
+      }}
+    >
+      <ThemedIonicon
+        name="options-outline"
+        size={18}
+        color={filterActive ? 'foreground' : 'muted-foreground'}
+      />
+      {filterActive ? (
+        filterCount === 1 ? (
+          <View className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary" />
+        ) : (
+          <View className="absolute -right-1 -top-1 size-4 items-center justify-center rounded-full bg-primary">
+            <Text className="font-mono text-[9px] font-semibold text-primary-foreground">
+              {filterCount}
+            </Text>
+          </View>
+        )
+      ) : null}
+    </Pressable>
   ) : null;
 
-  const trailingActions =
-    catalogFilterAction || ioActions || validationAction || hasPanelActions ? (
-      <View className="z-20 shrink-0 flex-row items-center gap-1">
-        {catalogFilterAction}
-        {panelActions}
-        {ioActions}
-        {validationAction}
-      </View>
-    ) : null;
+  const hasTrailing =
+    editAction != null ||
+    catalogFilterAction != null ||
+    showIoActions ||
+    validationAction != null ||
+    (isMobile && (onOpenInfo || onOpenList)) ||
+    (!isMobile && onToggleInfoDrawer);
+
+  const trailingActions = hasTrailing ? (
+    <View className="z-20 shrink-0 flex-row items-center gap-1">
+      {catalogFilterAction}
+      {panelActions}
+      {ioActions}
+      {validationAction}
+      {editAction}
+    </View>
+  ) : null;
 
   const sectionNav =
     catalogSection != null &&
@@ -179,39 +227,42 @@ export function DeckBuilderToolbar({
     ) : null;
 
   return (
-    <View className="z-20 min-w-0 flex-row items-center gap-1.5 sm:gap-2">
+    <View className="z-20 h-9 min-w-0 flex-row items-center gap-1">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Back to decks"
-        className={cn(
-          'shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel',
-          isMobile ? 'size-9' : 'size-10'
-        )}
+        accessibilityLabel={backAccessibilityLabel}
+        className={TOOLBAR_CONTROL}
         onPress={onBack}
       >
-        <ThemedIonicon name="chevron-back" size={isMobile ? 20 : 22} color="foreground" />
+        <ThemedIonicon name="chevron-back" size={20} color="foreground" />
       </Pressable>
 
-      <View className="min-w-0 flex-1">
-        {readOnly ? (
-          <Text
-            className={cn('font-semibold text-foreground', isMobile ? 'text-base' : 'text-lg')}
-            numberOfLines={1}
-          >
-            {deckName}
-          </Text>
-        ) : (
-          <TextInput
-            value={deckName}
-            onChangeText={onNameChange}
-            placeholder="Deck name"
-            className={cn('font-semibold', isMobile ? 'text-sm' : 'text-base')}
-          />
-        )}
-      </View>
-
-      {sectionNav}
-      {trailingActions}
+      {isMobile ? (
+        <>
+          {sectionNav}
+          <View className="min-w-0 flex-1" />
+          {trailingActions}
+        </>
+      ) : (
+        <>
+          <View className="min-h-0 min-w-0 flex-1 justify-center">
+            {!readOnly && onNameChange ? (
+              <TextInput
+                value={deckName}
+                onChangeText={onNameChange}
+                placeholder="Deck name"
+                className="h-9 min-h-9 py-0 text-base font-semibold"
+              />
+            ) : (
+              <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
+                {deckName}
+              </Text>
+            )}
+          </View>
+          {sectionNav}
+          {trailingActions}
+        </>
+      )}
     </View>
   );
 }

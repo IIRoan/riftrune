@@ -11,7 +11,7 @@ import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { resolveDeckCardImageUrl } from '@/lib/deck-card';
 import type { DeckCard, DeckEntry } from '@/lib/deck-types';
-import { openCard } from '@/utils/cardNavigation';
+import { openCard, type CardOpenSource } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +27,8 @@ interface DeckCardSlotProps {
   owned?: number | null;
   illegal?: boolean;
   single?: boolean;
+  /** When opening the card modal from this slot (e.g. deck-view hides collection CTAs). */
+  openSource?: CardOpenSource;
   onPress?: () => void;
   onAdd?: () => void;
   onMinus?: () => void;
@@ -44,6 +46,7 @@ function DeckCardSlotInner({
   owned = null,
   illegal = false,
   single = false,
+  openSource,
   onPress,
   onAdd,
   onMinus,
@@ -130,7 +133,6 @@ function DeckCardSlotInner({
 
   if (!card) return null;
 
-  const showEnergy = !single && card.energy > 0;
   const showArtRemove = single && Boolean(onRemove);
 
   return (
@@ -153,7 +155,7 @@ function DeckCardSlotInner({
               return;
             }
             hapticPress();
-            openCard(router, card.variantNumber, 'modal');
+            openCard(router, card.variantNumber, 'modal', openSource);
           }}
         >
           <DeckCardArt uri={imageUri} variantNumber={card.variantNumber} />
@@ -162,15 +164,6 @@ function DeckCardSlotInner({
         {illegal ? (
           <View className="absolute left-1 top-1" pointerEvents="none">
             <StatusKeywordBadge status="illegal" compact />
-          </View>
-        ) : showEnergy ? (
-          <View
-            className="absolute left-1 top-1 rounded-md border border-white/10 bg-background/92 px-1.5 py-0.5"
-            pointerEvents="none"
-          >
-            <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
-              {card.energy}
-            </Text>
           </View>
         ) : null}
 
@@ -235,6 +228,7 @@ function deckCardSlotPropsEqual(prev: DeckCardSlotProps, next: DeckCardSlotProps
     prev.owned === next.owned &&
     prev.illegal === next.illegal &&
     prev.single === next.single &&
+    prev.openSource === next.openSource &&
     prev.card?.variantNumber === next.card?.variantNumber &&
     prev.entry?.count === next.entry?.count
   );

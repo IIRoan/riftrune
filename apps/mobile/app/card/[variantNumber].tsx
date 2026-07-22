@@ -17,7 +17,7 @@ import { useCardDetail } from '@/hooks/useCardDetail';
 import { useCardPresentation } from '@/hooks/useCardPresentation';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useWishlistPrices } from '@/hooks/useWishlistPrices';
-import type { CardOpenSource } from '@/utils/cardNavigation';
+import { parseCardOpenSource } from '@/utils/cardNavigation';
 
 function PageLoading() {
   return <AppLoadingScreen size="lg" />;
@@ -40,13 +40,11 @@ export default function CardDetailScreen() {
   const isMobile = useMobileLayout();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const raw = params.variantNumber;
-  const rawSource = params.source;
   const variantNumber = Array.isArray(raw) ? raw[0] : (raw || '');
-  const sourceParam = Array.isArray(rawSource) ? rawSource[0] : rawSource;
-  const source: CardOpenSource =
-    sourceParam === 'wishlist' || sourceParam === 'collection' ? sourceParam : 'catalog';
+  const source = parseCardOpenSource(params.source);
   const isModal = present === 'modal';
   const useDrawer = isModal && isMobile;
+  const hideCollectionActions = source === 'deck-view';
 
   const detail = useCardDetail(variantNumber);
   const wishlistPrices = useWishlistPrices('7d', source === 'wishlist');
@@ -101,6 +99,7 @@ export default function CardDetailScreen() {
       <CatalogDetailPanel
         variantNumber={detail.activeVariant.variantNumber}
         embedded="drawer"
+        hideCollectionActions={hideCollectionActions}
       />
     );
   })();

@@ -50,15 +50,16 @@
       --border: var(--archive-line);
       --input: var(--archive-line);
       --ring: var(--archive-accent);
-      --keyword-accelerate: oklch(0.50 0.14 160);
-      --keyword-deathknell: oklch(0.78 0.17 115);
-      --keyword-combat: var(--archive-warning);
-      --keyword-assault: oklch(0.62 0.24 350);
-      --keyword-weaponmaster: oklch(0.42 0 0);
-      --keyword-reaction: oklch(0.58 0.14 250);
-      --keyword-vision: oklch(0.62 0.12 280);
-      --keyword-ability: var(--archive-muted);
-      --keyword-default: var(--archive-subtle);
+      --keyword-accelerate: oklch(0.492 0.083 177);
+      --keyword-repeat: var(--keyword-accelerate);
+      --keyword-deathknell: oklch(0.690 0.145 122);
+      --keyword-combat: var(--keyword-accelerate);
+      --keyword-assault: oklch(0.570 0.183 3);
+      --keyword-weaponmaster: oklch(0.36 0 0);
+      --keyword-reaction: var(--keyword-accelerate);
+      --keyword-vision: oklch(0.489 0.002 93);
+      --keyword-ability: var(--keyword-assault);
+      --keyword-default: oklch(0.532 0.001 54);
     }
 
     @variant light {
@@ -102,15 +103,17 @@
       --border: var(--archive-line);
       --input: var(--archive-line);
       --ring: var(--archive-accent);
-      --keyword-accelerate: oklch(0.50 0.14 160);
-      --keyword-deathknell: oklch(0.78 0.17 115);
-      --keyword-combat: var(--archive-warning);
-      --keyword-assault: oklch(0.62 0.24 350);
-      --keyword-weaponmaster: oklch(0.42 0 0);
-      --keyword-reaction: oklch(0.58 0.14 250);
-      --keyword-vision: oklch(0.62 0.12 280);
-      --keyword-ability: var(--archive-muted);
-      --keyword-default: var(--archive-subtle);
+      /* Printed keyword banners — sampled from OGN/SFD card art */
+      --keyword-accelerate: oklch(0.492 0.083 177);
+      --keyword-repeat: var(--keyword-accelerate);
+      --keyword-deathknell: oklch(0.690 0.145 122);
+      --keyword-combat: var(--keyword-accelerate);
+      --keyword-assault: oklch(0.570 0.183 3);
+      --keyword-weaponmaster: oklch(0.36 0 0);
+      --keyword-reaction: var(--keyword-accelerate);
+      --keyword-vision: oklch(0.489 0.002 93);
+      --keyword-ability: var(--keyword-assault);
+      --keyword-default: oklch(0.532 0.001 54);
     }
   }
 }
@@ -147,6 +150,7 @@
   --color-archive-subtle: var(--archive-subtle);
   --color-archive-soft-line: var(--archive-soft-line);
   --color-keyword-accelerate: var(--keyword-accelerate);
+  --color-keyword-repeat: var(--keyword-repeat);
   --color-keyword-deathknell: var(--keyword-deathknell);
   --color-keyword-combat: var(--keyword-combat);
   --color-keyword-assault: var(--keyword-assault);

@@ -768,14 +768,14 @@ export const BottomSheetHeader = ({
 }: React.ComponentProps<typeof View>) => (
   <View
     className={cn(
-      "flex flex-row items-center gap-1 bg-background p-4",
+      "flex flex-row items-center gap-2 bg-background p-4",
       className
     )}
     {...props}
   >
-    {children}
+    <View className="min-w-0 flex-1">{children}</View>
     <BottomSheetClose asChild>
-      <Button className="ml-auto" size="icon" variant="link">
+      <Button className="shrink-0" size="icon" variant="link">
         <ButtonIcon className="text-foreground">
           <XIcon />
         </ButtonIcon>
@@ -802,6 +802,7 @@ export const BottomSheetTitle = ({
 export const BottomSheetFooter = ({
   className,
   style,
+  children,
   ...props
 }: React.ComponentProps<typeof View>) => {
   const { bottom } = useSafeAreaInsets();
@@ -829,9 +830,15 @@ export const BottomSheetFooter = ({
         "flex flex-col gap-2 border-border border-t bg-background px-4 pt-4",
         className
       )}
-      style={[animatedStyle, style]}
+      style={style}
       {...props}
-    />
+    >
+      {/*
+        Safe-area inset lives on an inner wrapper so `pb-*` on `className`
+        cannot push the Done/close control under the home indicator.
+      */}
+      <Animated.View style={animatedStyle}>{children}</Animated.View>
+    </Animated.View>
   );
 };
 

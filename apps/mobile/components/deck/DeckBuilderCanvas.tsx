@@ -14,6 +14,7 @@ import {
 import { DeckBuilderCatalogPanel } from '@/components/deck/DeckBuilderCatalogPanel';
 import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
 import { DeckBuilderToolbar } from '@/components/deck/DeckBuilderToolbar';
+import { DeckShowcasePanel } from '@/components/deck/DeckShowcasePanel';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import {
   BottomSheet,
@@ -52,7 +53,10 @@ type CatalogSection = 'mainDeck' | 'sideboard';
 
 interface DeckBuilderCanvasProps {
   deck: DeckState;
-  readOnly?: boolean;
+  /** Permanent upstream import — never editable in place. */
+  permanentReadOnly?: boolean;
+  /** UI mode: gallery vs builder. Forced off when permanentReadOnly. */
+  editing?: boolean;
   ioMode: IoMode | null;
   onPersist: (
     deck: DeckState | ((previous: DeckState) => DeckState),
@@ -61,18 +65,21 @@ interface DeckBuilderCanvasProps {
   onIoModeChange: (mode: IoMode | null) => void;
   onChangeLegend: () => void;
   onBack: () => void;
+  onEdit?: () => void;
   onImportToMyDecks?: () => void;
   importBusy?: boolean;
 }
 
 export function DeckBuilderCanvas({
   deck,
-  readOnly = false,
+  permanentReadOnly = false,
+  editing = false,
   ioMode,
   onPersist,
   onIoModeChange,
   onChangeLegend,
   onBack,
+  onEdit,
   onImportToMyDecks,
   importBusy = false,
 }: DeckBuilderCanvasProps) {
@@ -82,6 +89,7 @@ export function DeckBuilderCanvas({
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
   const { paddingBottomInline } = useScreenLayout();
+  const readOnly = permanentReadOnly || !editing;
   const [validationExpanded, setValidationExpanded] = useState(false);
   const [infoDrawerOpen, setInfoDrawerOpen] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
@@ -196,6 +204,7 @@ export function DeckBuilderCanvas({
       readOnly={readOnly}
       imageByVariant={images}
       collectionByName={collectionByName}
+      openSource={readOnly ? 'deck-view' : undefined}
       onMinus={(section, name) =>
         onPersist((prev) => changeDeckCardQty(prev, section, name, -1), { immediate: true })
       }
@@ -219,13 +228,23 @@ export function DeckBuilderCanvas({
   const catalogPanel = (
     <DeckBuilderCatalogPanel
       deck={deck}
-      readOnly={readOnly}
+      readOnly={false}
       collectionByName={collectionByName}
       onPersist={onPersist}
       section={catalogSection}
       onSectionChange={setCatalogSection}
       paddingBottom={paddingBottomInline}
       onMobileFilterChromeChange={handleMobileFilterChromeChange}
+    />
+  );
+
+  const showcasePanel = (
+    <DeckShowcasePanel
+      deck={deck}
+      imageByVariant={images}
+      collectionByName={collectionByName}
+      runeCardsByDomain={runeCardsByDomain}
+      paddingBottom={paddingBottomInline}
     />
   );
 
@@ -253,11 +272,13 @@ export function DeckBuilderCanvas({
   }, [deck]);
 
   const mobileSnapPoints = reduceMotion ? ['92%'] : ['72%', '92%'];
+  const showImportedBanner = permanentReadOnly;
+  const canEdit = !permanentReadOnly && Boolean(onEdit);
 
   return (
     <>
       <View className="relative min-h-0 flex-1 gap-3">
-        {readOnly ? (
+        {showImportedBanner ? (
           <View className="flex-row items-center gap-2 border-b border-border pb-2.5">
             <StatusKeywordBadge status="imported" compact />
             <Text className="min-w-0 flex-1 text-[12px] text-muted-foreground" numberOfLines={1}>
@@ -292,6 +313,7 @@ export function DeckBuilderCanvas({
           readOnly={readOnly}
           validation={validation}
           onBack={handleBack}
+          backAccessibilityLabel={readOnly ? 'Back to decks' : 'Back to deck'}
           onNameChange={
             readOnly
               ? undefined
@@ -300,10 +322,11 @@ export function DeckBuilderCanvas({
           onToggleValidation={() => setValidationExpanded((v) => !v)}
           validationExpanded={validationExpanded}
           onImport={readOnly ? undefined : () => onIoModeChange('import')}
-          onExport={readOnly ? undefined : () => onIoModeChange('export')}
+          onExport={() => onIoModeChange('export')}
+          onEdit={canEdit ? onEdit : undefined}
           infoDrawerOpen={infoDrawerOpen}
           onToggleInfoDrawer={
-            isMobile
+            isMobile || readOnly
               ? undefined
               : () => {
                   hapticPress();
@@ -311,7 +334,7 @@ export function DeckBuilderCanvas({
                 }
           }
           onOpenInfo={
-            isMobile
+            isMobile && !readOnly
               ? () => {
                   hapticPress();
                   setMobilePanel('info');
@@ -326,14 +349,30 @@ export function DeckBuilderCanvas({
                 }
               : undefined
           }
-          catalogSection={catalogSection}
-          onCatalogSectionChange={focusCatalogSection}
-          catalogSectionItems={browseSectionNavItems}
-          catalogFilters={mobileFilterChrome?.filters}
-          onOpenCatalogFilters={mobileFilterChrome?.onOpen}
+          catalogSection={readOnly ? undefined : catalogSection}
+          onCatalogSectionChange={readOnly ? undefined : focusCatalogSection}
+          catalogSectionItems={readOnly ? undefined : browseSectionNavItems}
+          catalogFilters={readOnly ? undefined : mobileFilterChrome?.filters}
+          onOpenCatalogFilters={readOnly ? undefined : mobileFilterChrome?.onOpen}
         />
 
-        {isMobile ? (
+        {readOnly ? (
+          isMobile ? (
+            <View className="min-h-0 flex-1">{showcasePanel}</View>
+          ) : (
+            <View className="min-h-0 flex-1 flex-row gap-3">
+              <View className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-card px-3 py-3">
+                {showcasePanel}
+              </View>
+              <View
+                className="min-h-0 overflow-hidden rounded-xl border border-border bg-card"
+                style={{ width: DECK_COMPOSITION_LIST_WIDTH }}
+              >
+                {compositionList}
+              </View>
+            </View>
+          )
+        ) : isMobile ? (
           <View className="min-h-0 flex-1">{catalogPanel}</View>
         ) : (
           <View className="min-h-0 flex-1 flex-row gap-3">
@@ -361,7 +400,6 @@ export function DeckBuilderCanvas({
             </View>
           </View>
         )}
-
       </View>
 
       {isMobile ? (
@@ -398,7 +436,7 @@ export function DeckBuilderCanvas({
         </BottomSheet>
       ) : null}
 
-      {ioMode && !readOnly ? (
+      {ioMode === 'export' || (ioMode === 'import' && !readOnly) ? (
         <DeckImportExportSheet
           open
           mode={ioMode}

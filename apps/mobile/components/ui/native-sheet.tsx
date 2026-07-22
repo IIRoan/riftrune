@@ -287,12 +287,12 @@ export const NativeSheetHeader = ({
 }: React.ComponentProps<typeof View>) => {
   return (
     <View
-      className={cn("flex flex-row items-center gap-1 p-4", className)}
+      className={cn("flex flex-row items-center gap-2 p-4", className)}
       {...props}
     >
-      {children}
+      <View className="min-w-0 flex-1">{children}</View>
       <NativeSheetClose asChild>
-        <Button className="ml-auto" size="icon" variant="link">
+        <Button className="shrink-0" size="icon" variant="link">
           <ButtonIcon className="text-foreground">
             <XIcon />
           </ButtonIcon>

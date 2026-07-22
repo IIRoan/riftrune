@@ -1,9 +1,10 @@
 import { View } from 'react-native';
+import { CatalogCollectionPillNav } from '@/components/catalog/CatalogCollectionPillNav';
 import { CatalogFilterTrigger } from '@/components/catalog/FilterSheet';
 import { SortTrigger } from '@/components/catalog/SortSheet';
 import { ViewToggle } from '@/components/catalog/ViewToggle';
 import { Text } from '@/components/ui/text';
-import type { CatalogFilters } from '@/constants/catalogFilters';
+import type { CatalogCollectionFilter, CatalogFilters } from '@/constants/catalogFilters';
 import {
   CATALOG_TOOLBAR_MOBILE_ROW_CLASS,
   CATALOG_TOOLBAR_MOBILE_SLOT_CLASS,
@@ -17,22 +18,30 @@ interface CatalogActionBarProps {
   onSortPress: () => void;
   filters: CatalogFilters;
   onFilterPress: () => void;
+  collection: CatalogCollectionFilter;
+  onCollectionChange: (collection: CatalogCollectionFilter) => void;
   showFilterTrigger?: boolean;
   className?: string;
 }
 
-/** Catalog toolbar: optional title + view/sort/filter controls. */
+/** Catalog toolbar: optional title + collection/view/sort/filter controls. */
 export function CatalogActionBar({
   view,
   onViewChange,
   onSortPress,
   filters,
   onFilterPress,
+  collection,
+  onCollectionChange,
   showFilterTrigger = true,
   className,
 }: CatalogActionBarProps) {
   const isMobile = useMobileLayout();
   const showTitle = useShowCatalogTitle();
+
+  const collectionSwitch = (
+    <CatalogCollectionPillNav value={collection} onChange={onCollectionChange} />
+  );
 
   const outerClass = showTitle
     ? isMobile
@@ -61,6 +70,7 @@ export function CatalogActionBar({
       <View className={controlsClass}>
         {isMobile ? (
           <>
+            <View className="shrink-0">{collectionSwitch}</View>
             <ViewToggle view={view} onViewChange={onViewChange} mobile />
             <View className={CATALOG_TOOLBAR_MOBILE_SLOT_CLASS}>
               <SortTrigger onPress={onSortPress} compact mobile />
@@ -78,7 +88,10 @@ export function CatalogActionBar({
           </>
         ) : (
           <>
-            <ViewToggle view={view} onViewChange={onViewChange} />
+            <View className="flex-row items-center gap-2">
+              {collectionSwitch}
+              <ViewToggle view={view} onViewChange={onViewChange} />
+            </View>
             <View className="flex-row items-center gap-2">
               <SortTrigger label="Sort" onPress={onSortPress} />
               {showFilterTrigger ? (
