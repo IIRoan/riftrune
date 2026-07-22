@@ -242,13 +242,6 @@ function DeckGridCard({
               <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
             </View>
           )}
-          {card.energy > 0 ? (
-            <View className="absolute right-1 top-1 rounded-md border border-white/10 bg-background/92 px-1.5 py-0.5">
-              <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
-                {card.energy}
-              </Text>
-            </View>
-          ) : null}
           <DeckCardCountBadge count={count} />
         </View>
       </Pressable>

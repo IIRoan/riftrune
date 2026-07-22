@@ -36,26 +36,30 @@ const KEYWORD_BASES = [
 const SORTED_KEYWORD_BASES = [...KEYWORD_BASES].sort((a, b) => b.length - a.length);
 
 const KEYWORD_BADGE_CLASSES: Record<string, string> = {
+  // Timing / permissive — dark teal (#197060)
   ACCELERATE: 'bg-keyword-accelerate',
   ACTION: 'bg-keyword-accelerate',
-  REACTION: 'bg-keyword-reaction',
+  REACTION: 'bg-keyword-accelerate',
+  REPEAT: 'bg-keyword-accelerate',
+  'QUICK-DRAW': 'bg-keyword-accelerate',
+  // Combat / defender — magenta (#c8386c)
   ASSAULT: 'bg-keyword-assault',
   GANKING: 'bg-keyword-assault',
-  SHIELD: 'bg-keyword-ability',
-  TANK: 'bg-keyword-ability',
-  LEGION: 'bg-keyword-ability',
-  VISION: 'bg-keyword-vision',
-  WEAPONMASTER: 'bg-keyword-weaponmaster',
-  DEFLECT: 'bg-keyword-ability',
-  HIDDEN: 'bg-keyword-default',
-  REPEAT: 'bg-keyword-default',
+  SHIELD: 'bg-keyword-assault',
+  TANK: 'bg-keyword-assault',
+  DEFLECT: 'bg-keyword-assault',
+  LEGION: 'bg-keyword-assault',
+  // Unique
   DEATHKNELL: 'bg-keyword-deathknell',
-  'QUICK-DRAW': 'bg-keyword-combat',
+  WEAPONMASTER: 'bg-keyword-weaponmaster',
+  VISION: 'bg-keyword-vision',
+  // Neutral grey banners
+  HIDDEN: 'bg-keyword-default',
+  EQUIP: 'bg-keyword-default',
   MIGHTY: 'bg-keyword-default',
   TEMPORARY: 'bg-keyword-default',
   SLOW: 'bg-keyword-default',
   FAST: 'bg-keyword-default',
-  EQUIP: 'bg-keyword-default',
   ADD: 'bg-keyword-default',
 };
 
@@ -93,6 +97,10 @@ export function parseKeywordToken(
 
     if (upper.startsWith(`${base} `)) {
       const suffix = trimmed.slice(base.length).trim();
+      // REPEAT costs render as icons beside the badge (see expandRepeatKeyword).
+      if (base === 'REPEAT' && /^\d+$/.test(suffix)) {
+        return { base, display: base };
+      }
       return { base, display: `${base} ${suffix}`.trim() };
     }
   }

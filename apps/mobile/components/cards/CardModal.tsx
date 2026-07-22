@@ -24,7 +24,6 @@ import {
 } from '@/components/riftbound/CardIcons';
 import { CardPreview } from '@/components/riftbound/CardPreview';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Empty,
   EmptyDescription,
@@ -149,6 +148,8 @@ function ModalHeader({
   onClose: () => void;
 }) {
   const wishlistContext = source === 'wishlist';
+  const deckViewContext = source === 'deck-view';
+  const showCollectionActions = !wishlistContext && !deckViewContext;
 
   return (
     <View className="flex-row items-start justify-between gap-4">
@@ -171,7 +172,12 @@ function ModalHeader({
         ) : null}
       </Stack>
 
-      <View className="shrink-0 flex-row items-center justify-end gap-1.5 pt-0.5 min-w-[140px]">
+      <View
+        className={cn(
+          'shrink-0 flex-row items-center justify-end gap-1.5 pt-0.5',
+          showCollectionActions || wishlistContext ? 'min-w-[140px]' : undefined
+        )}
+      >
         {wishlistContext ? (
           <View className="flex-row items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1.5">
             <Ionicons name="bookmark" size={14} className="text-primary" />
@@ -179,22 +185,24 @@ function ModalHeader({
               {wishlistItem ? 'Wishlisted' : 'Wishlist'}
             </Text>
           </View>
-        ) : collectionEntry ? (
-          <CollectionQtyControls
-            compact
-            quantity={collectionEntry.quantity}
-            isFoil={collectionEntry.isFoil}
-            onIncrement={() => {
-              onQuantityChange(1);
-            }}
-            onDecrement={() => {
-              onQuantityChange(-1);
-            }}
-            onRemove={onRemoveFromCollection}
-          />
-        ) : (
-          <CollectionAddButton onPress={onAddToCollection} />
-        )}
+        ) : showCollectionActions ? (
+          collectionEntry ? (
+            <CollectionQtyControls
+              compact
+              quantity={collectionEntry.quantity}
+              isFoil={collectionEntry.isFoil}
+              onIncrement={() => {
+                onQuantityChange(1);
+              }}
+              onDecrement={() => {
+                onQuantityChange(-1);
+              }}
+              onRemove={onRemoveFromCollection}
+            />
+          ) : (
+            <CollectionAddButton onPress={onAddToCollection} />
+          )
+        ) : null}
         <ModalIconButton onPress={onClose} accessibilityLabel="Close">
           <Ionicons name="close" size={16} />
         </ModalIconButton>
@@ -242,8 +250,8 @@ function ModalInfoPanel({
   const panelPadding = isWide ? 'px-8 py-7' : 'px-5 py-5';
   const isBanned = isCardBannedAt(card.banEffectiveDate);
 
-  const content = (
-    <Stack gap="lg" className={panelPadding}>
+  const headerBlock = (
+    <>
       <ModalHeader
         setCode={setCode}
         variantNumber={activeVariant.variantNumber}
@@ -313,82 +321,96 @@ function ModalInfoPanel({
           </Text>
         </Stack>
       </Stack>
-
-      {card.description ? (
-        <Card className="gap-0 rounded-xl border border-border bg-secondary py-0 shadow-none">
-          <CardContent className={cn('py-3.5', isWide ? 'px-4' : 'px-3.5')}>
-            <SectionLabel className="mb-2">Ability</SectionLabel>
-            <CardRulesText text={card.description} compact numberOfLines={isWide ? 3 : 2} />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {wishlistContext ? (
-        <Stack gap="sm">
-          <SectionLabel>Wishlist tracking</SectionLabel>
-          <View className="rounded-xl border border-border bg-card p-3">
-            <Stack direction="row" className="items-start justify-between gap-4">
-              <Stack gap="xs" className="min-w-0 flex-1">
-                <Text className="text-sm font-semibold text-foreground">
-                  {activeFinish} printing
-                </Text>
-                <Text className="font-mono text-[11px] text-muted-foreground">
-                  {activeVariant.variantLabel} · {activeVariant.variantNumber}
-                </Text>
-              </Stack>
-              <Stack gap="xs" className="items-end">
-                <Text className="font-mono text-lg font-black tabular-nums text-foreground">
-                  {activePriceText ?? '—'}
-                </Text>
-                <Text className="text-xs font-semibold text-muted-foreground">
-                  {wishlistItem?.trend ?? 'Flat'}
-                </Text>
-              </Stack>
-            </Stack>
-            <View className="mt-3 flex-row flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3">
-              <Text className="font-mono text-[11px] text-muted-foreground">
-                7D baseline{' '}
-                <Text className="font-bold text-foreground">
-                  {wishlistItem?.baselinePrice != null
-                    ? `€${wishlistItem.baselinePrice.toFixed(2)}`
-                    : '—'}
-                </Text>
-              </Text>
-              <Text className="font-mono text-[11px] text-muted-foreground">
-                Stored points{' '}
-                <Text className="font-bold text-foreground">
-                  {String(wishlistItem?.points.length ?? 0)}
-                </Text>
-              </Text>
-            </View>
-          </View>
-        </Stack>
-      ) : null}
-
-      <PrintingPreviewStrip
-        items={printingPreviews}
-        selectedId={activeVariant.variantNumber}
-        compact
-        dense
-        onSelect={onSelectPrinting}
-      />
-    </Stack>
+    </>
   );
+
+  const abilityBlock = card.description ? (
+    <View
+      className={cn(
+        'min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-secondary',
+        isWide ? 'px-4 py-3.5' : 'px-3.5 py-3'
+      )}
+    >
+      <SectionLabel className="mb-2 shrink-0">Ability</SectionLabel>
+      <ScrollView
+        className="min-h-0 flex-1"
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={false}
+      >
+        <CardRulesText text={card.description} compact={!isWide} />
+      </ScrollView>
+    </View>
+  ) : (
+    <View className="min-h-0 flex-1" />
+  );
+
+  const wishlistBlock = wishlistContext ? (
+    <Stack gap="sm">
+      <SectionLabel>Wishlist tracking</SectionLabel>
+      <View className="rounded-xl border border-border bg-card p-3">
+        <Stack direction="row" className="items-start justify-between gap-4">
+          <Stack gap="xs" className="min-w-0 flex-1">
+            <Text className="text-sm font-semibold text-foreground">
+              {activeFinish} printing
+            </Text>
+            <Text className="font-mono text-[11px] text-muted-foreground">
+              {activeVariant.variantLabel} · {activeVariant.variantNumber}
+            </Text>
+          </Stack>
+          <Stack gap="xs" className="items-end">
+            <Text className="font-mono text-lg font-black tabular-nums text-foreground">
+              {activePriceText ?? '—'}
+            </Text>
+            <Text className="text-xs font-semibold text-muted-foreground">
+              {wishlistItem?.trend ?? 'Flat'}
+            </Text>
+          </Stack>
+        </Stack>
+        <View className="mt-3 flex-row flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3">
+          <Text className="font-mono text-[11px] text-muted-foreground">
+            7D baseline{' '}
+            <Text className="font-bold text-foreground">
+              {wishlistItem?.baselinePrice != null
+                ? `€${wishlistItem.baselinePrice.toFixed(2)}`
+                : '—'}
+            </Text>
+          </Text>
+          <Text className="font-mono text-[11px] text-muted-foreground">
+            Stored points{' '}
+            <Text className="font-bold text-foreground">
+              {String(wishlistItem?.points.length ?? 0)}
+            </Text>
+          </Text>
+        </View>
+      </View>
+    </Stack>
+  ) : null;
 
   return (
     <View
       className={cn(
-        'min-h-0 min-w-0 flex-1 bg-background',
+        'min-h-0 min-w-0 flex-1 flex-col bg-background',
         isWide && 'border-l border-border/40'
       )}
     >
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="grow"
-        showsVerticalScrollIndicator={false}
-      >
-        {content}
-      </ScrollView>
+      <View className={cn('min-h-0 flex-1', panelPadding)}>
+        <View className="min-h-0 flex-1 gap-4">
+          <View className="shrink-0 gap-4">
+            {headerBlock}
+            {wishlistBlock}
+          </View>
+          {abilityBlock}
+          <View className="shrink-0">
+            <PrintingPreviewStrip
+              items={printingPreviews}
+              selectedId={activeVariant.variantNumber}
+              compact
+              dense
+              onSelect={onSelectPrinting}
+            />
+          </View>
+        </View>
+      </View>
     </View>
   );
 }
@@ -405,7 +427,7 @@ function getShellHeight(windowWidth: number, windowHeight: number, isWide: boole
   return Math.min(cardHeight + infoEstimate, maxHeight);
 }
 
-const NARROW_MIN_INFO_HEIGHT = 200;
+const NARROW_MIN_INFO_HEIGHT = 260;
 
 function getNarrowCardMetrics(shellWidth: number, shellHeight: number) {
   const maxCardBlockHeight = shellHeight - NARROW_MIN_INFO_HEIGHT;

@@ -52,23 +52,18 @@ export function DeckBuilderInfoDrawer({
 
   const body = (
     <>
-      <View className="gap-3">
-        <Text className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Identity
-        </Text>
-        <DeckIdentityHeader
-          deck={deck}
-          readOnly={readOnly}
-          legendTileWidth={legendTileWidth}
-          imageByVariant={imageByVariant}
-          collectionByName={collectionByName}
-          runeCardsByDomain={runeCardsByDomain}
-          onChangeLegend={onChangeLegend}
-          onAddChampion={onAddChampion}
-          onRemoveChampion={onRemoveChampion}
-          onAdjustRune={onAdjustRune}
-        />
-      </View>
+      <DeckIdentityHeader
+        deck={deck}
+        readOnly={readOnly}
+        legendTileWidth={legendTileWidth}
+        imageByVariant={imageByVariant}
+        collectionByName={collectionByName}
+        runeCardsByDomain={runeCardsByDomain}
+        onChangeLegend={onChangeLegend}
+        onAddChampion={onAddChampion}
+        onRemoveChampion={onRemoveChampion}
+        onAdjustRune={onAdjustRune}
+      />
 
       <DeckBattlefieldPanel
         deck={deck}

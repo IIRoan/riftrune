@@ -100,7 +100,8 @@ export function DeckValidationMenu({
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`Deck validation: ${headline.label}`}
         className={cn(
-          'h-9 flex-row items-center gap-1.5 rounded-lg border px-2.5 active:bg-card-panel',
+          'h-9 flex-row items-center rounded-lg border active:bg-card-panel',
+          showLabel ? 'gap-1.5 px-2.5' : 'min-w-9 justify-center gap-1 px-1.5',
           tone.border,
           tone.bg
         )}

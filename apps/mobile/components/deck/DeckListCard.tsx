@@ -254,7 +254,9 @@ function DeckListCardInner({
           </View>
         ) : (
           <Text className="text-[12px] text-muted-foreground">
-            {readOnly ? 'Open to view the full imported deck' : 'No main deck cards yet'}
+            {readOnly
+              ? 'Open to view the full imported deck'
+              : 'No main deck cards yet · Edit to add cards'}
           </Text>
         )}
 

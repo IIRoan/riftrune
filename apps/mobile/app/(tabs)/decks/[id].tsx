@@ -12,20 +12,27 @@ import { useDeckAutoSave } from '@/hooks/useDeckAutoSave';
 import { useDeckDetail } from '@/hooks/useDeckDetail';
 import { useDeckMutations } from '@/hooks/useDecks';
 import { addCardToDeck } from '@/lib/deck-card';
-import { leaveDeckEditor } from '@/lib/deck-navigation';
+import {
+  deckEditHref,
+  deckViewHref,
+  isDeckEditMode,
+  leaveDeckEditor,
+} from '@/lib/deck-navigation';
 import type { DeckCard } from '@/lib/deck-types';
+import { hapticPress } from '@/utils/haptics';
 
 type IoMode = 'import' | 'export';
 
 export default function DeckEditorScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, mode } = useLocalSearchParams<{ id: string; mode?: string }>();
   const { deck, isLoading, persist, flushSave } = useDeckDetail(id);
   const { importDeck } = useDeckMutations();
-  const readOnly = deck?.readOnly === true;
+  const permanentReadOnly = deck?.readOnly === true;
+  const editing = !permanentReadOnly && isDeckEditMode(mode);
   const [ioMode, setIoMode] = useState<IoMode | null>(null);
   const [pickingLegend, setPickingLegend] = useState(false);
-  useDeckAutoSave(readOnly ? null : deck);
+  useDeckAutoSave(editing ? deck : null);
 
   const handleLegendSelect = useCallback(
     (legend: DeckCard) => {
@@ -37,16 +44,36 @@ export default function DeckEditorScreen() {
       );
       setPickingLegend(false);
       persist(next);
+      if (!isDeckEditMode(mode)) {
+        router.replace(deckEditHref(deck.id));
+      }
     },
-    [deck, persist]
+    [deck, mode, persist, router]
   );
 
   const handleImport = useCallback(() => {
     if (!deck?.id) return;
     void importDeck.mutateAsync(deck.id).then((saved) => {
-      router.replace(`/decks/${saved.id}`);
+      router.replace(deckViewHref(saved.id));
     });
   }, [deck?.id, importDeck, router]);
+
+  const handleEdit = useCallback(() => {
+    if (!deck?.id) return;
+    hapticPress();
+    router.push(deckEditHref(deck.id));
+  }, [deck?.id, router]);
+
+  const handleBack = useCallback(() => {
+    if (editing) {
+      void flushSave();
+      if (deck?.id) {
+        router.replace(deckViewHref(deck.id));
+        return;
+      }
+    }
+    leaveDeckEditor(router);
+  }, [deck?.id, editing, flushSave, router]);
 
   if (isLoading) {
     return (
@@ -71,7 +98,8 @@ export default function DeckEditorScreen() {
     );
   }
 
-  if (pickingLegend || (!readOnly && !deck.legend)) {
+  const needsLegendSetup = !permanentReadOnly && !deck.legend;
+  if (pickingLegend || needsLegendSetup) {
     return (
       <LegendPickerScreen
         onSelect={handleLegendSelect}
@@ -96,17 +124,16 @@ export default function DeckEditorScreen() {
         <ScreenLayoutBody className="min-h-0 flex-1">
           <DeckBuilderCanvas
             deck={deck}
-            readOnly={readOnly}
+            permanentReadOnly={permanentReadOnly}
+            editing={editing}
             ioMode={ioMode}
             onPersist={persist}
             onIoModeChange={setIoMode}
             onChangeLegend={() => setPickingLegend(true)}
-            onImportToMyDecks={readOnly ? handleImport : undefined}
+            onEdit={permanentReadOnly || editing ? undefined : handleEdit}
+            onImportToMyDecks={permanentReadOnly ? handleImport : undefined}
             importBusy={importDeck.isPending}
-            onBack={() => {
-              if (!readOnly) void flushSave();
-              leaveDeckEditor(router);
-            }}
+            onBack={handleBack}
           />
         </ScreenLayoutBody>
       </ScreenLayout>

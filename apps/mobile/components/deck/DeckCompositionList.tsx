@@ -13,7 +13,7 @@ import { getSectionCount, resolveDeckCardImageUrl } from '@/lib/deck-card';
 import { deckSectionProgress } from '@/lib/deck-display';
 import type { DeckCard, DeckEntry, DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { ownedCountForCardName } from '@/lib/deck-validation';
-import { openCard } from '@/utils/cardNavigation';
+import { openCard, type CardOpenSource } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +35,7 @@ interface DeckCompositionListProps {
   readOnly?: boolean;
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
+  openSource?: CardOpenSource;
   onMinus?: (section: Exclude<DeckSectionKey, 'legend' | 'champion'>, name: string) => void;
   onPlus?: (section: Exclude<DeckSectionKey, 'legend' | 'champion'>, name: string) => void;
   onRemove?: (section: DeckSectionKey, name?: string) => void;
@@ -115,6 +116,7 @@ function CompositionRowView({
   owned,
   illegal,
   readOnly,
+  openSource,
   onMinus,
   onPlus,
   onRemove,
@@ -124,6 +126,7 @@ function CompositionRowView({
   owned: number | null;
   illegal: boolean;
   readOnly?: boolean;
+  openSource?: CardOpenSource;
   onMinus?: () => void;
   onPlus?: () => void;
   onRemove?: () => void;
@@ -167,7 +170,7 @@ function CompositionRowView({
         className="active:opacity-90"
         onPress={() => {
           hapticPress();
-          openCard(router, row.card.variantNumber, 'modal');
+          openCard(router, row.card.variantNumber, 'modal', openSource);
         }}
       >
         {imageUri ? (
@@ -188,7 +191,7 @@ function CompositionRowView({
         className="min-w-0 flex-1 active:opacity-90"
         onPress={() => {
           hapticPress();
-          openCard(router, row.card.variantNumber, 'modal');
+          openCard(router, row.card.variantNumber, 'modal', openSource);
         }}
       >
         <Text
@@ -259,6 +262,7 @@ export function DeckCompositionList({
   readOnly = false,
   imageByVariant,
   collectionByName,
+  openSource,
   onMinus,
   onPlus,
   onRemove,
@@ -336,6 +340,7 @@ export function DeckCompositionList({
           owned={owned}
           illegal={illegal}
           readOnly={readOnly}
+          openSource={openSource}
           onMinus={
             row.section === 'legend' || row.section === 'champion'
               ? undefined

@@ -24,8 +24,11 @@ export function DeckSectionHeader({
 }: DeckSectionHeaderProps) {
   if (readOnly) {
     return (
-      <View className={className}>
+      <View className={cn('flex-row items-baseline gap-2', className)}>
         <Text className="text-sm font-semibold text-foreground">{title}</Text>
+        <Text className="font-mono text-[11px] tabular-nums text-muted-foreground">
+          {current}/{target}
+        </Text>
       </View>
     );
   }

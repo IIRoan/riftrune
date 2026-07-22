@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Platform, useWindowDimensions, View } from 'react-native';
 import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
@@ -31,10 +31,29 @@ interface CardArtHoverPreviewProps {
   className?: string;
 }
 
+/** Only one card-art hover preview should be visible at a time. */
+let activeDismiss: (() => void) | null = null;
+
+function claimHover(dismiss: () => void) {
+  if (activeDismiss && activeDismiss !== dismiss) {
+    activeDismiss();
+  }
+  activeDismiss = dismiss;
+}
+
+function releaseHover(dismiss: () => void) {
+  if (activeDismiss === dismiss) {
+    activeDismiss = null;
+  }
+}
+
 /**
  * Web-only enlarged card art on hover (readable full card).
  * Portaled so parent `overflow-hidden` cards do not clip it.
  * Native: children only.
+ *
+ * Cleanup is intentionally aggressive: scroll, blur, tab hide, unmount, and
+ * stale `measureInWindow` callbacks must never leave an orphaned preview.
  */
 export function CardArtHoverPreview({
   imageUri,
@@ -45,8 +64,63 @@ export function CardArtHoverPreview({
 }: CardArtHoverPreviewProps) {
   const portalName = useId();
   const anchorRef = useRef<View>(null);
+  const hoveringRef = useRef(false);
+  const hoverSessionRef = useRef(0);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
+  const hide = useCallback(() => {
+    hoveringRef.current = false;
+    hoverSessionRef.current += 1;
+    releaseHover(hide);
+    setAnchor(null);
+  }, []);
+
+  const measureAndShow = useCallback(() => {
+    hoveringRef.current = true;
+    const session = hoverSessionRef.current + 1;
+    hoverSessionRef.current = session;
+    claimHover(hide);
+
+    anchorRef.current?.measureInWindow((x, y, width, height) => {
+      // Ignore late measure results after leave / hide / newer enter.
+      if (!hoveringRef.current || session !== hoverSessionRef.current) return;
+      setAnchor({ x, y, width, height });
+    });
+  }, [hide]);
+
+  // Unmount / image change must always clear.
+  useEffect(() => {
+    return () => {
+      hide();
+    };
+  }, [hide, imageUri]);
+
+  // While visible: dismiss on scroll (mouseleave often does not fire when the
+  // list moves under the cursor), window blur, or tab hide.
+  useEffect(() => {
+    if (!anchor || Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+    const onScroll = () => {
+      hide();
+    };
+    const onBlur = () => {
+      hide();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') hide();
+    };
+
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('blur', onBlur);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('blur', onBlur);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [anchor, hide]);
 
   if (Platform.OS !== 'web' || !imageUri) {
     return <>{children}</>;
@@ -61,16 +135,6 @@ export function CardArtHoverPreview({
   const fitScale = Math.min(1, maxWidth / baseWidth, maxHeight / baseHeight);
   const previewWidth = Math.round(baseWidth * fitScale);
   const previewHeight = Math.round(baseHeight * fitScale);
-
-  const show = (next: Anchor | null) => {
-    setAnchor(next);
-  };
-
-  const measureAndShow = () => {
-    anchorRef.current?.measureInWindow((x, y, width, height) => {
-      show({ x, y, width, height });
-    });
-  };
 
   let previewLeft = 0;
   let previewTop = 0;
@@ -100,9 +164,9 @@ export function CardArtHoverPreview({
       className={cn('relative', className)}
       {...({
         onMouseEnter: measureAndShow,
-        onMouseLeave: () => {
-          show(null);
-        },
+        onMouseLeave: hide,
+        onPointerEnter: measureAndShow,
+        onPointerLeave: hide,
       } as object)}
     >
       {children}

@@ -22,10 +22,6 @@ import {
   CatalogFilterSheet,
 } from '@/components/catalog/FilterSheet';
 import {
-  CatalogCollectionPillNav,
-  CATALOG_COLLECTION_PILL_CLEARANCE,
-} from '@/components/catalog/CatalogCollectionPillNav';
-import {
   catalogFiltersActive,
   DEFAULT_CATALOG_FILTERS,
   matchesCatalogFilters,
@@ -833,6 +829,10 @@ function SearchScreenBody() {
         }}
         filters={catalogFilters}
         onFilterPress={() => setFilterSheetOpen(true)}
+        collection={catalogFilters.collection}
+        onCollectionChange={(collection) =>
+          applyCatalogFilters({ ...catalogFilters, collection })
+        }
         showFilterTrigger={isMobile}
       />
     </View>
@@ -862,7 +862,7 @@ function SearchScreenBody() {
         contentContainerStyle={{
           width: splitLayout ? '100%' : contentWidth,
           maxWidth: '100%',
-          paddingBottom: paddingBottomInline + CATALOG_COLLECTION_PILL_CLEARANCE,
+          paddingBottom: paddingBottomInline,
           flexGrow: displayItems.length === 0 ? 1 : undefined,
         }}
         columnWrapperStyle={
@@ -913,11 +913,6 @@ function SearchScreenBody() {
           {catalogList}
         </ScreenLayoutBody>
       )}
-
-      <CatalogCollectionPillNav
-        value={catalogFilters.collection}
-        onChange={(collection) => applyCatalogFilters({ ...catalogFilters, collection })}
-      />
 
       {isMobile ? (
         <CatalogFilterSheet

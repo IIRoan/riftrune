@@ -7,7 +7,7 @@ interface DeckCardCountBadgeProps {
   className?: string;
 }
 
-/** Printed-card copy count — white energy disc at bottom-left of art. */
+/** Printed-card copy count — quantity pip at bottom-left of art. */
 export function DeckCardCountBadge({ count, className }: DeckCardCountBadgeProps) {
   if (count <= 1) return null;
 

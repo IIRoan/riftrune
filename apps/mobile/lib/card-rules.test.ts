@@ -2,7 +2,13 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 import { CARD_RULE_FIXTURES } from '@/lib/card-fixtures';
-import { groupInlineSegments, groupParagraphSegments, parseCardRules, summarizeRulesRender } from '@/lib/card-rules';
+import {
+  groupInlineSegments,
+  groupParagraphSegments,
+  parseCardRules,
+  summarizeRulesRender,
+  takeKeywordBannerCosts,
+} from '@/lib/card-rules';
 import { getKeywordBadgeClassName, parseKeywordToken } from '@/lib/card-keywords';
 
 describe('parseKeywordToken', () => {
@@ -17,6 +23,13 @@ describe('parseKeywordToken', () => {
     expect(parseKeywordToken('ASSAULT 2')).toEqual({
       base: 'ASSAULT',
       display: 'ASSAULT 2',
+    });
+  });
+
+  test('keeps REPEAT display without embedding the cost number', () => {
+    expect(parseKeywordToken('Repeat 2')).toEqual({
+      base: 'REPEAT',
+      display: 'REPEAT',
     });
   });
 
@@ -50,6 +63,30 @@ describe('parseCardRules', () => {
     ]);
   });
 
+  test('keeps EQUIP open cost and reminder restatement as separate domain parts', () => {
+    const parts = parseCardRules(
+      '[Equip][Order] ([Order]: Attach this to a unit you control.)'
+    );
+
+    expect(parts.filter((part) => part.type !== 'text')).toEqual([
+      { type: 'keyword', value: 'Equip', keywordBase: 'EQUIP', display: 'EQUIP' },
+      { type: 'domain', value: 'Order' },
+      { type: 'domain', value: 'Order' },
+    ]);
+  });
+
+  test('keeps ACCELERATE reminder domain icons full-color (not banner costs)', () => {
+    const parts = parseCardRules(
+      '[ACCELERATE] (You may pay [1] [Fury] as an additional cost to have me enter ready.)'
+    );
+
+    expect(parts.filter((part) => part.type === 'domain')).toEqual([
+      { type: 'domain', value: 'Fury' },
+    ]);
+  });
+});
+
+describe('parseCardRules fixtures', () => {
   test('preserves surrounding text', () => {
     const parts = parseCardRules('When you play me, discard 2.');
     expect(parts).toEqual([{ type: 'text', value: 'When you play me, discard 2.' }]);
@@ -92,6 +129,69 @@ describe('parseCardRules', () => {
       { type: 'tap', value: 'Tap' },
       { type: 'might', value: 'Might' },
     ]);
+  });
+
+  test('expands fused Repeat cost into badge + energy pip', () => {
+    const parts = parseCardRules(
+      '[Repeat 2] (You may pay the additional cost to repeat this spell\'s effect.)'
+    );
+
+    expect(parts.filter((part) => part.type !== 'text')).toEqual([
+      { type: 'keyword', value: 'Repeat 2', keywordBase: 'REPEAT', display: 'REPEAT' },
+      { type: 'energy', value: '2' },
+    ]);
+  });
+
+  test('keeps separate Repeat energy and domain costs beside the keyword', () => {
+    const parts = parseCardRules(
+      '[Repeat][1][Mind] (You may pay the additional cost to repeat this spell\'s effect.)'
+    );
+
+    expect(parts.filter((part) => part.type !== 'text')).toEqual([
+      { type: 'keyword', value: 'Repeat', keywordBase: 'REPEAT', display: 'REPEAT' },
+      { type: 'energy', value: '1' },
+      { type: 'domain', value: 'Mind' },
+    ]);
+  });
+});
+
+describe('takeKeywordBannerCosts', () => {
+  test('collects energy and domain costs after REPEAT', () => {
+    const parts = parseCardRules('[Repeat][1][Mind] (reminder)');
+    const repeatIndex = parts.findIndex(
+      (part) => part.type === 'keyword' && part.keywordBase === 'REPEAT'
+    );
+    expect(takeKeywordBannerCosts(parts, repeatIndex + 1)).toEqual({
+      costs: [
+        { type: 'energy', value: '1' },
+        { type: 'domain', value: 'Mind' },
+      ],
+      nextIndex: repeatIndex + 3,
+    });
+  });
+
+  test('collects domain cost after EQUIP for the banner', () => {
+    const parts = parseCardRules(
+      '[Equip][Order] ([Order]: Attach this to a unit you control.)'
+    );
+    const equipIndex = parts.findIndex(
+      (part) => part.type === 'keyword' && part.keywordBase === 'EQUIP'
+    );
+    expect(takeKeywordBannerCosts(parts, equipIndex + 1)).toEqual({
+      costs: [{ type: 'domain', value: 'Order' }],
+      nextIndex: equipIndex + 2,
+    });
+  });
+
+  test('stops before em dash so Blade-style Equip costs stay outside the banner', () => {
+    const parts = parseCardRules('[Equip] — [Order], Kill a friendly unit');
+    const equipIndex = parts.findIndex(
+      (part) => part.type === 'keyword' && part.keywordBase === 'EQUIP'
+    );
+    expect(takeKeywordBannerCosts(parts, equipIndex + 1)).toEqual({
+      costs: [],
+      nextIndex: equipIndex + 1,
+    });
   });
 });
 
@@ -260,27 +360,31 @@ describe('might icon asset', () => {
 });
 
 describe('getKeywordBadgeClassName', () => {
-  test('maps accelerate and action to accelerate styling', () => {
+  test('maps timing keywords to teal accelerate styling', () => {
     expect(getKeywordBadgeClassName('ACCELERATE')).toBe('bg-keyword-accelerate');
     expect(getKeywordBadgeClassName('ACTION')).toBe('bg-keyword-accelerate');
+    expect(getKeywordBadgeClassName('REACTION')).toBe('bg-keyword-accelerate');
+    expect(getKeywordBadgeClassName('REPEAT')).toBe('bg-keyword-accelerate');
+    expect(getKeywordBadgeClassName('QUICK-DRAW')).toBe('bg-keyword-accelerate');
   });
 
-  test('maps assault and ganking to assault styling', () => {
+  test('maps combat and defender keywords to assault magenta', () => {
     expect(getKeywordBadgeClassName('ASSAULT')).toBe('bg-keyword-assault');
     expect(getKeywordBadgeClassName('GANKING')).toBe('bg-keyword-assault');
+    expect(getKeywordBadgeClassName('SHIELD')).toBe('bg-keyword-assault');
+    expect(getKeywordBadgeClassName('TANK')).toBe('bg-keyword-assault');
+    expect(getKeywordBadgeClassName('DEFLECT')).toBe('bg-keyword-assault');
+    expect(getKeywordBadgeClassName('LEGION')).toBe('bg-keyword-assault');
   });
 
-  test('maps ability keywords', () => {
-    expect(getKeywordBadgeClassName('SHIELD')).toBe('bg-keyword-ability');
-    expect(getKeywordBadgeClassName('TANK')).toBe('bg-keyword-ability');
+  test('maps unique keyword colors', () => {
+    expect(getKeywordBadgeClassName('DEATHKNELL')).toBe('bg-keyword-deathknell');
     expect(getKeywordBadgeClassName('WEAPONMASTER')).toBe('bg-keyword-weaponmaster');
+    expect(getKeywordBadgeClassName('VISION')).toBe('bg-keyword-vision');
   });
 
   test('falls back to default styling', () => {
     expect(getKeywordBadgeClassName('EQUIP')).toBe('bg-keyword-default');
-  });
-
-  test('maps deathknell to its own styling', () => {
-    expect(getKeywordBadgeClassName('DEATHKNELL')).toBe('bg-keyword-deathknell');
+    expect(getKeywordBadgeClassName('HIDDEN')).toBe('bg-keyword-default');
   });
 });

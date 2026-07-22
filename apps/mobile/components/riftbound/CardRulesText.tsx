@@ -1,13 +1,15 @@
 import { Image } from 'expo-image';
 import type { ImageSourcePropType, StyleProp, ViewStyle } from 'react-native';
-import { Text as RNText, View } from 'react-native';
+import { Platform, Text as RNText, View } from 'react-native';
 import { KeywordBadge } from '@/components/riftbound/KeywordBadge';
 import { Text } from '@/components/ui/text';
 import { domainIconFor, mightIcon, runeIcon, tapIcon } from '@/constants/gameAssets';
 import {
   groupParagraphSegments,
+  KEYWORD_BANNER_COST_BASES,
   parseCardRules,
   splitRuleParagraphs,
+  takeKeywordBannerCosts,
   type CardRulesPart,
   type ParagraphSegment,
 } from '@/lib/card-rules';
@@ -67,30 +69,82 @@ function InlineAssetIcon({
 function InlineDomainIcon({ name, size }: { name: string; size: number }) {
   const source = domainIconFor(name);
   if (!source) return null;
-  return (
-    <View className="mx-0.5 items-center justify-center" style={{ width: size, height: size }}>
-      <Image
-        source={source}
-        style={{ width: size, height: size }}
-        contentFit="contain"
-        accessibilityIgnoresInvertColors
-        accessibilityLabel={name}
-      />
-    </View>
-  );
+  return <InlineAssetIcon source={source} size={size} label={name} />;
 }
 
+/** White energy disc — open rules text (reminders, costs outside badges). */
 function InlineEnergyText({ value, compact }: { value: string; compact?: boolean }) {
   const size = iconSize(compact);
 
   return (
-    <RNText
-      className="mx-0.5 rounded-full bg-white px-[3px] text-center font-bold text-black ring-1 ring-black/20"
-      style={{ fontSize: size * 0.55, lineHeight: size * 0.65, minWidth: size }}
+    <View
+      className="mx-0.5 items-center justify-center rounded-full border border-black/25 bg-white"
+      style={{ width: size, height: size, minWidth: size, backgroundColor: '#FFFFFF' }}
       accessibilityLabel={`${value} energy`}
     >
-      {value}
-    </RNText>
+      <Text
+        className="text-center font-extrabold"
+        style={{ fontSize: size * 0.55, lineHeight: size * 0.65, color: '#000000' }}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+/** White energy disc inside keyword banners (REPEAT / EQUIP). */
+function BannerBadgeEnergy({ value, compact }: { value: string; compact?: boolean }) {
+  const size = compact ? 12 : 14;
+
+  return (
+    <View
+      className="items-center justify-center rounded-full"
+      style={{
+        width: size,
+        height: size,
+        minWidth: size,
+        backgroundColor: '#FFFFFF',
+      }}
+      accessibilityLabel={`${value} energy`}
+    >
+      <Text
+        className="text-center font-extrabold"
+        style={{ fontSize: size * 0.55, lineHeight: size * 0.65, color: '#000000' }}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * Domain / rune icons inside keyword banners are printed white.
+ * Reminder restatements stay full-color via InlineDomainIcon.
+ */
+function KeywordBannerCostIcon({
+  source,
+  size,
+  label,
+}: {
+  source: ImageSourcePropType;
+  size: number;
+  label: string;
+}) {
+  return (
+    <View className="items-center justify-center" style={{ width: size, height: size }}>
+      <Image
+        source={source}
+        className={Platform.OS === 'web' ? 'brightness-0 invert' : undefined}
+        style={{
+          width: size,
+          height: size,
+          ...(Platform.OS !== 'web' ? { tintColor: '#FFFFFF' } : {}),
+        }}
+        contentFit="contain"
+        accessibilityIgnoresInvertColors
+        accessibilityLabel={label}
+      />
+    </View>
   );
 }
 
@@ -146,11 +200,7 @@ function RulesPartView({
   }
 
   if (part.type === 'energy') {
-    return (
-      <Text className={cn(textClass, 'shrink')}>
-        <InlineEnergyText value={part.value} compact={compact} />
-      </Text>
-    );
+    return <InlineEnergyText value={part.value} compact={compact} />;
   }
 
   if (
@@ -189,6 +239,56 @@ function RulesPartView({
   );
 }
 
+/** Keyword badge with trailing costs nested inside (REPEAT, EQUIP). */
+function KeywordBannerCluster({
+  label,
+  keywordBase,
+  costs,
+  compact,
+}: {
+  label: string;
+  keywordBase: string;
+  costs: CardRulesPart[];
+  compact?: boolean;
+}) {
+  const size = compact ? 12 : 14;
+  const trailing =
+    costs.length > 0
+      ? costs.map((cost, index) => {
+          if (cost.type === 'energy') {
+            return <BannerBadgeEnergy key={index} value={cost.value} compact={compact} />;
+          }
+          if (cost.type === 'rune') {
+            return (
+              <KeywordBannerCostIcon key={index} source={runeIcon} size={size} label="Rune" />
+            );
+          }
+          if (cost.type === 'domain') {
+            const source = domainIconFor(cost.value);
+            if (!source) return null;
+            return (
+              <KeywordBannerCostIcon
+                key={index}
+                source={source}
+                size={size}
+                label={cost.value}
+              />
+            );
+          }
+          return null;
+        })
+      : undefined;
+
+  return (
+    <KeywordBadge
+      label={label}
+      keywordBase={keywordBase}
+      compact={compact}
+      trailing={trailing}
+    />
+  );
+}
+
 function InlineSegmentRow({
   parts,
   compact,
@@ -200,19 +300,40 @@ function InlineSegmentRow({
   textClass: string;
   reminderClass: string;
 }) {
-  return (
-    <View className="max-w-full flex-row flex-wrap items-center">
-      {parts.map((part, index) => (
-        <RulesPartView
+  const nodes = [];
+  let index = 0;
+
+  while (index < parts.length) {
+    const part = parts[index]!;
+
+    if (part.type === 'keyword' && KEYWORD_BANNER_COST_BASES.has(part.keywordBase)) {
+      const { costs, nextIndex } = takeKeywordBannerCosts(parts, index + 1);
+      nodes.push(
+        <KeywordBannerCluster
           key={index}
-          part={part}
+          label={part.display}
+          keywordBase={part.keywordBase}
+          costs={costs}
           compact={compact}
-          textClass={textClass}
-          reminderClass={reminderClass}
         />
-      ))}
-    </View>
-  );
+      );
+      index = nextIndex;
+      continue;
+    }
+
+    nodes.push(
+      <RulesPartView
+        key={index}
+        part={part}
+        compact={compact}
+        textClass={textClass}
+        reminderClass={reminderClass}
+      />
+    );
+    index++;
+  }
+
+  return <View className="max-w-full flex-row flex-wrap items-center">{nodes}</View>;
 }
 
 function ParagraphSegmentView({

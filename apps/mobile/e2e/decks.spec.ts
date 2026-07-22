@@ -27,10 +27,14 @@ test.describe('decks', () => {
     await firstLegend.click();
 
     // Builder chrome (legend applied — picker gone).
-    await expect(page.getByLabel('Back to decks')).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByLabel('Back to deck')).toBeVisible({ timeout: 45_000 });
     await expect(page.getByText('Choose your Legend')).toHaveCount(0);
     await expect(page.getByLabel('Export deck list')).toBeVisible({ timeout: 30_000 });
 
+    // Edit back returns to view-only profile, then to My decks.
+    await page.getByLabel('Back to deck').click();
+    await expect(page.getByLabel('Edit deck')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByLabel('Back to decks')).toBeVisible();
     await page.getByLabel('Back to decks').click();
     await expect(page.getByText('My decks', { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('No decks yet')).toHaveCount(0);
