@@ -1,7 +1,7 @@
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Keyboard, Pressable, View } from 'react-native';
+import { CardArtImage } from '@/components/cards/CardArtImage';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import {
   ScreenLayout,
@@ -14,6 +14,8 @@ import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
+import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import {
   useWishlistPrices,
   type WishlistPriceItem,
@@ -22,6 +24,11 @@ import { cn } from '@/lib/utils';
 import { openCard } from '@/utils/cardNavigation';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { CARDMARKET_PRICE_DETAIL_NOTE } from '@riftbound/contracts';
+
+/** Compact list thumb — portrait card crop with explicit size for native Image. */
+const ROW_THUMB = { width: 40, height: 56 } as const;
+/** Slightly larger art when a row is expanded on mobile. */
+const EXPANDED_THUMB = { width: 72, height: 100 } as const;
 
 type SortMode = 'move' | 'price' | 'name';
 
@@ -85,14 +92,54 @@ function MiniSparkline({ points }: { points: WishlistPriceItem['points'] }) {
   );
 }
 
+function WishlistCardThumb({
+  imageUrl,
+  variantNumber,
+  size,
+}: {
+  imageUrl: string | null | undefined;
+  variantNumber: string;
+  size: { width: number; height: number };
+}) {
+  const uri = imageUrl ? resolveImageUrl(imageUrl) : null;
+  if (!uri) {
+    return (
+      <View
+        className={cn('items-center justify-center bg-card-panel', CARD_ART_RADIUS_CLASS)}
+        style={size}
+      >
+        <ThemedIonicon name="bookmark-outline" size={16} color="muted-foreground" />
+      </View>
+    );
+  }
+
+  return (
+    <View
+      className={cn('overflow-hidden border border-border/60 bg-card-panel', CARD_ART_RADIUS_CLASS)}
+      style={size}
+    >
+      <CardArtImage
+        uri={uri}
+        recyclingKey={variantNumber}
+        style={size}
+        contentFit="cover"
+        contentPosition="top"
+        instant
+      />
+    </View>
+  );
+}
+
 function WishlistRow({
   item,
   expanded,
+  compact,
   onToggle,
   onOpen,
 }: {
   item: WishlistPriceItem;
   expanded: boolean;
+  compact: boolean;
   onToggle: () => void;
   onOpen: () => void;
 }) {
@@ -107,19 +154,11 @@ function WishlistRow({
         accessibilityLabel={`${item.name}, ${formatPrice(item.currentPrice)}, ${item.trend}`}
         accessibilityHint="Opens price details. Long press opens the card."
       >
-        {item.imageUrl ? (
-          <Image
-            source={{ uri: resolveImageUrl(item.imageUrl) }}
-            className="h-14 w-10 rounded-md bg-card-panel"
-            contentFit="cover"
-            contentPosition="top"
-            cachePolicy="memory-disk"
-          />
-        ) : (
-          <View className="h-14 w-10 items-center justify-center rounded-md bg-card-panel">
-            <ThemedIonicon name="bookmark-outline" size={16} color="muted-foreground" />
-          </View>
-        )}
+        <WishlistCardThumb
+          imageUrl={item.imageUrl}
+          variantNumber={item.variantNumber}
+          size={ROW_THUMB}
+        />
 
         <View className="min-w-0 flex-1">
           <Text className="text-[15px] font-medium text-foreground" numberOfLines={1}>
@@ -131,9 +170,11 @@ function WishlistRow({
           </Text>
         </View>
 
-        <View className="w-[88px] shrink-0">
-          <MiniSparkline points={item.points} />
-        </View>
+        {!compact ? (
+          <View className="w-[88px] shrink-0">
+            <MiniSparkline points={item.points} />
+          </View>
+        ) : null}
 
         <View className="min-w-[72px] items-end">
           <Text className="font-mono text-[15px] font-semibold tabular-nums text-foreground">
@@ -151,6 +192,32 @@ function WishlistRow({
 
       {expanded ? (
         <View className="gap-3 border-t border-border/60 bg-card-panel/40 pb-3.5 pt-3">
+          {compact ? (
+            <Pressable
+              onPress={onOpen}
+              className="flex-row items-center gap-3 active:opacity-90"
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${item.name}`}
+            >
+              <WishlistCardThumb
+                imageUrl={item.imageUrl}
+                variantNumber={item.variantNumber}
+                size={EXPANDED_THUMB}
+              />
+              <View className="min-w-0 flex-1 gap-1">
+                <Text className="text-[15px] font-semibold text-foreground" numberOfLines={2}>
+                  {item.name}
+                </Text>
+                <Text className="font-mono text-[11px] text-muted-foreground">
+                  {item.variantNumber}
+                </Text>
+                <Text className="font-mono text-[15px] font-semibold tabular-nums text-foreground">
+                  {formatPrice(item.currentPrice)}
+                </Text>
+                <TrendTag trend={item.trend} className="self-start" />
+              </View>
+            </Pressable>
+          ) : null}
           <WishlistPriceHistoryPanel item={item} />
           <Button size="sm" variant="outline" className="self-start" onPress={onOpen}>
             <ButtonText>Open card</ButtonText>
@@ -161,18 +228,18 @@ function WishlistRow({
   );
 }
 
-function WishlistLoadingSkeleton() {
+function WishlistLoadingSkeleton({ compact }: { compact: boolean }) {
   return (
     <SkeletonGroup>
       <View className="gap-0">
         {Array.from({ length: 8 }).map((_, index) => (
           <View key={index} className="flex-row items-center gap-3 border-b border-border py-3">
-            <Skeleton className="h-14 w-10 rounded-md" />
+            <Skeleton className="h-14 w-10 shrink-0 rounded-md" />
             <View className="min-w-0 flex-1 gap-2">
               <Skeleton className="h-4 w-2/3 rounded" />
               <Skeleton className="h-3 w-1/3 rounded" />
             </View>
-            <Skeleton className="h-7 w-20 rounded" />
+            {!compact ? <Skeleton className="h-7 w-20 rounded" /> : null}
             <Skeleton className="h-4 w-14 rounded" />
           </View>
         ))}
@@ -183,6 +250,7 @@ function WishlistLoadingSkeleton() {
 
 function WishlistScreenBody() {
   const router = useRouter();
+  const compact = useMobileLayout();
   const { contentWidth, paddingBottomInline } = useScreenLayout();
   const [sort, setSort] = useState<SortMode>('move');
   const [query, setQuery] = useState('');
@@ -287,7 +355,7 @@ function WishlistScreenBody() {
     return (
       <View style={{ width: contentWidth }} className="gap-4">
         {listHeader}
-        <WishlistLoadingSkeleton />
+        <WishlistLoadingSkeleton compact={compact} />
       </View>
     );
   }
@@ -300,6 +368,7 @@ function WishlistScreenBody() {
       renderItem={({ item }) => (
         <WishlistRow
           item={item}
+          compact={compact}
           expanded={expandedId === item.variantNumber}
           onToggle={() => {
             setExpandedId((current) =>
@@ -354,7 +423,7 @@ function WishlistScreenBody() {
       keyboardDismissMode="on-drag"
       onScrollBeginDrag={dismissKeyboard}
       showsVerticalScrollIndicator={false}
-      extraData={expandedId}
+      extraData={{ expandedId, compact }}
       initialNumToRender={16}
       windowSize={9}
     />

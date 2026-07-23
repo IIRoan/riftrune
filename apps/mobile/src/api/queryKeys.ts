@@ -46,6 +46,11 @@ export const wishlistQueryKeys = {
   prices: ['wishlist', 'prices', '30d'] as const,
 };
 
+export const priceQueryKeys = {
+  stats: (variantNumber: string, isFoil: boolean, days: number) =>
+    ['prices', 'stats', variantNumber, isFoil, days] as const,
+};
+
 export const deckQueryKeys = {
   all: ['decks'] as const,
   list: (source: 'owned' | 'imported', q?: string) =>

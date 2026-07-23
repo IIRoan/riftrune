@@ -39,10 +39,12 @@ import { formatStat } from '@/utils/cardFormat';
 import {
   formatMarketTrend,
   getVariantMarketPriceDisplays,
+  isFoilVariant,
   pickVariantDisplayPrice,
   toPriceEurSummary,
 } from '@/utils/variants';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
+import { useVariantPriceHistory } from '@/hooks/useVariantPriceHistory';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import { cn } from '@/lib/utils';
 import type { CardOpenSource } from '@/utils/cardNavigation';
@@ -238,6 +240,20 @@ function ModalInfoPanel({
   const panelPadding = isWide ? 'px-8 py-7' : 'px-5 py-5';
   const isBanned = isCardBannedAt(card.banEffectiveDate);
 
+  const showPriceHistory = source !== 'deck-view';
+  const priceHistory = useVariantPriceHistory(activeVariant.variantNumber, {
+    isFoil: isFoilVariant(
+      activeVariant.variantNumber,
+      activeVariant.variantLabel,
+      activeVariant.variantType
+    ),
+    enabled: showPriceHistory,
+  });
+  const historyItem =
+    (wishlistItem && wishlistItem.variantNumber === activeVariant.variantNumber
+      ? wishlistItem
+      : null) ?? priceHistory.panelItem;
+
   const headerBlock = (
     <>
       <ModalHeader
@@ -332,15 +348,21 @@ function ModalInfoPanel({
     <View className="min-h-0 flex-1" />
   );
 
-  const wishlistBlock = wishlistContext ? (
+  const priceHistoryBlock = showPriceHistory ? (
     <Stack gap="sm">
-      <SectionLabel>Wishlist tracking</SectionLabel>
-      {wishlistItem ? (
-        <WishlistPriceHistoryPanel item={wishlistItem} />
-      ) : (
+      <SectionLabel>{wishlistContext ? 'Wishlist tracking' : 'Daily trend'}</SectionLabel>
+      {historyItem ? (
+        <WishlistPriceHistoryPanel item={historyItem} />
+      ) : priceHistory.isLoading ? (
         <View className="rounded-xl border border-border bg-card p-3">
           <Text className="text-xs leading-5 text-muted-foreground">
             Loading daily trend history…
+          </Text>
+        </View>
+      ) : (
+        <View className="rounded-xl border border-border bg-card p-3">
+          <Text className="text-xs leading-5 text-muted-foreground">
+            No daily trend snapshots yet. Prices sync once per day from Cardmarket.
           </Text>
         </View>
       )}
@@ -358,7 +380,7 @@ function ModalInfoPanel({
         <View className="min-h-0 flex-1 gap-4">
           <View className="shrink-0 gap-4">
             {headerBlock}
-            {wishlistBlock}
+            {priceHistoryBlock}
           </View>
           {abilityBlock}
           <View className="shrink-0">

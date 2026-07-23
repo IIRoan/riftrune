@@ -18,8 +18,11 @@ interface CardDetailDrawerProps {
 export function CardDetailDrawer({ open, onClose, children }: CardDetailDrawerProps) {
   const reduceMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
+  // Open expanded so daily trend + bottom wishlist CTA fit without fighting the mid snap.
   const snapPoints = reduceMotion ? ['92%'] : ['58%', '92%'];
-  const defaultSnapIndex = 0;
+  const defaultSnapIndex = snapPoints.length - 1;
+  // Padding alone is unreliable with Gorhom; CatalogDetailPanel also adds a spacer View.
+  const paddingBottom = Math.max(insets.bottom, 24) + 48;
 
   return (
     <BottomSheet
@@ -39,7 +42,7 @@ export function CardDetailDrawer({ open, onClose, children }: CardDetailDrawerPr
         >
           <BottomSheetScrollView
             className="flex-1"
-            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 24 }}
+            contentContainerStyle={{ paddingBottom }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
