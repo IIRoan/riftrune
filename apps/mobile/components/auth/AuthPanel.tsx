@@ -1,3 +1,4 @@
+import { LogOutIcon } from '@/components/icons';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
   Keyboard,
@@ -400,8 +401,9 @@ export function AuthPanel({
               onPress={() => {
                 void handleSignOut();
               }}
-              className="self-start rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 active:bg-primary/20"
+              className="self-start flex-row items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 active:bg-primary/20"
             >
+              <LogOutIcon className="size-3.5 text-archive-accent-text" weight="bold" />
               <Text className="text-sm font-semibold text-archive-accent-text">Sign out</Text>
             </Pressable>
           </View>

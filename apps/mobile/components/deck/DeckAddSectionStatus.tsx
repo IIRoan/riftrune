@@ -1,6 +1,6 @@
+import { CircleCheckIcon, LayoutGridIcon, ThemedIcon } from '@/components/icons';
 import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   battlefieldCount,
   battlefieldsAtCapacity,
@@ -32,8 +32,8 @@ export function DeckAddSectionStatus({
           : 'border-archive-soft-line bg-card-panel'
       )}
     >
-      <ThemedIonicon
-        name={atCapacity ? 'checkmark-circle' : 'grid-outline'}
+      <ThemedIcon
+        icon={atCapacity ? CircleCheckIcon : LayoutGridIcon}
         size={18}
         color={atCapacity ? 'primary' : 'muted-foreground'}
       />

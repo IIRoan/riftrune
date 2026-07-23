@@ -1,18 +1,16 @@
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
+import type { LucideIcon } from '@/components/icons';
+import { ThemedIcon } from '@/components/icons';
 import { Text } from '@/components/ui/text';
 import {
   catalogToolbarButtonClasses,
   catalogToolbarIconColor,
 } from '@/constants/catalogToolbar';
 import { cn } from '@/lib/utils';
-import type { Ionicons } from '@expo/vector-icons';
-
-type IconName = keyof typeof Ionicons.glyphMap;
 
 interface CatalogToolbarButtonProps {
-  icon: IconName;
+  icon: LucideIcon;
   onPress: () => void;
   accessibilityLabel: string;
   active?: boolean;
@@ -46,7 +44,7 @@ export function CatalogToolbarButton({
         onPress={onPress}
         accessibilityLabel={accessibilityLabel}
       >
-        <ThemedIonicon name={icon} size={16} color={catalogToolbarIconColor(tone)} />
+        <ThemedIcon icon={icon} size={16} color={catalogToolbarIconColor(tone)} />
         <Text className="text-sm font-semibold text-foreground">{label}</Text>
         {badge}
       </Pressable>
@@ -64,7 +62,7 @@ export function CatalogToolbarButton({
       onPress={onPress}
       accessibilityLabel={accessibilityLabel}
     >
-      <ThemedIonicon name={icon} size={18} color={catalogToolbarIconColor(tone)} />
+      <ThemedIcon icon={icon} size={18} color={catalogToolbarIconColor(tone)} />
       {badge}
     </Pressable>
   );

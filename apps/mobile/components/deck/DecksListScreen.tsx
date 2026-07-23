@@ -1,3 +1,4 @@
+import { ThemedIcon, CalendarPlusIcon, LayersIcon } from '@/components/icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
 import { FlatList, View } from 'react-native';
@@ -20,8 +21,6 @@ import {
 import { SearchInput } from '@/components/ui/search-input';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
-import { CalendarPlusIcon } from '@/components/icons';
 import { useDeckMutations } from '@/hooks/useDecks';
 import { createEmptyDeck } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
@@ -265,7 +264,7 @@ export function DecksListScreen({
               <Empty className="mt-8 border border-dashed border-border">
                 <EmptyHeader>
                   <EmptyMedia variant="icon" className="mb-1 size-16">
-                    <ThemedIonicon name="layers-outline" size={32} color="ring" />
+                    <ThemedIcon icon={LayersIcon} size={32} color="ring" />
                   </EmptyMedia>
                   <EmptyTitle>{query.trim() ? 'No matching decks' : emptyTitle}</EmptyTitle>
                   <EmptyDescription>{emptyDescription}</EmptyDescription>

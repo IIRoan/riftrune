@@ -1,6 +1,6 @@
+import { ThemedIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { Layout } from '@/constants/Layout';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +41,7 @@ export function VariantFamilySwitcher({
         )}
         style={prominent ? { minWidth: navSize, minHeight: navSize } : undefined}
       >
-        <ThemedIonicon name="chevron-back" size={iconSize} color="muted-foreground" />
+        <ThemedIcon icon={ChevronLeftIcon} size={iconSize} color="muted-foreground" />
       </Pressable>
 
       <View className="min-w-0 flex-1 items-center px-1">
@@ -67,7 +67,7 @@ export function VariantFamilySwitcher({
         )}
         style={prominent ? { minWidth: navSize, minHeight: navSize } : undefined}
       >
-        <ThemedIonicon name="chevron-forward" size={iconSize} color="muted-foreground" />
+        <ThemedIcon icon={ChevronRightIcon} size={iconSize} color="muted-foreground" />
       </Pressable>
     </View>
   );

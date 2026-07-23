@@ -35,7 +35,7 @@ export function useCollectionShareInvitePreview(token: string | undefined) {
 }
 
 function invalidateCollectionAndShare(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
+  void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all, exact: true });
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.share });
 }

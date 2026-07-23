@@ -1,10 +1,10 @@
+import { ThemedIcon, LockIcon, PlusIcon } from '@/components/icons';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
 import { resolveSlotImage } from '@/components/deck/DeckCardSlot';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { buildBattlefieldSlots } from '@/lib/deck-builder';
 import { BATTLEFIELD_MAX, battlefieldsAtCapacity } from '@/lib/deck-limits';
@@ -70,9 +70,9 @@ function BattlefieldSlot({
           )}
         >
           {interactive ? (
-            <ThemedIonicon name="add" size={20} color="primary" />
+            <ThemedIcon icon={PlusIcon} size={20} color="primary" />
           ) : (
-            <ThemedIonicon name="lock-closed-outline" size={18} color="muted-foreground" />
+            <ThemedIcon icon={LockIcon} size={18} color="muted-foreground" />
           )}
         </View>
       </Pressable>
@@ -159,7 +159,7 @@ export function DeckBattlefieldPanel({
               onAdd();
             }}
           >
-            <ThemedIonicon name="add" size={14} color="primary" />
+            <ThemedIcon icon={PlusIcon} size={14} color="primary" />
             <Text className="text-[12px] font-semibold text-primary">Add</Text>
           </Pressable>
         ) : null}

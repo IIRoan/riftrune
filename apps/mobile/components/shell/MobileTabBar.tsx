@@ -1,4 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
+import {
+  BookmarkIcon,
+  CardsThreeIcon,
+  LayersIcon,
+  LayoutGridIcon,
+  SettingsIcon,
+  type LucideIcon,
+} from '@/components/icons';
 import { usePathname } from 'expo-router';
 import { Pressable, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,34 +45,13 @@ export type MobileTabBarProps = {
 const TAB_ITEMS: {
   routeName: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconActive: keyof typeof Ionicons.glyphMap;
+  icon: LucideIcon;
 }[] = [
-  { routeName: 'search', label: 'Cards', icon: 'grid-outline', iconActive: 'grid' },
-  {
-    routeName: 'collection',
-    label: 'Collection',
-    icon: 'archive-outline',
-    iconActive: 'archive',
-  },
-  {
-    routeName: 'wishlist',
-    label: 'Wishlist',
-    icon: 'bookmark-outline',
-    iconActive: 'bookmark',
-  },
-  {
-    routeName: 'decks',
-    label: 'Decks',
-    icon: 'layers-outline',
-    iconActive: 'layers',
-  },
-  {
-    routeName: 'settings',
-    label: 'Settings',
-    icon: 'settings-outline',
-    iconActive: 'settings',
-  },
+  { routeName: 'search', label: 'Cards', icon: LayoutGridIcon },
+  { routeName: 'collection', label: 'Collection', icon: CardsThreeIcon },
+  { routeName: 'wishlist', label: 'Wishlist', icon: BookmarkIcon },
+  { routeName: 'decks', label: 'Decks', icon: LayersIcon },
+  { routeName: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarProps) {
@@ -147,6 +133,7 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
           };
 
           const color = isFocused ? primary : mutedForeground;
+          const Icon = item.icon;
 
           return (
             <Pressable
@@ -158,7 +145,7 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
               onLongPress={onLongPress}
               className="min-h-11 flex-1 items-center justify-center gap-0.5 active:opacity-80"
             >
-              <Ionicons name={isFocused ? item.iconActive : item.icon} size={22} color={color} />
+              <Icon size={20} color={color} weight="regular" />
               <Text
                 className={cn(
                   'text-[10px] font-semibold',

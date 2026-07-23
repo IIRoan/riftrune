@@ -1,8 +1,8 @@
+import { ChevronDownIcon, ChevronUpIcon, ThemedIcon } from '@/components/icons';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import type { DeckValidationMessage } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
 
@@ -79,8 +79,8 @@ export function DeckValidationBanner({ messages, listOnly = false }: DeckValidat
       >
         <StatusKeywordBadge status={status} compact />
         <Text className="min-w-0 flex-1 text-sm font-medium text-foreground">{headline}</Text>
-        <ThemedIonicon
-          name={expanded ? 'chevron-up' : 'chevron-down'}
+        <ThemedIcon
+          icon={expanded ? ChevronUpIcon : ChevronDownIcon}
           size={16}
           color="muted-foreground"
         />

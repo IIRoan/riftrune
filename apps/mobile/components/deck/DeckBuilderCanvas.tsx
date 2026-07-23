@@ -1,3 +1,4 @@
+import { DownloadIcon, InboxIcon, LayersIcon, ThemedIcon } from '@/components/icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -24,7 +25,6 @@ import {
   BottomSheetScrollView,
 } from '@/components/ui/bottom-sheet';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import type { CatalogFilters } from '@/constants/catalogFilters';
 import type { PillNavItem } from '@/components/shell/FloatingPillNav';
@@ -256,16 +256,14 @@ export function DeckBuilderCanvas({
         id: 'mainDeck',
         label: 'Main',
         accessibilityLabel: `Main deck ${main.current} of ${main.target}`,
-        icon: 'layers-outline',
-        iconActive: 'layers',
+        icon: LayersIcon,
         badge: `${main.current}/${main.target}`,
       },
       {
         id: 'sideboard',
         label: 'Side',
         accessibilityLabel: `Sideboard ${side.current} of ${side.target}`,
-        icon: 'file-tray-outline',
-        iconActive: 'file-tray',
+        icon: InboxIcon,
         badge: `${side.current}/${side.target}`,
       },
     ];
@@ -299,7 +297,7 @@ export function DeckBuilderCanvas({
                   onImportToMyDecks();
                 }}
               >
-                <ThemedIonicon name="download-outline" size={14} color="primary" />
+                <ThemedIcon icon={DownloadIcon} size={14} color="primary" />
                 <Text className="text-[12px] font-semibold text-primary">
                   {importBusy ? 'Importing…' : 'Import'}
                 </Text>

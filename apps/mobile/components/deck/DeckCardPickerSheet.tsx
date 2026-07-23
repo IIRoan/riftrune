@@ -1,3 +1,4 @@
+import { ThemedIcon, SearchIcon } from '@/components/icons';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { AppLoader } from '@/components/ui/app-loader';
@@ -21,7 +22,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { SearchInput } from '@/components/ui/search-input';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { useDebounce } from '@/hooks/useDebounce';
 import { catalogQueryForSection } from '@/hooks/useDeckCardResolver';
@@ -144,7 +144,7 @@ export function DeckCardPickerSheet({
               <Empty className="border border-dashed border-border py-8">
                 <EmptyHeader>
                   <EmptyMedia variant="icon" className="mb-1 size-14">
-                    <ThemedIonicon name="search-outline" size={28} color="ring" />
+                    <ThemedIcon icon={SearchIcon} size={28} color="ring" />
                   </EmptyMedia>
                   <EmptyTitle>No matches</EmptyTitle>
                   <EmptyDescription>

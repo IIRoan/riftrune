@@ -39,7 +39,7 @@ export function createQueryClient(): QueryClient {
 /** Refresh account-bound lists after sign-in or background sync. */
 export async function invalidateUserDataQueries(queryClient: QueryClient): Promise<void> {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all, exact: true }),
     queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot }),
     queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all }),
     queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.prices }),

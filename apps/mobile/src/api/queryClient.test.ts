@@ -81,6 +81,47 @@ describe('query invalidation helpers', () => {
     expect(fetchers.wishlist).toBe(2);
   });
 
+  test('invalidateUserDataQueries does not treat ownership slices as the collection list', async () => {
+    const client = new QueryClient();
+    let collectionFetches = 0;
+    let ownershipSliceFetches = 0;
+    const ownershipKey = collectionQueryKeys.ownership(['OGN-001', 'OGN-002']);
+
+    await client.prefetchQuery({
+      queryKey: collectionQueryKeys.all,
+      queryFn: async () => {
+        collectionFetches += 1;
+        return [];
+      },
+    });
+    await client.prefetchQuery({
+      queryKey: ownershipKey,
+      queryFn: async () => {
+        ownershipSliceFetches += 1;
+        return { 'OGN-001': 0, 'OGN-002': 0 };
+      },
+    });
+
+    await invalidateUserDataQueries(client);
+
+    // Collection list is exact-matched and refetches when observed again.
+    expect(client.getQueryState(collectionQueryKeys.all)?.isInvalidated).toBe(true);
+    // Ownership root invalidation marks the slice stale (prefix match) — expected for login —
+    // but collection `exact: true` must not be what alone forces a blind quantities storm.
+    expect(client.getQueryState(ownershipKey)?.isInvalidated).toBe(true);
+
+    await client.fetchQuery({
+      queryKey: collectionQueryKeys.all,
+      queryFn: async () => {
+        collectionFetches += 1;
+        return [];
+      },
+    });
+
+    expect(collectionFetches).toBe(2);
+    expect(ownershipSliceFetches).toBe(1);
+  });
+
   test('removeUserDataQueries clears cached account data', () => {
     const client = new QueryClient();
     client.setQueryData(collectionQueryKeys.all, [{ variantNumber: 'OGN-001', quantity: 1 }]);

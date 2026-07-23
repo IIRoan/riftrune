@@ -1,3 +1,4 @@
+import { LockIcon, PlusIcon, StarIcon, ThemedIcon, XIcon } from '@/components/icons';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
@@ -5,9 +6,7 @@ import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
-import { XIcon } from '@/components/icons';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { resolveDeckCardImageUrl } from '@/lib/deck-card';
 import type { DeckCard, DeckEntry } from '@/lib/deck-types';
@@ -76,7 +75,7 @@ function DeckCardSlotInner({
           )}
         >
           <View className="items-center gap-1">
-            <ThemedIonicon name="add" size={24} color="primary" />
+            <ThemedIcon icon={PlusIcon} size={24} color="primary" />
             <Text className="text-[11px] font-semibold text-primary">Add</Text>
           </View>
         </View>
@@ -111,8 +110,8 @@ function DeckCardSlotInner({
             isIdentity ? 'border-primary/35' : isLocked ? 'border-border/60 opacity-60' : 'border-border'
           )}
         >
-          <ThemedIonicon
-            name={isIdentity ? 'star-outline' : isLocked ? 'lock-closed-outline' : 'add'}
+          <ThemedIcon
+            icon={isIdentity ? StarIcon : isLocked ? LockIcon : PlusIcon}
             size={22}
             color={isLocked ? 'muted-foreground' : isIdentity ? 'muted-foreground' : 'primary'}
           />

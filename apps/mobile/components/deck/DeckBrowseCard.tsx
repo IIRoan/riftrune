@@ -1,3 +1,4 @@
+import { ThemedIcon, StarIcon } from '@/components/icons';
 import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -6,7 +7,6 @@ import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import { ContentKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { domainIconFor } from '@/constants/gameAssets';
 import { deckBrowseSummaryLine } from '@/lib/deck-browse';
@@ -109,7 +109,7 @@ export function DeckBrowseCard({
               <DeckCardArt uri={legendUri} variantNumber={deck.legend.variantNumber} />
             ) : (
               <View className="flex-1 items-center justify-center bg-card-panel">
-                <ThemedIonicon name="star-outline" size={24} color="muted-foreground" />
+                <ThemedIcon icon={StarIcon} size={24} color="muted-foreground" />
               </View>
             )}
           </View>

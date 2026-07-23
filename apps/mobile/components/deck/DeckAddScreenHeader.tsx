@@ -1,7 +1,7 @@
+import { ThemedIcon, ChevronLeftIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { deckBuilderHeadlineStats } from '@/components/deck/DeckBuilderStatusStrip';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { getSectionCount } from '@/lib/deck-card';
 import { DECK_SECTIONS, type DeckSectionKey, type DeckState } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,7 @@ export function DeckAddScreenHeader({
           className="size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
           onPress={onBack}
         >
-          <ThemedIonicon name="chevron-back" size={22} color="foreground" />
+          <ThemedIcon icon={ChevronLeftIcon} size={22} color="foreground" />
         </Pressable>
         <View className="min-w-0 flex-1 gap-0.5">
           <Text className="text-base font-semibold text-foreground">

@@ -1,3 +1,4 @@
+import { SlidersHorizontalIcon } from '@/components/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -110,7 +111,7 @@ export function CatalogFilterTrigger({
 
   return (
     <CatalogToolbarButton
-      icon="options-outline"
+      icon={SlidersHorizontalIcon}
       onPress={onPress}
       accessibilityLabel="Open filters"
       active={filterActive}

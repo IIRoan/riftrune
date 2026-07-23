@@ -1,3 +1,4 @@
+import { CardholderIcon, CardsIcon } from '@/components/icons';
 import { PillNav, type PillNavItem } from '@/components/shell/FloatingPillNav';
 import type { CatalogCollectionFilter } from '@/constants/catalogFilters';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
@@ -8,15 +9,13 @@ const NAV_ITEMS: readonly PillNavItem<CatalogCollectionFilter>[] = [
     id: 'all',
     label: 'All',
     accessibilityLabel: 'All cards',
-    icon: 'albums-outline',
-    iconActive: 'albums',
+    icon: CardsIcon,
   },
   {
     id: 'owned',
     label: 'Owned',
     accessibilityLabel: 'Owned cards',
-    icon: 'archive-outline',
-    iconActive: 'archive',
+    icon: CardholderIcon,
   },
 ];
 

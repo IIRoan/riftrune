@@ -1,12 +1,12 @@
+import { ThemedIcon, MinusIcon, PlusIcon, XIcon } from '@/components/icons';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
-import { XIcon } from '@/components/icons';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
 const CONTROL_HEIGHT = 'h-8';
-const STEP_BTN = 'h-full flex-1 items-center justify-center active:bg-accent/80';
+const STEP_BTN =
+  'h-full flex-1 items-center justify-center rounded-full active:bg-primary/14';
 
 interface DeckQtyControlProps {
   count: number;
@@ -52,7 +52,7 @@ export function DeckQtyControl({
         accessibilityLabel={`Remove ${name}`}
         className={cn(
           CONTROL_HEIGHT,
-          'w-full flex-row items-center justify-center gap-1 rounded-lg border border-border bg-card-panel active:bg-destructive/10'
+          'w-full flex-row items-center justify-center gap-1 rounded-md bg-primary/12 active:bg-destructive/10'
         )}
         onPress={handleRemove}
         disabled={busy}
@@ -73,7 +73,8 @@ export function DeckQtyControl({
     <View
       className={cn(
         CONTROL_HEIGHT,
-        'w-full flex-row items-stretch overflow-hidden rounded-lg border border-border bg-card-panel'
+        'w-full flex-row items-center justify-between',
+        busy && 'opacity-60'
       )}
     >
       <Pressable
@@ -83,16 +84,19 @@ export function DeckQtyControl({
         disabled={busy}
       >
         {busy ? (
-          <ActivityIndicator size="small" className="accent-foreground" />
+          <ActivityIndicator size="small" className="accent-primary" />
         ) : (
-          <ThemedIonicon name="remove" size={16} color="foreground" />
+          <ThemedIcon
+            icon={MinusIcon}
+            size={14}
+            color="archive-accent-text"
+            weight="regular"
+          />
         )}
       </Pressable>
-      <View className="w-hairline self-stretch bg-archive-soft-line" />
-      <View className="min-w-[1.25rem] items-center justify-center px-0.5">
-        <Text className="font-mono text-xs font-bold tabular-nums text-foreground">{count}</Text>
-      </View>
-      <View className="w-hairline self-stretch bg-archive-soft-line" />
+      <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
+        {count}
+      </Text>
       <Pressable
         accessibilityLabel={`Increase ${name} quantity`}
         className={STEP_BTN}
@@ -100,9 +104,14 @@ export function DeckQtyControl({
         disabled={busy}
       >
         {busy ? (
-          <ActivityIndicator size="small" className="accent-foreground" />
+          <ActivityIndicator size="small" className="accent-primary" />
         ) : (
-          <ThemedIonicon name="add" size={16} color="foreground" />
+          <ThemedIcon
+            icon={PlusIcon}
+            size={14}
+            color="archive-accent-text"
+            weight="regular"
+          />
         )}
       </Pressable>
     </View>

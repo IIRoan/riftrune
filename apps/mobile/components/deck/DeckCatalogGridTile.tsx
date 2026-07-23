@@ -1,3 +1,4 @@
+import { ThemedIcon, ImageIcon } from '@/components/icons';
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
@@ -5,7 +6,6 @@ import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { GridDeckControl } from '@/components/deck/GridDeckControl';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { gridCardTitleStyle } from '@/lib/cardTileGridTitle';
 import type { DeckCard } from '@/lib/deck-types';
@@ -97,7 +97,7 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
             )
           ) : (
             <View className="flex-1 items-center justify-center bg-card-panel">
-              <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
+              <ThemedIcon icon={ImageIcon} size={20} color="muted-foreground" />
             </View>
           )}
 

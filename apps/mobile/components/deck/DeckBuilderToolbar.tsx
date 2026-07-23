@@ -1,10 +1,10 @@
+import { ThemedIcon, ChevronLeftIcon, DownloadIcon, InfoIcon, ListIcon, MenuIcon, PencilIcon, ShareIcon, SlidersHorizontalIcon } from '@/components/icons';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { DeckValidationMenu } from '@/components/deck/DeckValidationMenu';
 import { PillNav, type PillNavItem } from '@/components/shell/FloatingPillNav';
 import { TextInput } from '@/components/ui/text-input';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { countCatalogFilters, type CatalogFilters } from '@/constants/catalogFilters';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import type { DeckValidationMessage } from '@/lib/deck-types';
@@ -81,7 +81,7 @@ export function DeckBuilderToolbar({
           className={TOOLBAR_CONTROL}
           onPress={onOpenInfo}
         >
-          <ThemedIonicon name="information-circle-outline" size={18} color="foreground" />
+          <ThemedIcon icon={InfoIcon} size={18} color="foreground" />
         </Pressable>
       ) : null}
       {isMobile && onOpenList ? (
@@ -91,7 +91,7 @@ export function DeckBuilderToolbar({
           className={TOOLBAR_CONTROL}
           onPress={onOpenList}
         >
-          <ThemedIonicon name="list-outline" size={18} color="foreground" />
+          <ThemedIcon icon={ListIcon} size={18} color="foreground" />
         </Pressable>
       ) : null}
       {!isMobile && onToggleInfoDrawer ? (
@@ -102,8 +102,8 @@ export function DeckBuilderToolbar({
           className={cn(TOOLBAR_CONTROL, infoDrawerOpen && 'border-primary/40')}
           onPress={onToggleInfoDrawer}
         >
-          <ThemedIonicon
-            name={infoDrawerOpen ? 'menu' : 'menu-outline'}
+          <ThemedIcon
+            icon={MenuIcon}
             size={18}
             color={infoDrawerOpen ? 'primary' : 'foreground'}
           />
@@ -122,7 +122,7 @@ export function DeckBuilderToolbar({
         onEdit();
       }}
     >
-      <ThemedIonicon name="create-outline" size={16} color="primary" />
+      <ThemedIcon icon={PencilIcon} size={16} color="primary" />
       <Text className="text-[13px] font-semibold text-primary">Edit</Text>
     </Pressable>
   ) : null;
@@ -136,7 +136,7 @@ export function DeckBuilderToolbar({
           className={TOOLBAR_CONTROL}
           onPress={onImport}
         >
-          <ThemedIonicon name="download-outline" size={18} color="foreground" />
+          <ThemedIcon icon={DownloadIcon} size={18} color="foreground" />
         </Pressable>
       ) : null}
       {onExport ? (
@@ -146,7 +146,7 @@ export function DeckBuilderToolbar({
           className={TOOLBAR_CONTROL}
           onPress={onExport}
         >
-          <ThemedIonicon name="share-outline" size={18} color="foreground" />
+          <ThemedIcon icon={ShareIcon} size={18} color="foreground" />
         </Pressable>
       ) : null}
     </>
@@ -174,8 +174,7 @@ export function DeckBuilderToolbar({
         onOpenCatalogFilters();
       }}
     >
-      <ThemedIonicon
-        name="options-outline"
+      <ThemedIcon icon={SlidersHorizontalIcon}
         size={18}
         color={filterActive ? 'foreground' : 'muted-foreground'}
       />
@@ -234,7 +233,7 @@ export function DeckBuilderToolbar({
         className={TOOLBAR_CONTROL}
         onPress={onBack}
       >
-        <ThemedIonicon name="chevron-back" size={20} color="foreground" />
+        <ThemedIcon icon={ChevronLeftIcon} size={20} color="foreground" />
       </Pressable>
 
       {isMobile ? (

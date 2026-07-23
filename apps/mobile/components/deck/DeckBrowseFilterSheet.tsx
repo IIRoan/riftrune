@@ -1,3 +1,4 @@
+import { SlidersHorizontalIcon } from '@/components/icons';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { CatalogToolbarBadgeDot, CatalogToolbarButton } from '@/components/catalog/CatalogToolbarButton';
@@ -95,7 +96,7 @@ export function DeckBrowseFilterTrigger({
 
   return (
     <CatalogToolbarButton
-      icon="options-outline"
+      icon={SlidersHorizontalIcon}
       onPress={onPress}
       accessibilityLabel="Open filters"
       active={active}

@@ -1,4 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ClockIcon,
+  CloudOffIcon,
+  CardholderIcon,
+  CardsIcon,
+  SearchIcon,
+  ThemedIcon,
+  XIcon,
+  type LucideIcon,
+} from '@/components/icons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -51,14 +60,13 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { Layout } from '@/constants/Layout';
 import { useTheme } from '@/context/ThemeContext';
 import { useCardSearch } from '@/hooks/useCardSearch';
 import { useCatalogBrowseInfinite } from '@/hooks/useCatalogBrowseInfinite';
 import { prefetchCatalogFilters } from '@/hooks/useFiltersData';
 import { useCollectionOwnership, useCollection } from '@/hooks/useCollection';
-import { collectVariantNumbers, ownershipMapFromCollection } from '@/utils/collectionOwnership';
+import { collectVariantNumbers, ownershipMapFromCollection, preferCollectionOwnership } from '@/utils/collectionOwnership';
 import { cardListItemMatchesVariant } from '@/utils/variants';
 import {
   CATALOG_DETAIL_GAP,
@@ -92,7 +100,7 @@ function SearchEmptyState({
   title,
   description,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: LucideIcon;
   title: string;
   description?: string;
 }) {
@@ -100,7 +108,7 @@ function SearchEmptyState({
     <Empty className="mt-14 border-0">
       <EmptyHeader>
         <EmptyMedia variant="icon" className="mb-1 size-16">
-          <ThemedIonicon name={icon} size={32} color="ring" />
+          <ThemedIcon icon={icon} size={32} color="ring" />
         </EmptyMedia>
         <EmptyTitle className="text-lg">{title}</EmptyTitle>
         {description ? <EmptyDescription>{description}</EmptyDescription> : null}
@@ -245,12 +253,7 @@ function SearchScreenBody() {
 
   const collectionByVariant = useMemo(() => {
     const fromCollection = ownershipMapFromCollection(collectionEntries);
-    if (fromCollection.size === 0) return fetchedOwnership;
-    const merged = new Map(fromCollection);
-    for (const [variantNumber, entry] of fetchedOwnership) {
-      merged.set(variantNumber, entry);
-    }
-    return merged;
+    return preferCollectionOwnership(fetchedOwnership, fromCollection);
   }, [collectionEntries, fetchedOwnership]);
 
   const filterOwnership = useMemo(() => {
@@ -643,7 +646,7 @@ function SearchScreenBody() {
     if (isSearching && isError) {
       return (
         <SearchEmptyState
-          icon="cloud-offline-outline"
+          icon={CloudOffIcon}
           title="Could not load cards"
           description="Check that the API is running and EXPO_PUBLIC_API_URL is set."
         />
@@ -674,7 +677,7 @@ function SearchScreenBody() {
               <View key={`${item.query}-${String(item.timestamp)}`} className="flex-row items-center">
                 <Chip variant="outline" onPress={() => void onHistoryPress(item)}>
                   <ChipIcon>
-                    <Ionicons name="time-outline" size={13} />
+                    <ClockIcon className="size-[13px] text-foreground" />
                   </ChipIcon>
                   <ChipText className="max-w-[180px]">{item.query}</ChipText>
                 </Chip>
@@ -687,7 +690,7 @@ function SearchScreenBody() {
                   accessibilityLabel="Remove from history"
                 >
                   <ButtonIcon className="text-muted-foreground">
-                    <Ionicons name="close" size={12} />
+                    <XIcon className="size-[12px] text-foreground" />
                   </ButtonIcon>
                 </Button>
               </View>
@@ -700,7 +703,7 @@ function SearchScreenBody() {
     if (isSearching && !searchPending && !isFetching && filteredItems.length === 0) {
       return (
         <SearchEmptyState
-          icon="search-outline"
+          icon={SearchIcon}
           title={filterActive ? 'No cards match this filter' : 'No cards found'}
           description={
             filterActive
@@ -715,7 +718,7 @@ function SearchScreenBody() {
       if (ownedFilterActive) {
         return (
           <SearchEmptyState
-            icon="albums-outline"
+            icon={CardholderIcon}
             title={
               catalogFiltersActive({ ...catalogFilters, collection: 'all' })
                 ? 'No owned cards match this filter'
@@ -732,7 +735,7 @@ function SearchScreenBody() {
 
       return (
         <SearchEmptyState
-          icon="search-outline"
+          icon={SearchIcon}
           title="No cards match this filter"
           description="Try clearing the filter or search for a specific card"
         />
@@ -742,7 +745,7 @@ function SearchScreenBody() {
     if (trimmed.length === 0) {
       return (
         <SearchEmptyState
-          icon="albums-outline"
+          icon={CardsIcon}
           title="Find your cards"
           description="Search by name, variant number, type, or tags"
         />

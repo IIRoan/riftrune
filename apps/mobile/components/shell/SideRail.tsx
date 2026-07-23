@@ -1,7 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
+import {
+  BookmarkIcon,
+  CardsThreeIcon,
+  LayersIcon,
+  LayoutGridIcon,
+  LogOutIcon,
+  type LucideIcon,
+} from '@/components/icons';
 import { usePathname, useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import { authClient } from '@/src/lib/auth-client';
@@ -12,11 +20,41 @@ import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 
 type NavId = 'search' | 'collection' | 'wishlist' | 'decks' | 'settings';
 
-const NAV_ITEMS: { id: NavId; href: string; label: string; icon: keyof typeof Ionicons.glyphMap; iconActive: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'search', href: '/(tabs)/search', label: 'Cards', icon: 'grid-outline', iconActive: 'grid' },
-  { id: 'collection', href: '/(tabs)/collection', label: 'Collection', icon: 'archive-outline', iconActive: 'archive' },
-  { id: 'wishlist', href: '/(tabs)/wishlist', label: 'Wishlist', icon: 'bookmark-outline', iconActive: 'bookmark' },
-  { id: 'decks', href: '/(tabs)/decks', label: 'Decks', icon: 'layers-outline', iconActive: 'layers' },
+const NAV_ITEMS: {
+  id: NavId;
+  href: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+}[] = [
+  {
+    id: 'search',
+    href: '/(tabs)/search',
+    label: 'Cards',
+    description: 'Browse and search the card catalog',
+    icon: LayoutGridIcon,
+  },
+  {
+    id: 'collection',
+    href: '/(tabs)/collection',
+    label: 'Collection',
+    description: 'View and update cards you own',
+    icon: CardsThreeIcon,
+  },
+  {
+    id: 'wishlist',
+    href: '/(tabs)/wishlist',
+    label: 'Wishlist',
+    description: 'Track cards you want and price changes',
+    icon: BookmarkIcon,
+  },
+  {
+    id: 'decks',
+    href: '/(tabs)/decks',
+    label: 'Decks',
+    description: 'Build decks and browse community lists',
+    icon: LayersIcon,
+  },
 ];
 
 function routeToNav(pathname: string): NavId {
@@ -52,67 +90,90 @@ export function SideRail() {
       className="shrink-0 self-stretch items-end py-3 pl-2 pr-0"
       style={{ paddingTop: insets.top + 12 }}
     >
-      <View className="h-full w-12 items-center gap-1 overflow-hidden rounded-xl border border-border bg-card py-3 shadow-lg shadow-black/50">
-        <Pressable
-          accessibilityLabel="riftrune home"
-          className="mb-2 size-8 items-center justify-center rounded-lg bg-primary"
-          onPress={() => {
-            router.push('/(tabs)/search');
-          }}
-        >
-          <Text className="font-mono text-sm font-bold text-primary-foreground">r</Text>
-        </Pressable>
+      <View className="h-full w-12 items-center gap-1 overflow-visible rounded-xl border border-border bg-card py-3 shadow-sm shadow-black/20">
+        <HoverTooltip label="Home" description="Open the card catalog" side="right">
+          <Pressable
+            accessibilityLabel="riftrune home"
+            className="mb-2 size-8 items-center justify-center rounded-md bg-primary"
+            onPress={() => {
+              router.push('/(tabs)/search');
+            }}
+          >
+            <Text className="font-mono text-sm font-bold text-primary-foreground">r</Text>
+          </Pressable>
+        </HoverTooltip>
 
-        <View className="h-px w-6 bg-archive-soft-line" />
+        <View className="h-px w-6 bg-border" />
 
-        <View className="mt-1 gap-1" accessibilityRole="tablist">
-          {NAV_ITEMS.map(({ id, href, label, icon, iconActive }) => {
+        <View className="mt-1 gap-0.5" accessibilityRole="tablist">
+          {NAV_ITEMS.map(({ id, href, label, description, icon: Icon }) => {
             const isActive = active === id;
             return (
-              <Pressable
-                key={id}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-                accessibilityLabel={label}
-                onPress={() => {
-                  router.push(href as '/(tabs)/search');
-                }}
-                className={cn(
-                  'size-9 items-center justify-center rounded-lg',
-                  isActive ? 'bg-card-panel' : 'active:bg-card-panel/60'
-                )}
-              >
-                <Ionicons
-                  name={isActive ? iconActive : icon}
-                  size={18}
-                  className={isActive ? 'text-foreground' : 'text-muted-foreground'}
-                />
-              </Pressable>
+              <HoverTooltip key={id} label={label} description={description} side="right">
+                <Pressable
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isActive }}
+                  accessibilityLabel={`${label}. ${description}`}
+                  onPress={() => {
+                    router.push(href as '/(tabs)/search');
+                  }}
+                  className={cn(
+                    'size-9 items-center justify-center rounded-md',
+                    isActive ? 'bg-accent' : 'active:bg-accent/70'
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      'size-4',
+                      isActive ? 'text-accent-foreground' : 'text-muted-foreground'
+                    )}
+                    weight="regular"
+                  />
+                </Pressable>
+              </HoverTooltip>
             );
           })}
         </View>
 
         <View className="flex-1" />
 
-        <View className="gap-1">
-          <Pressable
-            accessibilityLabel={`Account: ${userName}`}
-            className="size-9 items-center justify-center rounded-lg bg-card-panel active:opacity-80"
-            onPress={() => {
-              router.push('/(tabs)/settings');
-            }}
+        <View className="gap-0.5">
+          <HoverTooltip
+            label="Settings"
+            description="Account, appearance, and app preferences"
+            side="right"
           >
-            <Text className="font-mono text-sm font-bold text-foreground">{userInitial}</Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel="Sign out"
-            className="size-9 items-center justify-center rounded-lg bg-primary active:opacity-90"
-            onPress={() => {
-              void handleSignOut();
-            }}
-          >
-            <Ionicons name="log-out-outline" size={18} className="text-primary-foreground" />
-          </Pressable>
+            <Pressable
+              accessibilityLabel={`Account: ${userName}. Open settings`}
+              className={cn(
+                'size-9 items-center justify-center rounded-md',
+                active === 'settings' ? 'bg-accent' : 'active:bg-accent/70'
+              )}
+              onPress={() => {
+                router.push('/(tabs)/settings');
+              }}
+            >
+              <Text
+                className={cn(
+                  'font-mono text-xs font-semibold',
+                  active === 'settings' ? 'text-accent-foreground' : 'text-muted-foreground'
+                )}
+              >
+                {userInitial}
+              </Text>
+            </Pressable>
+          </HoverTooltip>
+          <HoverTooltip label="Sign out" description="End your Riftrune session" side="right">
+            <Pressable
+              accessibilityLabel="Sign out"
+              className="size-9 items-center justify-center rounded-md active:bg-accent/70"
+              onPress={() => {
+                void handleSignOut();
+              }}
+            >
+              <LogOutIcon className="size-4 text-muted-foreground" weight="regular" />
+            </Pressable>
+          </HoverTooltip>
         </View>
       </View>
     </View>

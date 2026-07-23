@@ -1,3 +1,4 @@
+import { ThemedIcon, ImageIcon, LibraryIcon } from '@/components/icons';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
 import { useRouter } from 'expo-router';
@@ -19,7 +20,6 @@ import {
 } from '@/components/ui/empty';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import { useDeckCardImages } from '@/hooks/useDeckCardImages';
@@ -157,7 +157,7 @@ function DeckFeaturedCard({
             <DeckCardArt uri={imageUri} variantNumber={card.variantNumber} />
           ) : (
             <View className="flex-1 items-center justify-center bg-card-panel">
-              <ThemedIonicon name="image-outline" size={32} color="muted-foreground" />
+              <ThemedIcon icon={ImageIcon} size={32} color="muted-foreground" />
             </View>
           )}
         </View>
@@ -239,7 +239,7 @@ function DeckGridCard({
             <DeckCardArt uri={imageUri} variantNumber={card.variantNumber} />
           ) : (
             <View className="flex-1 items-center justify-center bg-card-panel">
-              <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
+              <ThemedIcon icon={ImageIcon} size={20} color="muted-foreground" />
             </View>
           )}
           <DeckCardCountBadge count={count} />
@@ -397,7 +397,7 @@ export function DeckSectionList({
     <Empty className="border border-dashed border-border py-8">
       <EmptyHeader>
         <EmptyMedia variant="icon" className="mb-1 size-14">
-          <ThemedIonicon name="albums-outline" size={28} color="ring" />
+          <ThemedIcon icon={LibraryIcon} size={28} color="ring" />
         </EmptyMedia>
         <EmptyTitle>No cards yet</EmptyTitle>
         <EmptyDescription>

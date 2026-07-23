@@ -1,8 +1,8 @@
+import { ThemedIcon, MinusIcon, PlusIcon } from '@/components/icons';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useMemo } from 'react';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   buildPrintingPickerOptions,
   getRemovePrintingPickerOptions,
@@ -12,6 +12,7 @@ import {
   type PrintingPickerOption,
   type PrintingWithOwned,
 } from '@/utils/collectionPrintingPicker';
+import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
 interface Props {
@@ -38,7 +39,8 @@ function wrapWithPicker(
 }
 
 /** Fixed footer height — both Add and stepper states must match to avoid grid layout shift. */
-const CONTROL_HEIGHT = 'h-8';
+const CONTROL_HEIGHT = 'h-6';
+const ICON_SIZE = 9;
 
 /** Compact collection control for 3-column mobile grid tiles. */
 export function GridCollectionControl({
@@ -75,17 +77,27 @@ export function GridCollectionControl({
   if (owned === 0) {
     const addBtn = (
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel={`Add ${name} to collection`}
-        className={`${CONTROL_HEIGHT} w-full flex-row items-center justify-center gap-0.5 rounded-md border border-border bg-card active:bg-card-panel`}
+        className={cn(
+          CONTROL_HEIGHT,
+          'w-full flex-row items-center justify-center gap-1 rounded-md bg-primary/12 px-1.5 active:bg-primary/18',
+          busy && 'opacity-60'
+        )}
         onPress={multiple ? undefined : handleAdd}
         disabled={busy}
       >
         {busy && !multiple ? (
-          <ActivityIndicator size="small" className="accent-muted-foreground" />
+          <ActivityIndicator size="small" className="accent-primary" />
         ) : (
           <>
-            <ThemedIonicon name="add" size={14} color="muted-foreground" />
-            <Text className="text-[10px] font-medium text-muted-foreground">Add</Text>
+            <ThemedIcon
+              icon={PlusIcon}
+              size={ICON_SIZE}
+              color="archive-accent-text"
+              weight="regular"
+            />
+            <Text className="text-[11px] font-semibold text-archive-accent-text">Add</Text>
           </>
         )}
       </Pressable>
@@ -96,7 +108,8 @@ export function GridCollectionControl({
       : addBtn;
   }
 
-  const stepBtn = 'h-full flex-1 items-center justify-center active:bg-accent/80';
+  const stepBtn =
+    'h-full flex-1 items-center justify-center rounded-full active:bg-primary/14';
 
   const decrement = (
     <Pressable
@@ -106,9 +119,14 @@ export function GridCollectionControl({
       disabled={busy}
     >
       {busy && !showRemovePicker ? (
-        <ActivityIndicator size="small" className="accent-foreground" />
+        <ActivityIndicator size="small" className="accent-primary" />
       ) : (
-        <ThemedIonicon name="remove" size={16} color="foreground" />
+        <ThemedIcon
+          icon={MinusIcon}
+          size={ICON_SIZE}
+          color="archive-accent-text"
+          weight="regular"
+        />
       )}
     </Pressable>
   );
@@ -121,25 +139,32 @@ export function GridCollectionControl({
       disabled={busy}
     >
       {busy && !multiple ? (
-        <ActivityIndicator size="small" className="accent-foreground" />
+        <ActivityIndicator size="small" className="accent-primary" />
       ) : (
-        <ThemedIonicon name="add" size={16} color="foreground" />
+        <ThemedIcon
+          icon={PlusIcon}
+          size={ICON_SIZE}
+          color="archive-accent-text"
+          weight="regular"
+        />
       )}
     </Pressable>
   );
 
   return (
     <View
-      className={`${CONTROL_HEIGHT} w-full flex-row items-stretch overflow-hidden rounded-lg border border-border bg-card-panel`}
+      className={cn(
+        CONTROL_HEIGHT,
+        'w-full flex-row items-center justify-between',
+        busy && 'opacity-60'
+      )}
     >
       {showRemovePicker
         ? wrapWithPicker('Remove printing', removeOptions, onRemove, decrement)
         : decrement}
-      <View className="w-hairline self-stretch bg-archive-soft-line" />
-      <View className="min-w-[1.25rem] items-center justify-center px-0.5">
-        <Text className="font-mono text-xs font-bold tabular-nums text-success">{owned}</Text>
-      </View>
-      <View className="w-hairline self-stretch bg-archive-soft-line" />
+      <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
+        {owned}
+      </Text>
       {multiple ? wrapWithPicker('Add printing', pickerOptions, onAdd, increment) : increment}
     </View>
   );

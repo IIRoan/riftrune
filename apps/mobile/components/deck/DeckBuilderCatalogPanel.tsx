@@ -1,3 +1,4 @@
+import { ThemedIcon, LibraryIcon } from '@/components/icons';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { AppLoader } from '@/components/ui/app-loader';
@@ -18,7 +19,6 @@ import { DeckCatalogGridTile } from '@/components/deck/DeckCatalogGridTile';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   catalogFiltersActive,
   sanitizeCatalogFilters,
@@ -288,7 +288,7 @@ export function DeckBuilderCatalogPanel({
     <Empty className="border border-dashed border-border py-8">
       <EmptyHeader>
         <EmptyMedia variant="icon" className="mb-1 size-14">
-          <ThemedIonicon name="albums-outline" size={28} color="ring" />
+          <ThemedIcon icon={LibraryIcon} size={28} color="ring" />
         </EmptyMedia>
         <EmptyTitle>
           {readOnly

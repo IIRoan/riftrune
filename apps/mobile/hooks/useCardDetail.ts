@@ -3,10 +3,15 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CardListItem } from '@riftbound/contracts';
 import {
+  useCollection,
   useCollectionMutations,
   useCollectionOwnership,
 } from '@/hooks/useCollection';
-import { collectVariantNumbers } from '@/utils/collectionOwnership';
+import {
+  collectVariantNumbers,
+  ownershipMapFromCollection,
+  preferCollectionOwnership,
+} from '@/utils/collectionOwnership';
 import { useCollectionRemove } from '@/hooks/useCollectionRemove';
 import { cardListItemToDetailResponse } from '@/lib/cardDetailPlaceholder';
 import { formatCardPrice } from '@/utils/cardFormat';
@@ -62,7 +67,16 @@ export function useCardDetail(
     return variantNumber ? [variantNumber] : [];
   }, [card, listItem, variantNumber]);
 
-  const { collectionByVariant } = useCollectionOwnership(detailVariants);
+  const { collectionByVariant: fetchedOwnership } = useCollectionOwnership(detailVariants);
+  const { data: collectionEntries = [] } = useCollection();
+  const collectionByVariant = useMemo(
+    () =>
+      preferCollectionOwnership(
+        fetchedOwnership,
+        ownershipMapFromCollection(collectionEntries)
+      ),
+    [fetchedOwnership, collectionEntries]
+  );
 
   const collectedForCard = useMemo(() => {
     if (!card || !activeVariant) return [];
@@ -141,23 +155,24 @@ export function useCardDetail(
   }, [groupVariants]);
 
   const onAddToCollection = useCallback(
-    async (targetVariantNumber: string) => {
+    (targetVariantNumber: string) => {
       if (!card) return;
-      await hapticPress();
-      await addFromDetail.mutateAsync({ card, variantNumber: targetVariantNumber });
+      void hapticPress();
+      // Optimistic cache updates in onMutate — never await the network here.
+      addFromDetail.mutate({ card, variantNumber: targetVariantNumber });
       setSelectedVariant(targetVariantNumber);
     },
     [card, addFromDetail]
   );
 
-  const onAddPress = useCallback(async () => {
+  const onAddPress = useCallback(() => {
     if (!card || !activeVariant) return;
-    await hapticPress();
+    void hapticPress();
     if (needsPrintingPicker) {
       setPickerVisible(true);
       return;
     }
-    await onAddToCollection(activeVariant.variantNumber);
+    onAddToCollection(activeVariant.variantNumber);
   }, [card, activeVariant, needsPrintingPicker, onAddToCollection]);
 
   const onRemovePress = useCallback(() => {
@@ -166,7 +181,7 @@ export function useCardDetail(
   }, [card, collectedForCard, promptRemove]);
 
   const onQuantityChange = useCallback(
-    async (delta: number) => {
+    (delta: number) => {
       if (!activeVariant || ownedQuantity <= 0) return;
       const next = ownedQuantity + delta;
       if (next <= 0) {
@@ -174,8 +189,8 @@ export function useCardDetail(
         void promptRemove(card.name, collectedForCard);
         return;
       }
-      await hapticPress();
-      await setQuantity.mutateAsync({
+      void hapticPress();
+      setQuantity.mutate({
         variantNumber: activeVariant.variantNumber,
         quantity: next,
       });
