@@ -96,15 +96,6 @@ export function SideRail() {
 
         <View className="gap-1">
           <Pressable
-            accessibilityLabel="Add card"
-            className="size-9 items-center justify-center rounded-lg bg-primary active:opacity-90"
-            onPress={() => {
-              router.push('/(tabs)/search');
-            }}
-          >
-            <Ionicons name="add" size={18} className="text-primary-foreground" />
-          </Pressable>
-          <Pressable
             accessibilityLabel={`Account: ${userName}`}
             className="size-9 items-center justify-center rounded-lg bg-card-panel active:opacity-80"
             onPress={() => {
@@ -115,12 +106,12 @@ export function SideRail() {
           </Pressable>
           <Pressable
             accessibilityLabel="Sign out"
-            className="size-9 items-center justify-center rounded-lg active:bg-card-panel"
+            className="size-9 items-center justify-center rounded-lg bg-primary active:opacity-90"
             onPress={() => {
               void handleSignOut();
             }}
           >
-            <Ionicons name="log-out-outline" size={18} className="text-muted-foreground" />
+            <Ionicons name="log-out-outline" size={18} className="text-primary-foreground" />
           </Pressable>
         </View>
       </View>

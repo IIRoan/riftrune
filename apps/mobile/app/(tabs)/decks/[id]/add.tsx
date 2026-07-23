@@ -8,7 +8,7 @@ import {
 } from '@/components/catalog/FilterSheet';
 import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AppLoader } from '@/components/ui/app-loader';
+import { AppLoader, AppLoadingScreen } from '@/components/ui/app-loader';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
@@ -114,10 +114,8 @@ export default function DeckAddScreen() {
 
   if (isLoading || !deck) {
     return (
-      <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
-        <View className="flex-1 items-center justify-center">
-          <AppLoader size="md" />
-        </View>
+      <ScreenLayout mode="flex">
+        <AppLoadingScreen size="md" className="bg-transparent" />
       </ScreenLayout>
     );
   }

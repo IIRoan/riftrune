@@ -1,123 +1,90 @@
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AuthPanel } from '@/components/auth/AuthPanel';
+import { AppearanceSpecimens } from '@/components/settings/AppearanceSpecimens';
 import { SharedCollectionSection } from '@/components/settings/SharedCollectionSection';
 import { UpdateChannelSection } from '@/components/settings/UpdateChannelSection';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
-import { Chip, ChipText } from '@/components/ui/chip';
-import {
-  Choicebox,
-  ChoiceboxItem,
-  ChoiceboxItemDescription,
-  ChoiceboxItemHeader,
-  ChoiceboxItemTitle,
-} from '@/components/ui/choicebox';
-import { SectionLabel } from '@/components/ui/SectionLabel';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { Stack } from '@/components/ui/stack';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Text } from '@/components/ui/text';
-import { useTheme, type ThemeType } from '@/context/ThemeContext';
+import { useShowSideRail } from '@/hooks/useBreakpoint';
+import { authClient } from '@/src/lib/auth-client';
 import { cn } from '@/lib/utils';
 
-const ACCENTS = ['#efffcc', '#5ecf8a', '#b8b8b8', '#c9a227', '#f5f5f5'];
+function SettingsSection({
+  label,
+  children,
+  className,
+  fill,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+  /** Stretch panel to match sibling height in a desktop row. */
+  fill?: boolean;
+}) {
+  return (
+    <View className={cn('gap-2', fill && 'min-h-0 min-w-0 flex-1 flex-col', className)}>
+      <SectionLabel className="mb-0">{label}</SectionLabel>
+      {children}
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const {
-    theme,
-    setTheme,
-    accentColor,
-    setAccentColor,
-    defaultLayout,
-    setDefaultLayout,
-  } = useTheme();
-
-  const themes: { label: string; value: ThemeType }[] = [
-    { label: 'Light', value: 'light' },
-    { label: 'Dark', value: 'dark' },
-    { label: 'System', value: 'system' },
-  ];
+  const sessionQuery = authClient.useSession();
+  const signedIn = Boolean(sessionQuery.data?.user);
+  const showRail = useShowSideRail();
+  const accountShareRow = signedIn && showRail;
 
   return (
     <ScreenLayout>
       <ScreenHeader title="Settings" />
 
-      <SectionLabel className="mt-2">Account</SectionLabel>
-      <AuthPanel />
+      <View className="mt-6 gap-8">
+        <View className={cn(accountShareRow ? 'flex-row items-stretch gap-4' : 'gap-8')}>
+          <SettingsSection label="Account" fill={accountShareRow}>
+            <AuthPanel className={accountShareRow ? 'min-h-0 flex-1' : undefined} />
+          </SettingsSection>
 
-      <SectionLabel className="mt-6">Shared collection</SectionLabel>
-      <SharedCollectionSection />
+          {signedIn ? (
+            <SettingsSection label="Shared collection" fill={accountShareRow}>
+              <SharedCollectionSection
+                className={accountShareRow ? 'min-h-0 flex-1' : undefined}
+              />
+            </SettingsSection>
+          ) : null}
+        </View>
 
-      <UpdateChannelSection />
+        <SettingsSection label="Display">
+          <AppearanceSpecimens />
+        </SettingsSection>
 
-      <SectionLabel className="mt-6">Theme</SectionLabel>
-      <Stack direction="row" className="flex-wrap gap-2">
-        {themes.map((t) => (
-          <Chip
-            key={t.value}
-            variant={theme === t.value ? 'default' : 'outline'}
-            onPress={() => {
-              setTheme(t.value);
-            }}
-          >
-            <ChipText>{t.label}</ChipText>
-          </Chip>
-        ))}
-      </Stack>
+        <SettingsSection label="App version">
+          <UpdateChannelSection />
+        </SettingsSection>
 
-      <SectionLabel className="mt-6">Accent</SectionLabel>
-      <Stack direction="row" className="flex-wrap gap-2">
-        {ACCENTS.map((c) => (
-          <Pressable
-            key={c}
-            className={cn(
-              'size-9 rounded-full',
-              accentColor === c && 'border-[3px] border-foreground'
-            )}
-            style={{ backgroundColor: c }}
-            onPress={() => {
-              setAccentColor(c);
-            }}
-          />
-        ))}
-      </Stack>
-
-      <SectionLabel className="mt-6">Search layout</SectionLabel>
-      <Choicebox
-        type="single"
-        value={defaultLayout}
-        onValueChange={(value) => {
-          if (value === 'grid' || value === 'list') {
-            setDefaultLayout(value);
-          }
-        }}
-        direction="row"
-        className="gap-2"
-      >
-        {(['list', 'grid'] as const).map((layout) => (
-          <ChoiceboxItem key={layout} value={layout} className="min-w-[120px] flex-1">
-            <ChoiceboxItemHeader>
-              <ChoiceboxItemTitle className="capitalize">{layout}</ChoiceboxItemTitle>
-              <ChoiceboxItemDescription>
-                {layout === 'grid' ? 'Thumbnail grid' : 'Detailed rows'}
-              </ChoiceboxItemDescription>
-            </ChoiceboxItemHeader>
-          </ChoiceboxItem>
-        ))}
-      </Choicebox>
-
-      {__DEV__ ? (
-        <>
-          <SectionLabel className="mt-6">Design</SectionLabel>
-          <Pressable
-            onPress={() => router.push('/loading')}
-            className="rounded-xl border border-border bg-card px-4 py-3"
-          >
-            <Text className="text-sm font-medium text-foreground">Rift Channel loader</Text>
-            <Text className="mt-0.5 text-sm text-muted-foreground">Open /loading preview</Text>
-          </Pressable>
-        </>
-      ) : null}
+        {__DEV__ ? (
+          <SettingsSection label="Design">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open Rift Channel loader preview"
+              onPress={() => router.push('/loading')}
+              className="flex-row items-center justify-between gap-3 overflow-hidden rounded-xl border border-border bg-card active:border-ring"
+            >
+              <View className="min-w-0 flex-1 gap-1 px-4 py-3">
+                <Text className="text-sm font-semibold text-foreground">Rune charge loader</Text>
+                <Text className="font-mono text-[11px] text-muted-foreground">/loading</Text>
+              </View>
+              <View className="h-full w-14 items-center justify-center border-l border-border bg-card-panel py-3">
+                <Text className="font-mono text-xs font-bold text-primary">→</Text>
+              </View>
+            </Pressable>
+          </SettingsSection>
+        ) : null}
+      </View>
     </ScreenLayout>
   );
 }

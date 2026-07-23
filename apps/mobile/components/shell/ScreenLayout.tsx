@@ -110,7 +110,15 @@ export function ScreenLayout({
   );
 
   const inner = (
-    <View className={cn('w-full', contentClassName)} onLayout={onContentLayout}>
+    <View
+      className={cn(
+        'w-full',
+        // Flex screens must stretch so children can center (e.g. page loaders).
+        mode === 'flex' && 'min-h-0 flex-1',
+        contentClassName
+      )}
+      onLayout={onContentLayout}
+    >
       <ScreenLayoutProvider value={contextValue}>{children}</ScreenLayoutProvider>
     </View>
   );
