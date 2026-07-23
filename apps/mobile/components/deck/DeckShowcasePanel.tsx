@@ -6,18 +6,15 @@ import { DeckSectionGrid } from '@/components/deck/DeckSectionGrid';
 import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import { Text } from '@/components/ui/text';
-import { Layout } from '@/constants/Layout';
+import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { deckHasBannedCards } from '@/lib/card-legality';
 import { getSectionCount } from '@/lib/deck-card';
+import { computeShowcaseIdentityTileWidth } from '@/lib/deck-showcase-layout';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
 
-const SHOWCASE_GAP = Layout.gridGap;
-const SHOWCASE_TILE_MAX = 132;
-const SHOWCASE_TILE_MIN = 88;
-const IDENTITY_GAP = 12;
-/** Space reserved so the rune summary can sit beside legend/champion. */
-const RUNE_COLUMN_RESERVE = 176;
+/** Stack runes under identity when the showcase column is this narrow. */
+const RUNES_BELOW_MAX_WIDTH = 380;
 
 interface DeckShowcasePanelProps {
   deck: DeckState;
@@ -26,29 +23,6 @@ interface DeckShowcasePanelProps {
   runeCardsByDomain: ReadonlyMap<string, DeckCard>;
   paddingBottom?: number;
   className?: string;
-}
-
-function computeShowcaseGrid(contentWidth: number) {
-  const available = Math.max(0, contentWidth);
-  let columns = Math.max(
-    2,
-    Math.floor((available + SHOWCASE_GAP) / (SHOWCASE_TILE_MAX + SHOWCASE_GAP))
-  );
-  let tileWidth = (available - SHOWCASE_GAP * (columns - 1)) / columns;
-  if (tileWidth < SHOWCASE_TILE_MIN) {
-    columns = Math.max(2, columns - 1);
-    tileWidth = (available - SHOWCASE_GAP * (columns - 1)) / columns;
-  }
-  tileWidth = Math.max(SHOWCASE_TILE_MIN, Math.min(SHOWCASE_TILE_MAX, tileWidth));
-  return { columns, tileWidth, gap: SHOWCASE_GAP };
-}
-
-function computeIdentityTileWidth(contentWidth: number): number {
-  if (contentWidth <= 0) return 128;
-  // Legend + champion share the row with the rune column.
-  const forPair = contentWidth - RUNE_COLUMN_RESERVE - IDENTITY_GAP * 2;
-  const perTile = Math.floor(forPair / 2);
-  return Math.max(96, Math.min(148, perTile));
 }
 
 /**
@@ -65,8 +39,13 @@ export function DeckShowcasePanel({
 }: DeckShowcasePanelProps) {
   const [contentWidth, setContentWidth] = useState(0);
   const hasWidth = contentWidth > 0;
-  const grid = computeShowcaseGrid(contentWidth);
-  const identityTileWidth = computeIdentityTileWidth(contentWidth);
+  // Same column math as the Cards catalog: 3-up on mobile, fill-available on desktop.
+  const grid = useResponsiveColumns('grid', {
+    measuredWidth: hasWidth ? contentWidth : null,
+    fillAvailable: true,
+  });
+  const runesBeside = hasWidth && contentWidth >= RUNES_BELOW_MAX_WIDTH;
+  const identityTileWidth = computeShowcaseIdentityTileWidth(contentWidth, runesBeside);
   const sideCount = getSectionCount(deck, 'sideboard');
 
   const onLayout = (event: LayoutChangeEvent) => {
@@ -90,7 +69,7 @@ export function DeckShowcasePanel({
         imageByVariant={imageByVariant}
         collectionByName={collectionByName}
         runeCardsByDomain={runeCardsByDomain}
-        runePlacement={hasWidth && contentWidth < 380 ? 'below' : 'beside'}
+        runePlacement={runesBeside ? 'beside' : 'below'}
         openSource="deck-view"
         onChangeLegend={() => undefined}
         onAddChampion={() => undefined}
@@ -115,7 +94,7 @@ export function DeckShowcasePanel({
           title="Main Deck"
           tileWidth={grid.tileWidth}
           gap={grid.gap}
-          gridColumns={grid.columns}
+          gridColumns={grid.numColumns}
           imageByVariant={imageByVariant}
           collectionByName={collectionByName}
           openSource="deck-view"
@@ -134,7 +113,7 @@ export function DeckShowcasePanel({
           title="Sideboard"
           tileWidth={grid.tileWidth}
           gap={grid.gap}
-          gridColumns={grid.columns}
+          gridColumns={grid.numColumns}
           imageByVariant={imageByVariant}
           collectionByName={collectionByName}
           openSource="deck-view"
