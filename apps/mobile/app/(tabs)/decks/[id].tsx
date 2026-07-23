@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { View } from 'react-native';
-import { AppLoader } from '@/components/ui/app-loader';
+import { AppLoadingScreen } from '@/components/ui/app-loader';
 import { DeckBuilderCanvas } from '@/components/deck/DeckBuilderCanvas';
 import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
 import { LegendPicker } from '@/components/deck/LegendPicker';
@@ -78,9 +77,7 @@ export default function DeckEditorScreen() {
   if (isLoading) {
     return (
       <ScreenLayout mode="flex">
-        <View className="flex-1 items-center justify-center">
-          <AppLoader size="md" />
-        </View>
+        <AppLoadingScreen size="md" className="bg-transparent" />
       </ScreenLayout>
     );
   }

@@ -1,5 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { Alert, Platform, Pressable, View } from 'react-native';
+import { AuthSlabCorners } from '@/components/auth/AuthArtifacts';
 import { Button, ButtonText } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { Text } from '@/components/ui/text';
@@ -7,6 +8,7 @@ import {
   useCollectionShareMutations,
   useCollectionShareStatus,
 } from '@/hooks/useCollectionShare';
+import { cn } from '@/lib/utils';
 import { authClient } from '@/src/lib/auth-client';
 import { RemoteApiError } from '@/src/api/authedClient';
 
@@ -28,7 +30,11 @@ async function copyInviteLink(url: string): Promise<void> {
   toast.success('Invite link copied');
 }
 
-export function SharedCollectionSection() {
+type SharedCollectionSectionProps = {
+  className?: string;
+};
+
+export function SharedCollectionSection({ className }: SharedCollectionSectionProps) {
   const sessionQuery = authClient.useSession();
   const signedIn = Boolean(sessionQuery.data?.user);
   const statusQuery = useCollectionShareStatus(signedIn);
@@ -94,71 +100,115 @@ export function SharedCollectionSection() {
     });
   };
 
-  return (
-    <View className="gap-3">
-      {statusQuery.isError ? (
+  if (statusQuery.isError) {
+    return (
+      <View
+        className={cn(
+          'justify-center rounded-xl border border-border bg-card px-4 py-4',
+          className
+        )}
+      >
         <Text className="text-sm text-muted-foreground">Could not load share status.</Text>
-      ) : null}
+      </View>
+    );
+  }
 
-      {status?.shared && status.partner ? (
-        <View className="gap-3 rounded-xl border border-border bg-card px-4 py-3">
-          <View className="gap-0.5">
-            <Text className="text-sm font-medium text-foreground">
-              Shared with {status.partner.name}
-            </Text>
-            <Text className="text-sm text-muted-foreground">{status.partner.email}</Text>
-            <Text className="mt-1 text-sm text-muted-foreground">
-              Both of you edit the same cards. Decks stay separate.
-            </Text>
+  if (status?.shared && status.partner) {
+    const initial = status.partner.name?.charAt(0).toUpperCase() || '?';
+    return (
+      <View
+        className={cn(
+          'relative overflow-hidden rounded-xl border border-border bg-card',
+          className
+        )}
+      >
+        <AuthSlabCorners />
+        <View className="min-h-0 flex-1 flex-row items-stretch">
+          <View className="w-[76px] items-center justify-center border-r border-border bg-background py-6">
+            <View className="size-12 items-center justify-center rounded-lg bg-primary">
+              <Text className="font-mono text-xl font-bold text-primary-foreground">{initial}</Text>
+            </View>
           </View>
-          <Button variant="outline" disabled={busy} onPress={onLeave}>
-            <ButtonText>Leave</ButtonText>
-          </Button>
+          <View className="min-w-0 flex-1 justify-between gap-4 px-4 py-4">
+            <View className="gap-1">
+              <Text
+                className="text-lg font-semibold tracking-tight text-foreground"
+                numberOfLines={1}
+              >
+                {status.partner.name}
+              </Text>
+              <Text className="font-mono text-[12px] text-muted-foreground" numberOfLines={1}>
+                {status.partner.email}
+              </Text>
+              <Text className="mt-1 text-sm text-muted-foreground">
+                Same cards. Decks stay separate.
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy}
+              onPress={onLeave}
+              className="self-start rounded-lg border border-border px-3 py-2 active:bg-card-panel"
+            >
+              <Text className="text-sm font-medium text-foreground">Leave share</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View
+      className={cn(
+        'relative justify-between gap-4 overflow-hidden rounded-xl border border-border bg-card px-4 py-4',
+        className
+      )}
+    >
+      <AuthSlabCorners />
+      <View className="gap-1">
+        <Text className="text-lg font-semibold tracking-tight text-foreground">Invite a partner</Text>
+        <Text className="text-sm text-muted-foreground">
+          One shared collection. Decks and wishlists stay personal.
+        </Text>
+      </View>
+
+      {pendingUrl ? (
+        <View className="gap-3">
+          <View className="gap-2 rounded-lg border border-border bg-card-panel px-3 py-3">
+            <Text className="text-[10px] font-semibold uppercase tracking-[1.6px] text-muted-foreground">
+              Invite link
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Copy invite link"
+              disabled={busy}
+              onPress={onCopyOrCreate}
+              className="active:opacity-80"
+            >
+              <Text className="font-mono text-sm leading-5 text-foreground" selectable>
+                {pendingUrl}
+              </Text>
+            </Pressable>
+          </View>
+          <View className="flex-row items-center gap-3">
+            <Button size="sm" disabled={busy} onPress={onCopyOrCreate} className="flex-1">
+              <ButtonText>Copy link</ButtonText>
+            </Button>
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy}
+              onPress={onCancelInvite}
+              className="px-2 py-2 active:opacity-70"
+            >
+              <Text className="text-sm text-muted-foreground">Cancel</Text>
+            </Pressable>
+          </View>
         </View>
       ) : (
-        <View className="gap-3">
-          <Text className="text-sm text-muted-foreground">
-            Share one collection with a partner. Decks and wishlists stay personal.
-          </Text>
-
-          {pendingUrl ? (
-            <View className="gap-2 rounded-xl border border-border bg-card px-4 py-3">
-              <Text className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Invite link
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Copy invite link"
-                disabled={busy}
-                onPress={onCopyOrCreate}
-                className="active:opacity-80"
-              >
-                <Text className="font-mono text-sm leading-5 text-foreground" selectable>
-                  {pendingUrl}
-                </Text>
-              </Pressable>
-              <View className="mt-1 flex-row items-center gap-3">
-                <Button size="sm" disabled={busy} onPress={onCopyOrCreate} className="flex-1">
-                  <ButtonText>Copy link</ButtonText>
-                </Button>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={busy}
-                  onPress={onCancelInvite}
-                  className="px-2 py-2 active:opacity-70"
-                >
-                  <Text className="text-sm text-muted-foreground">Cancel</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Button disabled={busy} onPress={onCopyOrCreate}>
-              <ButtonText>
-                {createInvite.isPending ? 'Creating…' : 'Create invite link'}
-              </ButtonText>
-            </Button>
-          )}
-        </View>
+        <Button disabled={busy} onPress={onCopyOrCreate} className="self-start">
+          <ButtonText>{createInvite.isPending ? 'Creating…' : 'Create invite link'}</ButtonText>
+        </Button>
       )}
     </View>
   );

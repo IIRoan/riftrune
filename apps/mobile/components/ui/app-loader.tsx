@@ -49,7 +49,13 @@ export function AppLoadingScreen({
   className,
 }: AppLoaderProps) {
   return (
-    <View className={cn('flex-1 items-center justify-center bg-background', className)}>
+    <View
+      className={cn(
+        'min-h-0 w-full flex-1 items-center justify-center bg-background',
+        className
+      )}
+      style={{ flex: 1 }}
+    >
       <AppLoader size={size} label={label} detail={detail} />
     </View>
   );

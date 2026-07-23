@@ -15,8 +15,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AuthPanelVariant, AuthScreenLayout, Mode } from '@/components/auth/auth-types';
+import { AuthSlabCorners } from '@/components/auth/AuthArtifacts';
 import { Button, ButtonText } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
@@ -39,6 +39,7 @@ type AuthPanelProps = {
   screenLayout?: AuthScreenLayout;
   mode?: Mode;
   onModeChange?: (mode: Mode) => void;
+  className?: string;
 };
 
 function ModeSwitch({
@@ -258,6 +259,7 @@ export function AuthPanel({
   screenLayout = 'mobile',
   mode: controlledMode,
   onModeChange,
+  className,
 }: AuthPanelProps) {
   const queryClient = useQueryClient();
   const sessionQuery = authClient.useSession();
@@ -348,30 +350,63 @@ export function AuthPanel({
   // Skip loader during background session refetches so the form stays mounted.
   if (isPending && !isRefetching) {
     return isScreen ? (
-      <View className="gap-2 px-1 py-2">
+      <View className={cn('gap-2 px-1 py-2', className)}>
         <Text className="text-muted-foreground">Loading account…</Text>
       </View>
     ) : (
-      <Card>
-        <CardContent className="py-4">
-          <Text className="text-muted-foreground">Loading account…</Text>
-        </CardContent>
-      </Card>
+      <View
+        className={cn(
+          'rounded-xl border border-border bg-card px-4 py-5',
+          className
+        )}
+      >
+        <Text className="text-muted-foreground">Loading account…</Text>
+      </View>
     );
   }
 
   if (session?.user) {
+    const initial = session.user.name?.charAt(0).toUpperCase() || '?';
     return isScreen ? null : (
-      <Card>
-        <CardContent className="gap-3 py-4">
-          <Text className="text-base font-semibold text-foreground">{session.user.name}</Text>
-          <Text className="text-sm text-muted-foreground">{session.user.email}</Text>
-          <Text className="text-xs text-muted-foreground">Collection synced to your account</Text>
-          <Button variant="outline" onPress={handleSignOut} disabled={busy} busy={busy}>
-            <ButtonText>Sign out</ButtonText>
-          </Button>
-        </CardContent>
-      </Card>
+      <View
+        className={cn(
+          'relative overflow-hidden rounded-xl border border-border bg-card',
+          className
+        )}
+      >
+        <AuthSlabCorners />
+        <View className="min-h-0 flex-1 flex-row items-stretch">
+          <View className="w-[76px] items-center justify-center border-r border-border bg-background py-6">
+            <View className="size-12 items-center justify-center rounded-lg bg-primary">
+              <Text className="font-mono text-xl font-bold text-primary-foreground">{initial}</Text>
+            </View>
+          </View>
+          <View className="min-w-0 flex-1 justify-between gap-4 px-4 py-4">
+            <View className="gap-1">
+              <Text
+                className="text-lg font-semibold tracking-tight text-foreground"
+                numberOfLines={1}
+              >
+                {session.user.name}
+              </Text>
+              <Text className="font-mono text-[12px] text-muted-foreground" numberOfLines={1}>
+                {session.user.email}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Sign out"
+              disabled={busy}
+              onPress={() => {
+                void handleSignOut();
+              }}
+              className="self-start rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 active:bg-primary/20"
+            >
+              <Text className="text-sm font-semibold text-archive-accent-text">Sign out</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
     );
   }
 
@@ -428,12 +463,18 @@ export function AuthPanel({
   );
 
   if (isScreen) {
-    return <View className="w-full">{formBody}</View>;
+    return <View className={cn('w-full', className)}>{formBody}</View>;
   }
 
   return (
-    <Card>
-      <CardContent className="gap-4 py-4">{formBody}</CardContent>
-    </Card>
+    <View
+      className={cn(
+        'relative overflow-hidden rounded-xl border border-border bg-card px-4 py-4',
+        className
+      )}
+    >
+      <AuthSlabCorners />
+      {formBody}
+    </View>
   );
 }
