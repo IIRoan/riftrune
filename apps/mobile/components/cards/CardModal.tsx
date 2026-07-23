@@ -331,22 +331,14 @@ function ModalInfoPanel({
   const abilityBlock = card.description ? (
     <View
       className={cn(
-        'min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-secondary',
+        'min-w-0 rounded-xl border border-border bg-secondary',
         isWide ? 'px-4 py-3.5' : 'px-3.5 py-3'
       )}
     >
-      <SectionLabel className="mb-2 shrink-0">Ability</SectionLabel>
-      <ScrollView
-        className="min-h-0 flex-1"
-        nestedScrollEnabled
-        showsVerticalScrollIndicator={false}
-      >
-        <CardRulesText text={card.description} compact={!isWide} />
-      </ScrollView>
+      <SectionLabel className="mb-2">Ability</SectionLabel>
+      <CardRulesText text={card.description} compact={!isWide} />
     </View>
-  ) : (
-    <View className="min-h-0 flex-1" />
-  );
+  ) : null;
 
   const priceHistoryBlock = showPriceHistory ? (
     <Stack gap="sm">
@@ -376,24 +368,24 @@ function ModalInfoPanel({
         isWide && 'border-l border-border/40'
       )}
     >
-      <View className={cn('min-h-0 flex-1', panelPadding)}>
-        <View className="min-h-0 flex-1 gap-4">
-          <View className="shrink-0 gap-4">
-            {headerBlock}
-            {priceHistoryBlock}
-          </View>
-          {abilityBlock}
-          <View className="shrink-0">
-            <PrintingPreviewStrip
-              items={printingPreviews}
-              selectedId={activeVariant.variantNumber}
-              compact
-              dense
-              onSelect={onSelectPrinting}
-            />
-          </View>
-        </View>
-      </View>
+      <ScrollView
+        className="min-h-0 flex-1"
+        contentContainerClassName={cn('gap-4', panelPadding)}
+        showsVerticalScrollIndicator
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
+      >
+        {headerBlock}
+        {priceHistoryBlock}
+        {abilityBlock}
+        <PrintingPreviewStrip
+          items={printingPreviews}
+          selectedId={activeVariant.variantNumber}
+          compact
+          dense
+          onSelect={onSelectPrinting}
+        />
+      </ScrollView>
     </View>
   );
 }
