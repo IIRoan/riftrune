@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { BookmarkIcon, CircleAlertIcon, XIcon } from '@/components/icons';
 import {
   Platform,
   Pressable,
@@ -182,7 +182,7 @@ function ModalHeader({
       >
         {wishlistContext ? (
           <View className="flex-row items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1.5">
-            <Ionicons name="bookmark" size={14} className="text-primary" />
+            <BookmarkIcon className="size-[14px] text-primary" />
             <Text className="text-xs font-semibold text-primary">
               {wishlistItem ? 'Wishlisted' : 'Wishlist'}
             </Text>
@@ -206,7 +206,7 @@ function ModalHeader({
           )
         ) : null}
         <ModalIconButton onPress={onClose} accessibilityLabel="Close">
-          <Ionicons name="close" size={16} />
+          <XIcon className="size-[16px] text-foreground" />
         </ModalIconButton>
       </View>
     </View>
@@ -558,7 +558,7 @@ export function CardModalError({ onClose }: { onClose: () => void }) {
         <Empty className="border-0 p-0">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <Ionicons name="alert-circle-outline" size={40} className="text-muted-foreground" />
+              <CircleAlertIcon className="size-[40px] text-muted-foreground" />
             </EmptyMedia>
             <EmptyTitle>Card not found</EmptyTitle>
             <EmptyDescription>This card could not be loaded.</EmptyDescription>

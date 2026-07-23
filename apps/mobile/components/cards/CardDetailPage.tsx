@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { ChevronLeftIcon, PlusIcon } from '@/components/icons';
 import { ScrollView, View } from 'react-native';
 import type { CardDetail, VariantDetail } from '@riftbound/contracts';
 import { PrintingPreviewStrip } from '@/components/cards/PrintingPreviewStrip';
@@ -81,7 +81,7 @@ export function CardDetailPage({
           onPress={onClose}
         >
           <ButtonIcon>
-            <Ionicons name="chevron-back" size={22} />
+            <ChevronLeftIcon className="size-[22px] text-foreground" />
           </ButtonIcon>
         </Button>
         <Text className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -174,7 +174,7 @@ export function CardDetailPage({
         ) : (
           <Button onPress={onAddToCollection}>
             <ButtonIcon>
-              <Ionicons name="add" size={18} />
+              <PlusIcon className="size-[18px] text-foreground" />
             </ButtonIcon>
             <ButtonText>Add to collection</ButtonText>
           </Button>

@@ -14,7 +14,8 @@ export function useCollectionImportExport() {
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all });
+    void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all, exact: true });
+    void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
   };
 
   const importCsv = useMutation({

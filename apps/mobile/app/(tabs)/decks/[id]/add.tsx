@@ -1,3 +1,4 @@
+import { ThemedIcon, LibraryIcon } from '@/components/icons';
 import { DeckCatalogGridTile } from '@/components/deck/DeckCatalogGridTile';
 import { DeckAddSectionStatus } from '@/components/deck/DeckAddSectionStatus';
 import { DeckAddScreenHeader } from '@/components/deck/DeckAddScreenHeader';
@@ -20,7 +21,6 @@ import {
 import { SearchInput } from '@/components/ui/search-input';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   DECK_SECTIONS,
   type DeckCard,
@@ -331,7 +331,7 @@ function DeckAddScreenBody({
     <Empty className="border border-dashed border-border py-8">
       <EmptyHeader>
         <EmptyMedia variant="icon" className="mb-1 size-14">
-          <ThemedIonicon name="albums-outline" size={28} color="ring" />
+          <ThemedIcon icon={LibraryIcon} size={28} color="ring" />
         </EmptyMedia>
         <EmptyTitle>{catalog.emptyState.title}</EmptyTitle>
         <EmptyDescription>{catalog.emptyState.description}</EmptyDescription>

@@ -1,4 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
+import {
+  CloudUploadIcon,
+  DownloadIcon,
+  TrashIcon,
+  type LucideIcon,
+} from '@/components/icons';
 import { ActivityIndicator, Pressable, View, type DimensionValue } from 'react-native';
 import { useCSSVariable } from 'uniwind';
 import {
@@ -59,13 +64,14 @@ function ToolbarIconButton({
   busy,
   onPress,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: LucideIcon;
   label: string;
   disabled?: boolean;
   busy?: boolean;
   onPress: () => void;
 }) {
   const iconColor = useCSSVariable('--color-muted-foreground') as string;
+  const Icon = icon;
 
   return (
     <HoverTooltip label={label}>
@@ -90,7 +96,7 @@ function ToolbarIconButton({
               style={{ transform: [{ scale: 0.85 }] }}
             />
           ) : (
-            <Ionicons name={icon} size={toolbarIconSize} color={iconColor} />
+            <Icon size={toolbarIconSize} color={iconColor} />
           )}
         </ToolbarIconSlot>
       </Pressable>
@@ -110,7 +116,7 @@ export function CollectionImportExportToolbar({ disabled = false }: { disabled?:
   return (
     <View className="shrink-0 flex-row items-center rounded-lg bg-card-panel p-0.5">
       <ToolbarIconButton
-        icon="cloud-upload-outline"
+        icon={CloudUploadIcon}
         label="Import CSV"
         disabled={controlsDisabled}
         busy={importCsv.isPending}
@@ -119,7 +125,7 @@ export function CollectionImportExportToolbar({ disabled = false }: { disabled?:
         }}
       />
       <ToolbarIconButton
-        icon="download-outline"
+        icon={DownloadIcon}
         label="Export CSV"
         disabled={controlsDisabled}
         busy={exportCsv.isPending}
@@ -129,7 +135,7 @@ export function CollectionImportExportToolbar({ disabled = false }: { disabled?:
       />
       {isDevCollectionToolsEnabled ? (
         <ToolbarIconButton
-          icon="trash-outline"
+          icon={TrashIcon}
           label="Clear collection"
           disabled={controlsDisabled}
           busy={clearCollection.isPending}

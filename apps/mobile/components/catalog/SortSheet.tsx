@@ -1,3 +1,4 @@
+import { ThemedIcon, ArrowUpDownIcon, CheckIcon } from '@/components/icons';
 import { Pressable } from 'react-native';
 import { CatalogToolbarButton } from '@/components/catalog/CatalogToolbarButton';
 import {
@@ -10,7 +11,6 @@ import {
   BottomSheetTitle,
 } from '@/components/ui/bottom-sheet';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   CATALOG_SORT_OPTIONS,
   sortOptionKey,
@@ -64,7 +64,7 @@ export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSh
                 >
                   <Text className="text-sm font-medium text-foreground">{option.label}</Text>
                   {active ? (
-                    <ThemedIonicon name="checkmark" size={18} color="archive-accent-text" />
+                    <ThemedIcon icon={CheckIcon} size={18} color="archive-accent-text" />
                   ) : null}
                 </Pressable>
               );
@@ -89,7 +89,7 @@ export function SortTrigger({
 }) {
   return (
     <CatalogToolbarButton
-      icon="swap-vertical-outline"
+      icon={ArrowUpDownIcon}
       onPress={onPress}
       accessibilityLabel="Open sort options"
       label={compact ? undefined : (label ?? 'Sort')}

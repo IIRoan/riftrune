@@ -1,3 +1,4 @@
+import { ThemedIcon, ImageIcon } from '@/components/icons';
 import { Image } from 'expo-image';
 import { memo, useEffect, useRef, useState } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
@@ -10,7 +11,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { useTheme } from '@/context/ThemeContext';
 import {
   isDiskImageCached,
@@ -240,7 +240,7 @@ function CardArtImageInner({
 
       {status === 'error' ? (
         <View className="absolute inset-0 items-center justify-center bg-muted">
-          <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
+          <ThemedIcon icon={ImageIcon} size={20} color="muted-foreground" />
         </View>
       ) : null}
     </View>

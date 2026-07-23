@@ -1,10 +1,10 @@
+import { ThemedIcon, ChevronLeftIcon, ImageIcon, SearchIcon } from '@/components/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 import { AppLoader } from '@/components/ui/app-loader';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
@@ -101,7 +101,7 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
                 onBack();
               }}
             >
-              <ThemedIonicon name="chevron-back" size={22} color="foreground" />
+              <ThemedIcon icon={ChevronLeftIcon} size={22} color="foreground" />
             </Pressable>
             <Text className="text-lg font-semibold text-foreground">Choose your Legend</Text>
           </View>
@@ -134,7 +134,7 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View className="items-center gap-2 py-16">
-              <ThemedIonicon name="search-outline" size={28} color="muted-foreground" />
+              <ThemedIcon icon={SearchIcon} size={28} color="muted-foreground" />
               <Text className="text-sm text-muted-foreground">No legends match your search</Text>
             </View>
           }
@@ -162,7 +162,7 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
                   />
                 ) : (
                   <View className="flex-1 items-center justify-center bg-card-panel">
-                    <ThemedIonicon name="image-outline" size={20} color="muted-foreground" />
+                    <ThemedIcon icon={ImageIcon} size={20} color="muted-foreground" />
                   </View>
                 )}
               </View>

@@ -1,9 +1,9 @@
+import { ThemedIcon, StarIcon, TrashIcon } from '@/components/icons';
 import { memo, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { getSectionCount, resolveDeckCardImageUrl } from '@/lib/deck-card';
 import type { DeckEntry, DeckState } from '@/lib/deck-types';
@@ -61,7 +61,7 @@ function CardThumb({
         ) : (
           <View className="flex-1 items-center justify-center bg-card-panel">
             {fallbackIcon ? (
-              <ThemedIonicon name="star-outline" size={18} color="muted-foreground" />
+              <ThemedIcon icon={StarIcon} size={18} color="muted-foreground" />
             ) : null}
           </View>
         )}
@@ -197,7 +197,7 @@ function DeckListCardInner({
                     onDelete();
                   }}
                 >
-                  <ThemedIonicon name="trash-outline" size={17} color="muted-foreground" />
+                  <ThemedIcon icon={TrashIcon} size={17} color="muted-foreground" />
                 </Pressable>
               ) : null}
             </View>

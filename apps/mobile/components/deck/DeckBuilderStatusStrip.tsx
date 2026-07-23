@@ -1,6 +1,6 @@
+import { ThemedIcon, CheckIcon, CircleCheckIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { totalRuneCount } from '@/lib/deck-builder';
 import { getSectionCount } from '@/lib/deck-card';
 import { deckSectionProgress } from '@/lib/deck-display';
@@ -112,7 +112,7 @@ export function DeckBuilderStatusStrip({
             </View>
           </View>
           {mainComplete ? (
-            <ThemedIonicon name="checkmark-circle" size={18} color="primary" />
+            <ThemedIcon icon={CircleCheckIcon} size={18} color="primary" />
           ) : ownershipLabel ? (
             <Text className="pb-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
               {ownershipLabel}
@@ -158,7 +158,7 @@ export function DeckBuilderStatusStrip({
                     {current}/{target}
                   </Text>
                   {complete ? (
-                    <ThemedIonicon name="checkmark" size={12} color="primary" />
+                    <ThemedIcon icon={CheckIcon} size={12} color="primary" />
                   ) : null}
                 </View>
               </View>

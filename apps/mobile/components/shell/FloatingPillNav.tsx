@@ -1,8 +1,7 @@
-import type { ComponentProps } from 'react';
+import type { LucideIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { Layout } from '@/constants/Layout';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
@@ -11,14 +10,11 @@ import { hapticPress } from '@/utils/haptics';
 /** Extra scroll padding so list content clears the floating pill. */
 export const FLOATING_PILL_NAV_CLEARANCE = 64;
 
-type IoniconName = NonNullable<ComponentProps<typeof ThemedIonicon>['name']>;
-
 export type PillNavItem<T extends string> = {
   id: T;
   label: string;
   accessibilityLabel?: string;
-  icon: IoniconName;
-  iconActive: IoniconName;
+  icon: LucideIcon;
   /** Optional mono caption under the label (e.g. "12/40"). */
   badge?: string;
 };
@@ -67,6 +63,11 @@ export function PillNav<T extends string>({
       {items.map((item, index) => {
         const active = value === item.id;
         const isLast = index === items.length - 1;
+        const Icon = item.icon;
+        const iconClass = cn(
+          active ? 'text-primary' : 'text-muted-foreground',
+          compact ? (iconOnly ? 'size-[18px]' : 'size-3.5') : 'size-[18px]'
+        );
         return (
           <Pressable
             key={item.id}
@@ -96,18 +97,10 @@ export function PillNav<T extends string>({
             }}
           >
             {compact && iconOnly ? (
-              <ThemedIonicon
-                name={active ? item.iconActive : item.icon}
-                size={18}
-                color={active ? 'primary' : 'muted-foreground'}
-              />
+              <Icon className={iconClass} weight="regular" />
             ) : compact ? (
               <>
-                <ThemedIonicon
-                  name={active ? item.iconActive : item.icon}
-                  size={14}
-                  color={active ? 'primary' : 'muted-foreground'}
-                />
+                <Icon className={iconClass} weight="regular" />
                 <Text
                   className={cn(
                     'text-[11px] font-semibold',
@@ -131,11 +124,7 @@ export function PillNav<T extends string>({
               </>
             ) : (
               <>
-                <ThemedIonicon
-                  name={active ? item.iconActive : item.icon}
-                  size={18}
-                  color={active ? 'primary' : 'muted-foreground'}
-                />
+                <Icon className={iconClass} weight="regular" />
                 <Text
                   className={cn(
                     'text-[10px] font-semibold',

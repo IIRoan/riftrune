@@ -1,6 +1,6 @@
+import { ChevronDownIcon, ChevronUpIcon, ThemedIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import type { DeckValidationMessage } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
@@ -125,8 +125,8 @@ export function DeckValidationMenu({
             {messages.length}
           </Text>
         )}
-        <ThemedIonicon
-          name={open ? 'chevron-up' : 'chevron-down'}
+        <ThemedIcon
+          icon={open ? ChevronUpIcon : ChevronDownIcon}
           size={14}
           color="muted-foreground"
         />

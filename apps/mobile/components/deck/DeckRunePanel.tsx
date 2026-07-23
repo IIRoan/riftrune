@@ -1,7 +1,7 @@
+import { ThemedIcon, CircleIcon, MinusIcon, PlusIcon } from '@/components/icons';
 import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { domainIconFor } from '@/constants/gameAssets';
 import { countRunesForDomain, getLegendRuneDomains, totalRuneCount } from '@/lib/deck-builder';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
@@ -56,7 +56,7 @@ function RuneDomainRow({
           )}
           style={dense ? { width: 22, height: 22 } : undefined}
         >
-          <ThemedIonicon name="ellipse" size={dense ? 10 : 12} color="muted-foreground" />
+          <ThemedIcon icon={CircleIcon} size={dense ? 10 : 12} color="muted-foreground" />
         </View>
       )}
 
@@ -73,12 +73,12 @@ function RuneDomainRow({
 
       <View
         className={cn(
-          'shrink-0 flex-row items-center overflow-hidden rounded-md border border-border bg-background',
-          !readOnly && (dense ? 'min-w-[4.75rem]' : 'min-w-[5.5rem]')
+          'shrink-0 flex-row items-center justify-between',
+          !readOnly && (dense ? 'min-w-[4.75rem]' : 'min-w-[5.75rem]')
         )}
       >
         {readOnly ? (
-          <Text className="px-2 py-1 text-center font-mono text-sm font-bold tabular-nums text-foreground">
+          <Text className="px-2 py-1 text-center font-mono text-sm font-semibold tabular-nums text-foreground">
             {count}
           </Text>
         ) : (
@@ -86,7 +86,7 @@ function RuneDomainRow({
             <Pressable
               accessibilityLabel={`Remove ${domain} rune`}
               className={cn(
-                'items-center justify-center active:bg-card-panel',
+                'items-center justify-center rounded-full active:bg-primary/14',
                 dense ? 'size-7' : 'size-8'
               )}
               onPress={() => {
@@ -94,15 +94,20 @@ function RuneDomainRow({
                 onAdjust(-1);
               }}
             >
-              <ThemedIonicon name="remove" size={dense ? 14 : 16} color="foreground" />
+              <ThemedIcon
+                icon={MinusIcon}
+                size={dense ? 12 : 14}
+                color="archive-accent-text"
+                weight="regular"
+              />
             </Pressable>
-            <Text className="min-w-[1.25rem] text-center font-mono text-[13px] font-bold tabular-nums text-foreground">
+            <Text className="min-w-5 text-center font-mono text-[13px] font-semibold tabular-nums text-foreground">
               {count}
             </Text>
             <Pressable
               accessibilityLabel={`Add ${domain} rune`}
               className={cn(
-                'items-center justify-center active:bg-card-panel',
+                'items-center justify-center rounded-full active:bg-primary/14',
                 dense ? 'size-7' : 'size-8'
               )}
               onPress={() => {
@@ -110,7 +115,12 @@ function RuneDomainRow({
                 onAdjust(1);
               }}
             >
-              <ThemedIonicon name="add" size={dense ? 14 : 16} color="foreground" />
+              <ThemedIcon
+                icon={PlusIcon}
+                size={dense ? 12 : 14}
+                color="archive-accent-text"
+                weight="regular"
+              />
             </Pressable>
           </>
         )}

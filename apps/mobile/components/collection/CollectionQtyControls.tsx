@@ -1,3 +1,4 @@
+import { ThemedIcon, CircleCheckIcon, MinusIcon, PlusIcon, TrashIcon } from '@/components/icons';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Badge, BadgeIcon, BadgeText } from '@/components/ui/badge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
@@ -5,7 +6,6 @@ import { Chip, ChipText } from '@/components/ui/chip';
 import { Separator } from '@/components/ui/separator';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
@@ -21,7 +21,7 @@ interface Props {
 }
 
 function CompactStepDivider() {
-  return <View className="h-5 w-hairline self-center bg-archive-soft-line" />;
+  return <View className="h-5 w-hairline self-center bg-border" />;
 }
 
 export function CollectionAddButton({
@@ -42,7 +42,7 @@ export function CollectionAddButton({
       <Pressable
         accessibilityLabel="Add to collection"
         className={cn(
-          'h-10 flex-row items-center justify-center gap-1.5 rounded-full border border-ring/30 bg-primary/5 px-3.5 active:opacity-80',
+          'h-10 flex-row items-center justify-center gap-1.5 rounded-lg bg-primary/12 px-3.5 active:bg-primary/18',
           className
         )}
         onPress={() => {
@@ -55,8 +55,8 @@ export function CollectionAddButton({
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
           <>
-            <ThemedIonicon name="add" size={16} color="ring" />
-            <Text className="text-[13px] font-semibold text-ring">Add</Text>
+            <ThemedIcon icon={PlusIcon} size={12} color="archive-accent-text" weight="regular" />
+            <Text className="text-[13px] font-semibold text-archive-accent-text">Add</Text>
           </>
         )}
       </Pressable>
@@ -108,17 +108,17 @@ export function CollectionQtyControls({
   if (compact) {
     if (touchFriendly) {
       return (
-        <View className="flex-row items-center overflow-hidden rounded-full bg-card-panel">
+        <View className="flex-row items-center overflow-hidden rounded-md bg-popover">
           <Pressable
             accessibilityLabel="Decrease quantity"
-            className="size-11 items-center justify-center rounded-l-full active:bg-accent/80"
+            className="size-11 items-center justify-center active:bg-accent"
             onPress={handleDecrement}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator size="small" className="accent-primary" />
+              <ActivityIndicator size="small" className="accent-foreground" />
             ) : (
-              <ThemedIonicon name="remove" size={18} color="foreground" />
+              <ThemedIcon icon={MinusIcon} size={16} color="foreground" weight="regular" />
             )}
           </Pressable>
           <CompactStepDivider />
@@ -128,14 +128,14 @@ export function CollectionQtyControls({
           <CompactStepDivider />
           <Pressable
             accessibilityLabel="Increase quantity"
-            className="size-11 items-center justify-center rounded-r-full active:bg-accent/80"
+            className="size-11 items-center justify-center active:bg-accent"
             onPress={() => {
               void hapticPress();
               onIncrement();
             }}
             disabled={loading}
           >
-            <ThemedIonicon name="add" size={18} color="foreground" />
+            <ThemedIcon icon={PlusIcon} size={16} color="foreground" weight="regular" />
           </Pressable>
         </View>
       );
@@ -146,13 +146,13 @@ export function CollectionQtyControls({
         <Button
           variant="outline"
           size="icon-sm"
-          className="rounded-md"
+          className="rounded-md border-border bg-popover dark:border-border dark:bg-popover"
           onPress={handleDecrement}
           disabled={loading}
           accessibilityLabel="Decrease quantity"
         >
-          <ButtonIcon className="size-4">
-            <ThemedIonicon name="remove" size={16} color="foreground" />
+          <ButtonIcon className="size-3.5">
+            <ThemedIcon icon={MinusIcon} size={14} color="foreground" />
           </ButtonIcon>
         </Button>
         <Text className="min-w-6 text-center text-[13px] font-bold tabular-nums text-foreground">
@@ -161,7 +161,7 @@ export function CollectionQtyControls({
         <Button
           variant="outline"
           size="icon-sm"
-          className="rounded-md"
+          className="rounded-md border-border bg-popover dark:border-border dark:bg-popover"
           onPress={() => {
             void hapticPress();
             onIncrement();
@@ -169,8 +169,8 @@ export function CollectionQtyControls({
           disabled={loading}
           accessibilityLabel="Increase quantity"
         >
-          <ButtonIcon className="size-4">
-            <ThemedIonicon name="add" size={16} color="foreground" />
+          <ButtonIcon className="size-3.5">
+            <ThemedIcon icon={PlusIcon} size={14} color="foreground" />
           </ButtonIcon>
         </Button>
       </View>
@@ -182,7 +182,7 @@ export function CollectionQtyControls({
       <Stack direction="row" className="items-center justify-center gap-2.5">
         <Badge variant="outline" className="border-ring/30 bg-primary/5">
           <BadgeIcon>
-            <ThemedIonicon name="checkmark-circle" size={14} color="ring" />
+            <ThemedIcon icon={CircleCheckIcon} size={14} color="ring" />
           </BadgeIcon>
           <BadgeText className="text-[11px] font-bold uppercase tracking-widest text-ring">
             In collection
@@ -207,7 +207,7 @@ export function CollectionQtyControls({
             <ActivityIndicator size="small" className="accent-primary" />
           ) : (
             <ButtonIcon className="size-5">
-              <ThemedIonicon name="remove" size={20} color="foreground" />
+              <ThemedIcon icon={MinusIcon} size={20} color="foreground" />
             </ButtonIcon>
           )}
         </Button>
@@ -232,7 +232,7 @@ export function CollectionQtyControls({
           disabled={loading}
         >
           <ButtonIcon className="size-5">
-            <ThemedIonicon name="add" size={20} color="foreground" />
+            <ThemedIcon icon={PlusIcon} size={20} color="foreground" />
           </ButtonIcon>
         </Button>
       </View>
@@ -240,7 +240,7 @@ export function CollectionQtyControls({
       <Separator />
       <Button variant="ghost" onPress={handleRemove} disabled={loading}>
         <ButtonIcon>
-          <ThemedIonicon name="trash-outline" size={15} color="muted-foreground" />
+          <ThemedIcon icon={TrashIcon} size={15} color="muted-foreground" />
         </ButtonIcon>
         <ButtonText className="text-muted-foreground">Remove from collection</ButtonText>
       </Button>

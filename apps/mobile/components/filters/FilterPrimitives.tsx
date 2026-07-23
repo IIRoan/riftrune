@@ -1,3 +1,4 @@
+import { ChevronDownIcon, ChevronUpIcon, CircleCheckIcon, ThemedIcon } from '@/components/icons';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
@@ -9,7 +10,6 @@ import {
   PopoverPortal,
 } from '@/components/ui/popover';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { cn } from '@/lib/utils';
 
 export function FilterToggleRow({
@@ -48,7 +48,7 @@ export function FilterToggleRow({
         </View>
       </View>
       {active ? (
-        <ThemedIonicon name="checkmark-circle" size={20} color="archive-accent-text" />
+        <ThemedIcon icon={CircleCheckIcon} size={20} color="archive-accent-text" />
       ) : (
         <View className="size-5 rounded-full border border-archive-subtle/60" />
       )}
@@ -121,8 +121,8 @@ export function FilterSegmentPill({
       >
         {label}
       </Text>
-      <ThemedIonicon
-        name={open ? 'chevron-up' : 'chevron-down'}
+      <ThemedIcon
+        icon={open ? ChevronUpIcon : ChevronDownIcon}
         size={14}
         color={active || hasValue ? 'foreground' : 'muted-foreground'}
       />
@@ -182,8 +182,8 @@ export function FilterPopoverTrigger({
       >
         {label}
       </Text>
-      <ThemedIonicon
-        name={open ? 'chevron-up' : 'chevron-down'}
+      <ThemedIcon
+        icon={open ? ChevronUpIcon : ChevronDownIcon}
         size={14}
         color={open || hasValue ? 'foreground' : 'muted-foreground'}
       />

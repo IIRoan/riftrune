@@ -1,3 +1,4 @@
+import { CompassIcon, LibraryIcon } from '@/components/icons';
 import { usePathname, useRouter } from 'expo-router';
 import {
   FLOATING_PILL_NAV_CLEARANCE,
@@ -13,15 +14,13 @@ const NAV_ITEMS: readonly FloatingPillNavItem<'mine' | 'browse'>[] = [
     id: 'mine',
     label: 'Mine',
     accessibilityLabel: 'My decks',
-    icon: 'albums-outline',
-    iconActive: 'albums',
+    icon: LibraryIcon,
   },
   {
     id: 'browse',
     label: 'Browse',
     accessibilityLabel: 'Browse decks',
-    icon: 'compass-outline',
-    iconActive: 'compass',
+    icon: CompassIcon,
   },
 ];
 

@@ -1,3 +1,4 @@
+import { ThemedIcon, ImageIcon, MinusIcon, PlusIcon } from '@/components/icons';
 import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -6,7 +7,6 @@ import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckBuilderStatusStrip } from '@/components/deck/DeckBuilderStatusStrip';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import { getSectionCount, resolveDeckCardImageUrl } from '@/lib/deck-card';
@@ -103,7 +103,7 @@ function SectionHeader({
             onAdd();
           }}
         >
-          <ThemedIonicon name="add" size={14} color="primary" />
+          <ThemedIcon icon={PlusIcon} size={14} color="primary" />
         </Pressable>
       ) : null}
     </View>
@@ -147,7 +147,7 @@ function CompositionRowView({
         <DeckCardArt uri={imageUri} variantNumber={row.card.variantNumber} />
       ) : (
         <View className="flex-1 items-center justify-center bg-card-panel">
-          <ThemedIonicon name="image-outline" size={14} color="muted-foreground" />
+          <ThemedIcon icon={ImageIcon} size={14} color="muted-foreground" />
         </View>
       )}
     </View>
@@ -222,33 +222,48 @@ function CompositionRowView({
       </Pressable>
 
       {!readOnly ? (
-        <View className="shrink-0 flex-row items-center overflow-hidden rounded-md border border-border bg-card-panel">
+        <View className="shrink-0 flex-row items-center gap-0.5">
           {canStep || row.single || row.section === 'legend' || row.section === 'champion' ? (
             <Pressable
               accessibilityLabel={`Decrease ${row.name}`}
-              className="size-7 items-center justify-center active:bg-accent/80"
+              className="size-7 items-center justify-center rounded-full active:bg-primary/14"
               onPress={() => {
                 hapticPress();
-                if (row.single || row.count <= 1 || row.section === 'legend' || row.section === 'champion') {
+                if (
+                  row.single ||
+                  row.count <= 1 ||
+                  row.section === 'legend' ||
+                  row.section === 'champion'
+                ) {
                   onRemove?.();
                   return;
                 }
                 onMinus?.();
               }}
             >
-              <ThemedIonicon name="remove" size={14} color="foreground" />
+              <ThemedIcon
+                icon={MinusIcon}
+                size={12}
+                color="archive-accent-text"
+                weight="regular"
+              />
             </Pressable>
           ) : null}
           {canStep ? (
             <Pressable
               accessibilityLabel={`Increase ${row.name}`}
-              className="size-7 items-center justify-center active:bg-accent/80"
+              className="size-7 items-center justify-center rounded-full active:bg-primary/14"
               onPress={() => {
                 hapticPress();
                 onPlus?.();
               }}
             >
-              <ThemedIonicon name="add" size={14} color="foreground" />
+              <ThemedIcon
+                icon={PlusIcon}
+                size={12}
+                color="archive-accent-text"
+                weight="regular"
+              />
             </Pressable>
           ) : null}
         </View>

@@ -1,3 +1,4 @@
+import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, ThemedIcon } from '@/components/icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Keyboard, Pressable, View } from 'react-native';
@@ -12,7 +13,6 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
@@ -108,7 +108,7 @@ function WishlistCardThumb({
         className={cn('items-center justify-center bg-card-panel', CARD_ART_RADIUS_CLASS)}
         style={size}
       >
-        <ThemedIonicon name="bookmark-outline" size={16} color="muted-foreground" />
+        <ThemedIcon icon={BookmarkIcon} size={16} color="muted-foreground" />
       </View>
     );
   }
@@ -183,8 +183,8 @@ function WishlistRow({
           <TrendTag trend={item.trend} className="mt-0.5" />
         </View>
 
-        <ThemedIonicon
-          name={expanded ? 'chevron-up' : 'chevron-down'}
+        <ThemedIcon
+          icon={expanded ? ChevronUpIcon : ChevronDownIcon}
           size={16}
           color="muted-foreground"
         />

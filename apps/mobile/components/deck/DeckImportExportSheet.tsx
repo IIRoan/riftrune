@@ -1,3 +1,4 @@
+import { ThemedIcon, DownloadIcon } from '@/components/icons';
 import { useState } from 'react';
 import { Share, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
@@ -15,7 +16,6 @@ import {
 import { Button, ButtonText } from '@/components/ui/button';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import {
   exportFlatDeckList,
@@ -142,7 +142,7 @@ export function DeckImportExportSheet({
                 <View className="gap-3 rounded-xl border border-archive-soft-line bg-card-panel p-4">
                   <View className="flex-row items-start gap-3">
                     <View className="mt-0.5 size-10 items-center justify-center rounded-full bg-primary/15">
-                      <ThemedIonicon name="download-outline" size={20} color="primary" />
+                      <ThemedIcon icon={DownloadIcon} size={20} color="primary" />
                     </View>
                     <View className="min-w-0 flex-1 gap-1">
                       <Text className="text-sm font-semibold text-foreground">

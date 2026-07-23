@@ -3,9 +3,11 @@ import type { CardListItem } from '@riftbound/contracts';
 import type { CollectionEntry } from '@/services/collectionService';
 import {
   collectVariantNumbers,
+  mergeOwnershipFromCollection,
   mergeOwnershipRecords,
   ownershipMapFromRecord,
   ownershipRecordFromCollection,
+  preferCollectionOwnership,
 } from '@/utils/collectionOwnership';
 
 const sampleCard = {
@@ -68,10 +70,10 @@ describe('collectionOwnership', () => {
     expect(map.has('OGN-002')).toBe(false);
   });
 
-  test('mergeOwnershipRecords updates and removes quantities', () => {
+  test('mergeOwnershipRecords updates and keeps known-zero quantities', () => {
     expect(
       mergeOwnershipRecords({ 'OGN-001': 1, 'OGN-002': 2 }, { 'OGN-001': 3, 'OGN-002': 0 })
-    ).toEqual({ 'OGN-001': 3 });
+    ).toEqual({ 'OGN-001': 3, 'OGN-002': 0 });
   });
 
   test('mergeOwnershipRecords adds new variants', () => {
@@ -79,6 +81,23 @@ describe('collectionOwnership', () => {
       'OGN-001': 1,
       'OGN-003': 4,
     });
+  });
+
+  test('mergeOwnershipFromCollection preserves known zeros and clears removed owned', () => {
+    expect(
+      mergeOwnershipFromCollection(
+        { 'OGN-001': 2, 'OGN-099': 0, 'OGN-050': 1 },
+        [{ ...sampleEntries[0]!, variantNumber: 'OGN-001', quantity: 3 }]
+      )
+    ).toEqual({ 'OGN-001': 3, 'OGN-099': 0, 'OGN-050': 0 });
+  });
+
+  test('preferCollectionOwnership lets collection win over stale ownership', () => {
+    const ownership = ownershipMapFromRecord({ 'OGN-001': 1, 'OGN-002': 2 });
+    const fromCollection = ownershipMapFromRecord({ 'OGN-001': 3 });
+    const merged = preferCollectionOwnership(ownership, fromCollection);
+    expect(merged.get('OGN-001')?.quantity).toBe(3);
+    expect(merged.get('OGN-002')?.quantity).toBe(2);
   });
 
   test('ownership map from collection seeds list tiles before detail opens', () => {

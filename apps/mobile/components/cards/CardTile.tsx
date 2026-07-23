@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Keyboard, Pressable, View, type ViewStyle } from 'react-native';
 import type { CardListItem } from '@riftbound/contracts';
 import { CardArtImage } from '@/components/cards/CardArtImage';
@@ -97,6 +97,13 @@ function CardTileInner({
     () => totalOwnedForCard(scopedCard, collectionByVariant),
     [scopedCard, collectionByVariant]
   );
+  // FlatList can lag a frame (or more) on prop delivery — paint the new count
+  // in this tile immediately on press, then clear when server/cache props catch up.
+  const [optimisticOwned, setOptimisticOwned] = useState<number | null>(null);
+  useEffect(() => {
+    setOptimisticOwned(null);
+  }, [owned]);
+  const displayOwned = optimisticOwned ?? owned;
   const priceLabel = formatListPrice(scopedCard);
   const showPrice = !hidePrice && (!isMobile || layout === 'grid');
 
@@ -119,9 +126,10 @@ function CardTileInner({
   const onAdd = useCallback(
     (variantNumber?: string) => {
       void hapticPress();
+      setOptimisticOwned((prev) => (prev ?? owned) + 1);
       addCard.mutate({ card, variantNumber });
     },
-    [addCard, card]
+    [addCard, card, owned]
   );
 
   const onRemove = useCallback(
@@ -130,13 +138,15 @@ function CardTileInner({
       const vn = resolveQuickRemoveVariantNumber(printingsWithOwned, variantNumber);
       if (!vn) return;
       const entry = collectionByVariant?.get(vn);
-      if (!entry) return;
+      const current = entry?.quantity ?? (optimisticOwned ?? owned);
+      if (current <= 0) return;
+      setOptimisticOwned(Math.max(0, (optimisticOwned ?? owned) - 1));
       setQuantity.mutate({
         variantNumber: vn,
-        quantity: Math.max(0, entry.quantity - 1),
+        quantity: Math.max(0, current - 1),
       });
     },
-    [collectionByVariant, printingsWithOwned, setQuantity]
+    [collectionByVariant, printingsWithOwned, setQuantity, owned, optimisticOwned]
   );
 
   const listCompact = isMobile && layout === 'list';
@@ -158,7 +168,7 @@ function CardTileInner({
   const desktopGridStepper = enableQuickAdd && layout === 'grid' && !isMobile;
   const desktopStepper = enableQuickAdd && !mobileGridQuickAdd ? (
     <OwnershipStepper
-      owned={owned}
+      owned={displayOwned}
       name={card.name}
       compact={stepperCompact}
       relaxed={stepperRelaxed}
@@ -170,7 +180,7 @@ function CardTileInner({
 
   const gridControl = mobileGridQuickAdd ? (
     <GridCollectionControl
-      owned={owned}
+      owned={displayOwned}
       name={card.name}
       printings={printingsWithOwned}
       {...collectionCallbacks}

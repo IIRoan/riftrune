@@ -1,9 +1,9 @@
+import { ThemedIcon, BookOpenIcon, GitCompareIcon, VideoIcon } from '@/components/icons';
 import * as WebBrowser from 'expo-web-browser';
 import { Pressable, View } from 'react-native';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { deckArchiveViewUrl, deckBrowseSummaryLine } from '@/lib/deck-browse';
 import { collectIllegalCardNames, deckHasBannedCards } from '@/lib/card-legality';
 import type { DeckState } from '@/lib/deck-types';
@@ -61,7 +61,7 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
               onPress={() => void openExternalUrl(deck.videoUrl!)}
             >
               <ButtonIcon>
-                <ThemedIonicon name="videocam-outline" size={14} color="foreground" />
+                <ThemedIcon icon={VideoIcon} size={14} color="foreground" />
               </ButtonIcon>
               <ButtonText>Watch video</ButtonText>
             </Button>
@@ -74,7 +74,7 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
               onPress={() => void openExternalUrl(archiveUrl)}
             >
               <ButtonIcon>
-                <ThemedIonicon name="book-outline" size={14} color="foreground" />
+                <ThemedIcon icon={BookOpenIcon} size={14} color="foreground" />
               </ButtonIcon>
               <ButtonText>Read guide</ButtonText>
             </Button>
@@ -87,11 +87,7 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
               onPress={() => void openExternalUrl(archiveUrl)}
             >
               <ButtonIcon>
-                <ThemedIonicon
-                  name="git-compare-outline"
-                  size={14}
-                  color="foreground"
-                />
+                <ThemedIcon icon={GitCompareIcon} size={14} color="foreground" />
               </ButtonIcon>
               <ButtonText>View matchups</ButtonText>
             </Button>

@@ -1,6 +1,6 @@
+import { ThemedIcon, PlusIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import { cn } from '@/lib/utils';
 
 interface DeckSectionHeaderProps {
@@ -62,7 +62,7 @@ export function DeckSectionHeader({
               className="h-8 flex-row items-center gap-1 rounded-lg border border-border bg-card-panel px-2.5 active:opacity-90"
               onPress={onAdd}
             >
-              <ThemedIonicon name="add" size={14} color="primary" />
+              <ThemedIcon icon={PlusIcon} size={14} color="primary" />
               <Text className="text-[12px] font-semibold text-primary">Add</Text>
             </Pressable>
           ) : null}

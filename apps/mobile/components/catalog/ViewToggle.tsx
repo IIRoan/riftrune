@@ -1,5 +1,5 @@
+import { LayoutGridIcon, ListIcon, ThemedIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
-import { ThemedIonicon } from '@/components/ui/themed-ionicon';
 import {
   catalogToolbarButtonClasses,
   catalogToolbarGroupClass,
@@ -16,9 +16,9 @@ interface ViewToggleProps {
 
 export function ViewToggle({ view, onViewChange, mobile = false }: ViewToggleProps) {
   const options = [
-    { id: 'list' as const, icon: 'list' as const, label: 'List view' },
-    { id: 'grid' as const, icon: 'grid' as const, label: 'Grid view' },
-  ];
+    { id: 'list' as const, icon: ListIcon, label: 'List view' },
+    { id: 'grid' as const, icon: LayoutGridIcon, label: 'Grid view' },
+  ] as const;
 
   if (mobile) {
     return (
@@ -37,11 +37,7 @@ export function ViewToggle({ view, onViewChange, mobile = false }: ViewTogglePro
                 }}
                 className={catalogToolbarButtonClasses(active, true)}
               >
-                <ThemedIonicon
-                  name={icon}
-                  size={18}
-                  color={catalogToolbarIconColor(iconTone)}
-                />
+                <ThemedIcon icon={icon} size={18} color={catalogToolbarIconColor(iconTone)} />
               </Pressable>
             </View>
           );
@@ -66,11 +62,7 @@ export function ViewToggle({ view, onViewChange, mobile = false }: ViewTogglePro
             }}
             className={catalogToolbarSegmentClasses(active)}
           >
-            <ThemedIonicon
-              name={icon}
-              size={18}
-              color={catalogToolbarIconColor(iconTone)}
-            />
+            <ThemedIcon icon={icon} size={18} color={catalogToolbarIconColor(iconTone)} />
           </Pressable>
         );
       })}
