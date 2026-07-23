@@ -15,6 +15,7 @@ import {
   deckEditHref,
   deckViewHref,
   isDeckEditMode,
+  leaveDeckEditMode,
   leaveDeckEditor,
 } from '@/lib/deck-navigation';
 import type { DeckCard } from '@/lib/deck-types';
@@ -44,7 +45,7 @@ export default function DeckEditorScreen() {
       setPickingLegend(false);
       persist(next);
       if (!isDeckEditMode(mode)) {
-        router.replace(deckEditHref(deck.id));
+        router.push(deckEditHref(deck.id));
       }
     },
     [deck, mode, persist, router]
@@ -67,7 +68,7 @@ export default function DeckEditorScreen() {
     if (editing) {
       void flushSave();
       if (deck?.id) {
-        router.replace(deckViewHref(deck.id));
+        leaveDeckEditMode(router, deck.id);
         return;
       }
     }

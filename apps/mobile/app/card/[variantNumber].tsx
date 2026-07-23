@@ -45,6 +45,7 @@ export default function CardDetailScreen() {
   const isModal = present === 'modal';
   const useDrawer = isModal && isMobile;
   const hideCollectionActions = source === 'deck-view';
+  const hidePriceHistory = source === 'deck-view';
 
   const detail = useCardDetail(variantNumber);
   const wishlistPrices = useWishlistPrices(source === 'wishlist');
@@ -100,7 +101,7 @@ export default function CardDetailScreen() {
         variantNumber={detail.activeVariant.variantNumber}
         embedded="drawer"
         hideCollectionActions={hideCollectionActions}
-        showWishlistHistory={source === 'wishlist'}
+        hidePriceHistory={hidePriceHistory}
         wishlistItem={wishlistItem ?? null}
       />
     );

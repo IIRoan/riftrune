@@ -42,6 +42,7 @@ import {
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWishlistMutations } from '@/hooks/useWishlistMutations';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
+import { useVariantPriceHistory } from '@/hooks/useVariantPriceHistory';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import {
   formatMarketTrend,
@@ -70,9 +71,10 @@ interface CatalogDetailPanelProps {
   embedded?: 'panel' | 'drawer';
   /** Hide add/remove collection controls (e.g. deck view-only preview). */
   hideCollectionActions?: boolean;
-  /** When opened from wishlist, show daily trend history with exact day prices. */
+  /** Optional wishlist-enriched history when opened from the wishlist tab. */
   wishlistItem?: WishlistPriceItem | null;
-  showWishlistHistory?: boolean;
+  /** Hide 30-day trend (e.g. deck view-only). Default: show. */
+  hidePriceHistory?: boolean;
 }
 
 export function CatalogDetailPanel({
@@ -81,7 +83,7 @@ export function CatalogDetailPanel({
   embedded = 'panel',
   hideCollectionActions = false,
   wishlistItem = null,
-  showWishlistHistory = false,
+  hidePriceHistory = false,
 }: CatalogDetailPanelProps) {
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { setQuantity } = useCollectionMutations();
@@ -161,6 +163,19 @@ export function CatalogDetailPanel({
     },
     [removeWishlist]
   );
+
+  const activeVariantNumber = detail.activeVariant?.variantNumber;
+  const activeIsFoil = detail.activeVariant
+    ? isFoilVariant(
+        detail.activeVariant.variantNumber,
+        detail.activeVariant.variantLabel,
+        detail.activeVariant.variantType
+      )
+    : false;
+  const priceHistory = useVariantPriceHistory(activeVariantNumber, {
+    isFoil: activeIsFoil,
+    enabled: !hidePriceHistory && Boolean(activeVariantNumber),
+  });
 
   if (!detail.card || !detail.activeVariant) {
     if (detail.isLoading) {
@@ -437,15 +452,20 @@ export function CatalogDetailPanel({
               </View>
             ) : null}
 
-            {showWishlistHistory ? (
-              <View className="gap-2">
+            {!hidePriceHistory ? (
+              <View className="gap-2" style={{ minHeight: 196 }}>
                 <Text className="text-sm font-semibold text-foreground">Daily trend</Text>
-                {wishlistItem ? (
+                {wishlistItem &&
+                wishlistItem.variantNumber === activeVariant.variantNumber ? (
                   <WishlistPriceHistoryPanel item={wishlistItem} />
+                ) : priceHistory.panelItem ? (
+                  <WishlistPriceHistoryPanel item={priceHistory.panelItem} />
                 ) : (
-                  <View className="rounded-xl border border-border bg-card p-3">
+                  <View className="min-h-[160px] justify-center rounded-xl border border-border bg-card p-3">
                     <Text className="text-xs leading-5 text-muted-foreground">
-                      Loading daily trend history…
+                      {priceHistory.isLoading
+                        ? 'Loading daily trend history…'
+                        : 'No daily trend snapshots yet. Prices sync once per day from Cardmarket.'}
                     </Text>
                   </View>
                 )}
@@ -525,33 +545,36 @@ export function CatalogDetailPanel({
               {!isDrawer ? collectionCta : null}
 
               <Button
-              variant={isWatchingActive ? 'outline' : 'default'}
-              size="sm"
-              className={
-                isWatchingActive
-                  ? 'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full border-primary/30 bg-primary/10'
-                  : 'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full bg-primary'
-              }
-              busy={watchBusy}
-              onPress={() => {
-                void handleWatchPress();
-              }}
-            >
-              <ThemedIonicon
-                name={isWatchingActive ? 'bookmark' : 'bookmark-outline'}
-                size={16}
-                color={isWatchingActive ? 'primary' : 'primary-foreground'}
-              />
-              <ButtonText
-                className={cn(
-                  'text-sm',
-                  isWatchingActive ? 'text-primary' : 'text-primary-foreground'
-                )}
+                variant={isWatchingActive ? 'outline' : 'default'}
+                size="sm"
+                className={
+                  isWatchingActive
+                    ? 'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full border-primary/30 bg-primary/10'
+                    : 'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full bg-primary'
+                }
+                busy={watchBusy}
+                onPress={() => {
+                  void handleWatchPress();
+                }}
               >
-                {isWatchingActive ? 'Wishlisted · tap to remove' : 'Wishlist card'}
-              </ButtonText>
-            </Button>
+                <ThemedIonicon
+                  name={isWatchingActive ? 'bookmark' : 'bookmark-outline'}
+                  size={16}
+                  color={isWatchingActive ? 'primary' : 'primary-foreground'}
+                />
+                <ButtonText
+                  className={cn(
+                    'text-sm',
+                    isWatchingActive ? 'text-primary' : 'text-primary-foreground'
+                  )}
+                >
+                  {isWatchingActive ? 'Wishlisted · tap to remove' : 'Wishlist card'}
+                </ButtonText>
+              </Button>
             </View>
+
+            {/* Extra scroll extent so the bottom CTA clears the home indicator. */}
+            {isDrawer ? <View style={{ height: 72 }} /> : null}
     </View>
   );
 

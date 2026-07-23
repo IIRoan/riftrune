@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import { Text } from '@/components/ui/text';
-import type { WishlistPriceItem, WishlistPricePoint } from '@/hooks/useWishlistPrices';
+import type { PriceHistoryPanelItem } from '@/hooks/useVariantPriceHistory';
+import type { WishlistPricePoint } from '@/lib/wishlist-price-points';
 import { formatPricePointDate } from '@/lib/wishlist-price-points';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +22,7 @@ export function WishlistPriceHistoryPanel({
   item,
   className,
 }: {
-  item: WishlistPriceItem;
+  item: PriceHistoryPanelItem;
   className?: string;
 }) {
   const points = item.points;
