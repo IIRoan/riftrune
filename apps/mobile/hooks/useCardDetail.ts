@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { CardListItem } from '@riftbound/contracts';
@@ -21,6 +21,7 @@ import {
 } from '@/utils/collectionRemove';
 import { hapticPress } from '@/utils/haptics';
 import { closeCard } from '@/utils/cardNavigation';
+import { flushCardDetailPrefetch } from '@/lib/prefetchCardDetail';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
 
@@ -29,6 +30,7 @@ export function useCardDetail(
   options?: { listItem?: CardListItem | null }
 ) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [selectedVariant, setSelectedVariant] = useState(variantNumber);
   const [pickerVisible, setPickerVisible] = useState(false);
   const { listItem } = options ?? {};
@@ -42,7 +44,13 @@ export function useCardDetail(
 
   const { data, isLoading, isError, isPlaceholderData } = useQuery({
     queryKey: cardQueryKeys.detail(variantNumber),
-    queryFn: () => api.getCard(variantNumber),
+    queryFn: async () => {
+      // Prefer a coalesced batch warm from the catalog over a one-off GET.
+      await flushCardDetailPrefetch();
+      const cached = queryClient.getQueryData(cardQueryKeys.detail(variantNumber));
+      if (cached) return cached as Awaited<ReturnType<typeof api.getCard>>;
+      return api.getCard(variantNumber);
+    },
     enabled: Boolean(variantNumber),
     staleTime: 5 * 60 * 1000,
     refetchOnMount: false,

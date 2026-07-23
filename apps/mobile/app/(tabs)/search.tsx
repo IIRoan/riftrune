@@ -76,7 +76,7 @@ import {
   useMobileLayout,
 } from '@/hooks/useBreakpoint';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
-import { prefetchCardDetail } from '@/lib/prefetchCardDetail';
+import { flushCardDetailPrefetch, prefetchCardDetail } from '@/lib/prefetchCardDetail';
 import {
   catalogLookaheadCount,
   catalogViewportTargetHeight,
@@ -347,6 +347,7 @@ function SearchScreenBody() {
       const item = displayItems.find((card) => cardListItemMatchesVariant(card, variantNumber));
       if (item) {
         prefetchCardDetail(queryClient, item);
+        void flushCardDetailPrefetch();
       }
       setSelectedVariant(variantNumber);
     },
