@@ -40,7 +40,7 @@ export function CatalogCollectionPillNav({
       onChange={onChange}
       compact
       iconOnly={isMobile}
-      className={cn('h-11 shrink-0', className)}
+      className={cn('h-9 shrink-0', className)}
     />
   );
 }

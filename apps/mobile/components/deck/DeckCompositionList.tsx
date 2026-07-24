@@ -36,8 +36,14 @@ interface DeckCompositionListProps {
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
   openSource?: CardOpenSource;
-  onMinus?: (section: Exclude<DeckSectionKey, 'legend' | 'champion'>, name: string) => void;
-  onPlus?: (section: Exclude<DeckSectionKey, 'legend' | 'champion'>, name: string) => void;
+  onMinus?: (
+    section: Exclude<DeckSectionKey, 'legend' | 'champion'>,
+    name: string
+  ) => void;
+  onPlus?: (
+    section: Exclude<DeckSectionKey, 'legend' | 'champion'>,
+    name: string
+  ) => void;
   onRemove?: (section: DeckSectionKey, name?: string) => void;
   onAddSection?: (section: DeckSectionKey) => void;
   onSectionPress?: (section: DeckSectionKey) => void;
@@ -133,7 +139,8 @@ function CompositionRowView({
 }) {
   const router = useRouter();
   const shortfall = owned != null && owned < row.count;
-  const canStep = !readOnly && !row.single && row.section !== 'legend' && row.section !== 'champion';
+  const canStep =
+    !readOnly && !row.single && row.section !== 'legend' && row.section !== 'champion';
 
   const thumb = (
     <View
@@ -223,7 +230,10 @@ function CompositionRowView({
 
       {!readOnly ? (
         <View className="shrink-0 flex-row items-center gap-0.5">
-          {canStep || row.single || row.section === 'legend' || row.section === 'champion' ? (
+          {canStep ||
+          row.single ||
+          row.section === 'legend' ||
+          row.section === 'champion' ? (
             <Pressable
               accessibilityLabel={`Decrease ${row.name}`}
               className="size-7 items-center justify-center rounded-full active:bg-primary/14"
@@ -241,12 +251,7 @@ function CompositionRowView({
                 onMinus?.();
               }}
             >
-              <ThemedIcon
-                icon={MinusIcon}
-                size={12}
-                color="archive-accent-text"
-                weight="regular"
-              />
+              <ThemedIcon icon={MinusIcon} size={12} color="archive-accent-text" />
             </Pressable>
           ) : null}
           {canStep ? (
@@ -258,12 +263,7 @@ function CompositionRowView({
                 onPlus?.();
               }}
             >
-              <ThemedIcon
-                icon={PlusIcon}
-                size={12}
-                color="archive-accent-text"
-                weight="regular"
-              />
+              <ThemedIcon icon={PlusIcon} size={12} color="archive-accent-text" />
             </Pressable>
           ) : null}
         </View>
@@ -416,7 +416,9 @@ export function DeckCompositionList({
         {championRows.length > 0 ? (
           renderRows(championRows)
         ) : (
-          <Text className="mb-1 text-[11px] text-muted-foreground">No champion selected</Text>
+          <Text className="mb-1 text-[11px] text-muted-foreground">
+            No champion selected
+          </Text>
         )}
 
         <SectionHeader
@@ -427,7 +429,9 @@ export function DeckCompositionList({
         {mainRows.length > 0 ? (
           renderRows(mainRows)
         ) : (
-          <Text className="mb-1 text-[11px] text-muted-foreground">No main deck cards</Text>
+          <Text className="mb-1 text-[11px] text-muted-foreground">
+            No main deck cards
+          </Text>
         )}
 
         <SectionHeader
@@ -438,7 +442,9 @@ export function DeckCompositionList({
         {sideRows.length > 0 ? (
           renderRows(sideRows)
         ) : (
-          <Text className="mb-1 text-[11px] text-muted-foreground">No sideboard cards</Text>
+          <Text className="mb-1 text-[11px] text-muted-foreground">
+            No sideboard cards
+          </Text>
         )}
       </ScrollView>
     </View>

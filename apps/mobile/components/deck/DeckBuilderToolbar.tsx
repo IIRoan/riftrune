@@ -1,13 +1,14 @@
-import { ThemedIcon, ChevronLeftIcon, DownloadIcon, InfoIcon, ListIcon, MenuIcon, PencilIcon, ShareIcon, SlidersHorizontalIcon } from '@/components/icons';
+import { ThemedIcon, ChevronLeftIcon, DownloadIcon, InfoIcon, ListIcon, MenuIcon, PencilIcon, SlidersHorizontalIcon } from '@/components/icons';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
+import { DeckShareMenu } from '@/components/deck/DeckShareMenu';
 import { DeckValidationMenu } from '@/components/deck/DeckValidationMenu';
 import { PillNav, type PillNavItem } from '@/components/shell/FloatingPillNav';
 import { TextInput } from '@/components/ui/text-input';
 import { Text } from '@/components/ui/text';
 import { countCatalogFilters, type CatalogFilters } from '@/constants/catalogFilters';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
-import type { DeckValidationMessage } from '@/lib/deck-types';
+import type { DeckState, DeckValidationMessage } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
@@ -18,6 +19,7 @@ const TOOLBAR_CONTROL =
   'size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel';
 
 interface DeckBuilderToolbarProps {
+  deck: DeckState;
   deckName: string;
   readOnly?: boolean;
   validation: DeckValidationMessage[];
@@ -27,7 +29,6 @@ interface DeckBuilderToolbarProps {
   onToggleValidation?: () => void;
   validationExpanded?: boolean;
   onImport?: () => void;
-  onExport?: () => void;
   /** Owned view mode → enter the deck builder */
   onEdit?: () => void;
   /** Desktop: collapse/expand left info drawer */
@@ -44,6 +45,7 @@ interface DeckBuilderToolbarProps {
 }
 
 export function DeckBuilderToolbar({
+  deck,
   deckName,
   readOnly = false,
   validation,
@@ -53,7 +55,6 @@ export function DeckBuilderToolbar({
   onToggleValidation,
   validationExpanded = false,
   onImport,
-  onExport,
   onEdit,
   infoDrawerOpen,
   onToggleInfoDrawer,
@@ -66,7 +67,6 @@ export function DeckBuilderToolbar({
   onOpenCatalogFilters,
 }: DeckBuilderToolbarProps) {
   const isMobile = useMobileLayout();
-  const showIoActions = Boolean(onImport || onExport);
   const showCatalogFilters =
     isMobile && !readOnly && catalogFilters != null && onOpenCatalogFilters != null;
   const filterCount = showCatalogFilters ? countCatalogFilters(catalogFilters) : 0;
@@ -127,7 +127,7 @@ export function DeckBuilderToolbar({
     </Pressable>
   ) : null;
 
-  const ioActions = showIoActions ? (
+  const ioActions = (
     <>
       {onImport ? (
         <Pressable
@@ -139,18 +139,9 @@ export function DeckBuilderToolbar({
           <ThemedIcon icon={DownloadIcon} size={18} color="foreground" />
         </Pressable>
       ) : null}
-      {onExport ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Export deck list"
-          className={TOOLBAR_CONTROL}
-          onPress={onExport}
-        >
-          <ThemedIcon icon={ShareIcon} size={18} color="foreground" />
-        </Pressable>
-      ) : null}
+      <DeckShareMenu deck={deck} />
     </>
-  ) : null;
+  );
 
   const validationAction =
     validation.length > 0 && onToggleValidation ? (
@@ -192,15 +183,7 @@ export function DeckBuilderToolbar({
     </Pressable>
   ) : null;
 
-  const hasTrailing =
-    editAction != null ||
-    catalogFilterAction != null ||
-    showIoActions ||
-    validationAction != null ||
-    (isMobile && (onOpenInfo || onOpenList)) ||
-    (!isMobile && onToggleInfoDrawer);
-
-  const trailingActions = hasTrailing ? (
+  const trailingActions = (
     <View className="z-20 shrink-0 flex-row items-center gap-1">
       {catalogFilterAction}
       {panelActions}
@@ -208,7 +191,7 @@ export function DeckBuilderToolbar({
       {validationAction}
       {editAction}
     </View>
-  ) : null;
+  );
 
   const sectionNav =
     catalogSection != null &&

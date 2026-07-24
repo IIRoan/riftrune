@@ -55,7 +55,7 @@ export function CollectionAddButton({
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
           <>
-            <ThemedIcon icon={PlusIcon} size={12} color="archive-accent-text" weight="regular" />
+            <ThemedIcon icon={PlusIcon} size={12} color="archive-accent-text" />
             <Text className="text-[13px] font-semibold text-archive-accent-text">Add</Text>
           </>
         )}
@@ -118,7 +118,7 @@ export function CollectionQtyControls({
             {loading ? (
               <ActivityIndicator size="small" className="accent-foreground" />
             ) : (
-              <ThemedIcon icon={MinusIcon} size={16} color="foreground" weight="regular" />
+              <ThemedIcon icon={MinusIcon} size={16} color="foreground" />
             )}
           </Pressable>
           <CompactStepDivider />
@@ -135,7 +135,7 @@ export function CollectionQtyControls({
             }}
             disabled={loading}
           >
-            <ThemedIcon icon={PlusIcon} size={16} color="foreground" weight="regular" />
+            <ThemedIcon icon={PlusIcon} size={16} color="foreground" />
           </Pressable>
         </View>
       );

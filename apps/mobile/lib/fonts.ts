@@ -1,15 +1,22 @@
 /**
- * Self-hosted Geist (SIL OFL) — bundled in assets/fonts, no network requests.
- * Matches design/app typography without third-party font CDNs.
+ * Self-hosted Inter (SIL OFL) — bundled in assets/fonts, no network requests.
+ * Matches the clean Skiff Sans / professional product-UI look from skiff.com
+ * (Skiff Sans itself is proprietary; Inter is the open face their stack references).
+ *
+ * Each weight is a separate family name (RN / Expo convention). Always pair the
+ * selected face with fontWeight/fontStyle "normal" so web (especially Firefox)
+ * and Android do not synthesize extra bold on top of an already-weighted file.
  */
 
+import type { TextStyle } from 'react-native';
+
 export const FONT_SANS = {
-  normal: 'Geist-Regular',
-  medium: 'Geist-Medium',
-  semibold: 'Geist-SemiBold',
-  bold: 'Geist-Bold',
-  extrabold: 'Geist-Bold',
-  black: 'Geist-Black',
+  normal: 'Inter-Regular',
+  medium: 'Inter-Medium',
+  semibold: 'Inter-SemiBold',
+  bold: 'Inter-Bold',
+  extrabold: 'Inter-ExtraBold',
+  black: 'Inter-Black',
 } as const;
 
 export const FONT_MONO = {
@@ -17,18 +24,6 @@ export const FONT_MONO = {
   medium: 'GeistMono-Medium',
   semibold: 'GeistMono-SemiBold',
   bold: 'GeistMono-Bold',
-} as const;
-
-export const APP_FONTS = {
-  'Geist-Regular': require('@/assets/fonts/Geist-Regular.ttf'),
-  'Geist-Medium': require('@/assets/fonts/Geist-Medium.ttf'),
-  'Geist-SemiBold': require('@/assets/fonts/Geist-SemiBold.ttf'),
-  'Geist-Bold': require('@/assets/fonts/Geist-Bold.ttf'),
-  'Geist-Black': require('@/assets/fonts/Geist-Black.ttf'),
-  'GeistMono-Regular': require('@/assets/fonts/GeistMono-Regular.ttf'),
-  'GeistMono-Medium': require('@/assets/fonts/GeistMono-Medium.ttf'),
-  'GeistMono-SemiBold': require('@/assets/fonts/GeistMono-SemiBold.ttf'),
-  'GeistMono-Bold': require('@/assets/fonts/GeistMono-Bold.ttf'),
 } as const;
 
 type SansWeight = (typeof FONT_SANS)[keyof typeof FONT_SANS];
@@ -53,7 +48,7 @@ function weightFromClassName(className: string): keyof typeof FONT_SANS {
   return 'normal';
 }
 
-/** Resolve bundled Geist family from Tailwind class string. */
+/** Resolve bundled Inter / mono family from Tailwind class string. */
 export function fontFamilyForClassName(className?: string): SansWeight | MonoWeight {
   const value = className ?? '';
   const isMono = /\bfont-mono\b/.test(value);
@@ -65,6 +60,18 @@ export function fontFamilyForClassName(className?: string): SansWeight | MonoWei
     return FONT_MONO[weight];
   }
   return FONT_SANS[weight];
+}
+
+/**
+ * Font styles for Text / TextInput. Resets CSS weight/style so the chosen
+ * face file is used as-is (avoids Firefox faux-bold on Inter-SemiBold + font-semibold).
+ */
+export function textFontStyleForClassName(className?: string): TextStyle {
+  return {
+    fontFamily: fontFamilyForClassName(className),
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+  };
 }
 
 export const DEFAULT_SANS = FONT_SANS.normal;

@@ -145,7 +145,7 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
               onLongPress={onLongPress}
               className="min-h-11 flex-1 items-center justify-center gap-0.5 active:opacity-80"
             >
-              <Icon size={20} color={color} weight="regular" />
+              <Icon size={20} color={color} />
               <Text
                 className={cn(
                   'text-[10px] font-semibold',

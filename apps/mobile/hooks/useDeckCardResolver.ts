@@ -38,7 +38,26 @@ export async function resolveDeckCardByName(name: string): Promise<DeckCard | nu
   const detail = await api.getCard(exact.variantNumber);
   const deckCard = deckCardFromDetail(detail.data, exact.variantNumber);
   cardResolveCache.set(deckCard.name, deckCard);
+  cardResolveCache.set(deckCard.variantNumber, deckCard);
   return deckCard;
+}
+
+/** Resolve a deck card by Piltover Archive card code / variant number. */
+export async function resolveDeckCardByVariant(
+  variantNumber: string
+): Promise<DeckCard | null> {
+  const cached = cardResolveCache.get(variantNumber);
+  if (cached) return cached;
+
+  try {
+    const detail = await api.getCard(variantNumber);
+    const deckCard = deckCardFromDetail(detail.data, variantNumber);
+    cardResolveCache.set(deckCard.name, deckCard);
+    cardResolveCache.set(deckCard.variantNumber, deckCard);
+    return deckCard;
+  } catch {
+    return null;
+  }
 }
 
 export function useCollectionByCardName(

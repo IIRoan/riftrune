@@ -3,7 +3,11 @@ import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { domainIconFor } from '@/constants/gameAssets';
-import { countRunesForDomain, getLegendRuneDomains, totalRuneCount } from '@/lib/deck-builder';
+import {
+  countRunesForDomain,
+  getLegendRuneDomains,
+  totalRuneCount,
+} from '@/lib/deck-builder';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
@@ -56,7 +60,11 @@ function RuneDomainRow({
           )}
           style={dense ? { width: 22, height: 22 } : undefined}
         >
-          <ThemedIcon icon={CircleIcon} size={dense ? 10 : 12} color="muted-foreground" />
+          <ThemedIcon
+            icon={CircleIcon}
+            size={dense ? 10 : 12}
+            color="muted-foreground"
+          />
         </View>
       )}
 
@@ -98,7 +106,6 @@ function RuneDomainRow({
                 icon={MinusIcon}
                 size={dense ? 12 : 14}
                 color="archive-accent-text"
-                weight="regular"
               />
             </Pressable>
             <Text className="min-w-5 text-center font-mono text-[13px] font-semibold tabular-nums text-foreground">
@@ -119,7 +126,6 @@ function RuneDomainRow({
                 icon={PlusIcon}
                 size={dense ? 12 : 14}
                 color="archive-accent-text"
-                weight="regular"
               />
             </Pressable>
           </>
@@ -148,7 +154,10 @@ export function DeckRunePanel({
   return (
     <View className={cn('min-w-0 gap-2', compact ? 'flex-1' : undefined)}>
       <View className="min-w-0 flex-row items-center justify-between gap-2">
-        <Text className="min-w-0 flex-1 text-[13px] font-semibold text-foreground" numberOfLines={1}>
+        <Text
+          className="min-w-0 flex-1 text-[13px] font-semibold text-foreground"
+          numberOfLines={1}
+        >
           Rune deck
         </Text>
         <Text

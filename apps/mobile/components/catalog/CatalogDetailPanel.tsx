@@ -484,7 +484,7 @@ export function CatalogDetailPanel({
                       icon={BookmarkIcon}
                       size={16}
                       color="archive-accent-text"
-                      weight={isWatchingActive ? 'fill' : 'regular'}
+                      weight={isWatchingActive ? 'fill' : 'bold'}
                     />
                     <Text className="text-sm font-semibold text-archive-accent-text">
                       {isWatchingActive ? 'Wishlisted · tap to remove' : 'Wishlist card'}

@@ -34,6 +34,22 @@ const responsiveBackground = `
 html,
 body {
   height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
+
+*,
+*::before,
+*::after {
+  font-synthesis: none;
+}
+
+svg {
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+  overflow: visible;
 }
 
 body {

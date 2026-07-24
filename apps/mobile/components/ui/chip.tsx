@@ -7,7 +7,7 @@ import {
   useMemo,
 } from "react";
 import { Pressable, Text } from "react-native";
-import { fontFamilyForClassName } from "@/lib/fonts";
+import { textFontStyleForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -81,7 +81,7 @@ export const ChipText = (props: ChipChildProps) => {
     <Text
       {...props}
       className={merged}
-      style={[{ fontFamily: fontFamilyForClassName(merged) }, props.style]}
+      style={[textFontStyleForClassName(merged), props.style]}
     />
   );
 };

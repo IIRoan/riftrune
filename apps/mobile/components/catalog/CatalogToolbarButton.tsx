@@ -47,7 +47,7 @@ export function CatalogToolbarButton({
       >
         <ThemedIcon icon={icon} size={16} color={catalogToolbarIconColor(tone)} />
         <Text
-          className="shrink text-sm font-semibold text-foreground"
+          className="shrink text-sm font-semibold leading-none text-foreground"
           numberOfLines={1}
         >
           {label}

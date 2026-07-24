@@ -827,7 +827,7 @@ export const BottomSheetFooter = ({
   return (
     <Animated.View
       className={cn(
-        "flex flex-col gap-2 border-border border-t bg-background px-4 pt-4",
+        "flex w-full flex-col gap-2 border-border border-t bg-background px-4 pt-4",
         className
       )}
       style={style}
@@ -837,7 +837,9 @@ export const BottomSheetFooter = ({
         Safe-area inset lives on an inner wrapper so `pb-*` on `className`
         cannot push the Done/close control under the home indicator.
       */}
-      <Animated.View style={animatedStyle}>{children}</Animated.View>
+      <Animated.View className="w-full" style={animatedStyle}>
+        {children}
+      </Animated.View>
     </Animated.View>
   );
 };

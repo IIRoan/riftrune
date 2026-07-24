@@ -25,7 +25,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useCSSVariable } from "uniwind";
-import { DEFAULT_SANS, fontFamilyForClassName } from "@/lib/fonts";
+import { DEFAULT_SANS, textFontStyleForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import { Button, ButtonIcon, type ButtonProps, ButtonText } from "./button";
 
@@ -99,10 +99,12 @@ export const Input = ({ className, disabled, style, ...props }: InputProps) => {
     className
   );
 
+  const fontStyle = textFontStyleForClassName(merged);
+
   return (
     <RNTextInput
       className={merged}
-      style={[{ fontFamily: fontFamilyForClassName(merged) ?? DEFAULT_SANS }, style]}
+      style={[{ ...fontStyle, fontFamily: fontStyle.fontFamily ?? DEFAULT_SANS }, style]}
       editable={!disabled}
       placeholderTextColorClassName="accent-muted-foreground"
       {...props}

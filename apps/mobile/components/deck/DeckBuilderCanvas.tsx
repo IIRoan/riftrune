@@ -47,7 +47,7 @@ import { prefetchDeckAddCatalog } from '@/lib/prefetchDeckAddCatalog';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
-type IoMode = 'import' | 'export';
+type IoMode = 'import';
 type MobilePanel = 'info' | 'list' | null;
 type CatalogSection = 'mainDeck' | 'sideboard';
 
@@ -307,6 +307,7 @@ export function DeckBuilderCanvas({
         ) : null}
 
         <DeckBuilderToolbar
+          deck={deck}
           deckName={deck.name}
           readOnly={readOnly}
           validation={validation}
@@ -320,7 +321,6 @@ export function DeckBuilderCanvas({
           onToggleValidation={() => setValidationExpanded((v) => !v)}
           validationExpanded={validationExpanded}
           onImport={readOnly ? undefined : () => onIoModeChange('import')}
-          onExport={() => onIoModeChange('export')}
           onEdit={canEdit ? onEdit : undefined}
           infoDrawerOpen={infoDrawerOpen}
           onToggleInfoDrawer={
@@ -434,7 +434,7 @@ export function DeckBuilderCanvas({
         </BottomSheet>
       ) : null}
 
-      {ioMode === 'export' || (ioMode === 'import' && !readOnly) ? (
+      {ioMode === 'import' && !readOnly ? (
         <DeckImportExportSheet
           open
           mode={ioMode}

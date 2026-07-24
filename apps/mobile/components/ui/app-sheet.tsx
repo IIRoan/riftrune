@@ -267,7 +267,7 @@ export function AppSheetFooter({ className, ...props }: ComponentProps<typeof Vi
   return (
     <View
       className={cn(
-        'mt-auto flex flex-col gap-2 border-border border-t bg-background px-4 pt-4 pb-4',
+        'mt-auto flex w-full flex-col gap-2 border-border border-t bg-background px-4 pt-4 pb-4',
         className
       )}
       {...props}
