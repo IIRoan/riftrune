@@ -11,8 +11,11 @@ const OWNERSHIP_STALE_MS = 5 * 60 * 1000;
 const EMPTY_MAP: CollectionOwnershipMap = new Map();
 
 /** Shared ownership map for list tiles — avoids passing new props through FlatList. */
-export function useOwnershipMap(): CollectionOwnershipMap {
+export function useOwnershipMap(options?: {
+  enabled?: boolean;
+}): CollectionOwnershipMap {
   const queryClient = useQueryClient();
+  const enabled = options?.enabled ?? true;
 
   const { data } = useQuery({
     queryKey: collectionQueryKeys.ownershipRoot,
@@ -21,6 +24,7 @@ export function useOwnershipMap(): CollectionOwnershipMap {
     staleTime: OWNERSHIP_STALE_MS,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+    enabled,
   });
 
   return useMemo(

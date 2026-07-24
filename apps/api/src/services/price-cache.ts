@@ -82,10 +82,14 @@ export class PriceCacheService {
     const unique = [...new Set(cardmarketIds)];
     if (unique.length === 0) return [];
 
-    const rows = await this.db
-      .select()
-      .from(prices)
-      .where(inArray(prices.cardmarketId, unique));
+    const rows = [];
+    for (const batch of chunk(unique, PRICE_SYNC_CHUNK_SIZE)) {
+      const batchRows = await this.db
+        .select()
+        .from(prices)
+        .where(inArray(prices.cardmarketId, batch));
+      rows.push(...batchRows);
+    }
 
     return rows.map((r) => ({
       id: r.id,

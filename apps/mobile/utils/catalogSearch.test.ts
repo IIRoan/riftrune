@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import type { CardListItem } from '@riftbound/contracts';
 import { DEFAULT_CATALOG_SORT } from '@/constants/catalogSort';
-import { featuredCatalogItems, searchCatalogItems, tokenizeSearchQuery } from '@/utils/catalogSearch';
+import {
+  featuredCatalogItems,
+  searchCatalogItems,
+  sortCatalogItems,
+  tokenizeSearchQuery,
+} from '@/utils/catalogSearch';
 
 const vi = {
   cardId: '00000000-0000-0000-0000-000000000001',
@@ -52,6 +57,7 @@ const ekko = {
   name: 'Ekko Recurve',
   setCode: 'SFD',
   colors: ['Mind'],
+  priceEur: null,
   printings: [
     {
       variantNumber: 'SFD-010',
@@ -120,10 +126,6 @@ describe('catalogSearch', () => {
     ]);
   });
 
-  test('featuredCatalogItems respects limit', () => {
-    expect(featuredCatalogItems(catalog, 2)).toHaveLength(2);
-  });
-
   test('featuredCatalogItems ranks by the highest printing price on a card', () => {
     const ahri = {
       ...vi,
@@ -156,6 +158,109 @@ describe('catalogSearch', () => {
       'Ahri, Inquisitive',
       'Jinx Rebel',
       'Vi Destructive',
+    ]);
+  });
+
+  test('featuredCatalogItems respects limit', () => {
+    expect(featuredCatalogItems(catalog, 2)).toHaveLength(2);
+  });
+
+  test('sortCatalogItems orders the full catalog by price high to low', () => {
+    const alpha = {
+      ...vi,
+      name: 'Alpha Cheap',
+      variantNumber: 'OGN-100',
+      priceEur: { currency: 'EUR' as const, low: 0.1, market: 0.2, avg7d: null, isFoil: false },
+      printings: [
+        {
+          variantNumber: 'OGN-100',
+          variantLabel: 'Standard',
+          isFoil: false,
+          priceEur: { currency: 'EUR' as const, low: 0.1, market: 0.2, avg7d: null, isFoil: false },
+        },
+      ],
+    } satisfies CardListItem;
+
+    const zeta = {
+      ...vi,
+      cardId: '00000000-0000-0000-0000-000000000010',
+      name: 'Zeta Pricey',
+      variantNumber: 'OGN-999',
+      priceEur: { currency: 'EUR' as const, low: 90, market: 100, avg7d: null, isFoil: false },
+      printings: [
+        {
+          variantNumber: 'OGN-999',
+          variantLabel: 'Standard',
+          isFoil: false,
+          priceEur: { currency: 'EUR' as const, low: 90, market: 100, avg7d: null, isFoil: false },
+        },
+      ],
+    } satisfies CardListItem;
+
+    const mixed = [alpha, zeta, jinx, ekko];
+    expect(sortCatalogItems(mixed, { sortBy: 'price', dir: 'desc' }).map((card) => card.name)).toEqual([
+      'Zeta Pricey',
+      'Jinx Rebel',
+      'Alpha Cheap',
+      'Ekko Recurve',
+    ]);
+  });
+
+  test('sortCatalogItems price order differs from alphabetical first page', () => {
+    const alpha = {
+      ...vi,
+      name: 'Alpha Cheap',
+      variantNumber: 'OGN-100',
+      priceEur: { currency: 'EUR' as const, low: 0.1, market: 0.2, avg7d: null, isFoil: false },
+      printings: [
+        {
+          variantNumber: 'OGN-100',
+          variantLabel: 'Standard',
+          isFoil: false,
+          priceEur: { currency: 'EUR' as const, low: 0.1, market: 0.2, avg7d: null, isFoil: false },
+        },
+      ],
+    } satisfies CardListItem;
+
+    const zeta = {
+      ...vi,
+      cardId: '00000000-0000-0000-0000-000000000010',
+      name: 'Zeta Pricey',
+      variantNumber: 'OGN-999',
+      priceEur: { currency: 'EUR' as const, low: 90, market: 100, avg7d: null, isFoil: false },
+      printings: [
+        {
+          variantNumber: 'OGN-999',
+          variantLabel: 'Standard',
+          isFoil: false,
+          priceEur: { currency: 'EUR' as const, low: 90, market: 100, avg7d: null, isFoil: false },
+        },
+      ],
+    } satisfies CardListItem;
+
+    const mixed = [alpha, zeta, jinx];
+    expect(sortCatalogItems(mixed, DEFAULT_CATALOG_SORT, 2).map((card) => card.name)).toEqual([
+      'Alpha Cheap',
+      'Jinx Rebel',
+    ]);
+    expect(sortCatalogItems(mixed, { sortBy: 'price', dir: 'desc' }, 2).map((card) => card.name)).toEqual([
+      'Zeta Pricey',
+      'Jinx Rebel',
+    ]);
+  });
+
+  test('sortCatalogItems orders by price low to high', () => {
+    expect(
+      sortCatalogItems(catalog, { sortBy: 'price', dir: 'asc' }).map((card) => card.name)
+    ).toEqual(['Ekko Recurve', 'Vi Destructive', 'Jinx Rebel']);
+  });
+
+  test('searchCatalogItems sorts matches by price across the full result set', () => {
+    const results = searchCatalogItems(catalog, 'o', { sortBy: 'price', dir: 'desc' });
+    expect(results.map((card) => card.name)).toEqual([
+      'Jinx Rebel',
+      'Vi Destructive',
+      'Ekko Recurve',
     ]);
   });
 });

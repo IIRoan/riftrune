@@ -40,6 +40,7 @@ export async function resolveCatalogIndexCacheKey(
     return {
       catalogHash: cached.catalogHash,
       pricesCatalogHash: cached.pricesCatalogHash,
+      variantCount: cached.variantCount,
     };
   }
 
@@ -49,6 +50,7 @@ export async function resolveCatalogIndexCacheKey(
     return {
       catalogHash: meta.catalogHash,
       pricesCatalogHash: meta.pricesCatalogHash,
+      variantCount: meta.variantCount,
     };
   } catch {
     const inMemory = getInMemoryCatalogIndex();
@@ -56,6 +58,7 @@ export async function resolveCatalogIndexCacheKey(
       return {
         catalogHash: inMemory.catalogHash,
         pricesCatalogHash: inMemory.pricesCatalogHash,
+        variantCount: inMemory.items.length,
       };
     }
 
@@ -63,6 +66,7 @@ export async function resolveCatalogIndexCacheKey(
     return {
       catalogHash: persisted?.catalogHash ?? '',
       pricesCatalogHash: persisted?.pricesCatalogHash ?? '',
+      variantCount: persisted?.items.length,
     };
   }
 }

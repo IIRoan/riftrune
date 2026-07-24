@@ -15,6 +15,8 @@ type PersistedCatalogIndex = {
 export type CatalogIndexCacheKey = {
   catalogHash: string;
   pricesCatalogHash: string;
+  /** When set, a much-smaller local index is treated as stale. */
+  variantCount?: number;
 };
 
 export function catalogIndexCacheMatches(
@@ -26,6 +28,16 @@ export function catalogIndexCacheMatches(
     persisted.catalogHash === expected.catalogHash &&
     persisted.pricesCatalogHash === expected.pricesCatalogHash
   );
+}
+
+export function catalogIndexSizeLooksStale(
+  itemCount: number,
+  expectedVariantCount: number | undefined
+): boolean {
+  if (expectedVariantCount == null || expectedVariantCount <= 0) return false;
+  // Grouped printings are fewer than raw variants; allow slack, but catch
+  // truncated localStorage / failed writes that kept an old tiny cache.
+  return itemCount > 0 && itemCount * 2 < expectedVariantCount;
 }
 
 let memoryIndex: PersistedCatalogIndex | null = null;
@@ -90,7 +102,11 @@ export async function fetchAndPersistCatalogIndex(
   expected: CatalogIndexCacheKey
 ): Promise<PersistedCatalogIndex> {
   const persisted = await readPersistedCatalogIndex();
-  if (persisted && catalogIndexCacheMatches(persisted, expected)) {
+  if (
+    persisted &&
+    catalogIndexCacheMatches(persisted, expected) &&
+    !catalogIndexSizeLooksStale(persisted.items.length, expected.variantCount)
+  ) {
     return persisted;
   }
 
@@ -118,7 +134,49 @@ export function getInMemoryCatalogIndex(): PersistedCatalogIndex | null {
   return memoryIndex;
 }
 
-/** Merge newly discovered list items into the in-memory / persisted catalog index. */
+function priceFingerprint(card: CardListItem): string {
+  const printings = card.printings ?? [];
+  const parts = [
+    String(card.cardmarketId ?? ''),
+    card.priceEur
+      ? `${String(card.priceEur.market)}:${String(card.priceEur.low)}:${String(card.priceEur.avg7d)}:${String(card.priceEur.isFoil)}`
+      : '',
+    ...printings.map(
+      (printing) =>
+        `${printing.variantNumber}:${
+          printing.priceEur
+            ? `${String(printing.priceEur.market)}:${String(printing.priceEur.low)}:${String(printing.priceEur.avg7d)}:${String(printing.priceEur.isFoil)}`
+            : ''
+        }`
+    ),
+  ];
+  return parts.join('|');
+}
+
+function maxMarketPrice(card: CardListItem): number {
+  let max = card.priceEur?.market ?? 0;
+  for (const printing of card.printings ?? []) {
+    const amount = printing.priceEur?.market;
+    if (amount != null && amount > max) max = amount;
+  }
+  return max;
+}
+
+/** True when incoming list data should replace the cached row's prices. */
+export function shouldReplaceCatalogPrices(
+  existing: CardListItem,
+  incoming: CardListItem
+): boolean {
+  if (priceFingerprint(existing) === priceFingerprint(incoming)) return false;
+  const existingMax = maxMarketPrice(existing);
+  const incomingMax = maxMarketPrice(incoming);
+  // Never clobber a priced row with an unpriced / zero-price snapshot from a
+  // partial list page — that is what made expensive signed printings vanish.
+  if (existingMax > 0 && incomingMax <= 0) return false;
+  return true;
+}
+
+/** Merge newly discovered list items and refresh stale prices in the local index. */
 export async function mergeCatalogIndexItems(items: CardListItem[]): Promise<number> {
   if (items.length === 0) return 0;
 
@@ -131,23 +189,35 @@ export async function mergeCatalogIndexItems(items: CardListItem[]): Promise<num
   const byVariant = new Map(
     current.items.map((item) => [item.variantNumber.toLowerCase(), item] as const)
   );
-  let added = 0;
+  let changed = 0;
   for (const item of normalizeCardListItems(items)) {
     const key = item.variantNumber.toLowerCase();
-    if (!byVariant.has(key)) {
+    const existing = byVariant.get(key);
+    if (!existing) {
       byVariant.set(key, item);
-      added += 1;
+      changed += 1;
+      continue;
     }
+
+    if (!shouldReplaceCatalogPrices(existing, item)) continue;
+
+    byVariant.set(key, {
+      ...existing,
+      cardmarketId: item.cardmarketId,
+      priceEur: item.priceEur,
+      printings: item.printings,
+    });
+    changed += 1;
   }
 
-  if (added === 0) return 0;
+  if (changed === 0) return 0;
 
   await persistCatalogIndex(
     current.catalogHash,
     current.pricesCatalogHash,
     [...byVariant.values()]
   );
-  return added;
+  return changed;
 }
 
 /** Resolve cache validity and download the catalog index only when stale. */
@@ -159,7 +229,11 @@ export async function syncCatalogIndex(
     resolveCacheKey(),
   ]);
 
-  if (persisted && catalogIndexCacheMatches(persisted, cacheKey)) {
+  if (
+    persisted &&
+    catalogIndexCacheMatches(persisted, cacheKey) &&
+    !catalogIndexSizeLooksStale(persisted.items.length, cacheKey.variantCount)
+  ) {
     return persisted;
   }
 
