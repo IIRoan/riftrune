@@ -1,38 +1,35 @@
 import { ThemedIcon, DownloadIcon } from '@/components/icons';
 import { useState } from 'react';
-import { Share, View } from 'react-native';
+import { View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import {
-  BottomSheet,
-  BottomSheetContent,
-  BottomSheetFooter,
-  BottomSheetHeader,
-  BottomSheetOverlay,
-  BottomSheetPortal,
-  BottomSheetScrollView,
-  BottomSheetTitle,
-} from '@/components/ui/bottom-sheet';
+  AppSheet,
+  AppSheetBody,
+  AppSheetContent,
+  AppSheetFooter,
+  AppSheetHeader,
+  AppSheetOverlay,
+  AppSheetPortal,
+  AppSheetTitle,
+} from '@/components/ui/app-sheet';
 import { Button, ButtonText } from '@/components/ui/button';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { Text } from '@/components/ui/text';
-import { useReduceMotion } from '@/hooks/useReduceMotion';
-import {
-  exportFlatDeckList,
-  exportPiltoverArchive,
-  importDeckText,
-} from '@/lib/deck-io';
+import { importDeckText } from '@/lib/deck-io';
 import { createDeckId } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
-import { resolveDeckCardByName } from '@/hooks/useDeckCardResolver';
+import {
+  resolveDeckCardByName,
+  resolveDeckCardByVariant,
+} from '@/hooks/useDeckCardResolver';
 import { toast } from '@/components/ui/toast';
 import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
 
-type DeckIoMode = 'import' | 'export';
-
 interface DeckImportExportSheetProps {
   open: boolean;
-  mode: DeckIoMode;
+  /** Kept for call-site compatibility; only import is supported. */
+  mode?: 'import';
   deck: DeckState;
   onClose: () => void;
   onImport: (deck: DeckState) => void | Promise<void>;
@@ -42,38 +39,27 @@ interface DeckImportExportSheetProps {
 
 export function DeckImportExportSheet({
   open,
-  mode,
   deck,
   onClose,
   onImport,
   asNewDeck = false,
 }: DeckImportExportSheetProps) {
-  const reduceMotion = useReduceMotion();
-  const [text, setText] = useState(() =>
-    mode === 'export' ? exportPiltoverArchive(deck) : ''
-  );
+  const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: text || exportPiltoverArchive(deck),
-        title: `${deck.name} deck list`,
-      });
-    } catch {
-      toast.error('Could not share deck list.');
-    }
-  };
 
   const handleImport = async () => {
     if (!text.trim()) {
-      toast.error('Paste a deck list to import.');
+      toast.error('Paste a deck list or deck code to import.');
       return;
     }
 
     setBusy(true);
     try {
-      const { deck: imported, unresolved } = await importDeckText(text, resolveDeckCardByName);
+      const { deck: imported, unresolved } = await importDeckText(
+        text,
+        resolveDeckCardByName,
+        resolveDeckCardByVariant
+      );
       const now = Date.now();
       const payload: DeckState = asNewDeck
         ? {
@@ -97,7 +83,7 @@ export function DeckImportExportSheet({
       }
       onClose();
     } catch {
-      toast.error('Could not import deck list.');
+      toast.error('Could not import deck list or code.');
     } finally {
       setBusy(false);
     }
@@ -117,103 +103,76 @@ export function DeckImportExportSheet({
 
   return (
     <>
-      <DeckImportLoadingOverlay visible={busy && mode === 'import'} message="Importing deck…" />
-      <BottomSheet
+      <DeckImportLoadingOverlay visible={busy} message="Importing deck…" />
+      <AppSheet
         open={open}
         onOpenChange={(next) => {
           if (!next && !busy) onClose();
         }}
+        dismissible={!busy}
       >
-        <BottomSheetPortal name="deck-import-export">
-          <BottomSheetOverlay />
-          <BottomSheetContent
-            snapPoints={reduceMotion ? ['92%'] : ['75%', '92%']}
-            defaultSnapIndex={0}
-            enablePanDownToClose={!busy}
-            enableOverDrag={!reduceMotion && !busy}
-          >
-            <BottomSheetHeader>
-              <BottomSheetTitle>
-                {mode === 'export' ? 'Export deck' : 'Import deck list'}
-              </BottomSheetTitle>
-            </BottomSheetHeader>
-            <BottomSheetScrollView contentContainerClassName="gap-4 px-4">
-              {mode === 'import' ? (
-                <View className="gap-3 rounded-xl border border-archive-soft-line bg-card-panel p-4">
-                  <View className="flex-row items-start gap-3">
-                    <View className="mt-0.5 size-10 items-center justify-center rounded-full bg-primary/15">
-                      <ThemedIcon icon={DownloadIcon} size={20} color="primary" />
-                    </View>
-                    <View className="min-w-0 flex-1 gap-1">
-                      <Text className="text-sm font-semibold text-foreground">
-                        Paste or upload a deck list
-                      </Text>
-                      <Text className="text-[13px] leading-snug text-muted-foreground">
-                        Supports Piltover Archive section headers or flat lists like{' '}
-                        <Text className="font-mono text-xs">3 Card Name (SET-123)</Text>.
-                      </Text>
-                    </View>
+        <AppSheetPortal name="deck-import">
+          <AppSheetOverlay />
+          <AppSheetContent enableDynamicSizing enablePanDownToClose={!busy}>
+            <AppSheetHeader>
+              <AppSheetTitle>Import deck</AppSheetTitle>
+            </AppSheetHeader>
+            <AppSheetBody className="gap-4 pb-2">
+              <View className="gap-3 rounded-xl border border-archive-soft-line bg-card-panel p-4">
+                <View className="flex-row items-start gap-3">
+                  <View className="mt-0.5 size-10 items-center justify-center rounded-full bg-primary/15">
+                    <ThemedIcon icon={DownloadIcon} size={20} color="primary" />
                   </View>
-                  <Button variant="outline" onPress={() => void handlePickFile()} disabled={busy}>
-                    <ButtonText>Choose text file</ButtonText>
-                  </Button>
+                  <View className="min-w-0 flex-1 gap-1">
+                    <Text className="text-sm font-semibold text-foreground">
+                      Paste a list or deck code
+                    </Text>
+                    <Text className="text-[13px] leading-snug text-muted-foreground">
+                      Supports Piltover Archive deck codes, section headers, or flat lists like{' '}
+                      <Text className="font-mono text-xs">3 Card Name (SET-123)</Text>.
+                    </Text>
+                  </View>
                 </View>
-              ) : (
-                <Text className="text-sm text-muted-foreground">
-                  PiltoverArchive text format with section headers.
-                </Text>
-              )}
+                <Button variant="outline" onPress={() => void handlePickFile()} disabled={busy}>
+                  <ButtonText>Choose text file</ButtonText>
+                </Button>
+              </View>
 
               <TextareaInput
                 value={text}
                 onChangeText={setText}
-                disabled={mode === 'export' || busy}
+                disabled={busy}
                 multiline
-                numberOfLines={12}
-                className="min-h-52 font-mono text-xs"
+                numberOfLines={10}
+                className="min-h-44 font-mono text-xs"
                 placeholder={
-                  mode === 'import'
-                    ? 'Legend:\nIrelia, Blade Dancer\n\nMain Deck:\n3 En Garde (SFD-001)\n...'
-                    : undefined
+                  'Deck code, or:\nLegend:\nIrelia, Blade Dancer\n\nMain Deck:\n3 En Garde (SFD-001)\n...'
                 }
               />
-
-              {mode === 'export' ? (
-                <View className="flex-row flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onPress={() => setText(exportPiltoverArchive(deck))}
-                  >
-                    <ButtonText>PiltoverArchive</ButtonText>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onPress={() => setText(exportFlatDeckList(deck))}
-                  >
-                    <ButtonText>Flat list</ButtonText>
-                  </Button>
-                </View>
-              ) : null}
-            </BottomSheetScrollView>
-            <BottomSheetFooter className="flex-row gap-2 px-4">
-              <Button variant="outline" className="flex-1" onPress={onClose} disabled={busy}>
-                <ButtonText>Close</ButtonText>
-              </Button>
-              {mode === 'export' ? (
-                <Button className="flex-1" onPress={() => void handleShare()}>
-                  <ButtonText>Share</ButtonText>
+            </AppSheetBody>
+            <AppSheetFooter>
+              <View className="w-full flex-row items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="w-auto flex-1"
+                  onPress={onClose}
+                  disabled={busy}
+                >
+                  <ButtonText>Close</ButtonText>
                 </Button>
-              ) : (
-                <Button className="flex-1" busy={busy} disabled={busy} onPress={() => void handleImport()}>
+                <Button
+                  className="w-auto flex-[1.4]"
+                  busy={busy}
+                  disabled={busy}
+                  onPress={() => void handleImport()}
+                >
                   <ButtonText>{busy ? 'Importing…' : 'Import deck'}</ButtonText>
                 </Button>
-              )}
-            </BottomSheetFooter>
-          </BottomSheetContent>
-        </BottomSheetPortal>
-      </BottomSheet>
+              </View>
+            </AppSheetFooter>
+          </AppSheetContent>
+        </AppSheetPortal>
+      </AppSheet>
     </>
   );
 }

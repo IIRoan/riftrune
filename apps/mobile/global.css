@@ -3,6 +3,39 @@
 
 @source "./**/*.{ts,tsx}";
 
+/*
+ * Global render polish (web + RNW):
+ * - Antialiased Inter on dark surfaces
+ * - No faux-bold (Expo registers each weight as its own family)
+ * - Geometric SVG edges so Phosphor icons stay clean in Firefox
+ */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis: none;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis: none;
+  }
+
+  /* RNW Text / inputs inherit; keep synthesis off for every node. */
+  * {
+    font-synthesis: none;
+  }
+
+  svg {
+    shape-rendering: geometricPrecision;
+    text-rendering: geometricPrecision;
+    overflow: visible;
+  }
+}
+
 @layer theme {
   :root {
     --radius: 0.75rem;
@@ -119,7 +152,7 @@
 }
 
 @theme inline {
-  --font-sans: Geist-Regular, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: Inter-Regular, ui-sans-serif, system-ui, sans-serif;
   --font-mono: GeistMono-Regular, ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);

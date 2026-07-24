@@ -7,7 +7,7 @@ import {
   useMemo,
 } from "react";
 import { ActivityIndicator, Pressable, Text } from "react-native";
-import { fontFamilyForClassName } from "@/lib/fonts";
+import { textFontStyleForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -64,7 +64,8 @@ export const Button = ({
         accessibilityRole={accessibilityRole}
         accessibilityState={{ busy, disabled }}
         className={cn(
-          buttonVariants({ variant, size, className }),
+          buttonVariants({ variant, size }),
+          className,
           disabled && "opacity-50"
         )}
         disabled={disabled || busy}
@@ -99,7 +100,7 @@ export const ButtonText = (props: ButtonChildProps) => {
     <Text
       {...props}
       className={merged}
-      style={[{ fontFamily: fontFamilyForClassName(merged) }, props.style]}
+      style={[textFontStyleForClassName(merged), props.style]}
     />
   );
 };

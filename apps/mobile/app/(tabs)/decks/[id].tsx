@@ -21,7 +21,7 @@ import {
 import type { DeckCard } from '@/lib/deck-types';
 import { hapticPress } from '@/utils/haptics';
 
-type IoMode = 'import' | 'export';
+type IoMode = 'import';
 
 export default function DeckEditorScreen() {
   const router = useRouter();

@@ -32,6 +32,14 @@ describe('deck-io', () => {
     expect(detectDeckImportFormat('3 Flame Chompers (OGN-006)')).toBe('flat');
   });
 
+  test('detects Piltover Archive deck codes', () => {
+    expect(
+      detectDeckImportFormat(
+        'CMAAAAAAAAAQCAAAA4AACAIAABMQAAILAAAAICIMDMOVOX3AM5UHIAIDAAACO6XYAEAQKAAABX3QDGACUABKIAQAAEBQAAAWDBOQCAQAABMHEAIAABTQ'
+      )
+    ).toBe('deckcode');
+  });
+
   test('exports PiltoverArchive sections', () => {
     let deck = createEmptyDeck('Budget Jinx');
     deck = addCardToDeck(deck, {

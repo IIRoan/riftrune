@@ -82,12 +82,7 @@ export function GridDeckControl({
         disabled={!canAdd}
         onPress={handleAdd}
       >
-        <ThemedIcon
-          icon={PlusIcon}
-          size={ICON_SIZE}
-          color="archive-accent-text"
-          weight="regular"
-        />
+        <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="archive-accent-text" />
         <Text className="text-[11px] font-semibold text-archive-accent-text">Add</Text>
       </Pressable>
     );
@@ -97,7 +92,9 @@ export function GridDeckControl({
     'h-full flex-1 items-center justify-center rounded-full active:bg-primary/14';
 
   return (
-    <View className={cn(CONTROL_HEIGHT, 'w-full flex-row items-center justify-between')}>
+    <View
+      className={cn(CONTROL_HEIGHT, 'w-full flex-row items-center justify-between')}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Remove one ${name}`}
@@ -105,12 +102,7 @@ export function GridDeckControl({
         disabled={!canRemove}
         onPress={handleRemove}
       >
-        <ThemedIcon
-          icon={MinusIcon}
-          size={ICON_SIZE}
-          color="archive-accent-text"
-          weight="regular"
-        />
+        <ThemedIcon icon={MinusIcon} size={ICON_SIZE} color="archive-accent-text" />
       </Pressable>
       <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
         {count}
@@ -126,7 +118,6 @@ export function GridDeckControl({
           icon={PlusIcon}
           size={ICON_SIZE}
           color={canAdd ? 'archive-accent-text' : 'muted-foreground'}
-          weight="regular"
         />
       </Pressable>
     </View>

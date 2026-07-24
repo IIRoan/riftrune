@@ -3,6 +3,11 @@ import {
   createEmptyDeck,
   sectionForCardType,
 } from '@/lib/deck-card';
+import {
+  importDeckCode,
+  looksLikeDeckCode,
+  type VariantResolver,
+} from '@/lib/deck-codes';
 import type { DeckCard, DeckSectionKey, DeckState } from '@/lib/deck-types';
 
 export type CardResolver = (name: string) => Promise<DeckCard | null> | DeckCard | null;
@@ -189,7 +194,10 @@ export async function importFlatDeckList(
   return { deck, unresolved };
 }
 
-export function detectDeckImportFormat(text: string): 'piltoverarchive' | 'flat' {
+export type DeckImportFormat = 'deckcode' | 'piltoverarchive' | 'flat';
+
+export function detectDeckImportFormat(text: string): DeckImportFormat {
+  if (looksLikeDeckCode(text)) return 'deckcode';
   if (/^(Legend|Champion|MainDeck|Battlefields|Runes|Sideboard):/im.test(text)) {
     return 'piltoverarchive';
   }
@@ -198,9 +206,16 @@ export function detectDeckImportFormat(text: string): 'piltoverarchive' | 'flat'
 
 export async function importDeckText(
   text: string,
-  resolveCard: CardResolver
+  resolveCard: CardResolver,
+  resolveVariant?: VariantResolver
 ): Promise<{ deck: DeckState; unresolved: string[] }> {
   const format = detectDeckImportFormat(text);
+  if (format === 'deckcode') {
+    if (!resolveVariant) {
+      throw new Error('Deck code import requires a variant resolver.');
+    }
+    return importDeckCode(text, resolveVariant);
+  }
   if (format === 'piltoverarchive') {
     return importPiltoverArchive(text, resolveCard);
   }

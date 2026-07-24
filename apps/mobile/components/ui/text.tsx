@@ -1,5 +1,5 @@
 import { Text as RNText, type TextProps as RNTextProps } from "react-native";
-import { fontFamilyForClassName } from "@/lib/fonts";
+import { textFontStyleForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 // Components
@@ -14,7 +14,7 @@ export const Text = ({
   return (
     <RNText
       className={merged}
-      style={[{ fontFamily: fontFamilyForClassName(merged) }, style]}
+      style={[textFontStyleForClassName(merged), style]}
       {...props}
     >
       {children}

@@ -1,6 +1,7 @@
 import type { IconWeight } from 'phosphor-react-native';
 import { useCSSVariable } from 'uniwind';
 import type { AppIcon } from '@/components/icons/styled-icon';
+import { appIconWeightForSize, iconPixelSize } from '@/lib/iconDefaults';
 import {
   THEME_ICON_COLOR_VARS,
   type ThemedIconColor,
@@ -13,7 +14,7 @@ export type ThemedIconProps = {
   icon: AppIcon;
   size: number;
   color?: ThemedIconColor;
-  /** Phosphor weight — use `fill` for selected/active chrome. */
+  /** Phosphor weight — omit for size-aware default; use `fill` for selected/active. */
   weight?: IconWeight;
 };
 
@@ -26,8 +27,15 @@ export function ThemedIcon({
   icon: Icon,
   size,
   color = 'muted-foreground',
-  weight = 'regular',
+  weight,
 }: ThemedIconProps) {
   const resolved = useCSSVariable(THEME_ICON_COLOR_VARS[color]) as string | undefined;
-  return <Icon size={size} color={String(resolved ?? '')} weight={weight} />;
+  const pixelSize = iconPixelSize(size);
+  return (
+    <Icon
+      size={pixelSize}
+      color={String(resolved ?? '')}
+      weight={weight ?? appIconWeightForSize(pixelSize)}
+    />
+  );
 }

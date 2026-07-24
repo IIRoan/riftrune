@@ -86,12 +86,7 @@ export function DeckQtyControl({
         {busy ? (
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
-          <ThemedIcon
-            icon={MinusIcon}
-            size={14}
-            color="archive-accent-text"
-            weight="regular"
-          />
+          <ThemedIcon icon={MinusIcon} size={14} color="archive-accent-text" />
         )}
       </Pressable>
       <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
@@ -106,12 +101,7 @@ export function DeckQtyControl({
         {busy ? (
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
-          <ThemedIcon
-            icon={PlusIcon}
-            size={14}
-            color="archive-accent-text"
-            weight="regular"
-          />
+          <ThemedIcon icon={PlusIcon} size={14} color="archive-accent-text" />
         )}
       </Pressable>
     </View>

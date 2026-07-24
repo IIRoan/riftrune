@@ -46,7 +46,10 @@ export function OwnershipStepper({
   );
 
   const multiple = shouldShowPrintingPicker(printings, fixedVariantNumber);
-  const showRemovePicker = shouldShowRemovePrintingPicker(printings, fixedVariantNumber);
+  const showRemovePicker = shouldShowRemovePrintingPicker(
+    printings,
+    fixedVariantNumber
+  );
   const removeOptions = useMemo(
     () => getRemovePrintingPickerOptions(printings ?? [], pickerOptions),
     [printings, pickerOptions]
@@ -90,13 +93,10 @@ export function OwnershipStepper({
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
           <>
-            <ThemedIcon
-              icon={PlusIcon}
-              size={iconSize}
-              color="archive-accent-text"
-              weight="regular"
-            />
-            <Text className="text-[11px] font-semibold text-archive-accent-text">Add</Text>
+            <ThemedIcon icon={PlusIcon} size={iconSize} color="archive-accent-text" />
+            <Text className="text-[11px] font-semibold text-archive-accent-text">
+              Add
+            </Text>
           </>
         )}
       </Pressable>
@@ -129,12 +129,7 @@ export function OwnershipStepper({
         {busy && !showPicker ? (
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
-          <ThemedIcon
-            icon={icon}
-            size={iconSize}
-            color="archive-accent-text"
-            weight="regular"
-          />
+          <ThemedIcon icon={icon} size={iconSize} color="archive-accent-text" />
         )}
       </Pressable>
     );
@@ -149,14 +144,17 @@ export function OwnershipStepper({
       <View
         className={cn(
           'flex-row items-center',
-          gridSlot ? 'w-full justify-between' : cn('justify-between gap-0.5', controlWidth),
+          gridSlot
+            ? 'w-full justify-between'
+            : cn('justify-between gap-0.5', controlWidth),
           controlHeight,
           busy && 'opacity-60'
         )}
       >
         {renderStepButton(
           'remove',
-          () => onRemove(resolveQuickRemoveVariantNumber(printings, fixedVariantNumber)),
+          () =>
+            onRemove(resolveQuickRemoveVariantNumber(printings, fixedVariantNumber)),
           showRemovePicker,
           'Remove printing',
           removeOptions,

@@ -1,4 +1,5 @@
 import type { LucideIcon } from '@/components/icons';
+import { ThemedIcon } from '@/components/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -101,6 +102,8 @@ export function PillNav<T extends string>({
     transform: [{ translateX: indicatorX.value }],
   }));
 
+  const compactIconSize = iconOnly ? 18 : 15;
+
   return (
     <View
       accessibilityRole="tablist"
@@ -110,7 +113,7 @@ export function PillNav<T extends string>({
         compact
           ? iconOnly
             ? 'h-9 rounded-lg p-0'
-            : 'h-9 rounded-lg p-0.5'
+            : 'h-9 rounded-lg p-1'
           : 'rounded-2xl p-1',
         fill && 'w-full',
         className
@@ -123,18 +126,14 @@ export function PillNav<T extends string>({
           compact
             ? iconOnly
               ? 'top-0 bottom-0 rounded-none'
-              : 'top-0.5 bottom-0.5 rounded-md'
+              : 'top-1 bottom-1 rounded-md'
             : 'top-1 bottom-1 rounded-xl'
         )}
         style={indicatorStyle}
       />
       {items.map((item) => {
         const active = value === item.id;
-        const Icon = item.icon;
-        const iconClass = cn(
-          active ? 'text-primary' : 'text-muted-foreground',
-          compact ? (iconOnly ? 'size-[18px]' : 'size-3.5') : 'size-[18px]'
-        );
+        const iconColor = active ? 'primary' : 'muted-foreground';
         return (
           <Pressable
             key={item.id}
@@ -147,7 +146,7 @@ export function PillNav<T extends string>({
                 ? iconOnly
                   ? cn('h-full aspect-square', fill ? 'min-w-0 flex-1' : 'shrink-0')
                   : cn(
-                      'h-full min-w-0 flex-row gap-1 rounded-md px-2.5',
+                      'h-full min-w-0 flex-row items-center gap-1.5 rounded-md px-3',
                       fill ? 'flex-1' : 'shrink-0'
                     )
                 : cn('gap-0.5 rounded-xl px-4 py-2', fill ? 'min-w-0 flex-1' : 'min-w-[5.5rem]')
@@ -159,13 +158,13 @@ export function PillNav<T extends string>({
             }}
           >
             {compact && iconOnly ? (
-              <Icon className={iconClass} weight="regular" />
+              <ThemedIcon icon={item.icon} size={compactIconSize} color={iconColor} />
             ) : compact ? (
               <>
-                <Icon className={iconClass} weight="regular" />
+                <ThemedIcon icon={item.icon} size={compactIconSize} color={iconColor} />
                 <Text
                   className={cn(
-                    'text-[11px] font-semibold',
+                    'text-[11px] font-semibold leading-none',
                     active ? 'text-primary' : 'text-muted-foreground'
                   )}
                   numberOfLines={1}
@@ -175,7 +174,7 @@ export function PillNav<T extends string>({
                 {item.badge ? (
                   <Text
                     className={cn(
-                      'font-mono text-[10px] font-semibold tabular-nums',
+                      'font-mono text-[10px] font-semibold leading-none tabular-nums',
                       active ? 'text-primary/80' : 'text-muted-foreground'
                     )}
                     numberOfLines={1}
@@ -186,10 +185,10 @@ export function PillNav<T extends string>({
               </>
             ) : (
               <>
-                <Icon className={iconClass} weight="regular" />
+                <ThemedIcon icon={item.icon} size={18} color={iconColor} />
                 <Text
                   className={cn(
-                    'text-[10px] font-semibold',
+                    'text-[10px] font-semibold leading-none',
                     active ? 'text-primary' : 'text-muted-foreground'
                   )}
                   numberOfLines={1}
@@ -199,7 +198,7 @@ export function PillNav<T extends string>({
                 {item.badge ? (
                   <Text
                     className={cn(
-                      'font-mono text-[9px] font-semibold tabular-nums',
+                      'font-mono text-[9px] font-semibold leading-none tabular-nums',
                       active ? 'text-primary/80' : 'text-muted-foreground'
                     )}
                     numberOfLines={1}

@@ -1,194 +1,188 @@
-import { cva } from "class-variance-authority";
-import { ActivityIndicator, View } from "react-native";
-import * as ToastPrimitive from "sonner-native";
-import { useUniwind } from "uniwind";
-import { cn } from "@/lib/utils";
+import { cva } from 'class-variance-authority';
+import { ActivityIndicator, View } from 'react-native';
+import * as ToastPrimitive from 'sonner-native';
+import { useUniwind } from 'uniwind';
+import { cn } from '@/lib/utils';
 import {
   CircleAlertIcon,
   CircleCheckIcon,
   InfoIcon,
   TriangleAlertIcon,
-} from "@/components/icons";
-import { Text } from "./text";
+} from '@/components/icons';
+import { Text } from './text';
 
 // Types
-type ToastVariant =
-  | "default"
-  | "success"
-  | "error"
-  | "warning"
-  | "info"
-  | "loading";
+type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info' | 'loading';
 
-type ToastIconProps = {
+type ToastGlyphProps = {
   variant: ToastVariant;
 };
 
-type ToastOptions = NonNullable<
-  Parameters<typeof ToastPrimitive.toast.custom>[1]
->;
+type ToastOptions = NonNullable<Parameters<typeof ToastPrimitive.toast.custom>[1]>;
 
 type PromiseOptions = {
   loading: string;
   success: string | ((result: unknown) => string);
   error: string | ((error: unknown) => string);
-} & Omit<ToastOptions, "description" | "icon">;
+} & Omit<ToastOptions, 'description' | 'icon'>;
 
 // Components
-const ToastIcon = ({ variant }: ToastIconProps) => {
-  const iconClassName = iconVariants({ variant });
+const ToastGlyphIcon = ({ variant }: ToastGlyphProps) => {
+  const className = iconVariants({ variant });
 
-  if (variant === "loading") {
-    return (
-      <View className="size-5 items-center justify-center">
-        <ActivityIndicator className="accent-muted-foreground" size="small" />
-      </View>
-    );
+  if (variant === 'success') {
+    return <CircleCheckIcon className={className} weight="bold" />;
   }
 
-  if (variant === "success") {
-    return <CircleCheckIcon className={iconClassName} />;
+  if (variant === 'error') {
+    return <TriangleAlertIcon className={className} weight="bold" />;
   }
 
-  if (variant === "error") {
-    return <TriangleAlertIcon className={iconClassName} />;
+  if (variant === 'warning') {
+    return <CircleAlertIcon className={className} weight="bold" />;
   }
 
-  if (variant === "warning") {
-    return <CircleAlertIcon className={iconClassName} />;
-  }
-
-  return <InfoIcon className={iconClassName} />;
+  return <InfoIcon className={className} weight="bold" />;
 };
 
-type TetraToastProps = {
+/** Recessed status slot — same panel grammar as the deck / catalog icon tiles. */
+const ToastGlyph = ({ variant }: ToastGlyphProps) => {
+  if (variant === 'default') return null;
+
+  return (
+    <View className="size-7 shrink-0 items-center justify-center rounded-lg bg-card-panel">
+      {variant === 'loading' ? (
+        <ActivityIndicator className="accent-muted-foreground" size="small" />
+      ) : (
+        <ToastGlyphIcon variant={variant} />
+      )}
+    </View>
+  );
+};
+
+type ToastCardProps = {
   variant: ToastVariant;
   title: string;
   description?: string;
   icon?: React.ReactNode;
 };
 
-const TetraToast = ({ variant, title, description, icon }: TetraToastProps) => (
-  <View className="mx-4 justify-center rounded-2xl border border-border/80 bg-popover p-4 shadow-md">
+/**
+ * Floating archive panel — raised above the screen surface in either theme,
+ * status carried by the glyph so meaning survives without color.
+ */
+const ToastCard = ({ variant, title, description, icon }: ToastCardProps) => (
+  <View className="w-full items-center px-4">
     <View
+      accessibilityLabel={description ? `${title}. ${description}` : title}
+      accessibilityLiveRegion={variant === 'error' ? 'assertive' : 'polite'}
+      accessibilityRole="alert"
+      accessible
       className={cn(
-        "flex-row gap-4",
-        description ? "items-start" : "items-center"
+        'w-full max-w-sm flex-row gap-3 rounded-xl border border-border bg-card px-3.5 py-3 shadow-lg shadow-black/25 dark:bg-popover',
+        description ? 'items-start' : 'items-center'
       )}
     >
-      {icon ?? <ToastIcon variant={variant} />}
-      <View className="flex-1">
-        <Text className={titleVariants({ variant })}>{title}</Text>
+      {icon ?? <ToastGlyph variant={variant} />}
+      <View className="min-w-0 flex-1">
+        <Text className="text-sm font-medium leading-5 text-foreground" numberOfLines={2}>
+          {title}
+        </Text>
         {description ? (
-          <Text className="text-muted-foreground text-sm">{description}</Text>
+          <Text
+            className="mt-0.5 text-[13px] leading-snug text-muted-foreground"
+            numberOfLines={3}
+          >
+            {description}
+          </Text>
         ) : null}
       </View>
     </View>
   </View>
 );
 
-export const Toaster = (props: Omit<ToastPrimitive.ToasterProps, "theme">) => {
+export const Toaster = (props: Omit<ToastPrimitive.ToasterProps, 'theme'>) => {
   const { theme: uniwindTheme } = useUniwind();
-  const theme = uniwindTheme === "dark" ? "dark" : "light";
+  const theme = uniwindTheme === 'dark' ? 'dark' : 'light';
 
   return (
-    <ToastPrimitive.Toaster {...props} enableStacking gap={4} theme={theme} />
+    <ToastPrimitive.Toaster
+      enableStacking
+      gap={8}
+      offset={12}
+      position="top-center"
+      swipeToDismissDirection="up"
+      visibleToasts={3}
+      {...props}
+      theme={theme}
+    />
   );
 };
 
 // Utils
-const showToast = (
-  variant: ToastVariant,
-  title: string,
-  options?: ToastOptions
-) => {
+const showToast = (variant: ToastVariant, title: string, options?: ToastOptions) => {
   const { description, icon, ...rest } = options ?? {};
 
   return ToastPrimitive.toast.custom(
-    <TetraToast
-      description={description}
-      icon={icon}
-      title={title}
-      variant={variant}
-    />,
+    <ToastCard description={description} icon={icon} title={title} variant={variant} />,
     rest
   );
 };
 
 export const toast = Object.assign(
-  (message: string, options?: ToastOptions) =>
-    showToast("default", message, options),
+  (message: string, options?: ToastOptions) => showToast('default', message, options),
   {
-    success: (message: string, options?: ToastOptions) =>
-      showToast("success", message, options),
-    error: (message: string, options?: ToastOptions) =>
-      showToast("error", message, options),
-    warning: (message: string, options?: ToastOptions) =>
-      showToast("warning", message, options),
-    info: (message: string, options?: ToastOptions) =>
-      showToast("info", message, options),
-    loading: (message: string, options?: ToastOptions) =>
-      showToast("loading", message, options),
     custom: ToastPrimitive.toast.custom,
+    dismiss: ToastPrimitive.toast.dismiss,
+    error: (message: string, options?: ToastOptions) =>
+      showToast('error', message, options),
+    info: (message: string, options?: ToastOptions) =>
+      showToast('info', message, options),
+    loading: (message: string, options?: ToastOptions) =>
+      showToast('loading', message, options),
     promise: <T,>(promise: Promise<T>, options: PromiseOptions) => {
       const { loading, success, error, ...rest } = options;
       const id = ToastPrimitive.toast.custom(
-        <TetraToast title={loading} variant="loading" />,
+        <ToastCard title={loading} variant="loading" />,
         { ...rest, duration: Number.POSITIVE_INFINITY }
       );
 
       promise
         .then((data) => {
-          const title = typeof success === "function" ? success(data) : success;
-          ToastPrimitive.toast.custom(
-            <TetraToast title={title} variant="success" />,
-            {
-              id,
-              duration: rest.duration,
-            }
-          );
+          const title = typeof success === 'function' ? success(data) : success;
+          ToastPrimitive.toast.custom(<ToastCard title={title} variant="success" />, {
+            duration: rest.duration,
+            id,
+          });
         })
         .catch((err) => {
-          const title = typeof error === "function" ? error(err) : error;
-          ToastPrimitive.toast.custom(
-            <TetraToast title={title} variant="error" />,
-            {
-              id,
-              duration: rest.duration,
-            }
-          );
+          const title = typeof error === 'function' ? error(err) : error;
+          ToastPrimitive.toast.custom(<ToastCard title={title} variant="error" />, {
+            duration: rest.duration,
+            id,
+          });
         });
 
       return id;
     },
-    dismiss: ToastPrimitive.toast.dismiss,
+    success: (message: string, options?: ToastOptions) =>
+      showToast('success', message, options),
+    warning: (message: string, options?: ToastOptions) =>
+      showToast('warning', message, options),
     wiggle: ToastPrimitive.toast.wiggle,
   }
 );
 
 // Styles
-const titleVariants = cva("font-semibold leading-5", {
+const iconVariants = cva('size-4', {
   variants: {
     variant: {
-      default: "text-popover-foreground",
-      success: "text-success",
-      error: "text-destructive",
-      warning: "text-warning",
-      info: "text-info",
-      loading: "text-popover-foreground",
-    },
-  },
-});
-
-const iconVariants = cva("size-5", {
-  variants: {
-    variant: {
-      default: "text-muted-foreground",
-      success: "text-success",
-      error: "text-destructive",
-      warning: "text-warning",
-      info: "text-info",
-      loading: "text-muted-foreground",
+      default: 'text-muted-foreground',
+      error: 'text-destructive',
+      info: 'text-archive-accent-text',
+      loading: 'text-muted-foreground',
+      success: 'text-success',
+      warning: 'text-warning',
     },
   },
 });

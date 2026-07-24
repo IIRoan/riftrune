@@ -1,0 +1,145 @@
+import * as Clipboard from 'expo-clipboard';
+import { Platform, Pressable, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ThemedIcon, HashIcon, LinkIcon, ShareIcon } from '@/components/icons';
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverOverlay,
+  PopoverPortal,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Text } from '@/components/ui/text';
+import { toast } from '@/components/ui/toast';
+import {
+  canExportDeckCode,
+  resolveDeckSharePayload,
+  type DeckShareFormat,
+} from '@/lib/deck-share';
+import type { DeckState } from '@/lib/deck-types';
+import { cn } from '@/lib/utils';
+import { hapticPress } from '@/utils/haptics';
+
+async function copySharePayload(value: string, format: DeckShareFormat): Promise<void> {
+  await Clipboard.setStringAsync(value);
+  toast.success(format === 'link' ? 'Deck link copied' : 'Deck code copied');
+}
+
+interface DeckShareMenuProps {
+  deck: DeckState;
+  className?: string;
+  /** Matches other toolbar 36×36 controls. */
+  triggerClassName?: string;
+}
+
+/**
+ * Share control: shadcn-style dropdown; selecting a format copies immediately.
+ */
+export function DeckShareMenu({
+  deck,
+  className,
+  triggerClassName,
+}: DeckShareMenuProps) {
+  const [open, setOpen] = useState(false);
+
+  const webOrigin = useMemo(() => {
+    if (
+      Platform.OS === 'web' &&
+      typeof globalThis !== 'undefined' &&
+      'location' in globalThis
+    ) {
+      return (globalThis as { location?: { origin?: string } }).location?.origin;
+    }
+    return undefined;
+  }, []);
+
+  const canShareCode = useMemo(() => canExportDeckCode(deck), [deck]);
+
+  const handleSelect = (format: DeckShareFormat) => {
+    hapticPress();
+    const result = resolveDeckSharePayload(deck, format, webOrigin);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    void copySharePayload(result.value, format).catch(() => {
+      toast.error('Could not copy to clipboard.');
+    });
+  };
+
+  return (
+    <View className={cn('relative shrink-0', className)}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Share deck"
+            accessibilityState={{ expanded: open }}
+            className={cn(
+              'size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel',
+              open && 'border-primary/40',
+              triggerClassName
+            )}
+            onPress={() => {
+              hapticPress();
+            }}
+          >
+            <ThemedIcon icon={ShareIcon} size={18} color="foreground" />
+          </Pressable>
+        </PopoverTrigger>
+
+        <PopoverPortal>
+          <PopoverOverlay className="bg-transparent" closeOnPress />
+          <PopoverContent
+            side="bottom"
+            align="end"
+            sideOffset={4}
+            className="z-50 min-w-[11rem] overflow-hidden rounded-md border border-border bg-popover p-1 shadow-md"
+          >
+            <Text className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Copy
+            </Text>
+
+            <PopoverClose asChild>
+              <Pressable
+                accessibilityRole="menuitem"
+                accessibilityLabel="Copy Riftrune link"
+                className="flex-row items-center gap-2 rounded-sm px-2 py-1.5 active:bg-accent"
+                onPress={() => handleSelect('link')}
+              >
+                <ThemedIcon icon={LinkIcon} size={16} color="muted-foreground" />
+                <Text className="text-sm text-popover-foreground">Riftrune link</Text>
+              </Pressable>
+            </PopoverClose>
+
+            {canShareCode ? (
+              <PopoverClose asChild>
+                <Pressable
+                  accessibilityRole="menuitem"
+                  accessibilityLabel="Copy deck code"
+                  className="flex-row items-center gap-2 rounded-sm px-2 py-1.5 active:bg-accent"
+                  onPress={() => handleSelect('code')}
+                >
+                  <ThemedIcon icon={HashIcon} size={16} color="muted-foreground" />
+                  <Text className="text-sm text-popover-foreground">Deck code</Text>
+                </Pressable>
+              </PopoverClose>
+            ) : (
+              <Pressable
+                accessibilityRole="menuitem"
+                accessibilityLabel="Copy deck code"
+                accessibilityState={{ disabled: true }}
+                disabled
+                className="flex-row items-center gap-2 rounded-sm px-2 py-1.5 opacity-50"
+              >
+                <ThemedIcon icon={HashIcon} size={16} color="muted-foreground" />
+                <Text className="text-sm text-muted-foreground">Deck code</Text>
+              </Pressable>
+            )}
+          </PopoverContent>
+        </PopoverPortal>
+      </Popover>
+    </View>
+  );
+}

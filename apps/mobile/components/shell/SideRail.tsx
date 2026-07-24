@@ -99,7 +99,9 @@ export function SideRail() {
               router.push('/(tabs)/search');
             }}
           >
-            <Text className="font-mono text-sm font-bold text-primary-foreground">r</Text>
+            <Text className="font-mono text-sm font-bold text-primary-foreground">
+              r
+            </Text>
           </Pressable>
         </HoverTooltip>
 
@@ -109,7 +111,12 @@ export function SideRail() {
           {NAV_ITEMS.map(({ id, href, label, description, icon: Icon }) => {
             const isActive = active === id;
             return (
-              <HoverTooltip key={id} label={label} description={description} side="right">
+              <HoverTooltip
+                key={id}
+                label={label}
+                description={description}
+                side="right"
+              >
                 <Pressable
                   accessibilityRole="tab"
                   accessibilityState={{ selected: isActive }}
@@ -127,7 +134,6 @@ export function SideRail() {
                       'size-4',
                       isActive ? 'text-accent-foreground' : 'text-muted-foreground'
                     )}
-                    weight="regular"
                   />
                 </Pressable>
               </HoverTooltip>
@@ -156,14 +162,20 @@ export function SideRail() {
               <Text
                 className={cn(
                   'font-mono text-xs font-semibold',
-                  active === 'settings' ? 'text-accent-foreground' : 'text-muted-foreground'
+                  active === 'settings'
+                    ? 'text-accent-foreground'
+                    : 'text-muted-foreground'
                 )}
               >
                 {userInitial}
               </Text>
             </Pressable>
           </HoverTooltip>
-          <HoverTooltip label="Sign out" description="End your Riftrune session" side="right">
+          <HoverTooltip
+            label="Sign out"
+            description="End your Riftrune session"
+            side="right"
+          >
             <Pressable
               accessibilityLabel="Sign out"
               className="size-9 items-center justify-center rounded-md active:bg-accent/70"
@@ -171,7 +183,7 @@ export function SideRail() {
                 void handleSignOut();
               }}
             >
-              <LogOutIcon className="size-4 text-muted-foreground" weight="regular" />
+              <LogOutIcon className="size-4 text-muted-foreground" />
             </Pressable>
           </HoverTooltip>
         </View>

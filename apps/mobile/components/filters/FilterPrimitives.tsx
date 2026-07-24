@@ -103,7 +103,7 @@ export function FilterSegmentPill({
   return (
     <Pressable
       className={cn(
-        'relative h-9 shrink-0 flex-row items-center gap-1 rounded-lg border px-2.5 active:opacity-90',
+        'relative h-9 shrink-0 flex-row items-center gap-1.5 rounded-lg border px-3 active:opacity-90',
         active || hasValue
           ? 'border-ring/50 bg-card-panel'
           : 'border-border bg-card'
@@ -114,7 +114,7 @@ export function FilterSegmentPill({
     >
       <Text
         className={cn(
-          'text-[13px] font-semibold',
+          'text-[13px] font-semibold leading-none',
           active || hasValue ? 'text-foreground' : 'text-muted-foreground'
         )}
         numberOfLines={1}
@@ -123,7 +123,7 @@ export function FilterSegmentPill({
       </Text>
       <ThemedIcon
         icon={open ? ChevronUpIcon : ChevronDownIcon}
-        size={14}
+        size={12}
         color={active || hasValue ? 'foreground' : 'muted-foreground'}
       />
       {hasValue && !active ? (
@@ -166,7 +166,7 @@ export function FilterPopoverTrigger({
     <Pressable
       ref={triggerRef}
       className={cn(
-        'relative h-9 shrink-0 flex-row items-center gap-1 rounded-lg border px-2.5 active:opacity-90',
+        'relative h-9 shrink-0 flex-row items-center gap-1.5 rounded-lg border px-3 active:opacity-90',
         open || hasValue ? 'border-ring/50 bg-card-panel' : 'border-border bg-card'
       )}
       onPress={onPress}
@@ -175,7 +175,7 @@ export function FilterPopoverTrigger({
     >
       <Text
         className={cn(
-          'text-[13px] font-semibold',
+          'text-[13px] font-semibold leading-none',
           open || hasValue ? 'text-foreground' : 'text-muted-foreground'
         )}
         numberOfLines={1}
@@ -184,7 +184,7 @@ export function FilterPopoverTrigger({
       </Text>
       <ThemedIcon
         icon={open ? ChevronUpIcon : ChevronDownIcon}
-        size={14}
+        size={12}
         color={open || hasValue ? 'foreground' : 'muted-foreground'}
       />
       {hasValue && !open ? (

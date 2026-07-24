@@ -58,7 +58,10 @@ export function GridCollectionControl({
   );
 
   const multiple = shouldShowPrintingPicker(printings, fixedVariantNumber);
-  const showRemovePicker = shouldShowRemovePrintingPicker(printings, fixedVariantNumber);
+  const showRemovePicker = shouldShowRemovePrintingPicker(
+    printings,
+    fixedVariantNumber
+  );
   const removeOptions = useMemo(
     () => getRemovePrintingPickerOptions(printings ?? [], pickerOptions),
     [printings, pickerOptions]
@@ -91,13 +94,10 @@ export function GridCollectionControl({
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
           <>
-            <ThemedIcon
-              icon={PlusIcon}
-              size={ICON_SIZE}
-              color="archive-accent-text"
-              weight="regular"
-            />
-            <Text className="text-[11px] font-semibold text-archive-accent-text">Add</Text>
+            <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="archive-accent-text" />
+            <Text className="text-[11px] font-semibold text-archive-accent-text">
+              Add
+            </Text>
           </>
         )}
       </Pressable>
@@ -121,12 +121,7 @@ export function GridCollectionControl({
       {busy && !showRemovePicker ? (
         <ActivityIndicator size="small" className="accent-primary" />
       ) : (
-        <ThemedIcon
-          icon={MinusIcon}
-          size={ICON_SIZE}
-          color="archive-accent-text"
-          weight="regular"
-        />
+        <ThemedIcon icon={MinusIcon} size={ICON_SIZE} color="archive-accent-text" />
       )}
     </Pressable>
   );
@@ -141,12 +136,7 @@ export function GridCollectionControl({
       {busy && !multiple ? (
         <ActivityIndicator size="small" className="accent-primary" />
       ) : (
-        <ThemedIcon
-          icon={PlusIcon}
-          size={ICON_SIZE}
-          color="archive-accent-text"
-          weight="regular"
-        />
+        <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="archive-accent-text" />
       )}
     </Pressable>
   );
@@ -165,7 +155,9 @@ export function GridCollectionControl({
       <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
         {owned}
       </Text>
-      {multiple ? wrapWithPicker('Add printing', pickerOptions, onAdd, increment) : increment}
+      {multiple
+        ? wrapWithPicker('Add printing', pickerOptions, onAdd, increment)
+        : increment}
     </View>
   );
 }

@@ -56,6 +56,9 @@ import {
   WarningCircleIcon as PhosphorWarningCircle,
   WarningIcon as PhosphorWarning,
   XIcon as PhosphorX,
+  LinkSimpleIcon as PhosphorLinkSimple,
+  CopySimpleIcon as PhosphorCopySimple,
+  HashIcon as PhosphorHash,
 } from 'phosphor-react-native';
 import { createStyledSvg } from './styled-icon';
 
@@ -123,3 +126,6 @@ export const TriangleAlertIcon = createStyledSvg(PhosphorWarning);
 export const UploadIcon = createStyledSvg(PhosphorUploadSimple);
 export const VideoIcon = createStyledSvg(PhosphorVideoCamera);
 export const XIcon = createStyledSvg(PhosphorX);
+export const LinkIcon = createStyledSvg(PhosphorLinkSimple);
+export const CopyIcon = createStyledSvg(PhosphorCopySimple);
+export const HashIcon = createStyledSvg(PhosphorHash);
