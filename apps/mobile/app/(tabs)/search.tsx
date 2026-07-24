@@ -9,12 +9,15 @@ import {
   type LucideIcon,
 } from '@/components/icons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import {
   FlatList,
+  InteractionManager,
   Keyboard,
+  Platform,
   useWindowDimensions,
   View,
+  type ListRenderItem,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ViewToken,
@@ -30,18 +33,23 @@ import {
   CatalogActiveFilterChips,
   CatalogFilterSheet,
 } from '@/components/catalog/FilterSheet';
+import { CatalogResultsTransition } from '@/components/catalog/CatalogResultsTransition';
+import { SortSheet } from '@/components/catalog/SortSheet';
+import { AppLoader } from '@/components/ui/app-loader';
+import {
+  DEFAULT_CATALOG_SORT,
+  normalizeCatalogSort,
+  sortOptionKey,
+  type CatalogSort,
+} from '@/constants/catalogSort';
 import {
   catalogFiltersActive,
+  catalogFiltersQueryKey,
   DEFAULT_CATALOG_FILTERS,
   matchesCatalogFilters,
   sanitizeCatalogFilters,
   type CatalogFilters,
 } from '@/constants/catalogFilters';
-import { SortSheet } from '@/components/catalog/SortSheet';
-import {
-  DEFAULT_CATALOG_SORT,
-  type CatalogSort,
-} from '@/constants/catalogSort';
 import { SearchBar } from '@/components/search/SearchBar';
 import { SearchSkeleton } from '@/components/search/SearchSkeleton';
 import {
@@ -81,6 +89,7 @@ import {
   catalogLookaheadCount,
   catalogViewportTargetHeight,
   estimateCatalogPageSize,
+  estimateCatalogRowHeight,
   isFastCatalogScroll,
   measureCatalogScrollVelocity,
   shouldPrefetchCatalog,
@@ -145,8 +154,10 @@ function SearchScreenBody() {
   }, []);
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(DEFAULT_CATALOG_SORT);
+  const [sortPending, setSortPending] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const catalogListRef = useRef<FlatList<CardListItem>>(null);
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 40 }).current;
   const onViewableItemsChangedRef = useRef<
     (info: { viewableItems: ViewToken<CardListItem>[] }) => void
@@ -268,7 +279,12 @@ function SearchScreenBody() {
     return ownedMap;
   }, [ownedFilterActive, collectionEntries, collectionByVariant]);
 
-  const browseCatalog = useCatalogBrowseInfinite(pageSize, catalogFilters, filterOwnership);
+  const browseCatalog = useCatalogBrowseInfinite(
+    pageSize,
+    catalogFilters,
+    filterOwnership,
+    catalogSort
+  );
 
   const filteredItems = useMemo(
     () =>
@@ -344,14 +360,16 @@ function SearchScreenBody() {
 
   const handleSelectCard = useCallback(
     (variantNumber: string) => {
-      const item = displayItems.find((card) => cardListItemMatchesVariant(card, variantNumber));
+      const item = displayItemsRef.current.find((card) =>
+        cardListItemMatchesVariant(card, variantNumber)
+      );
       if (item) {
         prefetchCardDetail(queryClient, item);
         void flushCardDetailPrefetch();
       }
       setSelectedVariant(variantNumber);
     },
-    [displayItems, queryClient]
+    [queryClient]
   );
 
   const onViewableItemsChanged = useCallback(
@@ -542,13 +560,35 @@ function SearchScreenBody() {
     await loadHistory();
   }, [loadHistory]);
 
-  const renderItem = useCallback(
-    ({ item, index: _index }: { item: (typeof displayItems)[number]; index: number }) => {
+  const gridCellStyle = useMemo(
+    () => ({ width: tileWidth, maxWidth: tileWidth }),
+    [tileWidth]
+  );
+
+  const listRowHeight = useMemo(
+    () => estimateCatalogRowHeight('list', tileWidth, compact),
+    [tileWidth, compact]
+  );
+
+  const getListItemLayout = useCallback(
+    (_data: ArrayLike<CardListItem> | null | undefined, index: number) => ({
+      length: listRowHeight,
+      offset: listRowHeight * index,
+      index,
+    }),
+    [listRowHeight]
+  );
+
+  const renderItem = useCallback<ListRenderItem<CardListItem>>(
+    ({ item, index }) => {
       const tileSelected = cardListItemMatchesVariant(item, selectedVariant);
-      const hideTilePrice = hasSearchInput && splitLayout && !tileSelected;
+      // Always scope prices/quick-add to this row's printing family so
+      // overnumbered / alt art tiles show their own Cardmarket price.
+      const familyContextVariantNumber =
+        splitLayout && tileSelected ? selectedVariant : item.variantNumber;
 
       if (isList) {
-        const isLast = _index === displayItems.length - 1;
+        const isLast = index === displayItemsRef.current.length - 1;
         return (
           <View className={cn(!isLast && 'border-b border-border')}>
             <CardTile
@@ -558,14 +598,9 @@ function SearchScreenBody() {
               compact={compact}
               enableQuickAdd
               selected={tileSelected}
-              hidePrice={hideTilePrice}
               collectionByVariant={collectionByVariant}
-              familyContextVariantNumber={
-                splitLayout && tileSelected ? selectedVariant : undefined
-              }
-              onPress={() => {
-                handleSelectCard(item.variantNumber);
-              }}
+              familyContextVariantNumber={familyContextVariantNumber}
+              onSelectVariant={handleSelectCard}
             />
           </View>
         );
@@ -574,7 +609,7 @@ function SearchScreenBody() {
       return (
         <View
           className="mb-1 shrink-0 grow-0"
-          style={{ width: tileWidth, maxWidth: tileWidth }}
+          style={gridCellStyle}
           collapsable={false}
         >
           <CardTile
@@ -584,28 +619,21 @@ function SearchScreenBody() {
             compact={compact}
             enableQuickAdd
             selected={tileSelected}
-            hidePrice={hideTilePrice}
             collectionByVariant={collectionByVariant}
-            familyContextVariantNumber={
-              splitLayout && tileSelected ? selectedVariant : undefined
-            }
-            onPress={() => {
-              handleSelectCard(item.variantNumber);
-            }}
+            familyContextVariantNumber={familyContextVariantNumber}
+            onSelectVariant={handleSelectCard}
           />
         </View>
       );
     },
     [
       isList,
-      tileWidth,
+      gridCellStyle,
       compact,
       selectedVariant,
       splitLayout,
       handleSelectCard,
-      hasSearchInput,
       collectionByVariant,
-      displayItems.length,
     ]
   );
 
@@ -617,6 +645,25 @@ function SearchScreenBody() {
       ownership: collectionByVariant,
     }),
     [selectedVariant, collectionByVariant]
+  );
+
+  const listContentStyle = useMemo(
+    () => ({
+      width: splitLayout ? ('100%' as const) : contentWidth,
+      maxWidth: '100%' as const,
+      flexGrow: displayItems.length === 0 ? 1 : undefined,
+    }),
+    [splitLayout, contentWidth, displayItems.length]
+  );
+
+  const listFooter = useMemo(
+    () => <View style={{ height: paddingBottomInline }} />,
+    [paddingBottomInline]
+  );
+
+  const columnWrapperStyle = useMemo(
+    () => (isList ? undefined : { gap: Layout.gridGap, maxWidth: '100%' as const }),
+    [isList]
   );
 
   const listEmpty = useMemo(() => {
@@ -828,6 +875,7 @@ function SearchScreenBody() {
       <CatalogActionBar
         view={view}
         onViewChange={setView}
+        activeSort={catalogSort}
         onSortPress={() => {
           setSortSheetOpen(true);
         }}
@@ -842,57 +890,107 @@ function SearchScreenBody() {
     </View>
   );
 
-  const listFooter = null;
+  const resultsTransitionKey = catalogFiltersQueryKey(catalogFilters);
+
+  useEffect(() => {
+    catalogListRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [resultsTransitionKey]);
+
+  useEffect(() => {
+    if (!sortPending) return;
+
+    let cancelled = false;
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+    const startedAt = Date.now();
+    const MIN_VISIBLE_MS = 360;
+
+    const task = InteractionManager.runAfterInteractions(() => {
+      const remaining = Math.max(0, MIN_VISIBLE_MS - (Date.now() - startedAt));
+      hideTimer = setTimeout(() => {
+        if (!cancelled) setSortPending(false);
+      }, remaining);
+    });
+
+    return () => {
+      cancelled = true;
+      task.cancel?.();
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [sortPending, catalogSort]);
+
+  const applyCatalogSort = useCallback(
+    (next: CatalogSort) => {
+      const normalized = normalizeCatalogSort(next);
+      if (sortOptionKey(normalized) === sortOptionKey(catalogSort)) return;
+      setSortPending(true);
+      requestAnimationFrame(() => {
+        startTransition(() => {
+          setCatalogSort(normalized);
+        });
+        catalogListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      });
+    },
+    [catalogSort]
+  );
 
   const catalogList = (
-    <View className="min-h-0 flex-1">
-      <View
-        className={cn(
-          'min-h-0 flex-1',
-          isList && displayItems.length > 0 && 'overflow-hidden rounded-xl border border-border bg-card'
-        )}
-      >
-        <FlatList
-        data={displayItems}
-        key={`${hasSearchInput ? 'search' : 'featured'}-${view}-${String(numColumns)}`}
-        numColumns={isList ? 1 : numColumns}
-        keyExtractor={(item) => item.variantNumber}
-        renderItem={renderItem}
-        extraData={listExtraData}
-        ListHeaderComponent={null}
-        ListFooterComponent={listFooter}
-        contentContainerClassName={cn('flex-grow', !splitLayout && 'self-center')}
-        style={splitLayout ? { flex: 1, width: '100%', maxWidth: '100%' } : { flex: 1 }}
-        contentContainerStyle={{
-          width: splitLayout ? '100%' : contentWidth,
-          maxWidth: '100%',
-          paddingBottom: paddingBottomInline,
-          flexGrow: displayItems.length === 0 ? 1 : undefined,
-        }}
-        columnWrapperStyle={
-          isList ? undefined : { gap: Layout.gridGap, maxWidth: '100%' }
-        }
-        ListEmptyComponent={listEmpty}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        onScrollBeginDrag={dismissKeyboard}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        onScroll={handleCatalogScroll}
-        scrollEventThrottle={8}
-        onEndReached={fetchMoreCatalog}
-        onEndReachedThreshold={1.75}
-        onContentSizeChange={(_, height) => {
-          maybeFillCatalogViewport(height);
-        }}
-        initialNumToRender={Math.min(displayItems.length || pageSize, pageSize)}
-        maxToRenderPerBatch={48}
-        windowSize={21}
-        updateCellsBatchingPeriod={50}
-        removeClippedSubviews={false}
-        showsVerticalScrollIndicator={false}
-        />
-      </View>
+    <View className="relative min-h-0 flex-1">
+      <CatalogResultsTransition transitionKey={resultsTransitionKey}>
+        <View
+          className={cn(
+            'min-h-0 flex-1',
+            isList &&
+              displayItems.length > 0 &&
+              !sortPending &&
+              'overflow-hidden rounded-xl border border-border bg-card'
+          )}
+        >
+          <FlatList
+          ref={catalogListRef}
+          data={displayItems}
+          key={`${hasSearchInput ? 'search' : 'featured'}-${view}-${String(numColumns)}`}
+          numColumns={isList ? 1 : numColumns}
+          keyExtractor={(item) => item.variantNumber}
+          renderItem={renderItem}
+          extraData={listExtraData}
+          ListHeaderComponent={null}
+          ListFooterComponent={listFooter}
+          contentContainerClassName={cn('flex-grow', !splitLayout && 'self-center')}
+          style={splitLayout ? { flex: 1, width: '100%', maxWidth: '100%' } : { flex: 1 }}
+          contentContainerStyle={listContentStyle}
+          columnWrapperStyle={columnWrapperStyle}
+          ListEmptyComponent={listEmpty}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          onScrollBeginDrag={dismissKeyboard}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScroll={handleCatalogScroll}
+          scrollEventThrottle={16}
+          onEndReached={fetchMoreCatalog}
+          onEndReachedThreshold={1.75}
+          onContentSizeChange={(_, height) => {
+            maybeFillCatalogViewport(height);
+          }}
+          getItemLayout={isList ? getListItemLayout : undefined}
+          initialNumToRender={Math.min(displayItems.length || pageSize, pageSize)}
+          maxToRenderPerBatch={16}
+          windowSize={9}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews={Platform.OS !== 'web'}
+          showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </CatalogResultsTransition>
+      {sortPending ? (
+        <View
+          className="absolute inset-0 items-center justify-center bg-background"
+          pointerEvents="none"
+          accessibilityLabel="Sorting cards"
+        >
+          <AppLoader size="lg" />
+        </View>
+      ) : null}
     </View>
   );
 
@@ -932,7 +1030,7 @@ function SearchScreenBody() {
         onClose={() => {
           setSortSheetOpen(false);
         }}
-        onSortChange={setCatalogSort}
+        onSortChange={applyCatalogSort}
       />
 
       {!splitLayout ? (

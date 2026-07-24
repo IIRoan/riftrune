@@ -11,8 +11,8 @@ export const catalogQueryKeys = {
 export const cardQueryKeys = {
   search: (q: string, limit = 40, sortBy = 'name', dir = 'asc') =>
     ['cards', 'search', q.toLowerCase(), limit, sortBy, dir] as const,
-  browse: (filters?: CatalogFilters) =>
-    ['cards', 'browse', catalogFiltersQueryKey(filters)] as const,
+  browse: (filters?: CatalogFilters, sortBy = 'name', dir = 'asc') =>
+    ['cards', 'browse', catalogFiltersQueryKey(filters), sortBy, dir] as const,
   searchInfinite: (
     q: string,
     sortBy: string,

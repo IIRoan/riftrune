@@ -34,6 +34,28 @@ const SEARCH_VARIANT_FETCH_CAP = 500;
 /** Filtered browse (deck builder) materializes the full matching set, then pages. */
 const FILTERED_BROWSE_VARIANT_FETCH_CAP = 5000;
 
+/** Highest Cardmarket market trend across a list row and its printings. */
+function listItemMaxMarketPrice(item: CardListItem): number {
+  let max = item.priceEur?.market ?? 0;
+  for (const printing of item.printings) {
+    const amount = printing.priceEur?.market;
+    if (amount != null && amount > max) max = amount;
+  }
+  return max;
+}
+
+function sortCardListItemsByPrice(
+  items: CardListItem[],
+  dir: 'asc' | 'desc'
+): CardListItem[] {
+  const sign = dir === 'asc' ? 1 : -1;
+  return [...items].sort((left, right) => {
+    const diff = (listItemMaxMarketPrice(left) - listItemMaxMarketPrice(right)) * sign;
+    if (diff !== 0) return diff;
+    return left.name.localeCompare(right.name);
+  });
+}
+
 type SearchResult = {
   items: CardListItem[];
   total: number;
@@ -823,7 +845,8 @@ export class CardCacheService {
     );
     // Materialize then group so alternate arts / foil merges never split across
     // SQL pages (deck builder scroll must see every matching printing).
-    const materializeThenPage = hasSearch || hasDeckBuilderFilters;
+    const materializeThenPage =
+      hasSearch || hasDeckBuilderFilters || query.sortBy === 'price';
     const fetchCap = hasSearch ? SEARCH_VARIANT_FETCH_CAP : FILTERED_BROWSE_VARIANT_FETCH_CAP;
     const orderBy =
       query.q && query.q.trim().length > 0
@@ -859,7 +882,10 @@ export class CardCacheService {
     });
 
     if (materializeThenPage) {
-      const grouped = groupCardListItems(rawItems);
+      let grouped = groupCardListItems(rawItems);
+      if (query.sortBy === 'price') {
+        grouped = sortCardListItemsByPrice(grouped, query.dir);
+      }
       let total = grouped.length;
 
       if (rows.length >= fetchCap) {

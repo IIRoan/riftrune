@@ -1,14 +1,25 @@
 import type { LucideIcon } from '@/components/icons';
-import { Pressable, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, View, type LayoutChangeEvent } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '@/components/ui/text';
 import { Layout } from '@/constants/Layout';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
 /** Extra scroll padding so list content clears the floating pill. */
 export const FLOATING_PILL_NAV_CLEARANCE = 64;
+
+const PILL_MOTION_MS = 220;
+const PILL_EASING = Easing.out(Easing.cubic);
 
 export type PillNavItem<T extends string> = {
   id: T;
@@ -36,6 +47,7 @@ interface PillNavProps<T extends string> {
 
 /**
  * Shared pill tablist (icon + small label) — same chrome for floating and inline use.
+ * Active segment slides under the selection for a continuous state change.
  */
 export function PillNav<T extends string>({
   items,
@@ -46,23 +58,78 @@ export function PillNav<T extends string>({
   compact = false,
   iconOnly = false,
 }: PillNavProps<T>) {
+  const reduceMotion = useReduceMotion();
+  const [trackWidth, setTrackWidth] = useState(0);
+  const hasPositioned = useRef(false);
+  const activeIndex = Math.max(
+    0,
+    items.findIndex((item) => item.id === value)
+  );
+  const segmentCount = Math.max(items.length, 1);
+  const indicatorX = useSharedValue(0);
+  const indicatorWidth = useSharedValue(0);
+
+  const onTrackLayout = useCallback((event: LayoutChangeEvent) => {
+    setTrackWidth(event.nativeEvent.layout.width);
+  }, []);
+
+  useEffect(() => {
+    if (trackWidth <= 0) return;
+    const width = trackWidth / segmentCount;
+    const nextX = width * activeIndex;
+    indicatorWidth.value = width;
+    if (reduceMotion || !hasPositioned.current) {
+      indicatorX.value = nextX;
+      hasPositioned.current = true;
+      return;
+    }
+    indicatorX.value = withTiming(nextX, {
+      duration: PILL_MOTION_MS,
+      easing: PILL_EASING,
+    });
+  }, [
+    activeIndex,
+    indicatorWidth,
+    indicatorX,
+    reduceMotion,
+    segmentCount,
+    trackWidth,
+  ]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    width: indicatorWidth.value,
+    transform: [{ translateX: indicatorX.value }],
+  }));
+
   return (
     <View
       accessibilityRole="tablist"
+      onLayout={onTrackLayout}
       className={cn(
-        'flex-row items-stretch border border-border bg-card',
+        'relative flex-row items-stretch overflow-hidden border border-border bg-card',
         compact
           ? iconOnly
-            ? 'h-9 overflow-hidden rounded-lg p-0'
+            ? 'h-9 rounded-lg p-0'
             : 'h-9 rounded-lg p-0.5'
           : 'rounded-2xl p-1',
         fill && 'w-full',
         className
       )}
     >
-      {items.map((item, index) => {
+      <Animated.View
+        pointerEvents="none"
+        className={cn(
+          'absolute bg-card-panel',
+          compact
+            ? iconOnly
+              ? 'top-0 bottom-0 rounded-none'
+              : 'top-0.5 bottom-0.5 rounded-md'
+            : 'top-1 bottom-1 rounded-xl'
+        )}
+        style={indicatorStyle}
+      />
+      {items.map((item) => {
         const active = value === item.id;
-        const isLast = index === items.length - 1;
         const Icon = item.icon;
         const iconClass = cn(
           active ? 'text-primary' : 'text-muted-foreground',
@@ -75,20 +142,15 @@ export function PillNav<T extends string>({
             accessibilityState={{ selected: active }}
             accessibilityLabel={item.accessibilityLabel ?? item.label}
             className={cn(
-              'items-center justify-center',
+              'z-10 items-center justify-center',
               compact
                 ? iconOnly
-                  ? cn(
-                      'h-full aspect-square',
-                      !isLast && 'border-r border-border',
-                      fill ? 'min-w-0 flex-1' : 'shrink-0'
-                    )
+                  ? cn('h-full aspect-square', fill ? 'min-w-0 flex-1' : 'shrink-0')
                   : cn(
                       'h-full min-w-0 flex-row gap-1 rounded-md px-2.5',
                       fill ? 'flex-1' : 'shrink-0'
                     )
-                : cn('gap-0.5 rounded-xl px-4 py-2', fill ? 'min-w-0 flex-1' : 'min-w-[5.5rem]'),
-              active ? 'bg-card-panel' : 'active:bg-card-panel/50'
+                : cn('gap-0.5 rounded-xl px-4 py-2', fill ? 'min-w-0 flex-1' : 'min-w-[5.5rem]')
             )}
             onPress={() => {
               if (active) return;

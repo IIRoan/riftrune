@@ -8,7 +8,10 @@ import {
   cacheSearchResults,
   getCachedSearchResults,
 } from '@/services/searchHistoryService';
-import { mergeCatalogIndexItems } from '@/services/catalogIndexService';
+import {
+  getInMemoryCatalogIndex,
+  mergeCatalogIndexItems,
+} from '@/services/catalogIndexService';
 import { api } from '@/src/api/client';
 import { cardQueryKeys, catalogQueryKeys } from '@/src/api/queryKeys';
 import { prefetchCardDetail } from '@/lib/prefetchCardDetail';
@@ -169,29 +172,11 @@ export function useCardSearch(
 
     let cancelled = false;
     void (async () => {
-      const added = await mergeCatalogIndexItems(apiItems);
-      if (cancelled || added === 0) return;
-      const current = queryClient.getQueryData<{
-        catalogHash: string;
-        pricesCatalogHash: string;
-        cachedAt: number;
-        items: typeof apiItems;
-      }>(catalogQueryKeys.index);
-      if (!current) return;
-      queryClient.setQueryData(catalogQueryKeys.index, {
-        ...current,
-        items: [
-          ...current.items,
-          ...apiItems.filter(
-            (card) =>
-              !current.items.some(
-                (existing) =>
-                  existing.variantNumber.toLowerCase() ===
-                  card.variantNumber.toLowerCase()
-              )
-          ),
-        ],
-      });
+      const changed = await mergeCatalogIndexItems(apiItems);
+      if (cancelled || changed === 0) return;
+      const merged = getInMemoryCatalogIndex();
+      if (!merged) return;
+      queryClient.setQueryData(catalogQueryKeys.index, merged);
     })();
 
     return () => {

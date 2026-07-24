@@ -51,11 +51,26 @@ function compareBySort(a: CardListItem, b: CardListItem, sort: CatalogSort): num
       return (a.energy - b.energy) * dir || a.name.localeCompare(b.name);
     case 'variantNumber':
       return a.variantNumber.localeCompare(b.variantNumber) * dir || a.name.localeCompare(b.name);
+    case 'price': {
+      const diff = (getCardMaxMarketPrice(a) - getCardMaxMarketPrice(b)) * dir;
+      return diff || a.name.localeCompare(b.name);
+    }
     case 'releaseDate':
+      // Not supported in the UI — keep a stable name fallback if an old client asks.
       return a.name.localeCompare(b.name) * dir;
     default:
       return a.name.localeCompare(b.name) * dir;
   }
+}
+
+/** Sort the full catalog (or any card list) by the active browse/search sort. */
+export function sortCatalogItems(
+  items: readonly CardListItem[],
+  sort: CatalogSort,
+  limit?: number
+): CardListItem[] {
+  const sorted = [...items].sort((left, right) => compareBySort(left, right, sort));
+  return limit === undefined ? sorted : sorted.slice(0, limit);
 }
 
 export function searchCatalogItems(
@@ -70,24 +85,21 @@ export function searchCatalogItems(
   const tokens = tokenizeSearchQuery(trimmed);
   const matches = items.filter((card) => matchesAllTokens(card, tokens));
 
-  const sorted = matches
-    .slice()
-    .sort((a, b) => {
-      const relevance = relevanceScore(a, trimmed) - relevanceScore(b, trimmed);
-      if (relevance !== 0) return relevance;
+  const sorted = matches.slice().sort((a, b) => {
+    if (sort.sortBy === 'price') {
       return compareBySort(a, b, sort);
-    });
+    }
+    const relevance = relevanceScore(a, trimmed) - relevanceScore(b, trimmed);
+    if (relevance !== 0) return relevance;
+    return compareBySort(a, b, sort);
+  });
 
   return limit === undefined ? sorted : sorted.slice(0, limit);
-}
-
-function priceScore(card: CardListItem): number {
-  return getCardMaxMarketPrice(card);
 }
 
 export function featuredCatalogItems(
   items: readonly CardListItem[],
   limit = 12
 ): CardListItem[] {
-  return [...items].sort((a, b) => priceScore(b) - priceScore(a)).slice(0, limit);
+  return sortCatalogItems(items, { sortBy: 'price', dir: 'desc' }, limit);
 }

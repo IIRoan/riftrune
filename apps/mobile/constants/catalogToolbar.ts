@@ -71,11 +71,21 @@ export function catalogToolbarMobileSlotClass(): string {
   return CATALOG_TOOLBAR_MOBILE_SLOT_CLASS;
 }
 
+/** Mobile labeled control — full-width slot, text + icon. */
+export const CATALOG_TOOLBAR_LABELED_CONTROL_CLASS_MOBILE =
+  'h-11 w-full min-w-0 flex-row items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 active:bg-card-panel';
+
 export function catalogToolbarButtonClasses(
   active = false,
   mobile = false,
   labeled = false
 ): string {
+  if (mobile && labeled) {
+    return cn(
+      CATALOG_TOOLBAR_LABELED_CONTROL_CLASS_MOBILE,
+      active && CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS_MOBILE
+    );
+  }
   if (mobile) {
     return cn(
       CATALOG_TOOLBAR_CONTROL_CLASS_MOBILE,

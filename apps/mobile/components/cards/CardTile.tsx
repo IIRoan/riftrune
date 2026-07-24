@@ -54,6 +54,8 @@ interface Props {
   selected?: boolean;
   familyContextVariantNumber?: string | null;
   hidePrice?: boolean;
+  /** Prefer this over `onPress` in virtualized lists — keeps memo() stable. */
+  onSelectVariant?: (variantNumber: string) => void;
   onPress?: () => void;
   collectionByVariant?: CollectionOwnershipMap;
 }
@@ -68,22 +70,30 @@ function CardTileInner({
   selected = false,
   familyContextVariantNumber,
   hidePrice = false,
+  onSelectVariant,
   onPress,
   collectionByVariant: collectionByVariantProp,
 }: Props) {
   const router = useRouter();
   const isMobile = useMobileLayout();
-  const ownershipFromStore = useOwnershipMap();
+  const ownershipFromStore = useOwnershipMap({
+    enabled: collectionByVariantProp == null,
+  });
   const collectionByVariant = collectionByVariantProp ?? ownershipFromStore;
   const { addCard, setQuantity } = useCollectionMutations();
 
+  // Scope prices + quick-add to this row's printing family. Prefer an explicit
+  // family context (selected detail), otherwise the row's own variant so
+  // overnumbered / alt art tiles keep their Cardmarket price.
   const stepperPrintings = useMemo(
-    () => resolveQuickAddPrintings(card, familyContextVariantNumber),
+    () =>
+      resolveQuickAddPrintings(
+        card,
+        familyContextVariantNumber ?? card.variantNumber
+      ),
     [card, familyContextVariantNumber]
   );
 
-  // Always scope list prices + owned counts to the active family (std/foil),
-  // never dump every alternate/promo/overnumbered printing onto the tile.
   const pricePrintings = stepperPrintings;
   const printings = stepperPrintings;
   const multiplePricePrintings = hasMultiplePrintings(pricePrintings);
@@ -114,6 +124,11 @@ function CardTileInner({
 
   const onOpenCard = useCallback(() => {
     Keyboard.dismiss();
+    if (onSelectVariant) {
+      void hapticPress();
+      onSelectVariant(card.variantNumber);
+      return;
+    }
     if (onPress) {
       void hapticPress();
       onPress();
@@ -121,7 +136,7 @@ function CardTileInner({
     }
     void hapticPress();
     openCard(router, card.variantNumber, 'modal');
-  }, [router, card.variantNumber, onPress]);
+  }, [router, card.variantNumber, onSelectVariant, onPress]);
 
   const onAdd = useCallback(
     (variantNumber?: string) => {
@@ -468,6 +483,7 @@ export const CardTile = memo(
   CardTileInner,
   (prev, next) =>
     prev.card.variantNumber === next.card.variantNumber &&
+    prev.card.priceEur?.market === next.card.priceEur?.market &&
     prev.layout === next.layout &&
     prev.compact === next.compact &&
     prev.enableQuickAdd === next.enableQuickAdd &&
@@ -475,6 +491,7 @@ export const CardTile = memo(
     prev.familyContextVariantNumber === next.familyContextVariantNumber &&
     prev.hidePrice === next.hidePrice &&
     prev.collectionByVariant === next.collectionByVariant &&
+    prev.onSelectVariant === next.onSelectVariant &&
     prev.onPress === next.onPress &&
     prev.mode === next.mode
 );

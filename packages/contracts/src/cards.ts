@@ -107,7 +107,9 @@ export const CardsListQuery = z.object({
   mightMax: z.coerce.number().int().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(50),
-  sortBy: z.enum(['name', 'energy', 'variantNumber', 'releaseDate']).default('name'),
+  sortBy: z
+    .enum(['name', 'energy', 'variantNumber', 'releaseDate', 'price'])
+    .default('name'),
   dir: z.enum(['asc', 'desc']).default('asc'),
   refresh: z
     .union([z.literal('true'), z.literal('false')])

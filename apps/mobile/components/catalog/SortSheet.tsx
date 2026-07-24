@@ -13,6 +13,8 @@ import {
 import { Text } from '@/components/ui/text';
 import {
   CATALOG_SORT_OPTIONS,
+  findSortOption,
+  isDefaultCatalogSort,
   sortOptionKey,
   type CatalogSort,
 } from '@/constants/catalogSort';
@@ -27,7 +29,6 @@ interface SortSheetProps {
 
 export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSheetProps) {
   const reduceMotion = useReduceMotion();
-  const snapPoints = reduceMotion ? ['92%'] : ['50%', '92%'];
 
   return (
     <BottomSheet
@@ -39,8 +40,7 @@ export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSh
       <BottomSheetPortal name="catalog-sort-sheet">
         <BottomSheetOverlay />
         <BottomSheetContent
-          snapPoints={snapPoints}
-          defaultSnapIndex={0}
+          enableDynamicSizing
           enablePanDownToClose
           enableOverDrag={!reduceMotion}
         >
@@ -48,7 +48,7 @@ export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSh
             <BottomSheetTitle>Sort</BottomSheetTitle>
           </BottomSheetHeader>
           <BottomSheetScrollView
-            contentContainerClassName="px-4 pb-6"
+            contentContainerClassName="px-4 pb-8"
             showsVerticalScrollIndicator={false}
           >
             {CATALOG_SORT_OPTIONS.map((option) => {
@@ -58,8 +58,8 @@ export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSh
                   key={sortOptionKey(option)}
                   className="min-h-11 flex-row items-center justify-between rounded-lg px-3 py-2.5 active:bg-accent"
                   onPress={() => {
-                    onSortChange({ sortBy: option.sortBy, dir: option.dir });
                     onClose();
+                    onSortChange({ sortBy: option.sortBy, dir: option.dir });
                   }}
                 >
                   <Text className="text-sm font-medium text-foreground">{option.label}</Text>
@@ -77,22 +77,27 @@ export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSh
 }
 
 export function SortTrigger({
-  label,
+  activeSort,
   onPress,
   compact = false,
   mobile = false,
 }: {
-  label?: string;
+  activeSort: CatalogSort;
   onPress: () => void;
   compact?: boolean;
   mobile?: boolean;
 }) {
+  const option = findSortOption(activeSort);
+  const label = compact || mobile ? option.shortLabel : option.label;
+  const active = !isDefaultCatalogSort(activeSort);
+
   return (
     <CatalogToolbarButton
       icon={ArrowUpDownIcon}
       onPress={onPress}
-      accessibilityLabel="Open sort options"
-      label={compact ? undefined : (label ?? 'Sort')}
+      accessibilityLabel={`Sort: ${option.label}`}
+      active={active}
+      label={label}
       mobile={mobile}
     />
   );

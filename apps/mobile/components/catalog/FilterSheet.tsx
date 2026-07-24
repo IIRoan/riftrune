@@ -2,6 +2,7 @@ import { SlidersHorizontalIcon } from '@/components/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import {
   CatalogToolbarBadgeDot,
   CatalogToolbarButton,
@@ -27,6 +28,7 @@ import {
   type CatalogFilters,
 } from '@/constants/catalogFilters';
 import { prefetchCatalogFilters } from '@/hooks/useFiltersData';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 interface CatalogFilterSheetProps {
   visible: boolean;
@@ -141,6 +143,7 @@ export function CatalogActiveFilterChips({
   filters: CatalogFilters;
   onFiltersChange: (filters: CatalogFilters) => void;
 }) {
+  const reduceMotion = useReduceMotion();
   const { colorOptions } = useCatalogFilterOptions();
   const colorByName = useMemo(
     () => new Map(colorOptions.map((color) => [color.name, color])),
@@ -149,8 +152,17 @@ export function CatalogActiveFilterChips({
 
   if (!catalogFiltersActive(filters)) return null;
 
+  const chipEnter = reduceMotion ? undefined : FadeIn.duration(160);
+  const chipExit = reduceMotion ? undefined : FadeOut.duration(120);
+  const chipLayout = reduceMotion ? undefined : LinearTransition.duration(180);
+
   return (
-    <View className="shrink-0">
+    <Animated.View
+      className="shrink-0"
+      entering={chipEnter}
+      exiting={chipExit}
+      layout={chipLayout}
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -158,44 +170,50 @@ export function CatalogActiveFilterChips({
         contentContainerClassName="flex-row items-center gap-2 pr-1"
       >
         {catalogFilterChips(filters).map((chip) => (
-          <FilterKeywordChip
+          <Animated.View
             key={chip.id}
-            label={chip.label}
-            keywordBase={chip.keywordBase}
-            trailing={
-              chip.colorNames && chip.colorNames.length > 0 ? (
-                <View className="flex-row items-center gap-2">
-                  {chip.colorNames.map((name) => (
-                    <Pressable
-                      key={name}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Remove ${name} color filter`}
-                      className="flex-row items-center gap-1 rounded-md px-1 py-0.5 active:bg-accent/80"
-                      onPress={() => {
-                        hapticPress();
-                        onFiltersChange({
-                          ...filters,
-                          colors: filters.colors.filter((color) => color !== name),
-                        });
-                      }}
-                    >
-                      <DomainIcon
-                        name={name}
-                        imageUrl={colorByName.get(name)?.imageUrl}
-                        size={14}
-                      />
-                      <Text className="text-[11px] font-semibold text-muted-foreground">
-                        {name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : undefined
-            }
-            onClear={() => onFiltersChange(chip.clear())}
-          />
+            entering={chipEnter}
+            exiting={chipExit}
+            layout={chipLayout}
+          >
+            <FilterKeywordChip
+              label={chip.label}
+              keywordBase={chip.keywordBase}
+              trailing={
+                chip.colorNames && chip.colorNames.length > 0 ? (
+                  <View className="flex-row items-center gap-2">
+                    {chip.colorNames.map((name) => (
+                      <Pressable
+                        key={name}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${name} color filter`}
+                        className="flex-row items-center gap-1 rounded-md px-1 py-0.5 active:bg-accent/80"
+                        onPress={() => {
+                          hapticPress();
+                          onFiltersChange({
+                            ...filters,
+                            colors: filters.colors.filter((color) => color !== name),
+                          });
+                        }}
+                      >
+                        <DomainIcon
+                          name={name}
+                          imageUrl={colorByName.get(name)?.imageUrl}
+                          size={14}
+                        />
+                        <Text className="text-[11px] font-semibold text-muted-foreground">
+                          {name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : undefined
+              }
+              onClear={() => onFiltersChange(chip.clear())}
+            />
+          </Animated.View>
         ))}
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }

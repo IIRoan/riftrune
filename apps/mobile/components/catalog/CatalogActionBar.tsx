@@ -5,6 +5,7 @@ import { SortTrigger } from '@/components/catalog/SortSheet';
 import { ViewToggle } from '@/components/catalog/ViewToggle';
 import { Text } from '@/components/ui/text';
 import type { CatalogCollectionFilter, CatalogFilters } from '@/constants/catalogFilters';
+import type { CatalogSort } from '@/constants/catalogSort';
 import {
   CATALOG_TOOLBAR_MOBILE_ROW_CLASS,
   CATALOG_TOOLBAR_MOBILE_SLOT_CLASS,
@@ -15,6 +16,7 @@ import { cn } from '@/lib/utils';
 interface CatalogActionBarProps {
   view: 'list' | 'grid';
   onViewChange: (view: 'list' | 'grid') => void;
+  activeSort: CatalogSort;
   onSortPress: () => void;
   filters: CatalogFilters;
   onFilterPress: () => void;
@@ -28,6 +30,7 @@ interface CatalogActionBarProps {
 export function CatalogActionBar({
   view,
   onViewChange,
+  activeSort,
   onSortPress,
   filters,
   onFilterPress,
@@ -73,7 +76,7 @@ export function CatalogActionBar({
             <View className="shrink-0">{collectionSwitch}</View>
             <ViewToggle view={view} onViewChange={onViewChange} mobile />
             <View className={CATALOG_TOOLBAR_MOBILE_SLOT_CLASS}>
-              <SortTrigger onPress={onSortPress} compact mobile />
+              <SortTrigger activeSort={activeSort} onPress={onSortPress} compact mobile />
             </View>
             {showFilterTrigger ? (
               <View className={CATALOG_TOOLBAR_MOBILE_SLOT_CLASS}>
@@ -93,7 +96,7 @@ export function CatalogActionBar({
               <ViewToggle view={view} onViewChange={onViewChange} />
             </View>
             <View className="flex-row items-center gap-2">
-              <SortTrigger label="Sort" onPress={onSortPress} />
+              <SortTrigger activeSort={activeSort} onPress={onSortPress} />
               {showFilterTrigger ? (
                 <CatalogFilterTrigger filters={filters} onPress={onFilterPress} />
               ) : null}

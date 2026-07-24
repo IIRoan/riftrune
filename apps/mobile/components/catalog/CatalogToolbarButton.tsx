@@ -38,14 +38,20 @@ export function CatalogToolbarButton({
       <Pressable
         className={cn(
           catalogToolbarButtonClasses(active, mobile, true),
-          'shrink-0 flex-row gap-2',
+          'min-w-0 flex-row gap-1.5',
+          mobile ? 'w-full' : 'shrink-0',
           className
         )}
         onPress={onPress}
         accessibilityLabel={accessibilityLabel}
       >
         <ThemedIcon icon={icon} size={16} color={catalogToolbarIconColor(tone)} />
-        <Text className="text-sm font-semibold text-foreground">{label}</Text>
+        <Text
+          className="shrink text-sm font-semibold text-foreground"
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
         {badge}
       </Pressable>
     );
