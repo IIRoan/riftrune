@@ -1,6 +1,6 @@
 import { FilterSnapshot } from '@riftbound/contracts';
 import { desc, eq, sql } from 'drizzle-orm';
-import { computeCatalogTotal } from '../lib/catalog-total.js';
+import { computeCatalogTotal, sumSetPrintCounts } from '../lib/catalog-total.js';
 import { catalogFingerprint, entityHash } from '../lib/hash.js';
 import type { Database } from '../db/client.js';
 import { filterSnapshots, sets, syncState, variants } from '../db/schema.js';
@@ -26,6 +26,10 @@ type ProbeContext = {
   needsProbe: boolean;
 };
 
+function normalizeSetCode(code: string): string {
+  return code.toUpperCase();
+}
+
 export class CatalogMetadataService {
   private probePromise: Promise<FilterSnapshot> | null = null;
 
@@ -35,7 +39,9 @@ export class CatalogMetadataService {
   ) {}
 
   async getFiltersMeta(): Promise<FiltersMeta> {
-    const snapshot = await this.withLocalFoilPrintCounts(await this.getFiltersSnapshot());
+    const snapshot = await this.withLocalSetCounts(
+      await this.withLocalFoilPrintCounts(await this.getFiltersSnapshot())
+    );
     const latest = await this.db.query.filterSnapshots.findFirst({
       orderBy: [desc(filterSnapshots.capturedAt)],
     });
@@ -53,6 +59,71 @@ export class CatalogMetadataService {
       pricesCatalogHash: prices?.contentHash ?? '',
       variantCount: computeCatalogTotal(snapshot, catalog?.rowCount ?? 0),
     };
+  }
+
+  /**
+   * Overlay per-set printing totals from the synced local catalog so set counts
+   * stay current when upstream filter metadata lags (e.g. Vendetta logical vs print).
+   */
+  private async withLocalSetCounts(snapshot: FilterSnapshot): Promise<FilterSnapshot> {
+    if (snapshot.sets.length === 0) {
+      return snapshot;
+    }
+
+    const catalog = await this.db.query.syncState.findFirst({
+      where: eq(syncState.key, 'catalog'),
+    });
+    const syncedTotal = catalog?.rowCount ?? 0;
+    if (syncedTotal > 0 && sumSetPrintCounts(snapshot) >= syncedTotal) {
+      return snapshot;
+    }
+
+    try {
+      const rows = await this.db
+        .select({
+          code: sets.code,
+          name: sets.name,
+          printCount: sql<number>`count(*) filter (where ${variants.isCollectible})::int`,
+        })
+        .from(variants)
+        .innerJoin(sets, eq(variants.setId, sets.id))
+        .groupBy(sets.code, sets.name);
+
+      if (rows.length === 0) return snapshot;
+
+      const localByCode = Object.fromEntries(
+        rows.map((row) => [normalizeSetCode(row.code), row])
+      );
+      const seen = new Set<string>();
+
+      const updatedSets = snapshot.sets.map((set) => {
+        const key = normalizeSetCode(set.code ?? set.id);
+        seen.add(key);
+        const local = localByCode[key];
+        if (!local || local.printCount <= 0) return set;
+
+        const current = set.printCount ?? set.count;
+        return {
+          ...set,
+          printCount: Math.max(current, local.printCount),
+        };
+      });
+
+      for (const [code, local] of Object.entries(localByCode)) {
+        if (seen.has(code) || local.printCount <= 0) continue;
+        updatedSets.push({
+          id: code.toLowerCase(),
+          code: local.code,
+          name: local.name,
+          count: local.printCount,
+          printCount: local.printCount,
+        });
+      }
+
+      return { ...snapshot, sets: updatedSets };
+    } catch {
+      return snapshot;
+    }
   }
 
   /** Overlay foil printing counts from the local catalog so dashboards work before a re-probe. */

@@ -10,8 +10,15 @@ export function tokenizeSearchQuery(raw: string): string[] {
     .filter((t) => t.length > 0);
 }
 
+/** Name with spaces stripped — matches the query regardless of word spacing. */
+function squashedName() {
+  return sql`replace(lower(${cards.name}), ' ', '')`;
+}
+
 /**
  * Match card name, variant number, type, or tags for every token.
+ * A space-insensitive whole-query clause also matches the name, so
+ * "soulspinner" finds "Soul Spinner" and "soul spinner" finds "Soulspinner".
  */
 export function buildCardSearchCondition(q: string): SQL | undefined {
   const tokens = tokenizeSearchQuery(q);
@@ -34,21 +41,27 @@ export function buildCardSearchCondition(q: string): SQL | undefined {
     );
   });
 
-  return perToken.length === 1 ? perToken[0] : and(...perToken);
+  const tokenCondition = and(...perToken);
+  if (!tokenCondition) return undefined;
+
+  return or(tokenCondition, sql`${squashedName()} LIKE ${`%${tokens.join('')}%`}`);
 }
 
 /** Prefer prefix matches, then substring, then alphabetical. */
 export function buildSearchRelevanceOrder(q: string) {
   const trimmed = q.trim();
+  const squashed = trimmed.toLowerCase().replace(/\s+/g, '');
   const prefix = `${trimmed}%`;
   const contains = `%${trimmed}%`;
   return sql`
     CASE
       WHEN ${cards.name} ILIKE ${prefix} THEN 0
       WHEN ${variants.variantNumber} ILIKE ${prefix} THEN 1
-      WHEN ${cards.name} ILIKE ${contains} THEN 2
-      WHEN ${variants.variantNumber} ILIKE ${contains} THEN 3
-      ELSE 4
+      WHEN ${squashedName()} LIKE ${`${squashed}%`} THEN 2
+      WHEN ${cards.name} ILIKE ${contains} THEN 3
+      WHEN ${variants.variantNumber} ILIKE ${contains} THEN 4
+      WHEN ${squashedName()} LIKE ${`%${squashed}%`} THEN 5
+      ELSE 6
     END
   `;
 }

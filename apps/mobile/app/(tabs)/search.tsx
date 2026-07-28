@@ -11,17 +11,19 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import {
-  FlatList,
   InteractionManager,
   Keyboard,
-  Platform,
   useWindowDimensions,
   View,
-  type ListRenderItem,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  type ViewToken,
 } from 'react-native';
+import {
+  FlashList,
+  type FlashListRef,
+  type ListRenderItem,
+  type ViewToken,
+} from '@shopify/flash-list';
 import type { CardListItem } from '@riftbound/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { CardTile } from '@/components/cards/CardTile';
@@ -89,7 +91,6 @@ import {
   catalogLookaheadCount,
   catalogViewportTargetHeight,
   estimateCatalogPageSize,
-  estimateCatalogRowHeight,
   isFastCatalogScroll,
   measureCatalogScrollVelocity,
   shouldPrefetchCatalog,
@@ -157,7 +158,7 @@ function SearchScreenBody() {
   const [sortPending, setSortPending] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const catalogListRef = useRef<FlatList<CardListItem>>(null);
+  const catalogListRef = useRef<FlashListRef<CardListItem>>(null);
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 40 }).current;
   const onViewableItemsChangedRef = useRef<
     (info: { viewableItems: ViewToken<CardListItem>[] }) => void
@@ -560,23 +561,20 @@ function SearchScreenBody() {
     await loadHistory();
   }, [loadHistory]);
 
+  // FlashList v2 lays grid cells out in fixed `width / numColumns` slots with no
+  // columnWrapperStyle, so the gap lives inside the cell and the list frame is
+  // widened by one gap to keep tile edges flush with the panels above.
   const gridCellStyle = useMemo(
-    () => ({ width: tileWidth, maxWidth: tileWidth }),
-    [tileWidth]
+    () => ({ paddingHorizontal: Layout.gridGap / 2, marginBottom: Layout.gridGap }),
+    []
   );
 
-  const listRowHeight = useMemo(
-    () => estimateCatalogRowHeight('list', tileWidth, compact),
-    [tileWidth, compact]
-  );
-
-  const getListItemLayout = useCallback(
-    (_data: ArrayLike<CardListItem> | null | undefined, index: number) => ({
-      length: listRowHeight,
-      offset: listRowHeight * index,
-      index,
-    }),
-    [listRowHeight]
+  const listStyle = useMemo(
+    () =>
+      isList
+        ? { flex: 1 }
+        : { flex: 1, marginHorizontal: -Layout.gridGap / 2 },
+    [isList]
   );
 
   const renderItem = useCallback<ListRenderItem<CardListItem>>(
@@ -607,11 +605,7 @@ function SearchScreenBody() {
       }
 
       return (
-        <View
-          className="mb-1 shrink-0 grow-0"
-          style={gridCellStyle}
-          collapsable={false}
-        >
+        <View style={gridCellStyle} collapsable={false}>
           <CardTile
             card={item}
             layout="grid"
@@ -647,23 +641,11 @@ function SearchScreenBody() {
     [selectedVariant, collectionByVariant]
   );
 
-  const listContentStyle = useMemo(
-    () => ({
-      width: splitLayout ? ('100%' as const) : contentWidth,
-      maxWidth: '100%' as const,
-      flexGrow: displayItems.length === 0 ? 1 : undefined,
-    }),
-    [splitLayout, contentWidth, displayItems.length]
-  );
+  const listContentStyle = useMemo(() => ({ flexGrow: 1 }), []);
 
   const listFooter = useMemo(
     () => <View style={{ height: paddingBottomInline }} />,
     [paddingBottomInline]
-  );
-
-  const columnWrapperStyle = useMemo(
-    () => (isList ? undefined : { gap: Layout.gridGap, maxWidth: '100%' as const }),
-    [isList]
   );
 
   const listEmpty = useMemo(() => {
@@ -945,7 +927,7 @@ function SearchScreenBody() {
               'overflow-hidden rounded-xl border border-border bg-card'
           )}
         >
-          <FlatList
+          <FlashList
           ref={catalogListRef}
           data={displayItems}
           key={`${hasSearchInput ? 'search' : 'featured'}-${view}-${String(numColumns)}`}
@@ -953,12 +935,9 @@ function SearchScreenBody() {
           keyExtractor={(item) => item.variantNumber}
           renderItem={renderItem}
           extraData={listExtraData}
-          ListHeaderComponent={null}
           ListFooterComponent={listFooter}
-          contentContainerClassName={cn('flex-grow', !splitLayout && 'self-center')}
-          style={splitLayout ? { flex: 1, width: '100%', maxWidth: '100%' } : { flex: 1 }}
+          style={listStyle}
           contentContainerStyle={listContentStyle}
-          columnWrapperStyle={columnWrapperStyle}
           ListEmptyComponent={listEmpty}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -972,12 +951,6 @@ function SearchScreenBody() {
           onContentSizeChange={(_, height) => {
             maybeFillCatalogViewport(height);
           }}
-          getItemLayout={isList ? getListItemLayout : undefined}
-          initialNumToRender={Math.min(displayItems.length || pageSize, pageSize)}
-          maxToRenderPerBatch={16}
-          windowSize={9}
-          updateCellsBatchingPeriod={50}
-          removeClippedSubviews={Platform.OS !== 'web'}
           showsVerticalScrollIndicator={false}
           />
         </View>

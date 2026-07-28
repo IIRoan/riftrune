@@ -1,0 +1,274 @@
+diff --git a/dist/common/core/web/getWebStyles.js b/dist/common/core/web/getWebStyles.js
+index 97a597f47a9b4b0532a904229f5ebf827325db34..1ebb6fbf012980cba2e2d4ca457e7d4bf5d43abe 100644
+--- a/dist/common/core/web/getWebStyles.js
++++ b/dist/common/core/web/getWebStyles.js
+@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports.getWebVariable = exports.getWebStyles = void 0;
+ var _generateDataSet = require("../../components/web/generateDataSet");
++var _listener = require("../listener");
++var _consts = require("../../common/consts");
+ var _cssListener = require("./cssListener");
+ var _parseCSSValue = require("./parseCSSValue");
+ const dummyParent = typeof document !== "undefined" ? Object.assign(document.createElement("div"), {
+@@ -15,6 +17,21 @@ if (dummyParent && dummy) {
+   document.body.appendChild(dummyParent);
+   dummyParent.appendChild(dummy);
+ }
++// [riftrune patch] Memoize className -> style resolution. The stock
++// implementation rescans every active CSS rule (with CSS.escape per class)
++// plus matches()/getPropertyValue on every call, which dominates frame time
++// when recycled lists (FlashList) re-render many className'd views at once.
++const webStylesCache = new Map();
++const clearWebStylesCache = () => webStylesCache.clear();
++if (typeof document !== "undefined") {
++  _listener.UniwindListener.subscribe(clearWebStylesCache, [_consts.StyleDependency.Theme, _consts.StyleDependency.Variables, _consts.StyleDependency.ColorScheme, _consts.StyleDependency.AdaptiveThemes, _consts.StyleDependency.Rtl, _consts.StyleDependency.Dimensions, _consts.StyleDependency.Orientation]);
++  window.addEventListener("resize", clearWebStylesCache, {
++    passive: true
++  });
++  try {
++    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", clearWebStylesCache);
++  } catch {}
++}
+ const getActiveStylesForClass = className => {
+   const extractedStyles = {};
+   if (!dummy) {
+@@ -46,6 +63,20 @@ const getWebStyles = (className, componentProps, uniwindContext) => {
+   if (!dummy) {
+     return {};
+   }
++  const dataSet = (0, _generateDataSet.generateDataSet)(componentProps ?? {});
++  let dataSetKey = "";
++  for (const [key, value] of Object.entries(dataSet)) {
++    if (value !== false && value !== void 0) {
++      dataSetKey += `${key}=${String(value)};`;
++    }
++  }
++  const cacheKey = `${uniwindContext.scopedTheme ?? ""}|${String(uniwindContext.rtl)}|${dataSetKey}|${className}`;
++  const cached = webStylesCache.get(cacheKey);
++  if (cached !== void 0) {
++    return {
++      ...cached
++    };
++  }
+   if (uniwindContext.scopedTheme !== null) {
+     dummyParent?.setAttribute("class", uniwindContext.scopedTheme);
+   } else {
+@@ -57,9 +88,8 @@ const getWebStyles = (className, componentProps, uniwindContext) => {
+     dummyParent?.removeAttribute("dir");
+   }
+   dummy.className = className;
+-  const dataSet = (0, _generateDataSet.generateDataSet)(componentProps ?? {});
+   Object.entries(dataSet).forEach(([key, value]) => {
+     if (value === false || value === void 0) {
+       return;
+     }
+     dummy.dataset[key] = String(value);
+@@ -68,10 +98,15 @@ const getWebStyles = (className, componentProps, uniwindContext) => {
+   Object.keys(dataSet).forEach(key => {
+     delete dummy.dataset[key];
+   });
+-  return Object.fromEntries(Object.entries(computedStyles).map(([key, value]) => {
++  const result = Object.fromEntries(Object.entries(computedStyles).map(([key, value]) => {
+     const parsedKey = key[0] === "-" ? key : key.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+     return [parsedKey, (0, _parseCSSValue.parseCSSValue)(value)];
+   }));
++  if (webStylesCache.size > 4000) {
++    webStylesCache.clear();
++  }
++  webStylesCache.set(cacheKey, result);
++  return result;
+ };
+ exports.getWebStyles = getWebStyles;
+ const getWebVariable = (name, uniwindContext) => {
+diff --git a/dist/module/core/web/getWebStyles.js b/dist/module/core/web/getWebStyles.js
+index f5c2a2d3082ed4a950716059e30595406bece4c4..f5ce3b3be79688d042b4010f571258f4bc4e3c98 100644
+--- a/dist/module/core/web/getWebStyles.js
++++ b/dist/module/core/web/getWebStyles.js
+@@ -1,4 +1,6 @@
+ import { generateDataSet } from "../../components/web/generateDataSet.js";
++import { UniwindListener } from "../listener.js";
++import { StyleDependency } from "../../common/consts.js";
+ import { CSSListener } from "./cssListener.js";
+ import { parseCSSValue } from "./parseCSSValue.js";
+ const dummyParent = typeof document !== "undefined" ? Object.assign(document.createElement("div"), {
+@@ -9,6 +11,27 @@ if (dummyParent && dummy) {
+   document.body.appendChild(dummyParent);
+   dummyParent.appendChild(dummy);
+ }
++// [riftrune patch] Memoize className -> style resolution. The stock
++// implementation rescans every active CSS rule (with CSS.escape per class)
++// plus matches()/getPropertyValue on every call, which dominates frame time
++// when recycled lists (FlashList) re-render many className'd views at once.
++const webStylesCache = new Map();
++const clearWebStylesCache = () => webStylesCache.clear();
++if (typeof document !== "undefined") {
++  UniwindListener.subscribe(clearWebStylesCache, [
++    StyleDependency.Theme,
++    StyleDependency.Variables,
++    StyleDependency.ColorScheme,
++    StyleDependency.AdaptiveThemes,
++    StyleDependency.Rtl,
++    StyleDependency.Dimensions,
++    StyleDependency.Orientation
++  ]);
++  window.addEventListener("resize", clearWebStylesCache, { passive: true });
++  try {
++    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", clearWebStylesCache);
++  } catch {}
++}
+ const getActiveStylesForClass = (className) => {
+   const extractedStyles = {};
+   if (!dummy) {
+@@ -41,6 +64,18 @@ export const getWebStyles = (className, componentProps, uniwindContext) => {
+   if (!dummy) {
+     return {};
+   }
++  const dataSet = generateDataSet(componentProps ?? {});
++  let dataSetKey = "";
++  for (const [key, value] of Object.entries(dataSet)) {
++    if (value !== false && value !== void 0) {
++      dataSetKey += `${key}=${String(value)};`;
++    }
++  }
++  const cacheKey = `${uniwindContext.scopedTheme ?? ""}|${String(uniwindContext.rtl)}|${dataSetKey}|${className}`;
++  const cached = webStylesCache.get(cacheKey);
++  if (cached !== void 0) {
++    return { ...cached };
++  }
+   if (uniwindContext.scopedTheme !== null) {
+     dummyParent?.setAttribute("class", uniwindContext.scopedTheme);
+   } else {
+@@ -52,7 +87,6 @@ export const getWebStyles = (className, componentProps, uniwindContext) => {
+     dummyParent?.removeAttribute("dir");
+   }
+   dummy.className = className;
+-  const dataSet = generateDataSet(componentProps ?? {});
+   Object.entries(dataSet).forEach(([key, value]) => {
+     if (value === false || value === void 0) {
+       return;
+@@ -63,7 +97,7 @@ export const getWebStyles = (className, componentProps, uniwindContext) => {
+   Object.keys(dataSet).forEach((key) => {
+     delete dummy.dataset[key];
+   });
+-  return Object.fromEntries(
++  const result = Object.fromEntries(
+     Object.entries(computedStyles).map(([key, value]) => {
+       const parsedKey = key[0] === "-" ? key : key.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+       return [
+@@ -72,6 +106,11 @@ export const getWebStyles = (className, componentProps, uniwindContext) => {
+       ];
+     })
+   );
++  if (webStylesCache.size > 4000) {
++    webStylesCache.clear();
++  }
++  webStylesCache.set(cacheKey, result);
++  return result;
+ };
+ export const getWebVariable = (name, uniwindContext) => {
+   if (!dummyParent) {
+diff --git a/src/core/web/getWebStyles.ts b/src/core/web/getWebStyles.ts
+index c4510bf16101ef949f247d4ea50593b9676142e1..754215ec2b25c386ddd92d30a84b821d0da5c62c 100644
+--- a/src/core/web/getWebStyles.ts
++++ b/src/core/web/getWebStyles.ts
+@@ -1,5 +1,7 @@
+ import { generateDataSet } from '../../components/web/generateDataSet'
+ import type { RNStyle, UniwindContextType } from '../types'
++import { UniwindListener } from '../listener'
++import { StyleDependency } from '../../common/consts'
+ import { CSSListener } from './cssListener'
+ import { parseCSSValue } from './parseCSSValue'
+ 
+@@ -17,6 +19,34 @@ if (dummyParent && dummy) {
+     dummyParent.appendChild(dummy)
+ }
+ 
++// [riftrune patch] Memoize className -> style resolution. The stock
++// implementation rescans every active CSS rule (with CSS.escape per class)
++// plus matches()/getPropertyValue on every call, which dominates frame time
++// when recycled lists (FlashList) re-render many className'd views at once.
++const webStylesCache = new Map<string, RNStyle>()
++const clearWebStylesCache = () => webStylesCache.clear()
++
++if (typeof document !== 'undefined') {
++    UniwindListener.subscribe(clearWebStylesCache, [
++        StyleDependency.Theme,
++        StyleDependency.Variables,
++        StyleDependency.ColorScheme,
++        StyleDependency.AdaptiveThemes,
++        StyleDependency.Rtl,
++        StyleDependency.Dimensions,
++        StyleDependency.Orientation,
++    ])
++    window.addEventListener('resize', clearWebStylesCache, { passive: true })
++
++    try {
++        window
++            .matchMedia('(prefers-color-scheme: dark)')
++            .addEventListener('change', clearWebStylesCache)
++    } catch {
++        // Older engines without addEventListener on MediaQueryList
++    }
++}
++
+ const getActiveStylesForClass = (className: string) => {
+     const extractedStyles = {} as Record<string, string>
+ 
+@@ -66,6 +96,23 @@ export const getWebStyles = (
+         return {}
+     }
+ 
++    const dataSet = generateDataSet(componentProps ?? {})
++
++    let dataSetKey = ''
++
++    for (const [key, value] of Object.entries(dataSet)) {
++        if (value !== false && value !== undefined) {
++            dataSetKey += `${key}=${String(value)};`
++        }
++    }
++
++    const cacheKey = `${uniwindContext.scopedTheme ?? ''}|${String(uniwindContext.rtl)}|${dataSetKey}|${className}`
++    const cached = webStylesCache.get(cacheKey)
++
++    if (cached !== undefined) {
++        return { ...cached }
++    }
++
+     if (uniwindContext.scopedTheme !== null) {
+         dummyParent?.setAttribute('class', uniwindContext.scopedTheme)
+     } else {
+@@ -80,8 +127,6 @@ export const getWebStyles = (
+ 
+     dummy.className = className
+ 
+-    const dataSet = generateDataSet(componentProps ?? {})
+-
+     Object.entries(dataSet).forEach(([key, value]) => {
+         if (value === false || value === undefined) {
+             return
+@@ -96,7 +141,7 @@ export const getWebStyles = (
+         delete dummy.dataset[key]
+     })
+ 
+-    return Object.fromEntries(
++    const result = Object.fromEntries(
+         Object.entries(computedStyles)
+             .map(([key, value]) => {
+                 const parsedKey = key[0] === '-'
+@@ -109,6 +154,14 @@ export const getWebStyles = (
+                 ]
+             }),
+     )
++
++    if (webStylesCache.size > 4000) {
++        webStylesCache.clear()
++    }
++
++    webStylesCache.set(cacheKey, result)
++
++    return result
+ }
+ 
+ export const getWebVariable = (name: string, uniwindContext: UniwindContextType) => {

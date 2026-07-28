@@ -2,14 +2,8 @@ import { ThemedIcon, LibraryIcon } from '@/components/icons';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { AppLoader } from '@/components/ui/app-loader';
-import {
-  FlatList,
-  View,
-  type LayoutChangeEvent,
-  type ListRenderItem,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
+import { View, type LayoutChangeEvent } from 'react-native';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import {
   CatalogActiveFilterChips,
   CatalogFilterSheet,
@@ -224,6 +218,17 @@ export function DeckBuilderCatalogPanel({
     [deck, onPersist, readOnly, section]
   );
 
+  // FlashList v2 grids have no columnWrapperStyle — the gap lives inside the
+  // cell and the list frame is widened by one gap to keep tile edges flush.
+  const gridCellStyle = useMemo(
+    () => ({ paddingHorizontal: gap / 2, marginBottom: gap }),
+    [gap]
+  );
+  const listStyle = useMemo(
+    () => ({ flex: 1, minHeight: 0, marginHorizontal: -gap / 2 }),
+    [gap]
+  );
+
   const renderItem = useCallback<ListRenderItem<DeckCard>>(
     ({ item }) => {
       const count = getDeckCandidateCount(deck, section, item);
@@ -243,24 +248,27 @@ export function DeckBuilderCatalogPanel({
           : null;
 
       return (
-        <CatalogTile
-          tileWidth={tileWidth}
-          candidate={item}
-          count={count}
-          owned={owned}
-          blocked={blocked}
-          blockedLabel={blockedLabel}
-          illegal={illegal}
-          readOnly={readOnly}
-          onAdd={() => handleAddOne(item)}
-          onRemove={() => handleRemoveOne(item)}
-          onOpenCard={() => openCard(router, item.variantNumber, 'modal')}
-        />
+        <View style={gridCellStyle} collapsable={false}>
+          <CatalogTile
+            tileWidth={tileWidth}
+            candidate={item}
+            count={count}
+            owned={owned}
+            blocked={blocked}
+            blockedLabel={blockedLabel}
+            illegal={illegal}
+            readOnly={readOnly}
+            onAdd={() => handleAddOne(item)}
+            onRemove={() => handleRemoveOne(item)}
+            onOpenCard={() => openCard(router, item.variantNumber, 'modal')}
+          />
+        </View>
       );
     },
     [
       collectionByName,
       deck,
+      gridCellStyle,
       handleAddOne,
       handleRemoveOne,
       membershipRevision,
@@ -269,17 +277,6 @@ export function DeckBuilderCatalogPanel({
       section,
       tileWidth,
     ]
-  );
-
-  const handleScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (readOnly || !catalog.hasNextPage || catalog.isFetchingNextPage) return;
-      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-      const distanceFromEnd =
-        contentSize.height - (layoutMeasurement.height + contentOffset.y);
-      if (distanceFromEnd < 320) catalog.fetchNextPage();
-    },
-    [catalog, readOnly]
   );
 
   const showBlockingLoader = !readOnly && catalog.isLoading && catalog.cards.length === 0;
@@ -340,7 +337,7 @@ export function DeckBuilderCatalogPanel({
         ) : null}
       </View>
 
-      <FlatList
+      <FlashList
         data={displayCards}
         key={`${section}-${numColumns}-${readOnly ? 'browse' : 'add'}`}
         keyExtractor={(item) => item.variantNumber}
@@ -355,27 +352,20 @@ export function DeckBuilderCatalogPanel({
             </View>
           ) : null
         }
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
         onEndReached={() => {
           if (readOnly) return;
           if (catalog.hasNextPage && !catalog.isFetchingNextPage) {
             catalog.fetchNextPage();
           }
         }}
-        onEndReachedThreshold={0.25}
-        removeClippedSubviews={false}
-        initialNumToRender={24}
-        maxToRenderPerBatch={32}
-        windowSize={11}
+        onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom,
           flexGrow: displayCards.length === 0 ? 1 : undefined,
         }}
         keyboardShouldPersistTaps="handled"
-        className="min-h-0 flex-1"
-        columnWrapperStyle={numColumns > 1 ? { gap, marginBottom: gap } : undefined}
+        style={listStyle}
       />
 
       {showBlockingLoader ? (
