@@ -28,6 +28,8 @@ type ServiceOptions = {
     contentHash: string;
     rowCount?: number;
   } | null>;
+  /** Local per-set counts from the variants table. */
+  localSetCounts?: Array<{ code: string; name: string; printCount: number }>;
   probeDelayMs?: number;
   probeDisabled?: boolean;
 };
@@ -36,6 +38,7 @@ function createService(options?: ServiceOptions) {
   const probeDelayMs = options?.probeDelayMs ?? 40;
   let probeCalls = 0;
   let syncStateCalls = 0;
+  let localAggregateCalls = 0;
 
   const riftrune = {
     listCards: async () => ({
@@ -64,7 +67,15 @@ function createService(options?: ServiceOptions) {
     select: () => ({
       from: () => ({
         innerJoin: () => ({
-          groupBy: async () => [] as Array<{ code: string; foilPrintCount: number }>,
+          groupBy: async () => {
+            localAggregateCalls += 1;
+            return (options?.localSetCounts ?? []).map((row) => ({
+              code: row.code,
+              name: row.name,
+              printCount: row.printCount,
+              foilPrintCount: 0,
+            }));
+          },
         }),
       }),
     }),
@@ -95,6 +106,7 @@ function createService(options?: ServiceOptions) {
   return {
     service,
     getProbeCalls: () => probeCalls,
+    getLocalAggregateCalls: () => localAggregateCalls,
     restoreEnv: () => {
       if (previousProbeDisabled === undefined) {
         delete process.env.CATALOG_PROBE_DISABLED;
@@ -188,7 +200,7 @@ describe('CatalogMetadataService', () => {
   test('getFiltersMeta responds without waiting for probe', async () => {
     const { service } = createService({
       latestSnapshot: null,
-      syncStateRows: [null, null, { key: 'prices', contentHash: 'prices-hash' }],
+      syncStateRows: [null, null, null, { key: 'prices', contentHash: 'prices-hash' }],
       probeDelayMs: 80,
     });
 
@@ -206,6 +218,7 @@ describe('CatalogMetadataService', () => {
     const { service } = createService({
       latestSnapshot: enrichedFilters,
       syncStateRows: [
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
         { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
         { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
         { key: 'prices', contentHash: 'prices-hash' },
@@ -234,4 +247,98 @@ describe('CatalogMetadataService', () => {
       restoreEnv();
     }
   });
+
+  test('getFiltersMeta overlays local print counts when upstream set totals lag', async () => {
+    const upstreamFilters: FilterSnapshot = {
+      ...baseFilters,
+      sets: [{ id: 'ven', name: 'Vendetta', code: 'VEN', count: 58 }],
+    };
+    const { service } = createService({
+      latestSnapshot: upstreamFilters,
+      syncStateRows: [
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'prices', contentHash: 'prices-hash' },
+      ],
+      localSetCounts: [{ code: 'VEN', name: 'Vendetta', printCount: 228 }],
+    });
+
+    const meta = await service.getFiltersMeta();
+
+    expect(meta.snapshot.sets.find((set) => set.code === 'VEN')?.printCount).toBe(228);
+  });
+
+  test('getFiltersMeta adds sets that exist locally but not in upstream filters', async () => {
+    const { service } = createService({
+      latestSnapshot: baseFilters,
+      syncStateRows: [
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'prices', contentHash: 'prices-hash' },
+      ],
+      localSetCounts: [{ code: 'VEN', name: 'Vendetta', printCount: 228 }],
+    });
+
+    const meta = await service.getFiltersMeta();
+    const vendetta = meta.snapshot.sets.find((set) => set.code === 'VEN');
+
+    expect(vendetta).toMatchObject({
+      code: 'VEN',
+      name: 'Vendetta',
+      count: 228,
+      printCount: 228,
+    });
+  });
+
+  test('getFiltersMeta matches upstream set codes case-insensitively', async () => {
+    const upstreamFilters: FilterSnapshot = {
+      ...baseFilters,
+      sets: [{ id: 'ven', name: 'Vendetta', code: 'ven', count: 58, printCount: 58 }],
+    };
+    const { service } = createService({
+      latestSnapshot: upstreamFilters,
+      syncStateRows: [
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 1396 },
+        { key: 'prices', contentHash: 'prices-hash' },
+      ],
+      localSetCounts: [{ code: 'VEN', name: 'Vendetta', printCount: 228 }],
+    });
+
+    const meta = await service.getFiltersMeta();
+    const vendettaSets = meta.snapshot.sets.filter(
+      (set) => normalizeSetCode(set.code ?? set.id) === 'VEN'
+    );
+
+    expect(vendettaSets).toHaveLength(1);
+    expect(vendettaSets[0]?.printCount).toBe(228);
+  });
+
+  test('getFiltersMeta skips local aggregate when snapshot totals match sync row count', async () => {
+    const currentSnapshot: FilterSnapshot = {
+      ...enrichedFilters,
+      sets: enrichedFilters.sets.map((set) => ({ ...set, foilPrintCount: 0 })),
+    };
+    const { service, getLocalAggregateCalls } = createService({
+      latestSnapshot: currentSnapshot,
+      syncStateRows: [
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 200 },
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 200 },
+        { key: 'catalog', contentHash: matchingFingerprint, rowCount: 200 },
+        { key: 'prices', contentHash: 'prices-hash' },
+      ],
+      localSetCounts: [{ code: 'OGN', name: 'Origins', printCount: 200 }],
+    });
+
+    await service.getFiltersMeta();
+
+    expect(getLocalAggregateCalls()).toBe(0);
+  });
 });
+
+function normalizeSetCode(code: string): string {
+  return code.toUpperCase();
+}

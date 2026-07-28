@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Keyboard, Pressable, View } from 'react-native';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { Keyboard, Pressable, View } from 'react-native';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { CardTile } from '@/components/cards/CardTile';
 import { Text } from '@/components/ui/text';
 import type { CollectionEntry } from '@/services/collectionService';
@@ -17,6 +18,42 @@ import { useCardBanByVariant } from '@/hooks/useBanDatesByVariant';
 import { cn } from '@/lib/utils';
 
 type SortMode = 'recent' | 'name' | 'set';
+
+type OwnershipMap = NonNullable<React.ComponentProps<typeof CardTile>['collectionByVariant']>;
+
+const CollectionRow = memo(function CollectionRow({
+  item,
+  meta,
+  isBanned,
+  collectionByVariant,
+}: {
+  item: CollectionEntry;
+  meta: string;
+  isBanned: boolean;
+  collectionByVariant: OwnershipMap;
+}) {
+  const card = useMemo(
+    () => collectionEntryToCardListItem(item, { isBanned }),
+    [item, isBanned]
+  );
+
+  return (
+    <View className="mb-3">
+      <CardTile
+        card={card}
+        layout="list"
+        mode="collection"
+        compact
+        instantArt
+        collectionByVariant={collectionByVariant}
+      />
+      <Text className="mt-1 px-1 font-mono text-[11px] text-muted-foreground">
+        {item.variantNumber} · Qty {item.quantity}
+        {meta ? ` · ${meta}` : ''}
+      </Text>
+    </View>
+  );
+});
 
 interface Props {
   entries: CollectionEntry[];
@@ -77,66 +114,66 @@ export function CollectionCardList({
     Keyboard.dismiss();
   }, []);
 
-  return (
-    <FlatList
-      data={filtered}
-      keyExtractor={(item) => item.variantNumber}
-      ListHeaderComponent={
-        <>
-          {listHeader}
-          <View className="mb-4 gap-3">
-            <View className="flex-row items-center justify-between gap-3">
-              <Text className="text-sm font-semibold text-muted-foreground">
-                Your cards ({uniquePrintings.toLocaleString()} printings ·{' '}
-                {totalCopies.toLocaleString()} copies)
-              </Text>
-              <View className="flex-row gap-1">
-                {(['recent', 'name', 'set'] as const).map((mode) => (
-                  <Pressable
-                    key={mode}
-                    onPress={() => {
-                      setSortBy(mode);
-                    }}
+  const renderItem = useCallback<ListRenderItem<CollectionEntry>>(
+    ({ item }) => {
+      const sourceRows = rowsByVariant.get(item.variantNumber) ?? [item];
+      return (
+        <CollectionRow
+          item={item}
+          meta={formatGroupedCollectionMeta(sourceRows)}
+          isBanned={banByVariant?.get(item.variantNumber) ?? false}
+          collectionByVariant={collectionByVariant}
+        />
+      );
+    },
+    [rowsByVariant, banByVariant, collectionByVariant]
+  );
+
+  const headerComponent = useMemo(
+    () => (
+      <>
+        {listHeader}
+        <View className="mb-4 gap-3">
+          <View className="flex-row items-center justify-between gap-3">
+            <Text className="text-sm font-semibold text-muted-foreground">
+              Your cards ({uniquePrintings.toLocaleString()} printings ·{' '}
+              {totalCopies.toLocaleString()} copies)
+            </Text>
+            <View className="flex-row gap-1">
+              {(['recent', 'name', 'set'] as const).map((mode) => (
+                <Pressable
+                  key={mode}
+                  onPress={() => {
+                    setSortBy(mode);
+                  }}
+                >
+                  <Text
+                    className={cn(
+                      'rounded-md px-2 py-1 text-[12px] capitalize',
+                      sortBy === mode
+                        ? 'bg-primary/15 text-primary'
+                        : 'text-muted-foreground'
+                    )}
                   >
-                    <Text
-                      className={cn(
-                        'rounded-md px-2 py-1 text-[12px] capitalize',
-                        sortBy === mode
-                          ? 'bg-primary/15 text-primary'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      {mode}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+                    {mode}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </View>
-        </>
-      }
-      renderItem={({ item }) => {
-        const sourceRows = rowsByVariant.get(item.variantNumber) ?? [item];
-        const meta = formatGroupedCollectionMeta(sourceRows);
+        </View>
+      </>
+    ),
+    [listHeader, uniquePrintings, totalCopies, sortBy]
+  );
 
-        return (
-          <View className="mb-3">
-            <CardTile
-              card={collectionEntryToCardListItem(item, {
-                isBanned: banByVariant?.get(item.variantNumber) ?? false,
-              })}
-              layout="list"
-              mode="collection"
-              compact
-              collectionByVariant={collectionByVariant}
-            />
-            <Text className="mt-1 px-1 font-mono text-[11px] text-muted-foreground">
-              {item.variantNumber} · Qty {item.quantity}
-              {meta ? ` · ${meta}` : ''}
-            </Text>
-          </View>
-        );
-      }}
+  return (
+    <FlashList
+      data={filtered}
+      keyExtractor={(item) => item.variantNumber}
+      ListHeaderComponent={headerComponent}
+      renderItem={renderItem}
+      extraData={banByVariant}
       ListEmptyComponent={
         !isLoading ? (
           <Text className="py-8 text-center text-sm text-muted-foreground">

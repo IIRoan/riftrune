@@ -1,9 +1,16 @@
 import { describe, expect, test } from 'bun:test';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import {
   buildCardSearchCondition,
   buildSearchRelevanceOrder,
   tokenizeSearchQuery,
 } from '../../src/lib/search.js';
+
+const dialect = new PgDialect();
+
+function compile(fragment: Parameters<PgDialect['sqlToQuery']>[0]) {
+  return dialect.sqlToQuery(fragment);
+}
 
 describe('tokenizeSearchQuery', () => {
   test('splits on whitespace and lowercases', () => {
@@ -28,10 +35,33 @@ describe('buildCardSearchCondition', () => {
     expect(buildCardSearchCondition('vi')).toBeDefined();
     expect(buildCardSearchCondition('vi destructive')).toBeDefined();
   });
+
+  test('matches names regardless of spaces in the query', () => {
+    const spaced = compile(buildCardSearchCondition('soul spinner')!);
+    const compact = compile(buildCardSearchCondition('soulspinner')!);
+
+    for (const compiled of [spaced, compact]) {
+      expect(compiled.sql.toLowerCase()).toContain('replace(lower(');
+      expect(compiled.params).toContain('%soulspinner%');
+    }
+  });
+
+  test('keeps per-token matching alongside the squashed name clause', () => {
+    const compiled = compile(buildCardSearchCondition('soul spinner')!);
+    expect(compiled.params).toContain('%soul%');
+    expect(compiled.params).toContain('%spinner%');
+  });
 });
 
 describe('buildSearchRelevanceOrder', () => {
   test('returns a SQL ordering fragment', () => {
     expect(buildSearchRelevanceOrder('vi')).toBeDefined();
+  });
+
+  test('ranks space-insensitive name matches', () => {
+    const compiled = compile(buildSearchRelevanceOrder('soul spinner'));
+    expect(compiled.sql.toLowerCase()).toContain('replace(lower(');
+    expect(compiled.params).toContain('soulspinner%');
+    expect(compiled.params).toContain('%soulspinner%');
   });
 });

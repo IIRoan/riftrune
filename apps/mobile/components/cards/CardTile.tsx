@@ -58,6 +58,8 @@ interface Props {
   onSelectVariant?: (variantNumber: string) => void;
   onPress?: () => void;
   collectionByVariant?: CollectionOwnershipMap;
+  /** Skip art fade/shimmer — pass from recycled list cells (search mode does this automatically). */
+  instantArt?: boolean;
 }
 
 function CardTileInner({
@@ -73,6 +75,7 @@ function CardTileInner({
   onSelectVariant,
   onPress,
   collectionByVariant: collectionByVariantProp,
+  instantArt = false,
 }: Props) {
   const router = useRouter();
   const isMobile = useMobileLayout();
@@ -81,6 +84,7 @@ function CardTileInner({
   });
   const collectionByVariant = collectionByVariantProp ?? ownershipFromStore;
   const { addCard, setQuantity } = useCollectionMutations();
+  const artInstant = instantArt || _mode === 'search';
 
   // Scope prices + quick-add to this row's printing family. Prefer an explicit
   // family context (selected detail), otherwise the row's own variant so
@@ -233,7 +237,7 @@ function CardTileInner({
             )}
             contentFit="cover"
             contentPosition="top"
-            instant={_mode === 'search'}
+            instant={artInstant}
           />
           {banned ? <CardBannedOverlay className="left-0.5 top-0.5" /> : null}
         </View>
@@ -447,7 +451,7 @@ function CardTileInner({
           className="absolute inset-0"
           contentFit="cover"
           contentPosition="top"
-          instant={_mode === 'search'}
+          instant={artInstant}
         />
         {banned ? <CardBannedOverlay /> : null}
       </View>
@@ -493,7 +497,8 @@ export const CardTile = memo(
     prev.collectionByVariant === next.collectionByVariant &&
     prev.onSelectVariant === next.onSelectVariant &&
     prev.onPress === next.onPress &&
-    prev.mode === next.mode
+    prev.mode === next.mode &&
+    prev.instantArt === next.instantArt
 );
 
 export function CardTileSkeleton({

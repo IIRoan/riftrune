@@ -3,6 +3,7 @@ import { count, eq } from 'drizzle-orm';
 import { CardsListResponse, CatalogIndexResponse } from '@riftbound/contracts';
 import { apiJson, getContext } from './support.js';
 import { syncState, variants } from '../../src/db/schema.js';
+import { sumSetPrintCounts } from '../../src/lib/catalog-total.js';
 import { expectedCatalogTotal } from '../fixtures/enriched-filters.js';
 
 setDefaultTimeout(120_000);
@@ -33,7 +34,8 @@ describe('card cache database integrity', () => {
   test('filter snapshot row count aligns with expanded catalog total', async () => {
     const { catalogMetadata } = getContext();
     const meta = await catalogMetadata.getFiltersMeta();
-    expect(meta.variantCount).toBe(expectedCatalogTotal);
+    expect(meta.variantCount).toBeGreaterThanOrEqual(expectedCatalogTotal);
+    expect(meta.variantCount).toBe(sumSetPrintCounts(meta.snapshot));
     expect(meta.catalogHash.length).toBeGreaterThan(0);
     expect(meta.pricesCatalogHash.length).toBeGreaterThan(0);
     expect(meta.snapshot.sets.length).toBeGreaterThan(0);

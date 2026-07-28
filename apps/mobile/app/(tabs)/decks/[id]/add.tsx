@@ -11,13 +11,8 @@ import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilt
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppLoader, AppLoadingScreen } from '@/components/ui/app-loader';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  FlatList,
-  View,
-  type ListRenderItem,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
+import { View } from 'react-native';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { SearchInput } from '@/components/ui/search-input';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
 import { Text } from '@/components/ui/text';
@@ -255,6 +250,17 @@ function DeckAddScreenBody({
   const sectionFull =
     activeSection === 'battlefields' && battlefieldsAtCapacity(deck);
 
+  // FlashList v2 grids have no columnWrapperStyle — the gap lives inside the
+  // cell and the list frame is widened by one gap to keep tile edges flush.
+  const gridCellStyle = useMemo(
+    () => ({ paddingHorizontal: gap / 2, marginBottom: gap }),
+    [gap]
+  );
+  const listStyle = useMemo(
+    () => ({ flex: 1, marginHorizontal: -gap / 2 }),
+    [gap]
+  );
+
   const renderItem = useCallback<ListRenderItem<DeckCard>>(
     ({ item }) => {
       const count = getDeckCandidateCount(deck, activeSection, item);
@@ -274,24 +280,27 @@ function DeckAddScreenBody({
             : 'Unavailable';
 
       return (
-        <AddOneTile
-          tileWidth={tileWidth}
-          candidate={item}
-          count={count}
-          selected={selected}
-          showSelected={usesSingleSelectUi}
-          blocked={blocked}
-          blockedLabel={blockedLabel}
-          horizontal={isBattlefieldSection}
-          onAdd={() => handleAddOne(item)}
-          onRemove={() => handleRemoveOne(item)}
-          onOpenCard={() => openCard(router, item.variantNumber, 'modal')}
-        />
+        <View style={gridCellStyle} collapsable={false}>
+          <AddOneTile
+            tileWidth={tileWidth}
+            candidate={item}
+            count={count}
+            selected={selected}
+            showSelected={usesSingleSelectUi}
+            blocked={blocked}
+            blockedLabel={blockedLabel}
+            horizontal={isBattlefieldSection}
+            onAdd={() => handleAddOne(item)}
+            onRemove={() => handleRemoveOne(item)}
+            onOpenCard={() => openCard(router, item.variantNumber, 'modal')}
+          />
+        </View>
       );
     },
     [
       activeSection,
       deck,
+      gridCellStyle,
       handleAddOne,
       handleRemoveOne,
       isBattlefieldSection,
@@ -309,21 +318,6 @@ function DeckAddScreenBody({
         <AppLoader size="sm" />
       </View>
     ) : null;
-
-  const handleScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (!catalog.hasNextPage || catalog.isFetchingNextPage) return;
-
-      const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-      const distanceFromEnd =
-        contentSize.height - (layoutMeasurement.height + contentOffset.y);
-
-      if (distanceFromEnd < 320) {
-        catalog.fetchNextPage();
-      }
-    },
-    [catalog]
-  );
 
   const showBlockingLoader = catalog.isLoading && catalog.cards.length === 0;
 
@@ -396,7 +390,7 @@ function DeckAddScreenBody({
         ) : null}
       </View>
 
-      <FlatList
+      <FlashList
         data={catalog.cards}
         key={`${activeSection}-${numColumns}`}
         keyExtractor={(item) => item.variantNumber}
@@ -405,26 +399,19 @@ function DeckAddScreenBody({
         extraData={membershipRevision}
         ListEmptyComponent={showBlockingLoader ? null : emptyState}
         ListFooterComponent={listFooter}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
         onEndReached={() => {
           if (catalog.hasNextPage && !catalog.isFetchingNextPage) {
             catalog.fetchNextPage();
           }
         }}
-        onEndReachedThreshold={0.25}
-        removeClippedSubviews={false}
-        initialNumToRender={24}
-        maxToRenderPerBatch={32}
-        windowSize={11}
+        onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: paddingBottomInline,
           flexGrow: catalog.cards.length === 0 ? 1 : undefined,
         }}
         keyboardShouldPersistTaps="handled"
-        style={{ flex: 1 }}
-        columnWrapperStyle={numColumns > 1 ? { gap, marginBottom: gap } : undefined}
+        style={listStyle}
       />
 
       {showBlockingLoader ? (

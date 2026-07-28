@@ -1,7 +1,8 @@
 import { BookmarkIcon, ChevronDownIcon, ChevronUpIcon, ThemedIcon } from '@/components/icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Keyboard, Pressable, View } from 'react-native';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { Keyboard, Pressable, View } from 'react-native';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { CardArtImage } from '@/components/cards/CardArtImage';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import {
@@ -130,7 +131,7 @@ function WishlistCardThumb({
   );
 }
 
-function WishlistRow({
+const WishlistRow = memo(function WishlistRow({
   item,
   expanded,
   compact,
@@ -140,14 +141,21 @@ function WishlistRow({
   item: WishlistPriceItem;
   expanded: boolean;
   compact: boolean;
-  onToggle: () => void;
-  onOpen: () => void;
+  onToggle: (variantNumber: string) => void;
+  onOpen: (variantNumber: string) => void;
 }) {
+  const handleToggle = useCallback(() => {
+    onToggle(item.variantNumber);
+  }, [onToggle, item.variantNumber]);
+  const handleOpen = useCallback(() => {
+    onOpen(item.variantNumber);
+  }, [onOpen, item.variantNumber]);
+
   return (
     <View className="border-b border-border">
       <Pressable
-        onPress={onToggle}
-        onLongPress={onOpen}
+        onPress={handleToggle}
+        onLongPress={handleOpen}
         className="min-h-14 flex-row items-center gap-3 py-3 active:opacity-90"
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -194,7 +202,7 @@ function WishlistRow({
         <View className="gap-3 border-t border-border/60 bg-card-panel/40 pb-3.5 pt-3">
           {compact ? (
             <Pressable
-              onPress={onOpen}
+              onPress={handleOpen}
               className="flex-row items-center gap-3 active:opacity-90"
               accessibilityRole="button"
               accessibilityLabel={`Open ${item.name}`}
@@ -219,14 +227,14 @@ function WishlistRow({
             </Pressable>
           ) : null}
           <WishlistPriceHistoryPanel item={item} />
-          <Button size="sm" variant="outline" className="self-start" onPress={onOpen}>
+          <Button size="sm" variant="outline" className="self-start" onPress={handleOpen}>
             <ButtonText>Open card</ButtonText>
           </Button>
         </View>
       ) : null}
     </View>
   );
-}
+});
 
 function WishlistLoadingSkeleton({ compact }: { compact: boolean }) {
   return (
@@ -277,6 +285,23 @@ function WishlistScreenBody() {
       openCard(router, variantNumber, 'modal', 'wishlist');
     },
     [router]
+  );
+
+  const toggleRow = useCallback((variantNumber: string) => {
+    setExpandedId((current) => (current === variantNumber ? null : variantNumber));
+  }, []);
+
+  const renderItem = useCallback<ListRenderItem<WishlistPriceItem>>(
+    ({ item }) => (
+      <WishlistRow
+        item={item}
+        compact={compact}
+        expanded={expandedId === item.variantNumber}
+        onToggle={toggleRow}
+        onOpen={openItem}
+      />
+    ),
+    [compact, expandedId, toggleRow, openItem]
   );
 
   const listHeader = (
@@ -361,25 +386,11 @@ function WishlistScreenBody() {
   }
 
   return (
-    <FlatList
+    <FlashList
       data={filtered}
       keyExtractor={(item) => item.variantNumber}
       ListHeaderComponent={listHeader}
-      renderItem={({ item }) => (
-        <WishlistRow
-          item={item}
-          compact={compact}
-          expanded={expandedId === item.variantNumber}
-          onToggle={() => {
-            setExpandedId((current) =>
-              current === item.variantNumber ? null : item.variantNumber
-            );
-          }}
-          onOpen={() => {
-            openItem(item.variantNumber);
-          }}
-        />
-      )}
+      renderItem={renderItem}
       ListEmptyComponent={
         <View className="py-10">
           {items.length === 0 ? (
@@ -424,8 +435,6 @@ function WishlistScreenBody() {
       onScrollBeginDrag={dismissKeyboard}
       showsVerticalScrollIndicator={false}
       extraData={{ expandedId, compact }}
-      initialNumToRender={16}
-      windowSize={9}
     />
   );
 }
