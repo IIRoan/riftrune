@@ -1,3 +1,5 @@
+import type { DeckFormat } from '@riftbound/contracts';
+
 export type DeckSectionKey =
   'legend' | 'champion' | 'mainDeck' | 'runes' | 'battlefields' | 'sideboard';
 
@@ -32,6 +34,8 @@ export interface DeckState {
   id: string;
   name: string;
   description: string;
+  /** Deckbuilding format / ruleset. */
+  format: DeckFormat;
   createdAt: number;
   updatedAt: number;
   legend: DeckCard | null;
@@ -69,6 +73,7 @@ export interface SerializedDeck {
   id: string;
   name: string;
   description?: string;
+  format: DeckFormat;
   createdAt: number;
   updatedAt: number;
   legend: DeckCard | null;
@@ -110,3 +115,15 @@ export const DECK_SECTIONS: Array<{
   { key: 'battlefields', title: 'Fields', target: 3 },
   { key: 'sideboard', title: 'Side', target: 8, optional: true },
 ];
+
+/** Section targets for the active deck format (Constructed vs Pre-Rift). */
+export function deckSectionsForFormat(format: DeckFormat = 'constructed') {
+  if (format !== 'pre-rift') return DECK_SECTIONS;
+  return DECK_SECTIONS.map((section) => {
+    if (section.key === 'mainDeck') return { ...section, target: 25 };
+    if (section.key === 'legend' || section.key === 'champion' || section.key === 'battlefields') {
+      return { ...section, optional: true };
+    }
+    return section;
+  });
+}

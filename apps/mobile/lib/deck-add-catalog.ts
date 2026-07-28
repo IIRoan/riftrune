@@ -1,6 +1,7 @@
 import type { CardDetail, CardListItem, CardsListQuery } from '@riftbound/contracts';
 import {
   cardPrimaryNameToken,
+  deckFormatRestrictsPicker,
   isTokenVariantNumber,
   legendChampionTags,
 } from '@riftbound/contracts';
@@ -68,14 +69,17 @@ export function getDeckAddSectionMeta(
     case 'champion':
       return {
         placeholder: 'Search champion units',
-        contextLine: deck.legend
-          ? `Champion units for ${deck.legend.name}${
-              legendChampionTags(deck.legend).length
-                ? ` · ${legendChampionTags(deck.legend).join(', ')}`
-                : ''
-            }`
-          : 'Choose a Legend first',
-        requiresLegend: true,
+        contextLine:
+          deck.format === 'pre-rift'
+            ? 'Any champion unit'
+            : deck.legend
+              ? `Champion units for ${deck.legend.name}${
+                  legendChampionTags(deck.legend).length
+                    ? ` · ${legendChampionTags(deck.legend).join(', ')}`
+                    : ''
+                }`
+              : 'Choose a Legend first',
+        requiresLegend: deck.format !== 'pre-rift',
         limit: 80,
         pageSize: 80,
         infiniteScroll: false,
@@ -83,9 +87,12 @@ export function getDeckAddSectionMeta(
     case 'runes':
       return {
         placeholder: 'Search runes',
-        contextLine: deck.legend
-          ? `Runes matching ${deck.legend.colors.join(' · ')}`
-          : null,
+        contextLine:
+          deck.format === 'pre-rift'
+            ? 'Runes from any domain'
+            : deck.legend
+              ? `Runes matching ${deck.legend.colors.join(' · ')}`
+              : null,
         requiresLegend: false,
         limit: 40,
         pageSize: 40,
@@ -109,9 +116,12 @@ export function getDeckAddSectionMeta(
     case 'sideboard':
       return {
         placeholder: 'Search sideboard cards',
-        contextLine: deck.legend
-          ? `Sideboard · ${deck.legend.colors.join(' · ')} identity`
-          : null,
+        contextLine:
+          deck.format === 'pre-rift'
+            ? 'Any main deck card'
+            : deck.legend
+              ? `Sideboard · ${deck.legend.colors.join(' · ')} identity`
+              : null,
         requiresLegend: false,
         limit: MAIN_DECK_PAGE_SIZE,
         pageSize: MAIN_DECK_PAGE_SIZE,
@@ -120,9 +130,12 @@ export function getDeckAddSectionMeta(
     default:
       return {
         placeholder: 'Search main deck cards',
-        contextLine: deck.legend
-          ? `Main deck · ${deck.legend.colors.join(' · ')} identity`
-          : null,
+        contextLine:
+          deck.format === 'pre-rift'
+            ? 'Any main deck card'
+            : deck.legend
+              ? `Main deck · ${deck.legend.colors.join(' · ')} identity`
+              : null,
         requiresLegend: false,
         limit: MAIN_DECK_PAGE_SIZE,
         pageSize: MAIN_DECK_PAGE_SIZE,
@@ -132,7 +145,7 @@ export function getDeckAddSectionMeta(
 }
 
 export function defaultDeckAddSearch(section: DeckSectionKey, deck: DeckState): string {
-  if (section !== 'champion' || !deck.legend) return '';
+  if (section !== 'champion' || !deck.legend || deck.format === 'pre-rift') return '';
   return cardPrimaryNameToken(deck.legend);
 }
 
@@ -158,19 +171,24 @@ export function defaultDeckAddCatalogFilters(
   deck: DeckState
 ): CatalogFilters {
   const legendColors = deck.legend?.colors ? [...deck.legend.colors].sort() : [];
+  // Pre-Rift starts open across domains; Constructed locks to legend colors when known.
+  const colorFilter =
+    deck.format === 'pre-rift'
+      ? []
+      : legendColors;
 
   switch (section) {
     case 'mainDeck':
     case 'sideboard':
       return sanitizeCatalogFilters({
         ...DEFAULT_CATALOG_FILTERS,
-        colors: legendColors,
+        colors: colorFilter,
         excludeTokens: true,
       });
     case 'runes':
       return sanitizeCatalogFilters({
         ...DEFAULT_CATALOG_FILTERS,
-        colors: legendColors,
+        colors: colorFilter,
       });
     default:
       return { ...DEFAULT_CATALOG_FILTERS };
@@ -354,8 +372,9 @@ export function buildDeckAddCandidates(args: {
   section: DeckSectionKey;
   listItems: CardListItem[];
   details: CardDetail[];
+  deck?: DeckState;
 }): DeckCard[] {
-  const { section, listItems, details } = args;
+  const { section, listItems, details, deck } = args;
   if (!listItems.length) return [];
 
   const detailByKey = detailMapFromBatch(details);
@@ -382,7 +401,13 @@ export function buildDeckAddCandidates(args: {
     ) {
       continue;
     }
-    if (section === 'sideboard' && card.isSignature) continue;
+    if (
+      section === 'sideboard' &&
+      card.isSignature &&
+      deck?.format !== 'pre-rift'
+    ) {
+      continue;
+    }
 
     seenVariants.add(card.variantNumber);
     candidates.push(card);
@@ -460,6 +485,15 @@ export function describeDeckAddEmptyState(args: {
   }
 
   if (status === 'no-eligible-results') {
+    if (deck.format === 'pre-rift') {
+      return {
+        title: 'No cards found',
+        description: search
+          ? `No cards match "${search}". Try another spelling or shorter name.`
+          : meta.placeholder,
+      };
+    }
+
     const identity = getDeckIdentity(deck);
     const domains = identity.allowedDomains
       ? [...identity.allowedDomains].join(' · ')
@@ -524,6 +558,7 @@ export function filterEligibleDeckAddCards(
   section: DeckSectionKey,
   candidates: DeckCard[]
 ): DeckCard[] {
+  if (!deckFormatRestrictsPicker(deck.format)) return candidates;
   return candidates.filter((candidate) =>
     isCardEligibleForSection({ deck, section, candidateCard: candidate }).eligible
   );

@@ -1,8 +1,8 @@
-import { RIFTBOUND_DECK_RULES } from '@riftbound/contracts';
+import { getDeckRules } from '@riftbound/contracts';
 import { getSectionCount } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
 
-export const BATTLEFIELD_MAX = RIFTBOUND_DECK_RULES.sections.battlefields.target;
+export const BATTLEFIELD_MAX = 3;
 
 export function battlefieldCount(deck: DeckState): number {
   return getSectionCount(deck, 'battlefields');
@@ -16,7 +16,13 @@ export function battlefieldSlotsRemaining(deck: DeckState): number {
   return Math.max(0, BATTLEFIELD_MAX - battlefieldCount(deck));
 }
 
+export function battlefieldPerNameLimit(deck: DeckState): number {
+  return getDeckRules(deck.format).copyLimits.battlefieldPerName;
+}
+
 export function canAddBattlefield(deck: DeckState, candidateName: string): boolean {
-  if (deck.battlefields.has(candidateName)) return false;
-  return !battlefieldsAtCapacity(deck);
+  if (battlefieldsAtCapacity(deck)) return false;
+  const existing = deck.battlefields.get(candidateName)?.count ?? 0;
+  if (existing <= 0) return true;
+  return existing < battlefieldPerNameLimit(deck);
 }

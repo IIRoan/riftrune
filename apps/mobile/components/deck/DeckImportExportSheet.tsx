@@ -1,6 +1,6 @@
-import { ThemedIcon, DownloadIcon } from '@/components/icons';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { ThemedIcon, UploadIcon } from '@/components/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import {
@@ -16,6 +16,8 @@ import {
 import { Button, ButtonText } from '@/components/ui/button';
 import { TextareaInput } from '@/components/ui/textarea-input';
 import { Text } from '@/components/ui/text';
+import type { DeckFormat } from '@riftbound/contracts';
+import { DeckFormatSegmentedControl } from '@/components/deck/DeckFormatSegmentedControl';
 import { importDeckText } from '@/lib/deck-io';
 import { createDeckId } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
@@ -37,6 +39,13 @@ interface DeckImportExportSheetProps {
   asNewDeck?: boolean;
 }
 
+function countDeckListLines(text: string): number {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean).length;
+}
+
 export function DeckImportExportSheet({
   open,
   deck,
@@ -45,7 +54,17 @@ export function DeckImportExportSheet({
   asNewDeck = false,
 }: DeckImportExportSheetProps) {
   const [text, setText] = useState('');
+  const [format, setFormat] = useState<DeckFormat>('constructed');
   const [busy, setBusy] = useState(false);
+
+  const lineCount = useMemo(() => countDeckListLines(text), [text]);
+  const canImport = text.trim().length > 0 && !busy;
+
+  useEffect(() => {
+    if (!open) return;
+    setFormat('constructed');
+    setText('');
+  }, [open]);
 
   const handleImport = async () => {
     if (!text.trim()) {
@@ -65,6 +84,7 @@ export function DeckImportExportSheet({
         ? {
             ...imported,
             id: createDeckId(),
+            format,
             name:
               imported.legend?.name != null && imported.legend.name.length > 0
                 ? `${imported.legend.name} deck`
@@ -72,7 +92,7 @@ export function DeckImportExportSheet({
             createdAt: now,
             updatedAt: now,
           }
-        : { ...imported, id: deck.id, name: deck.name, createdAt: deck.createdAt };
+        : { ...imported, id: deck.id, name: deck.name, createdAt: deck.createdAt, format };
 
       await Promise.resolve(onImport(payload));
 
@@ -117,38 +137,58 @@ export function DeckImportExportSheet({
             <AppSheetHeader>
               <AppSheetTitle>Import deck</AppSheetTitle>
             </AppSheetHeader>
-            <AppSheetBody className="gap-4 pb-2">
-              <View className="gap-3 rounded-xl border border-archive-soft-line bg-card-panel p-4">
-                <View className="flex-row items-start gap-3">
-                  <View className="mt-0.5 size-10 items-center justify-center rounded-full bg-primary/15">
-                    <ThemedIcon icon={DownloadIcon} size={20} color="primary" />
-                  </View>
-                  <View className="min-w-0 flex-1 gap-1">
-                    <Text className="text-sm font-semibold text-foreground">
-                      Paste a list or deck code
-                    </Text>
-                    <Text className="text-[13px] leading-snug text-muted-foreground">
-                      Supports Piltover Archive deck codes, section headers, or flat lists like{' '}
-                      <Text className="font-mono text-xs">3 Card Name (SET-123)</Text>.
-                    </Text>
-                  </View>
-                </View>
-                <Button variant="outline" onPress={() => void handlePickFile()} disabled={busy}>
-                  <ButtonText>Choose text file</ButtonText>
-                </Button>
+            <AppSheetBody className="gap-5 pb-2">
+              <Text className="text-sm leading-snug text-muted-foreground">
+                {asNewDeck
+                  ? 'Paste a deck list or code to create a new deck in your collection.'
+                  : `Replace cards in “${deck.name}” from a pasted list or deck code.`}
+              </Text>
+
+              <View className="gap-2">
+                <Text className="text-sm font-semibold text-foreground">Format</Text>
+                <DeckFormatSegmentedControl
+                  value={format}
+                  onChange={setFormat}
+                  disabled={busy}
+                />
               </View>
 
-              <TextareaInput
-                value={text}
-                onChangeText={setText}
-                disabled={busy}
-                multiline
-                numberOfLines={10}
-                className="min-h-44 font-mono text-xs"
-                placeholder={
-                  'Deck code, or:\nLegend:\nIrelia, Blade Dancer\n\nMain Deck:\n3 En Garde (SFD-001)\n...'
-                }
-              />
+              <View className="gap-2">
+                <View className="flex-row items-baseline justify-between gap-3">
+                  <Text className="text-sm font-semibold text-foreground">Deck list</Text>
+                  {lineCount > 0 ? (
+                    <Text className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                      {lineCount} line{lineCount === 1 ? '' : 's'}
+                    </Text>
+                  ) : null}
+                </View>
+                <TextareaInput
+                  value={text}
+                  onChangeText={setText}
+                  disabled={busy}
+                  multiline
+                  numberOfLines={10}
+                  className="min-h-48 font-mono text-xs leading-5"
+                  placeholder={
+                    'Deck code, or:\nLegend:\nIrelia, Blade Dancer\n\nMain Deck:\n3 En Garde (SFD-001)\n...'
+                  }
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose text file"
+                  disabled={busy}
+                  className="self-start flex-row items-center gap-1.5 rounded-md px-1 py-1 active:opacity-70"
+                  onPress={() => void handlePickFile()}
+                >
+                  <ThemedIcon icon={UploadIcon} size={15} color="primary" />
+                  <Text className="text-[13px] font-medium text-primary">Choose text file</Text>
+                </Pressable>
+              </View>
+
+              <Text className="text-[12px] leading-4 text-muted-foreground">
+                Supports Piltover Archive deck codes, section headers, or flat lines like{' '}
+                <Text className="font-mono text-[11px] text-foreground">3 Card Name (SET-123)</Text>.
+              </Text>
             </AppSheetBody>
             <AppSheetFooter>
               <View className="w-full flex-row items-center gap-2">
@@ -158,12 +198,12 @@ export function DeckImportExportSheet({
                   onPress={onClose}
                   disabled={busy}
                 >
-                  <ButtonText>Close</ButtonText>
+                  <ButtonText>Cancel</ButtonText>
                 </Button>
                 <Button
                   className="w-auto flex-[1.4]"
                   busy={busy}
-                  disabled={busy}
+                  disabled={!canImport}
                   onPress={() => void handleImport()}
                 >
                   <ButtonText>{busy ? 'Importing…' : 'Import deck'}</ButtonText>

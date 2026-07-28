@@ -1,5 +1,5 @@
 import { legendRuneDomains as contractLegendRuneDomains } from '@riftbound/contracts';
-import type { DeckCard, DeckEntry } from '@/lib/deck-types';
+import type { DeckCard, DeckEntry, DeckState } from '@/lib/deck-types';
 
 /** Default column count when responsive layout is unavailable. */
 export const DECK_GRID_COLUMNS = 3;
@@ -26,6 +26,38 @@ export function getLegendRuneDomains(legend: Pick<DeckCard, 'colors'>): [string,
   return contractLegendRuneDomains(legend);
 }
 
+/** Domains shown in the rune panel — up to 3 for Pre-Rift, legend pair for Constructed. */
+export function getDeckRuneDomains(deck: Pick<DeckState, 'format' | 'legend' | 'runes' | 'mainDeck' | 'champion' | 'battlefields' | 'sideboard'>): string[] {
+  const domains: string[] = [];
+  const seen = new Set<string>();
+  const isPreRift = deck.format === 'pre-rift';
+  const max = isPreRift ? Number.POSITIVE_INFINITY : 2;
+
+  const addFrom = (colors: string[]) => {
+    for (const color of colors) {
+      const trimmed = color.trim();
+      if (!trimmed || seen.has(trimmed) || domains.length >= max) continue;
+      domains.push(trimmed);
+      seen.add(trimmed);
+    }
+  };
+
+  if (deck.legend) {
+    const [first, second] = getLegendRuneDomains(deck.legend);
+    addFrom(first === second ? [first] : [first, second]);
+  }
+
+  if (isPreRift) {
+    if (deck.champion) addFrom(deck.champion.colors);
+    for (const [, entry] of deck.mainDeck) addFrom(entry.card.colors);
+    for (const [, entry] of deck.runes) addFrom(entry.card.colors);
+    for (const [, entry] of deck.battlefields) addFrom(entry.card.colors);
+    for (const [, entry] of deck.sideboard) addFrom(entry.card.colors);
+  }
+
+  return domains;
+}
+
 export function countRunesForDomain(
   runes: ReadonlyMap<string, DeckEntry>,
   domain: string
@@ -42,7 +74,14 @@ export function countRunesForDomain(
 export function buildBattlefieldSlots(
   battlefields: ReadonlyMap<string, DeckEntry>
 ): BattlefieldSlot[] {
-  const filled = [...battlefields.values()].slice(0, 3);
+  const filled: BattlefieldSlot[] = [];
+  for (const entry of battlefields.values()) {
+    for (let copy = 0; copy < entry.count; copy += 1) {
+      if (filled.length >= 3) break;
+      filled.push(entry);
+    }
+    if (filled.length >= 3) break;
+  }
   const slots: BattlefieldSlot[] = [...filled];
   while (slots.length < 3) {
     slots.push(null);

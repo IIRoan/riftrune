@@ -2,6 +2,7 @@ import { ThemedIcon, ImageIcon } from '@/components/icons';
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
+import { CardArtInfoPreviewButton } from '@/components/deck/CardArtInfoPreviewButton';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { GridDeckControl } from '@/components/deck/GridDeckControl';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
@@ -106,6 +107,13 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
               <StatusKeywordBadge status="illegal" compact />
             </View>
           ) : null}
+
+          <CardArtInfoPreviewButton
+            imageUri={imageUri}
+            variantNumber={candidate.variantNumber}
+            name={candidate.name}
+            orientation={horizontal ? 'landscape' : 'portrait'}
+          />
         </View>
 
         <Text

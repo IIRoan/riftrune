@@ -5,9 +5,10 @@ import { Text } from '@/components/ui/text';
 import { domainIconFor } from '@/constants/gameAssets';
 import {
   countRunesForDomain,
-  getLegendRuneDomains,
+  getDeckRuneDomains,
   totalRuneCount,
 } from '@/lib/deck-builder';
+import { DOMAIN_KEYWORD_NAMES } from '@/lib/card-keywords';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ interface DeckRunePanelProps {
   deck: DeckState;
   readOnly?: boolean;
   runeCardsByDomain: ReadonlyMap<string, DeckCard>;
+  runeCardsLoading?: boolean;
   onAdjust: (domain: string, delta: number) => void;
   /** Tighter layout for narrow side drawers. */
   dense?: boolean;
@@ -139,17 +141,31 @@ export function DeckRunePanel({
   deck,
   readOnly = false,
   runeCardsByDomain,
+  runeCardsLoading = false,
   onAdjust,
   dense = false,
   compact,
 }: DeckRunePanelProps) {
-  if (!deck.legend) return null;
-
-  const [firstDomain, secondDomain] = getLegendRuneDomains(deck.legend);
+  const activeDomains = getDeckRuneDomains(deck);
   const total = totalRuneCount(deck.runes);
   const target = 12;
   const complete = total === target;
   const useDense = dense || compact === true;
+  const isPreRift = deck.format === 'pre-rift';
+
+  const displayDomains = isPreRift
+    ? [...new Set([...activeDomains, ...DOMAIN_KEYWORD_NAMES, ...runeCardsByDomain.keys()])].sort(
+        (a, b) => a.localeCompare(b)
+      )
+    : activeDomains;
+
+  if (!isPreRift && !deck.legend) return null;
+
+  const domainCountWithRunes = displayDomains.filter(
+    (domain) => countRunesForDomain(deck.runes, domain) > 0
+  ).length;
+
+  const runeCatalogReady = runeCardsByDomain.size > 0;
 
   return (
     <View className={cn('min-w-0 gap-2', compact ? 'flex-1' : undefined)}>
@@ -170,28 +186,42 @@ export function DeckRunePanel({
         </Text>
       </View>
 
-      <View className="min-w-0 gap-1.5">
-        <RuneDomainRow
-          domain={firstDomain}
-          count={countRunesForDomain(deck.runes, firstDomain)}
-          readOnly={readOnly}
-          dense={useDense}
-          onAdjust={(delta) => onAdjust(firstDomain, delta)}
-        />
-        {secondDomain !== firstDomain ? (
-          <RuneDomainRow
-            domain={secondDomain}
-            count={countRunesForDomain(deck.runes, secondDomain)}
-            readOnly={readOnly}
-            dense={useDense}
-            onAdjust={(delta) => onAdjust(secondDomain, delta)}
-          />
-        ) : null}
-      </View>
+      {displayDomains.length > 0 ? (
+        <View className="min-w-0 gap-1.5">
+          {displayDomains.map((domain) => {
+            const count = countRunesForDomain(deck.runes, domain);
+            const domainLocked = !runeCatalogReady || !runeCardsByDomain.has(domain);
+            return (
+              <RuneDomainRow
+                key={domain}
+                domain={domain}
+                count={count}
+                readOnly={readOnly || domainLocked}
+                dense={useDense}
+                onAdjust={(delta) => {
+                  onAdjust(domain, delta);
+                }}
+              />
+            );
+          })}
+        </View>
+      ) : (
+        <Text className="text-[11px] leading-4 text-muted-foreground">
+          Choose a Legend to set rune domains.
+        </Text>
+      )}
 
-      {!runeCardsByDomain.size ? (
+      {isPreRift ? (
+        <Text className="font-mono text-[11px] text-muted-foreground">
+          {domainCountWithRunes}/3 domains with runes
+        </Text>
+      ) : null}
+
+      {runeCardsLoading ? (
+        <Text className="text-[11px] text-muted-foreground">Loading rune cards…</Text>
+      ) : !runeCatalogReady && isPreRift ? (
         <Text className="text-[11px] text-muted-foreground">
-          Loading rune cards from catalog…
+          Could not load rune cards from catalog.
         </Text>
       ) : null}
     </View>

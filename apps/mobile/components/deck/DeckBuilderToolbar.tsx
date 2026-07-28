@@ -1,6 +1,8 @@
 import { ThemedIcon, ChevronLeftIcon, DownloadIcon, InfoIcon, ListIcon, MenuIcon, PencilIcon, SlidersHorizontalIcon } from '@/components/icons';
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
+import { DeckFormatBadge } from '@/components/deck/DeckFormatBadge';
+import { DeckManageMenu } from '@/components/deck/DeckManageMenu';
 import { DeckShareMenu } from '@/components/deck/DeckShareMenu';
 import { DeckValidationMenu } from '@/components/deck/DeckValidationMenu';
 import { PillNav, type PillNavItem } from '@/components/shell/FloatingPillNav';
@@ -29,6 +31,9 @@ interface DeckBuilderToolbarProps {
   onToggleValidation?: () => void;
   validationExpanded?: boolean;
   onImport?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+  duplicateBusy?: boolean;
   /** Owned view mode → enter the deck builder */
   onEdit?: () => void;
   /** Desktop: collapse/expand left info drawer */
@@ -55,6 +60,9 @@ export function DeckBuilderToolbar({
   onToggleValidation,
   validationExpanded = false,
   onImport,
+  onDuplicate,
+  onDelete,
+  duplicateBusy = false,
   onEdit,
   infoDrawerOpen,
   onToggleInfoDrawer,
@@ -140,6 +148,11 @@ export function DeckBuilderToolbar({
         </Pressable>
       ) : null}
       <DeckShareMenu deck={deck} />
+      <DeckManageMenu
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+        duplicateBusy={duplicateBusy}
+      />
     </>
   );
 
@@ -221,25 +234,29 @@ export function DeckBuilderToolbar({
 
       {isMobile ? (
         <>
+          <DeckFormatBadge format={deck.format} variant="toolbar" />
           {sectionNav}
           <View className="min-w-0 flex-1" />
           {trailingActions}
         </>
       ) : (
         <>
-          <View className="min-h-0 min-w-0 flex-1 justify-center">
-            {!readOnly && onNameChange ? (
-              <TextInput
-                value={deckName}
-                onChangeText={onNameChange}
-                placeholder="Deck name"
-                className="h-9 min-h-9 py-0 text-base font-semibold"
-              />
-            ) : (
-              <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
-                {deckName}
-              </Text>
-            )}
+          <View className="min-h-0 min-w-0 flex-1 flex-row items-center gap-2">
+            <DeckFormatBadge format={deck.format} variant="toolbar" />
+            <View className="min-h-0 min-w-0 flex-1 justify-center">
+              {!readOnly && onNameChange ? (
+                <TextInput
+                  value={deckName}
+                  onChangeText={onNameChange}
+                  placeholder="Deck name"
+                  className="h-9 min-h-9 py-0 text-base font-semibold"
+                />
+              ) : (
+                <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
+                  {deckName}
+                </Text>
+              )}
+            </View>
           </View>
           {sectionNav}
           {trailingActions}

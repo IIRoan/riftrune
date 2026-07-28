@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import type { DeckFormat } from '@riftbound/contracts';
 import { runeNameForDomain } from '@riftbound/contracts';
 import type { DeckCard } from '@/lib/deck-types';
 import { deckCardFromDetail } from '@/lib/deck-card';
 import { getLegendRuneDomains } from '@/lib/deck-builder';
+import { DOMAIN_KEYWORD_NAMES } from '@/lib/card-keywords';
 import { api } from '@/src/api/client';
 
 async function fetchRuneCard(domain: string): Promise<DeckCard | null> {
@@ -22,31 +24,51 @@ async function fetchRuneCard(domain: string): Promise<DeckCard | null> {
   return deckCardFromDetail(detail.data, item.variantNumber);
 }
 
-export function useLegendRuneCards(legend: DeckCard | null) {
-  const domains = legend ? getLegendRuneDomains(legend) : null;
+function domainsForDeck(legend: DeckCard | null, format: DeckFormat): string[] | null {
+  if (format === 'pre-rift') {
+    return [...DOMAIN_KEYWORD_NAMES];
+  }
+  if (!legend) return null;
+  const [first, second] = getLegendRuneDomains(legend);
+  return first === second ? [first] : [first, second];
+}
+
+export function useDeckRuneCards(deck: {
+  legend: DeckCard | null;
+  format: DeckFormat;
+}) {
+  const domains = domainsForDeck(deck.legend, deck.format);
 
   return useQuery({
     queryKey: [
-      'legend-rune-cards',
-      legend?.variantNumber ?? 'none',
+      'deck-rune-cards',
+      deck.format,
+      deck.legend?.variantNumber ?? 'none',
       domains?.join('/'),
     ],
     queryFn: async () => {
-      if (!domains) return { byDomain: new Map<string, DeckCard>() };
-      const [first, second] = domains;
-      const [firstCard, secondCard] = await Promise.all([
-        fetchRuneCard(first),
-        first === second ? null : fetchRuneCard(second),
-      ]);
+      if (!domains?.length) return { byDomain: new Map<string, DeckCard>() };
+
+      const entries = await Promise.all(
+        domains.map(async (domain) => {
+          const card = await fetchRuneCard(domain);
+          return { domain, card };
+        })
+      );
 
       const byDomain = new Map<string, DeckCard>();
-      if (firstCard) byDomain.set(first, firstCard);
-      if (secondCard) byDomain.set(second, secondCard);
-      else if (firstCard && first === second) byDomain.set(second, firstCard);
+      for (const { domain, card } of entries) {
+        if (card) byDomain.set(domain, card);
+      }
 
       return { byDomain };
     },
-    enabled: Boolean(legend && domains),
+    enabled: Boolean(domains?.length),
     staleTime: 60 * 60 * 1000,
   });
+}
+
+/** @deprecated Use useDeckRuneCards */
+export function useLegendRuneCards(legend: DeckCard | null) {
+  return useDeckRuneCards({ legend, format: 'constructed' });
 }

@@ -1,4 +1,4 @@
-import type { CardDetail, CardListItem } from '@riftbound/contracts';
+import type { CardDetail, CardListItem, DeckFormat } from '@riftbound/contracts';
 import { isUnresolvedDeckVariant } from '@riftbound/contracts';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { findVariantByNumber } from '@/utils/variants';
@@ -10,7 +10,7 @@ import type {
   SerializedDeck,
   SerializedDeckEntry,
 } from '@/lib/deck-types';
-import { battlefieldsAtCapacity } from '@/lib/deck-limits';
+import { canAddBattlefield } from '@/lib/deck-limits';
 
 const PILTOVER_CDN_HOST = 'cdn.piltoverarchive.com';
 
@@ -129,12 +129,17 @@ export function createDeckId(): string {
   return `deck_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function createEmptyDeck(name = 'New Deck', description = ''): DeckState {
+export function createEmptyDeck(
+  name = 'New Deck',
+  description = '',
+  format: DeckFormat = 'constructed'
+): DeckState {
   const now = Date.now();
   return {
     id: createDeckId(),
     name,
     description,
+    format,
     createdAt: now,
     updatedAt: now,
     legend: null,
@@ -145,6 +150,37 @@ export function createEmptyDeck(name = 'New Deck', description = ''): DeckState 
     sideboard: new Map(),
     addToSideboard: false,
   };
+}
+
+/** Deep-clone an owned deck with a new id and without upstream/browse metadata. */
+export function cloneDeck(
+  deck: DeckState,
+  options?: { name?: string; format?: DeckFormat }
+): DeckState {
+  const now = Date.now();
+  const cloned = deserializeDeck({
+    ...serializeDeck(deck),
+    id: createDeckId(),
+    name: options?.name ?? `${deck.name} (copy)`,
+    format: options?.format ?? deck.format,
+    createdAt: now,
+    updatedAt: now,
+    upstreamId: undefined,
+    syncWarnings: undefined,
+    source: undefined,
+    readOnly: undefined,
+    authorName: undefined,
+    views: undefined,
+    likes: undefined,
+    isLegal: undefined,
+    setPrefixes: undefined,
+    hasGuide: undefined,
+    hasVideo: undefined,
+    hasMatchups: undefined,
+    videoUrl: undefined,
+    bannedCardNames: undefined,
+  });
+  return cloned;
 }
 
 export function getSectionEntries(
@@ -184,7 +220,7 @@ export function addCardToDeck(
   }
 
   if (targetSection === 'battlefields') {
-    if (battlefieldsAtCapacity(deck) && !deck.battlefields.has(card.name)) {
+    if (!canAddBattlefield(deck, card.name)) {
       return deck;
     }
   }
@@ -258,6 +294,7 @@ export function serializeDeck(deck: DeckState): SerializedDeck {
     id: deck.id,
     name: deck.name,
     description: deck.description,
+    format: deck.format,
     createdAt: deck.createdAt,
     updatedAt: deck.updatedAt,
     legend: deck.legend,
@@ -299,6 +336,7 @@ export function deserializeDeck(data: SerializedDeck): DeckState {
     id: data.id,
     name: data.name,
     description: data.description ?? '',
+    format: data.format ?? 'constructed',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     legend: data.legend,

@@ -32,7 +32,7 @@ import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useCollection } from '@/hooks/useCollection';
 import { useCollectionByCardName } from '@/hooks/useDeckCardResolver';
 import { useDeckCardImages } from '@/hooks/useDeckCardImages';
-import { useLegendRuneCards } from '@/hooks/useLegendRuneCards';
+import { useDeckRuneCards } from '@/hooks/useLegendRuneCards';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import {
   changeDeckCardQty,
@@ -66,6 +66,9 @@ interface DeckBuilderCanvasProps {
   onChangeLegend: () => void;
   onBack: () => void;
   onEdit?: () => void;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+  duplicateBusy?: boolean;
   onImportToMyDecks?: () => void;
   importBusy?: boolean;
 }
@@ -80,6 +83,9 @@ export function DeckBuilderCanvas({
   onChangeLegend,
   onBack,
   onEdit,
+  onDuplicate,
+  onDelete,
+  duplicateBusy = false,
   onImportToMyDecks,
   importBusy = false,
 }: DeckBuilderCanvasProps) {
@@ -113,12 +119,13 @@ export function DeckBuilderCanvas({
   const variantKey = deckVariantNumbersKey(deck);
   const { data: imageByVariant } = useDeckCardImages(variantKey);
   const images = imageByVariant ?? new Map<string, string>();
-  const { data: runeCards } = useLegendRuneCards(deck.legend);
+  const { data: runeCards, isPending: runeCardsLoading } = useDeckRuneCards(deck);
   const runeCardsByDomain = runeCards?.byDomain ?? new Map();
   const seededRunesForLegendRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (readOnly) return;
+    if (deck.format === 'pre-rift') return;
     if (!deck.legend || deck.runes.size > 0 || runeCardsByDomain.size === 0) return;
     const seedKey = `${deck.id}:${deck.legend.variantNumber}`;
     if (seededRunesForLegendRef.current === seedKey) return;
@@ -180,13 +187,24 @@ export function DeckBuilderCanvas({
       imageByVariant={images}
       collectionByName={collectionByName}
       runeCardsByDomain={runeCardsByDomain}
+      runeCardsLoading={runeCardsLoading}
       onChangeLegend={onChangeLegend}
+      onRemoveLegend={
+        deck.format === 'pre-rift'
+          ? () => onPersist((prev) => removeDeckCard(prev, 'legend'), { immediate: true })
+          : undefined
+      }
       onAddChampion={() => openSpecialAdd('champion')}
       onRemoveChampion={() => onPersist(removeDeckCard(deck, 'champion'))}
       onAdjustRune={handleAdjustRune}
       onAddBattlefield={() => openSpecialAdd('battlefields')}
       onRemoveBattlefield={(name) =>
         onPersist((prev) => removeDeckCard(prev, 'battlefields', name), { immediate: true })
+      }
+      onAdjustBattlefield={(name, delta) =>
+        onPersist((prev) => changeDeckCardQty(prev, 'battlefields', name, delta), {
+          immediate: true,
+        })
       }
       onDescriptionChange={
         readOnly
@@ -204,7 +222,7 @@ export function DeckBuilderCanvas({
       readOnly={readOnly}
       imageByVariant={images}
       collectionByName={collectionByName}
-      openSource={readOnly ? 'deck-view' : undefined}
+      openSource="deck-view"
       onMinus={(section, name) =>
         onPersist((prev) => changeDeckCardQty(prev, section, name, -1), { immediate: true })
       }
@@ -213,7 +231,11 @@ export function DeckBuilderCanvas({
       }
       onRemove={(section, name) => {
         if (section === 'legend') {
-          onChangeLegend();
+          if (deck.format === 'pre-rift') {
+            onPersist((prev) => removeDeckCard(prev, 'legend'), { immediate: true });
+          } else {
+            onChangeLegend();
+          }
           return;
         }
         onPersist((prev) => removeDeckCard(prev, section, name), { immediate: true });
@@ -321,6 +343,9 @@ export function DeckBuilderCanvas({
           onToggleValidation={() => setValidationExpanded((v) => !v)}
           validationExpanded={validationExpanded}
           onImport={readOnly ? undefined : () => onIoModeChange('import')}
+          onDuplicate={permanentReadOnly ? undefined : onDuplicate}
+          onDelete={permanentReadOnly ? undefined : onDelete}
+          duplicateBusy={duplicateBusy}
           onEdit={canEdit ? onEdit : undefined}
           infoDrawerOpen={infoDrawerOpen}
           onToggleInfoDrawer={

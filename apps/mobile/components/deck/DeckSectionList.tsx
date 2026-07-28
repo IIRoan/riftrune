@@ -29,9 +29,13 @@ import {
   getSectionCount,
   resolveDeckCardImageUrl,
 } from '@/lib/deck-card';
-import type { DeckCard, DeckEntry, DeckSectionKey } from '@/lib/deck-types';
-import { DECK_SECTIONS } from '@/lib/deck-types';
-import type { DeckState } from '@/lib/deck-types';
+import {
+  deckSectionsForFormat,
+  type DeckCard,
+  type DeckEntry,
+  type DeckSectionKey,
+  type DeckState,
+} from '@/lib/deck-types';
 import { ownedCountForCardName } from '@/lib/deck-validation';
 import { openCard } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
@@ -61,7 +65,7 @@ type SectionRow = {
 
 function sectionLabel(
   deck: DeckState,
-  section: (typeof DECK_SECTIONS)[number]
+  section: ReturnType<typeof deckSectionsForFormat>[number]
 ): string {
   const count = getSectionCount(deck, section.key);
   if (section.optional) return `${section.title} ${count}/${section.target}`;
@@ -75,6 +79,7 @@ export function DeckSectionTabs({
   activeSection,
   onSectionChange,
 }: Pick<DeckSectionListProps, 'deck' | 'activeSection' | 'onSectionChange'>) {
+  const sections = deckSectionsForFormat(deck.format);
   return (
     <ScrollView
       horizontal
@@ -82,7 +87,7 @@ export function DeckSectionTabs({
       contentContainerClassName="gap-1.5 pr-2"
       className="max-h-10"
     >
-      {DECK_SECTIONS.map((section) => {
+      {sections.map((section) => {
         const selected = activeSection === section.key;
         const count = getSectionCount(deck, section.key);
         const complete =
@@ -288,7 +293,9 @@ export function DeckSectionList({
   const variantKey = deckVariantNumbersKey(deck);
   const { data: imageByVariant = new Map<string, string>() } = useDeckCardImages(variantKey);
 
-  const sectionMeta = DECK_SECTIONS.find((section) => section.key === activeSection);
+  const sectionMeta = deckSectionsForFormat(deck.format).find(
+    (section) => section.key === activeSection
+  );
   const entries = useMemo((): SectionRow[] => {
     if (activeSection === 'legend' && deck.legend) {
       return [{ name: deck.legend.name, card: deck.legend }];

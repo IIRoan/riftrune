@@ -66,6 +66,16 @@ describe('buildBattlefieldSlots', () => {
     expect(slots[1]).toBeNull();
     expect(slots[2]).toBeNull();
   });
+
+  test('expands multiple copies of the same battlefield into separate slots', () => {
+    const battlefields = new Map<string, DeckEntry>([
+      ['Zaun Warrens', mockEntry(mockCard('Zaun Warrens', ['Chaos']), 3)],
+    ]);
+
+    const slots = buildBattlefieldSlots(battlefields);
+    expect(slots).toHaveLength(3);
+    expect(slots.every((slot) => slot?.card.name === 'Zaun Warrens')).toBe(true);
+  });
 });
 
 describe('buildDeckGridRows', () => {

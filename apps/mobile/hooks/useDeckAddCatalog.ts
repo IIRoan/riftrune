@@ -41,7 +41,10 @@ export function useDeckAddCatalog(
       return response.data;
     },
     enabled:
-      hookEnabled && section === 'champion' && legendNeedsHydration(deck.legend),
+      hookEnabled &&
+      section === 'champion' &&
+      deck.format !== 'pre-rift' &&
+      legendNeedsHydration(deck.legend),
     staleTime: DECK_ADD_CATALOG_STALE_MS,
     gcTime: DECK_ADD_CATALOG_STALE_MS,
     refetchOnMount: false,
@@ -102,8 +105,9 @@ export function useDeckAddCatalog(
         section,
         listItems: filteredListItems,
         details: [],
+        deck: resolvedDeck,
       }),
-    [section, filteredListItems]
+    [section, filteredListItems, resolvedDeck]
   );
 
   const displayCards = useMemo(

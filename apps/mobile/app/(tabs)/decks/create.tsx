@@ -1,34 +1,13 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
-import { AppLoadingScreen } from '@/components/ui/app-loader';
-import { ScreenLayout } from '@/components/shell/ScreenLayout';
-import { useDeckMutations } from '@/hooks/useDecks';
-import { enterCreatedDeckEditor, leaveDeckEditor } from '@/lib/deck-navigation';
+import { useEffect } from 'react';
 
-/** Creates a deck immediately and jumps into the builder (legend picker). */
-export default function DeckCreateScreen() {
+/** Legacy route — deck format is chosen from the decks list sheet. */
+export default function DeckCreateRedirect() {
   const router = useRouter();
-  const { createNewDeck } = useDeckMutations();
-  const startedRef = useRef(false);
 
   useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
+    router.replace('/decks');
+  }, [router]);
 
-    void createNewDeck
-      .mutateAsync({})
-      .then((deck) => {
-        enterCreatedDeckEditor(router, deck.id);
-      })
-      .catch(() => {
-        startedRef.current = false;
-        leaveDeckEditor(router);
-      });
-  }, [createNewDeck, router]);
-
-  return (
-    <ScreenLayout mode="flex">
-      <AppLoadingScreen size="md" className="bg-transparent" />
-    </ScreenLayout>
-  );
+  return null;
 }

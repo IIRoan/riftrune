@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { deckBuilderHeadlineStats } from '@/components/deck/DeckBuilderStatusStrip';
 import { Text } from '@/components/ui/text';
 import { getSectionCount } from '@/lib/deck-card';
-import { DECK_SECTIONS, type DeckSectionKey, type DeckState } from '@/lib/deck-types';
+import { deckSectionsForFormat, type DeckSectionKey, type DeckState } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
 
 export function DeckAddScreenHeader({
@@ -15,7 +15,7 @@ export function DeckAddScreenHeader({
   section: DeckSectionKey;
   onBack: () => void;
 }) {
-  const meta = DECK_SECTIONS.find((entry) => entry.key === section);
+  const meta = deckSectionsForFormat(deck.format).find((entry) => entry.key === section);
   const count = getSectionCount(deck, section);
   const target = meta?.target ?? 0;
   const complete =

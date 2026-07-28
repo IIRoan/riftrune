@@ -1,6 +1,6 @@
-import type { DecksListQuery } from '@riftbound/contracts';
+import type { DecksListQuery, DeckFormat } from '@riftbound/contracts';
 import { refreshDeckLegality } from '@/lib/enrich-deck-ban-dates';
-import { createEmptyDeck, deserializeDeck, serializeDeck } from '@/lib/deck-card';
+import { cloneDeck, createEmptyDeck, deserializeDeck, serializeDeck } from '@/lib/deck-card';
 import type { DeckState } from '@/lib/deck-types';
 import { logActionFailure } from '@/lib/logger';
 import {
@@ -39,8 +39,12 @@ export async function getDeck(id: string): Promise<DeckState | null> {
   return refreshDeckLegality(deck);
 }
 
-export async function createDeck(name = 'New Deck', description = ''): Promise<DeckState> {
-  const deck = createEmptyDeck(name, description);
+export async function createDeck(
+  name = 'New Deck',
+  description = '',
+  format: DeckFormat = 'constructed'
+): Promise<DeckState> {
+  const deck = createEmptyDeck(name, description, format);
   await remoteUpsertDeck(serializeDeck(deck));
   return deck;
 }
@@ -50,9 +54,20 @@ export async function saveDeckToAccount(deck: DeckState): Promise<DeckState> {
   return deserializeDeck(saved);
 }
 
-export async function importDeckToAccount(sourceDeckId: string): Promise<DeckState> {
+export async function importDeckToAccount(
+  sourceDeckId: string,
+  format: DeckFormat = 'constructed'
+): Promise<DeckState> {
   const saved = await remoteImportDeck(sourceDeckId);
-  return deserializeDeck(saved);
+  const deck = deserializeDeck(saved);
+  if (deck.format === format) return deck;
+  return saveDeckToAccount({ ...deck, format, updatedAt: Date.now() });
+}
+
+export async function duplicateDeck(source: DeckState): Promise<DeckState> {
+  const copy = cloneDeck(source);
+  await remoteUpsertDeck(serializeDeck(copy));
+  return copy;
 }
 
 export async function deleteDeck(id: string): Promise<void> {

@@ -48,6 +48,13 @@ export function deckSectionProgress(
 ): { current: number; target: number; hint?: string } {
   if (section === 'mainDeck') {
     const current = getSectionCount(deck, 'mainDeck') + (deck.champion ? 1 : 0);
+    if (deck.format === 'pre-rift') {
+      return {
+        current: getSectionCount(deck, 'mainDeck'),
+        target: 25,
+        hint: 'Pre-Rift minimum (can run more)',
+      };
+    }
     return {
       current,
       target: 40,
