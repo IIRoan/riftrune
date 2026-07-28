@@ -15,14 +15,25 @@ type Token = ReturnType<MarkdownIt['parse']>[number];
 interface SecureMarkdownProps {
   children: string;
   className?: string;
+  /** `prose` uses larger type and spacing for the description preview panel. */
+  variant?: 'compact' | 'prose';
 }
 
-const HEADING_CLASS: Record<number, string> = {
+const HEADING_CLASS_COMPACT: Record<number, string> = {
   1: 'text-xl font-bold leading-7 text-foreground',
   2: 'text-lg font-bold leading-6 text-foreground',
   3: 'text-base font-semibold leading-6 text-foreground',
   4: 'text-[15px] font-semibold leading-5 text-foreground',
   5: 'text-sm font-semibold leading-5 text-foreground',
+  6: 'text-sm font-medium leading-5 text-muted-foreground',
+};
+
+const HEADING_CLASS_PROSE: Record<number, string> = {
+  1: 'text-2xl font-bold leading-8 tracking-tight text-foreground',
+  2: 'text-xl font-bold leading-7 text-foreground',
+  3: 'text-lg font-semibold leading-6 text-foreground',
+  4: 'text-base font-semibold leading-6 text-foreground',
+  5: 'text-[15px] font-semibold leading-5 text-foreground',
   6: 'text-sm font-medium leading-5 text-muted-foreground',
 };
 
@@ -42,12 +53,16 @@ async function openSafeUrl(url: string) {
 
 function renderInline(
   tokens: Token[] | null | undefined,
-  keyPrefix: string
+  keyPrefix: string,
+  prose: boolean
 ): React.ReactNode[] {
   if (!tokens?.length) return [];
 
   const nodes: React.ReactNode[] = [];
   let i = 0;
+  const codeClass = prose
+    ? 'rounded-md bg-muted px-1.5 py-0.5 font-mono text-[13px] text-foreground'
+    : 'rounded-sm bg-muted px-1 font-mono text-[12px] text-foreground';
 
   while (i < tokens.length) {
     const token = tokens[i]!;
@@ -65,10 +80,7 @@ function renderInline(
         break;
       case 'code_inline':
         nodes.push(
-          <Text
-            key={key}
-            className="rounded-sm bg-muted px-1 font-mono text-[12px] text-foreground"
-          >
+          <Text key={key} className={codeClass}>
             {token.content}
           </Text>
         );
@@ -78,7 +90,7 @@ function renderInline(
         const close = findClosingIndex(tokens, i, 'strong_close');
         nodes.push(
           <Text key={key} className="font-bold text-foreground">
-            {renderInline(tokens.slice(i + 1, close), key)}
+            {renderInline(tokens.slice(i + 1, close), key, prose)}
           </Text>
         );
         i = close + 1;
@@ -88,7 +100,7 @@ function renderInline(
         const close = findClosingIndex(tokens, i, 'em_close');
         nodes.push(
           <Text key={key} className="italic text-foreground">
-            {renderInline(tokens.slice(i + 1, close), key)}
+            {renderInline(tokens.slice(i + 1, close), key, prose)}
           </Text>
         );
         i = close + 1;
@@ -98,7 +110,7 @@ function renderInline(
         const close = findClosingIndex(tokens, i, 's_close');
         nodes.push(
           <Text key={key} className="text-foreground line-through">
-            {renderInline(tokens.slice(i + 1, close), key)}
+            {renderInline(tokens.slice(i + 1, close), key, prose)}
           </Text>
         );
         i = close + 1;
@@ -107,7 +119,7 @@ function renderInline(
       case 'link_open': {
         const href = token.attrGet('href') ?? '';
         const close = findClosingIndex(tokens, i, 'link_close');
-        const label = renderInline(tokens.slice(i + 1, close), key);
+        const label = renderInline(tokens.slice(i + 1, close), key, prose);
         if (isSafeMarkdownUrl(href)) {
           nodes.push(
             <Text
@@ -130,7 +142,7 @@ function renderInline(
         break;
       default:
         if (token.children?.length) {
-          nodes.push(...renderInline(token.children, key));
+          nodes.push(...renderInline(token.children, key, prose));
         } else if (token.content) {
           nodes.push(token.content);
         }
@@ -159,10 +171,17 @@ function findClosingIndex(tokens: Token[], openIndex: number, closeType: string)
   return tokens.length - 1;
 }
 
-function renderBlocks(tokens: Token[]): React.ReactNode[] {
+function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   let i = 0;
   let listKey = 0;
+  const headingClass = prose ? HEADING_CLASS_PROSE : HEADING_CLASS_COMPACT;
+  const bodyClass = prose
+    ? 'text-[15px] leading-6 text-foreground'
+    : 'text-[13px] leading-5 text-foreground';
+  const markerClass = prose
+    ? 'w-5 text-[15px] leading-6 text-muted-foreground'
+    : 'w-4 text-[13px] leading-5 text-muted-foreground';
 
   while (i < tokens.length) {
     const token = tokens[i]!;
@@ -172,8 +191,8 @@ function renderBlocks(tokens: Token[]): React.ReactNode[] {
       const level = Number(token.tag.replace('h', '')) || 3;
       const inline = tokens[i + 1];
       nodes.push(
-        <Text key={key} className={HEADING_CLASS[level] ?? HEADING_CLASS[3]}>
-          {renderInline(inline?.children, key)}
+        <Text key={key} className={headingClass[level] ?? headingClass[3]}>
+          {renderInline(inline?.children, key, prose)}
         </Text>
       );
       i += 3;
@@ -183,8 +202,8 @@ function renderBlocks(tokens: Token[]): React.ReactNode[] {
     if (token.type === 'paragraph_open') {
       const inline = tokens[i + 1];
       nodes.push(
-        <Text key={key} className="text-[13px] leading-5 text-foreground">
-          {renderInline(inline?.children, key)}
+        <Text key={key} className={bodyClass}>
+          {renderInline(inline?.children, key, prose)}
         </Text>
       );
       i += 3;
@@ -194,8 +213,14 @@ function renderBlocks(tokens: Token[]): React.ReactNode[] {
     if (token.type === 'blockquote_open') {
       const close = findClosingIndex(tokens, i, 'blockquote_close');
       nodes.push(
-        <View key={key} className="gap-2 border-l-2 border-border pl-3">
-          {renderBlocks(tokens.slice(i + 1, close))}
+        <View
+          key={key}
+          className={cn(
+            'gap-2 border-l-2 border-primary/40 bg-primary/5 pl-3',
+            prose ? 'rounded-r-lg py-2 pr-3' : null
+          )}
+        >
+          {renderBlocks(tokens.slice(i + 1, close), prose)}
         </View>
       );
       i = close + 1;
@@ -220,9 +245,9 @@ function renderBlocks(tokens: Token[]): React.ReactNode[] {
         const marker = ordered ? `${itemIndex + 1}.` : '•';
         items.push(
           <View key={`${key}-li-${itemIndex}`} className="flex-row gap-2">
-            <Text className="w-4 text-[13px] leading-5 text-muted-foreground">{marker}</Text>
-            <View className="min-w-0 flex-1 gap-1.5">
-              {renderBlocks(tokens.slice(j + 1, itemClose))}
+            <Text className={markerClass}>{marker}</Text>
+            <View className={cn('min-w-0 flex-1', prose ? 'gap-2' : 'gap-1.5')}>
+              {renderBlocks(tokens.slice(j + 1, itemClose), prose)}
             </View>
           </View>
         );
@@ -231,7 +256,7 @@ function renderBlocks(tokens: Token[]): React.ReactNode[] {
       }
 
       nodes.push(
-        <View key={`${key}-${listKey++}`} className="gap-1.5">
+        <View key={`${key}-${listKey++}`} className={prose ? 'gap-2' : 'gap-1.5'}>
           {items}
         </View>
       );
@@ -241,8 +266,14 @@ function renderBlocks(tokens: Token[]): React.ReactNode[] {
 
     if (token.type === 'fence' || token.type === 'code_block') {
       nodes.push(
-        <View key={key} className="rounded-md border border-border bg-muted px-2.5 py-2">
-          <Text className="font-mono text-[12px] leading-5 text-foreground">
+        <View
+          key={key}
+          className={cn(
+            'rounded-lg border border-border bg-muted px-3 py-2.5',
+            prose && 'mt-1'
+          )}
+        >
+          <Text className="font-mono text-[13px] leading-5 text-foreground">
             {token.content.replace(/\n$/, '')}
           </Text>
         </View>
@@ -252,15 +283,15 @@ function renderBlocks(tokens: Token[]): React.ReactNode[] {
     }
 
     if (token.type === 'hr') {
-      nodes.push(<View key={key} className="my-1 h-px bg-border" />);
+      nodes.push(<View key={key} className={cn('h-px bg-border', prose ? 'my-3' : 'my-1')} />);
       i += 1;
       continue;
     }
 
     if (token.type === 'inline') {
       nodes.push(
-        <Text key={key} className="text-[13px] leading-5 text-foreground">
-          {renderInline(token.children, key)}
+        <Text key={key} className={bodyClass}>
+          {renderInline(token.children, key, prose)}
         </Text>
       );
       i += 1;
@@ -277,12 +308,17 @@ function renderBlocks(tokens: Token[]): React.ReactNode[] {
  * Renders user-authored markdown with a locked-down parser:
  * HTML off, images off, only http(s)/mailto links open in an in-app browser.
  */
-export function SecureMarkdown({ children, className }: SecureMarkdownProps) {
+export function SecureMarkdown({
+  children,
+  className,
+  variant = 'compact',
+}: SecureMarkdownProps) {
   const source = prepareMarkdownSource(children);
   if (!source.trim()) return null;
 
+  const prose = variant === 'prose';
   const tokens = getSafeMarkdownIt().parse(source, {});
-  const blocks = renderBlocks(tokens);
+  const blocks = renderBlocks(tokens, prose);
 
-  return <View className={cn('gap-2', className)}>{blocks}</View>;
+  return <View className={cn(prose ? 'gap-3' : 'gap-2', className)}>{blocks}</View>;
 }
