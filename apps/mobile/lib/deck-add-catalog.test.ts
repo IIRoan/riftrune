@@ -467,6 +467,43 @@ describe('deck-add-catalog', () => {
     expect(candidates[0]?.name).toBe('Abandoned Hall');
   });
 
+  test('includes dual-type Unit Gear cards in main deck candidates', () => {
+    const patchedPorobot: CardListItem = {
+      cardId: '7a6b4f37-b1f9-4571-847a-256215e46636',
+      variantNumber: 'VEN-058',
+      name: 'Patched Porobot',
+      type: 'Unit Gear',
+      energy: 2,
+      might: 2,
+      power: 0,
+      rarity: 'Uncommon',
+      setCode: 'VEN',
+      colors: ['Mind'],
+      imageUrl: 'https://example.com/ven-058.webp',
+      cardmarketId: null,
+      priceEur: null,
+      printings: [
+        {
+          variantNumber: 'VEN-058',
+          variantLabel: 'Standard',
+          isFoil: false,
+          priceEur: null,
+        },
+      ],
+      isBanned: false,
+    };
+
+    const candidates = buildDeckAddCandidates({
+      section: 'mainDeck',
+      listItems: [patchedPorobot],
+      details: [],
+    });
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]?.name).toBe('Patched Porobot');
+    expect(candidates[0]?.type).toBe('Unit Gear');
+  });
+
   test('excludes token printings like Gold from deck add candidates', () => {
     const goldToken: CardListItem = {
       cardId: 'gold-1',

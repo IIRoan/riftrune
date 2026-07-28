@@ -6,6 +6,7 @@ import {
   legendChampionTags,
 } from '@riftbound/contracts';
 import {
+  cardHasType,
   cardMatchesSectionType,
   deckCardFromDetail,
   deckCardFromListItem,
@@ -350,19 +351,19 @@ function cardFromListItemForSection(item: CardListItem, section: DeckSectionKey)
 }
 
 function matchesSectionFromListItem(item: CardListItem, section: DeckSectionKey): boolean {
-  const type = item.type.toLowerCase();
   switch (section) {
     case 'legend':
-      return type === 'legend';
+      return cardHasType(item, 'legend');
     case 'champion':
-      return type === 'unit';
+      return cardHasType(item, 'unit');
     case 'runes':
-      return type === 'rune';
+      return cardHasType(item, 'rune');
     case 'battlefields':
-      return type === 'battlefield';
+      return cardHasType(item, 'battlefield');
     case 'mainDeck':
     case 'sideboard':
-      return type === 'unit' || type === 'gear' || type === 'spell';
+      // Dual types like "Unit Gear" must match main-deck / sideboard pools.
+      return cardHasType(item, 'unit', 'gear', 'spell');
     default:
       return false;
   }

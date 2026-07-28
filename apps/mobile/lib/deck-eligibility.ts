@@ -6,7 +6,7 @@ import {
   legendChampionTags,
   sharesLegendChampionTag,
 } from '@riftbound/contracts';
-import { sectionForCardType } from '@/lib/deck-card';
+import { cardHasType, sectionForCardType } from '@/lib/deck-card';
 import {
   battlefieldPerNameLimit,
   battlefieldsAtCapacity,
@@ -158,7 +158,7 @@ function battlefieldCopiesForCardName(deck: DeckState, name: string): number {
 
 function maxCopiesForCandidate(deck: DeckState, candidate: DeckCard): number | null {
   const rules = getDeckRules(deck.format);
-  if (candidate.type.toLowerCase() === 'rune') return rules.copyLimits.rune;
+  if (cardHasType(candidate, 'rune')) return rules.copyLimits.rune;
   return rules.copyLimits.default;
 }
 
