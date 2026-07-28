@@ -60,7 +60,7 @@ export const TextareaInput = ({
     >
       <Input
         {...props}
-        className={cn("min-h-24 w-full", className)}
+        className="min-h-24 w-full flex-1"
         disabled={disabled}
         multiline
         onBlur={handleBlur}

@@ -9,10 +9,15 @@ import {
   DECK_INFO_DRAWER_WIDTH,
 } from '@/components/deck/DeckBuilderInfoDrawer';
 import {
+  DeckBuilderMiddlePanelToggle,
+  type DeckBuilderMiddlePanel,
+} from '@/components/deck/DeckBuilderMiddlePanelToggle';
+import {
   DeckCompositionList,
   DECK_COMPOSITION_LIST_WIDTH,
 } from '@/components/deck/DeckCompositionList';
 import { DeckBuilderCatalogPanel } from '@/components/deck/DeckBuilderCatalogPanel';
+import { DeckDescriptionPanel } from '@/components/deck/DeckDescription';
 import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
 import { DeckBuilderToolbar } from '@/components/deck/DeckBuilderToolbar';
 import { DeckShowcasePanel } from '@/components/deck/DeckShowcasePanel';
@@ -99,6 +104,7 @@ export function DeckBuilderCanvas({
   const [validationExpanded, setValidationExpanded] = useState(false);
   const [infoDrawerOpen, setInfoDrawerOpen] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>(null);
+  const [middlePanel, setMiddlePanel] = useState<DeckBuilderMiddlePanel>('catalog');
   const [catalogSection, setCatalogSection] = useState<CatalogSection>('mainDeck');
   const [mobileFilterChrome, setMobileFilterChrome] = useState<{
     filters: CatalogFilters;
@@ -139,9 +145,24 @@ export function DeckBuilderCanvas({
 
   const focusCatalogSection = useCallback((section: CatalogSection) => {
     hapticPress();
+    setMiddlePanel('catalog');
     setCatalogSection(section);
     setMobilePanel(null);
   }, []);
+
+  const handleMiddlePanelChange = useCallback((panel: DeckBuilderMiddlePanel) => {
+    setMiddlePanel(panel);
+    if (panel === 'description') {
+      setMobilePanel(null);
+    }
+  }, []);
+
+  const handleDescriptionChange = useCallback(
+    (description: string) => {
+      onPersist((prev) => ({ ...prev, description, updatedAt: Date.now() }));
+    },
+    [onPersist]
+  );
 
   /** Champion / battlefields still use the dedicated add screen; main/side stay inline. */
   const openSpecialAdd = useCallback(
@@ -206,14 +227,18 @@ export function DeckBuilderCanvas({
           immediate: true,
         })
       }
-      onDescriptionChange={
-        readOnly
-          ? undefined
-          : (description) =>
-              onPersist((prev) => ({ ...prev, description, updatedAt: Date.now() }))
-      }
+      middlePanel={readOnly ? undefined : middlePanel}
+      onMiddlePanelChange={readOnly ? undefined : handleMiddlePanelChange}
       paddingBottom={paddingBottomInline}
       scrollEnabled={!isMobile}
+    />
+  );
+
+  const descriptionPanel = (
+    <DeckDescriptionPanel
+      value={deck.description}
+      onChange={handleDescriptionChange}
+      paddingBottom={paddingBottomInline}
     />
   );
 
@@ -373,11 +398,19 @@ export function DeckBuilderCanvas({
                 }
               : undefined
           }
-          catalogSection={readOnly ? undefined : catalogSection}
-          onCatalogSectionChange={readOnly ? undefined : focusCatalogSection}
-          catalogSectionItems={readOnly ? undefined : browseSectionNavItems}
-          catalogFilters={readOnly ? undefined : mobileFilterChrome?.filters}
-          onOpenCatalogFilters={readOnly ? undefined : mobileFilterChrome?.onOpen}
+          catalogSection={readOnly || middlePanel === 'description' ? undefined : catalogSection}
+          onCatalogSectionChange={
+            readOnly || middlePanel === 'description' ? undefined : focusCatalogSection
+          }
+          catalogSectionItems={
+            readOnly || middlePanel === 'description' ? undefined : browseSectionNavItems
+          }
+          catalogFilters={
+            readOnly || middlePanel === 'description' ? undefined : mobileFilterChrome?.filters
+          }
+          onOpenCatalogFilters={
+            readOnly || middlePanel === 'description' ? undefined : mobileFilterChrome?.onOpen
+          }
         />
 
         {readOnly ? (
@@ -397,7 +430,13 @@ export function DeckBuilderCanvas({
             </View>
           )
         ) : isMobile ? (
-          <View className="min-h-0 flex-1">{catalogPanel}</View>
+          <View className="min-h-0 flex-1 gap-3">
+            <DeckBuilderMiddlePanelToggle
+              value={middlePanel}
+              onChange={handleMiddlePanelChange}
+            />
+            {middlePanel === 'description' ? descriptionPanel : catalogPanel}
+          </View>
         ) : (
           <View className="min-h-0 flex-1 flex-row gap-3">
             <View
@@ -414,7 +453,9 @@ export function DeckBuilderCanvas({
               {infoDrawer}
             </View>
 
-            <View className="min-h-0 min-w-0 flex-1">{catalogPanel}</View>
+            <View className="min-h-0 min-w-0 flex-1">
+              {middlePanel === 'description' ? descriptionPanel : catalogPanel}
+            </View>
 
             <View
               className="min-h-0 overflow-hidden rounded-xl border border-border bg-card"

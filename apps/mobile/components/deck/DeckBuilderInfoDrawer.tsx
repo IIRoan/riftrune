@@ -1,6 +1,9 @@
 import { ScrollView, View } from 'react-native';
 import { DeckBattlefieldPanel } from '@/components/deck/DeckBattlefieldPanel';
-import { DeckDescriptionEditor, DeckDescriptionView } from '@/components/deck/DeckDescription';
+import {
+  DeckBuilderMiddlePanelToggle,
+  type DeckBuilderMiddlePanel,
+} from '@/components/deck/DeckBuilderMiddlePanelToggle';
 import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
 import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
@@ -24,7 +27,9 @@ interface DeckBuilderInfoDrawerProps {
   onAddBattlefield: () => void;
   onRemoveBattlefield: (name: string) => void;
   onAdjustBattlefield?: (name: string, delta: number) => void;
-  onDescriptionChange?: (description: string) => void;
+  /** When set, shows Cards / Desc toggle that drives the middle column. */
+  middlePanel?: DeckBuilderMiddlePanel;
+  onMiddlePanelChange?: (panel: DeckBuilderMiddlePanel) => void;
   paddingBottom?: number;
   /** When false, render as a plain column (parent owns scrolling). */
   scrollEnabled?: boolean;
@@ -45,7 +50,8 @@ export function DeckBuilderInfoDrawer({
   onAddBattlefield,
   onRemoveBattlefield,
   onAdjustBattlefield,
-  onDescriptionChange,
+  middlePanel,
+  onMiddlePanelChange,
   paddingBottom = 0,
   scrollEnabled = true,
 }: DeckBuilderInfoDrawerProps) {
@@ -55,15 +61,11 @@ export function DeckBuilderInfoDrawer({
   const legendTileWidth = identityPairColumns
     ? Math.floor((identityInnerWidth - identityPairGap) / 2)
     : identityInnerWidth;
+  const showMiddleToggle =
+    !readOnly && middlePanel != null && onMiddlePanelChange != null;
 
   const body = (
     <>
-      {readOnly ? (
-        <DeckDescriptionView description={deck.description} />
-      ) : onDescriptionChange ? (
-        <DeckDescriptionEditor value={deck.description} onChange={onDescriptionChange} />
-      ) : null}
-
       <DeckIdentityHeader
         deck={deck}
         readOnly={readOnly}
@@ -87,6 +89,13 @@ export function DeckBuilderInfoDrawer({
         onRemove={onRemoveBattlefield}
         onAdjust={onAdjustBattlefield}
       />
+
+      {showMiddleToggle ? (
+        <DeckBuilderMiddlePanelToggle
+          value={middlePanel}
+          onChange={onMiddlePanelChange}
+        />
+      ) : null}
 
       {readOnly ? (
         <DeckViewInfoPanel deck={deck} />
