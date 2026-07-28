@@ -51,6 +51,7 @@ function emptyDeck(overrides: Partial<DeckState> = {}): DeckState {
     id: 'deck-1',
     name: 'Test',
     description: '',
+    format: 'constructed',
     createdAt: 0,
     updatedAt: 0,
     legend: null,

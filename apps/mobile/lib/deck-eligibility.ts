@@ -1,11 +1,16 @@
 import type { DeckCard, DeckSectionKey, DeckState } from '@/lib/deck-types';
 import {
   cardPrimaryNameToken,
+  deckFormatRestrictsPicker,
+  getDeckRules,
   legendChampionTags,
   sharesLegendChampionTag,
 } from '@riftbound/contracts';
 import { sectionForCardType } from '@/lib/deck-card';
-import { battlefieldsAtCapacity } from '@/lib/deck-limits';
+import {
+  battlefieldPerNameLimit,
+  battlefieldsAtCapacity,
+} from '@/lib/deck-limits';
 
 export type CardEligibilityResult = {
   eligible: boolean;
@@ -15,6 +20,8 @@ export type CardEligibilityResult = {
 export type DeckIdentity = {
   /** Allowed domain identities derived from the current deck (legend preferred). */
   allowedDomains: Set<string> | null;
+  /** Max domains for this format (null = legend-locked constructed identity). */
+  maxDomains: number | null;
   /** Legend champion tags (used for champion/signature matching). */
   legendChampionTags: string[] | null;
   /** A stricter, single champion tag when we can infer it from the legend. */
@@ -51,13 +58,45 @@ function strictLegendChampionTagFromLegend(legend: DeckCard): string | null {
   return null;
 }
 
+function collectDeckDomains(deck: DeckState): Set<string> {
+  const domains = new Set<string>();
+  const add = (colors: string[]) => {
+    for (const domain of normalizeDomainNames(colors)) domains.add(domain);
+  };
+  if (deck.legend) add(deck.legend.colors);
+  if (deck.champion) add(deck.champion.colors);
+  for (const [, entry] of deck.mainDeck) add(entry.card.colors);
+  for (const [, entry] of deck.runes) add(entry.card.colors);
+  for (const [, entry] of deck.battlefields) add(entry.card.colors);
+  for (const [, entry] of deck.sideboard) add(entry.card.colors);
+  return domains;
+}
+
 export function getDeckIdentity(deck: DeckState): DeckIdentity {
+  const rules = getDeckRules(deck.format);
+
+  if (rules.maxDomains != null) {
+    return {
+      allowedDomains: null,
+      maxDomains: rules.maxDomains,
+      legendChampionTags: deck.legend
+        ? legendChampionTags(deck.legend).length
+          ? legendChampionTags(deck.legend)
+          : null
+        : null,
+      strictLegendChampionTag: deck.legend
+        ? strictLegendChampionTagFromLegend(deck.legend)
+        : null,
+    };
+  }
+
   if (deck.legend) {
     const allowedDomains = new Set(normalizeDomainNames(deck.legend.colors));
     const resolvedTags = legendChampionTags(deck.legend);
     const legendChampionTagsList = resolvedTags.length ? resolvedTags : null;
     return {
       allowedDomains: allowedDomains.size ? allowedDomains : null,
+      maxDomains: null,
       legendChampionTags: legendChampionTagsList,
       strictLegendChampionTag: strictLegendChampionTagFromLegend(deck.legend),
     };
@@ -67,6 +106,7 @@ export function getDeckIdentity(deck: DeckState): DeckIdentity {
     const allowedDomains = new Set(normalizeDomainNames(deck.champion.colors));
     return {
       allowedDomains: allowedDomains.size ? allowedDomains : null,
+      maxDomains: null,
       legendChampionTags: null,
       strictLegendChampionTag: null,
     };
@@ -74,6 +114,7 @@ export function getDeckIdentity(deck: DeckState): DeckIdentity {
 
   return {
     allowedDomains: null,
+    maxDomains: null,
     legendChampionTags: null,
     strictLegendChampionTag: null,
   };
@@ -115,8 +156,10 @@ function battlefieldCopiesForCardName(deck: DeckState, name: string): number {
   return deck.battlefields.get(name)?.count ?? 0;
 }
 
-function maxCopiesForCandidate(candidate: DeckCard): number {
-  return candidate.type.toLowerCase() === 'rune' ? 12 : 3;
+function maxCopiesForCandidate(deck: DeckState, candidate: DeckCard): number | null {
+  const rules = getDeckRules(deck.format);
+  if (candidate.type.toLowerCase() === 'rune') return rules.copyLimits.rune;
+  return rules.copyLimits.default;
 }
 
 function signatureCountMatchingLegend(deck: DeckState): number {
@@ -139,6 +182,16 @@ function signatureCountAll(deck: DeckState): number {
   return count;
 }
 
+function wouldExceedDomainCap(deck: DeckState, candidateCard: DeckCard): boolean {
+  const rules = getDeckRules(deck.format);
+  if (rules.maxDomains == null) return false;
+  const domains = collectDeckDomains(deck);
+  for (const domain of normalizeDomainNames(candidateCard.colors)) {
+    domains.add(domain);
+  }
+  return domains.size > rules.maxDomains;
+}
+
 export function isCardEligibleForSection(args: {
   deck: DeckState;
   section: DeckSectionKey;
@@ -147,6 +200,7 @@ export function isCardEligibleForSection(args: {
   delta?: number;
 }): CardEligibilityResult {
   const { deck, section, candidateCard } = args;
+  const rules = getDeckRules(deck.format);
   const candidateType = sectionForCardType(candidateCard);
 
   // 1) Section-type eligibility first (prevents expensive identity checks).
@@ -181,7 +235,7 @@ export function isCardEligibleForSection(args: {
     if (candidateType !== 'mainDeck') {
       return { eligible: false, reason: 'Not a Main Deck card for sideboard.' };
     }
-    if (candidateCard.isSignature) {
+    if (candidateCard.isSignature && deckFormatRestrictsPicker(deck.format)) {
       return {
         eligible: false,
         reason: 'Signature cards cannot be added to sideboard.',
@@ -189,18 +243,31 @@ export function isCardEligibleForSection(args: {
     }
   }
 
+  if (!deckFormatRestrictsPicker(deck.format)) {
+    return { eligible: true };
+  }
+
   const identity = getDeckIdentity(deck);
 
-  // 2) Identity-domain filtering (main deck, runes, sideboard only).
-  const sectionsWithDomainFilter: DeckSectionKey[] = ['mainDeck', 'runes', 'sideboard'];
-  if (sectionsWithDomainFilter.includes(section) && identity.allowedDomains) {
-    if (!domainIdentityMatch(candidateCard.colors, identity.allowedDomains)) {
-      return { eligible: false, reason: 'Card does not match deck domain identity.' };
+  // 2) Domain filtering.
+  if (rules.maxDomains != null) {
+    if (wouldExceedDomainCap(deck, candidateCard)) {
+      return {
+        eligible: false,
+        reason: `Pre-Rift decks may use at most ${rules.maxDomains} domains.`,
+      };
+    }
+  } else {
+    const sectionsWithDomainFilter: DeckSectionKey[] = ['mainDeck', 'runes', 'sideboard'];
+    if (sectionsWithDomainFilter.includes(section) && identity.allowedDomains) {
+      if (!domainIdentityMatch(candidateCard.colors, identity.allowedDomains)) {
+        return { eligible: false, reason: 'Card does not match deck domain identity.' };
+      }
     }
   }
 
   // 3) Special constraints that depend on legend/champion tags.
-  if (section === 'champion' && deck.legend) {
+  if (section === 'champion' && deck.legend && rules.requireChampionTagMatch) {
     if (!championMatchesLegend(deck, candidateCard)) {
       return {
         eligible: false,
@@ -220,74 +287,86 @@ export function isCardEligibleForSection(args: {
       deck.sideboard.size > 0
     );
     if (hasExisting) {
-      const nextIdentity: DeckIdentity = {
-        allowedDomains: new Set(normalizeDomainNames(candidateCard.colors)),
-        legendChampionTags: candidateCard.tags,
-        strictLegendChampionTag: strictLegendChampionTagFromLegend(candidateCard),
-      };
+      if (rules.maxDomains != null) {
+        const withoutLegend: DeckState = { ...deck, legend: null };
+        if (wouldExceedDomainCap(withoutLegend, candidateCard)) {
+          return {
+            eligible: false,
+            reason: `Legend domains would push the deck over ${rules.maxDomains} domains.`,
+          };
+        }
+      } else {
+        const nextIdentity: DeckIdentity = {
+          allowedDomains: new Set(normalizeDomainNames(candidateCard.colors)),
+          maxDomains: null,
+          legendChampionTags: candidateCard.tags,
+          strictLegendChampionTag: strictLegendChampionTagFromLegend(candidateCard),
+        };
 
-      const champion = deck.champion;
-      if (champion && nextIdentity.allowedDomains) {
-        if (!domainIdentityMatch(champion.colors, nextIdentity.allowedDomains)) {
-          return {
-            eligible: false,
-            reason: 'Legend domain identity would conflict with existing Champion.',
-          };
+        const champion = deck.champion;
+        if (champion && nextIdentity.allowedDomains) {
+          if (!domainIdentityMatch(champion.colors, nextIdentity.allowedDomains)) {
+            return {
+              eligible: false,
+              reason: 'Legend domain identity would conflict with existing Champion.',
+            };
+          }
+          if (rules.requireChampionTagMatch && !matchesLegendChampionTag(champion, candidateCard)) {
+            return {
+              eligible: false,
+              reason: 'Legend champion tags would conflict with existing Champion.',
+            };
+          }
         }
-        if (!matchesLegendChampionTag(champion, candidateCard)) {
-          return {
-            eligible: false,
-            reason: 'Legend champion tags would conflict with existing Champion.',
-          };
-        }
-      }
 
-      const validateEntryDomain = (card: DeckCard, _context: string) => {
-        if (!nextIdentity.allowedDomains) return true;
-        return domainIdentityMatch(card.colors, nextIdentity.allowedDomains);
-      };
+        const validateEntryDomain = (card: DeckCard) => {
+          if (!nextIdentity.allowedDomains) return true;
+          return domainIdentityMatch(card.colors, nextIdentity.allowedDomains);
+        };
 
-      for (const [, entry] of deck.mainDeck) {
-        if (!validateEntryDomain(entry.card, 'main')) {
-          return {
-            eligible: false,
-            reason: 'Legend domain identity would conflict with existing Main Deck.',
-          };
+        for (const [, entry] of deck.mainDeck) {
+          if (!validateEntryDomain(entry.card)) {
+            return {
+              eligible: false,
+              reason: 'Legend domain identity would conflict with existing Main Deck.',
+            };
+          }
         }
-      }
-      for (const [, entry] of deck.runes) {
-        if (!validateEntryDomain(entry.card, 'runes')) {
-          return {
-            eligible: false,
-            reason: 'Legend domain identity would conflict with existing Runes.',
-          };
+        for (const [, entry] of deck.runes) {
+          if (!validateEntryDomain(entry.card)) {
+            return {
+              eligible: false,
+              reason: 'Legend domain identity would conflict with existing Runes.',
+            };
+          }
         }
-      }
-      for (const [, entry] of deck.battlefields) {
-        if (!validateEntryDomain(entry.card, 'battlefields')) {
-          return {
-            eligible: false,
-            reason: 'Legend domain identity would conflict with existing Battlefields.',
-          };
+        for (const [, entry] of deck.battlefields) {
+          if (!validateEntryDomain(entry.card)) {
+            return {
+              eligible: false,
+              reason: 'Legend domain identity would conflict with existing Battlefields.',
+            };
+          }
         }
-      }
-      for (const [, entry] of deck.sideboard) {
-        if (!validateEntryDomain(entry.card, 'sideboard')) {
-          return {
-            eligible: false,
-            reason: 'Legend domain identity would conflict with existing Sideboard.',
-          };
+        for (const [, entry] of deck.sideboard) {
+          if (!validateEntryDomain(entry.card)) {
+            return {
+              eligible: false,
+              reason: 'Legend domain identity would conflict with existing Sideboard.',
+            };
+          }
         }
-      }
 
-      // Signature cards must match legend champion tag.
-      for (const [name, entry] of deck.mainDeck) {
-        if (!entry.card.isSignature) continue;
-        if (!matchesLegendChampionTag(entry.card, candidateCard)) {
-          return {
-            eligible: false,
-            reason: `Signature card "${name}" must match the Legend champion tag.`,
-          };
+        if (rules.requireSignatureTagMatch) {
+          for (const [name, entry] of deck.mainDeck) {
+            if (!entry.card.isSignature) continue;
+            if (!matchesLegendChampionTag(entry.card, candidateCard)) {
+              return {
+                eligible: false,
+                reason: `Signature card "${name}" must match the Legend champion tag.`,
+              };
+            }
+          }
         }
       }
     }
@@ -295,8 +374,15 @@ export function isCardEligibleForSection(args: {
 
   // 4) Copy limits + uniqueness constraints.
   if (section === 'battlefields') {
-    if (battlefieldCopiesForCardName(deck, candidateCard.name) >= 1) {
-      return { eligible: false, reason: 'Battlefield names are unique in a deck.' };
+    const existing = battlefieldCopiesForCardName(deck, candidateCard.name);
+    if (existing >= battlefieldPerNameLimit(deck)) {
+      return {
+        eligible: false,
+        reason:
+          battlefieldPerNameLimit(deck) <= 1
+            ? 'Battlefield names are unique in a deck.'
+            : `Already at max copies of this Battlefield (${battlefieldPerNameLimit(deck)}).`,
+      };
     }
     if (battlefieldsAtCapacity(deck)) {
       return {
@@ -310,42 +396,45 @@ export function isCardEligibleForSection(args: {
     const existingChampionName = deck.champion?.name;
     const base = totalCopiesForCardName(deck, candidateCard.name);
     const future = base - (existingChampionName === candidateCard.name ? 1 : 0) + 1;
-    if (future > maxCopiesForCandidate(candidateCard)) {
+    const maxCopies = maxCopiesForCandidate(deck, candidateCard);
+    if (maxCopies != null && future > maxCopies) {
       return {
         eligible: false,
         reason: 'Adding this Champion would exceed copy limits.',
       };
     }
   } else if (section !== 'legend' && section !== 'battlefields') {
-    // Battlefields use slot + uniqueness rules above, not the 3-copy default.
+    // Battlefields use slot + per-name rules above, not the default copy cap.
     const future = totalCopiesForCardName(deck, candidateCard.name) + 1;
-    if (future > maxCopiesForCandidate(candidateCard)) {
+    const maxCopies = maxCopiesForCandidate(deck, candidateCard);
+    if (maxCopies != null && future > maxCopies) {
       return { eligible: false, reason: 'Adding this card would exceed copy limits.' };
     }
   }
 
   // 5) Signature cap (main deck only).
   if (section === 'mainDeck' && candidateCard.isSignature) {
-    if (deck.legend) {
-      const matchesTag = deck.legend
-        ? matchesLegendChampionTag(candidateCard, deck.legend)
-        : true;
+    const signatureCap = rules.copyLimits.signatureTotal;
+    if (deck.legend && rules.requireSignatureTagMatch) {
+      const matchesTag = matchesLegendChampionTag(candidateCard, deck.legend);
       if (!matchesTag) {
         return {
           eligible: false,
           reason: 'Signature cards must match the Legend champion tag.',
         };
       }
-      const existingMatching = signatureCountMatchingLegend(deck);
-      if (existingMatching + 1 > 3) {
-        return {
-          eligible: false,
-          reason: 'Signature card cap reached for this Legend.',
-        };
+      if (signatureCap != null) {
+        const existingMatching = signatureCountMatchingLegend(deck);
+        if (existingMatching + 1 > signatureCap) {
+          return {
+            eligible: false,
+            reason: 'Signature card cap reached for this Legend.',
+          };
+        }
       }
-    } else {
+    } else if (signatureCap != null) {
       const existing = signatureCountAll(deck);
-      if (existing + 1 > 3) {
+      if (existing + 1 > signatureCap) {
         return { eligible: false, reason: 'Signature card cap reached.' };
       }
     }

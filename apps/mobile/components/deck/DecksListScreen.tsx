@@ -1,15 +1,17 @@
-import { ThemedIcon, CalendarPlusIcon, LayersIcon } from '@/components/icons';
+import { ThemedIcon, LayersIcon } from '@/components/icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
 import { FlatList, View } from 'react-native';
 import { AppLoader } from '@/components/ui/app-loader';
 import { DeckBrowseCard } from '@/components/deck/DeckBrowseCard';
+import { DeckCreateMenu } from '@/components/deck/DeckCreateMenu';
+import { DeckFormatPickerSheet } from '@/components/deck/DeckFormatPickerSheet';
 import { DeckImportExportSheet } from '@/components/deck/DeckImportExportSheet';
 import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
 import { DeckListCard } from '@/components/deck/DeckListCard';
 import { DECKS_SUB_NAV_CLEARANCE, DecksSubNav } from '@/components/deck/DecksSubNav';
 import { ScreenLayout, ScreenLayoutBody } from '@/components/shell/ScreenLayout';
-import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
+import { Button, ButtonText } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   Empty,
@@ -23,7 +25,9 @@ import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { useDeckMutations } from '@/hooks/useDecks';
 import { createEmptyDeck } from '@/lib/deck-card';
+import { enterCreatedDeckEditor } from '@/lib/deck-navigation';
 import type { DeckState } from '@/lib/deck-types';
+import type { DeckFormat } from '@riftbound/contracts';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
@@ -108,12 +112,22 @@ export function DecksListScreen({
   variant = 'default',
 }: DecksListScreenProps) {
   const router = useRouter();
-  const { removeDeck, importDeck, saveDeckNow } = useDeckMutations();
+  const { removeDeck, importDeck, saveDeckNow, createNewDeck } = useDeckMutations();
   const { data: decks = [], isLoading, isFetching = false, isError, refetch } = decksQuery;
   const [importOpen, setImportOpen] = useState(false);
   const [importSaving, setImportSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<DeckState | null>(null);
+  const [pendingArchiveImport, setPendingArchiveImport] = useState<DeckState | null>(null);
   const importPlaceholderDeck = useMemo(() => createEmptyDeck(), []);
+
+  const handleCreateDeck = async (format: DeckFormat) => {
+    const deck = await createNewDeck.mutateAsync({ format });
+    enterCreatedDeckEditor(router, deck.id);
+  };
+
+  const handleArchiveImport = (deck: DeckState) => {
+    setPendingArchiveImport(deck);
+  };
 
   const archiveImportBusy = importDeck.isPending;
   const showBlockingLoader = isLoading && decks.length === 0;
@@ -138,12 +152,8 @@ export function DecksListScreen({
         key={deck.id}
         deck={deck}
         onPress={() => router.push(`/decks/${deck.id}`)}
-        onImport={() => {
-          void importDeck.mutateAsync(deck.id).then((saved) => {
-            router.push(`/decks/${saved.id}`);
-          });
-        }}
-        importBusy={importDeck.isPending && importDeck.variables === deck.id}
+        onImport={() => handleArchiveImport(deck)}
+        importBusy={importDeck.isPending && importDeck.variables?.sourceDeckId === deck.id}
       />
     ) : (
       <DeckListCard
@@ -160,13 +170,11 @@ export function DecksListScreen({
         onImport={
           deck.readOnly
             ? () => {
-                void importDeck.mutateAsync(deck.id).then((saved) => {
-                  router.push(`/decks/${saved.id}`);
-                });
+                handleArchiveImport(deck);
               }
             : undefined
         }
-        importBusy={importDeck.isPending && importDeck.variables === deck.id}
+        importBusy={importDeck.isPending && importDeck.variables?.sourceDeckId === deck.id}
       />
     );
 
@@ -208,18 +216,7 @@ export function DecksListScreen({
                     </Button>
                   ) : null}
                   {showCreate ? (
-                    <Button
-                      className="w-auto"
-                      onPress={() => {
-                        hapticPress();
-                        router.push('/decks/create');
-                      }}
-                    >
-                      <ButtonIcon>
-                        <CalendarPlusIcon className="size-4 text-primary-foreground" />
-                      </ButtonIcon>
-                      <ButtonText>New</ButtonText>
-                    </Button>
+                    <DeckCreateMenu onCreate={handleCreateDeck} />
                   ) : null}
                 </View>
               ) : null}
@@ -271,14 +268,11 @@ export function DecksListScreen({
                 </EmptyHeader>
                 {showCreate && !query.trim() ? (
                   <View className="gap-2">
-                    <Button
-                      onPress={() => {
-                        hapticPress();
-                        router.push('/decks/create');
-                      }}
-                    >
-                      <ButtonText>Create your first deck</ButtonText>
-                    </Button>
+                    <DeckCreateMenu onCreate={handleCreateDeck}>
+                      <Button>
+                        <ButtonText>Create your first deck</ButtonText>
+                      </Button>
+                    </DeckCreateMenu>
                     {showImport ? (
                       <Button
                         variant="outline"
@@ -365,6 +359,28 @@ export function DecksListScreen({
         onConfirm={async () => {
           if (!pendingDelete) return;
           await removeDeck.mutateAsync(pendingDelete.id);
+        }}
+      />
+
+      <DeckFormatPickerSheet
+        open={pendingArchiveImport != null}
+        onOpenChange={(open) => {
+          if (!open) setPendingArchiveImport(null);
+        }}
+        title="Import deck"
+        description={
+          pendingArchiveImport
+            ? `Choose a format for “${pendingArchiveImport.name}”.`
+            : 'Choose a format for this deck.'
+        }
+        confirmLabel="Import deck"
+        onConfirm={async (format) => {
+          if (!pendingArchiveImport) return;
+          const saved = await importDeck.mutateAsync({
+            sourceDeckId: pendingArchiveImport.id,
+            format,
+          });
+          router.push(`/decks/${saved.id}`);
         }}
       />
     </View>

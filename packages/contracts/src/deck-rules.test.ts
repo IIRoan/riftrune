@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   RIFTBOUND_DECK_RULES,
+  RIFTBOUND_PRE_RIFT_DECK_RULES,
   DeckRulesResponse,
   DeckValidateInput,
   validateRiftboundDeck,
@@ -196,5 +197,229 @@ describe('validateRiftboundDeck', () => {
 
     const messages = validateRiftboundDeck(input);
     expect(messages).toEqual([{ type: 'valid', code: 'deck_valid', message: 'Deck is valid!' }]);
+  });
+});
+
+describe('Pre-Rift validation', () => {
+  test('exposes sealed section targets', () => {
+    expect(RIFTBOUND_PRE_RIFT_DECK_RULES.sections.mainDeck.minimum).toBe(25);
+    expect(RIFTBOUND_PRE_RIFT_DECK_RULES.maxDomains).toBe(3);
+    expect(RIFTBOUND_PRE_RIFT_DECK_RULES.copyLimits.default).toBeNull();
+    expect(RIFTBOUND_PRE_RIFT_DECK_RULES.copyLimits.battlefieldPerName).toBe(3);
+    expect(RIFTBOUND_PRE_RIFT_DECK_RULES.sections.battlefields.required).toBe(false);
+    expect(RIFTBOUND_PRE_RIFT_DECK_RULES.sections.battlefields.exact).toBe(false);
+    expect(RIFTBOUND_PRE_RIFT_DECK_RULES.requireChampionTagMatch).toBe(false);
+  });
+
+  test('allows three domains and four copies of a card', () => {
+    const calmCard = {
+      ...jinxChampion,
+      cardId: 'calm-1',
+      name: 'Calm Unit',
+      super: null,
+      type: 'Unit',
+      colors: ['Calm'],
+      isSignature: false,
+    };
+    const orderCard = {
+      ...calmCard,
+      cardId: 'order-1',
+      name: 'Order Unit',
+      colors: ['Order'],
+    };
+    const chaosCard = {
+      ...calmCard,
+      cardId: 'chaos-1',
+      name: 'Chaos Unit',
+      colors: ['Chaos'],
+    };
+
+    const input = DeckValidateInput.parse({
+      format: 'pre-rift',
+      legend: {
+        ...jinxLegend,
+        name: 'Shen, Eye of Twilight',
+        tags: ['Shen'],
+        colors: ['Calm', 'Order'],
+      },
+      champion: {
+        ...jinxChampion,
+        name: 'Nasus, Ascended',
+        tags: ['Nasus'],
+        colors: ['Chaos'],
+      },
+      mainDeck: [
+        { card: calmCard, count: 8 },
+        { card: orderCard, count: 8 },
+        { card: chaosCard, count: 4 },
+        {
+          card: {
+            ...chaosCard,
+            cardId: 'filler',
+            name: 'Filler Unit',
+            colors: ['Calm'],
+          },
+          count: 5,
+        },
+      ],
+      runes: [
+        { card: { ...furyRune, name: 'Calm Rune', colors: ['Calm'] }, count: 4 },
+        { card: { ...furyRune, cardId: 'r2', name: 'Order Rune', colors: ['Order'] }, count: 4 },
+        { card: { ...furyRune, cardId: 'r3', name: 'Chaos Rune', colors: ['Chaos'] }, count: 4 },
+      ],
+      battlefields: [{ card: battlefield, count: 3 }],
+      sideboard: [],
+    });
+
+    const messages = validateRiftboundDeck(input);
+    expect(messages.some((m) => m.code === 'champion_tag_mismatch')).toBe(false);
+    expect(messages.some((m) => m.code === 'copy_limit')).toBe(false);
+    expect(messages.some((m) => m.code === 'domain_cap')).toBe(false);
+    expect(messages.some((m) => m.code === 'battlefield_unique')).toBe(false);
+    expect(messages).toEqual([{ type: 'valid', code: 'deck_valid', message: 'Deck is valid!' }]);
+  });
+
+  test('Pre-Rift allows zero battlefields', () => {
+    const calmCard = {
+      ...jinxChampion,
+      cardId: 'calm-1',
+      name: 'Calm Unit',
+      super: null,
+      type: 'Unit',
+      colors: ['Calm'],
+      isSignature: false,
+    };
+    const orderCard = {
+      ...calmCard,
+      cardId: 'order-1',
+      name: 'Order Unit',
+      colors: ['Order'],
+    };
+    const chaosCard = {
+      ...calmCard,
+      cardId: 'chaos-1',
+      name: 'Chaos Unit',
+      colors: ['Chaos'],
+    };
+
+    const input = DeckValidateInput.parse({
+      format: 'pre-rift',
+      legend: {
+        ...jinxLegend,
+        name: 'Shen, Eye of Twilight',
+        tags: ['Shen'],
+        colors: ['Calm', 'Order'],
+      },
+      champion: {
+        ...jinxChampion,
+        name: 'Nasus, Ascended',
+        tags: ['Nasus'],
+        colors: ['Chaos'],
+      },
+      mainDeck: [
+        { card: calmCard, count: 8 },
+        { card: orderCard, count: 8 },
+        { card: chaosCard, count: 4 },
+        {
+          card: {
+            ...chaosCard,
+            cardId: 'filler',
+            name: 'Filler Unit',
+            colors: ['Calm'],
+          },
+          count: 5,
+        },
+      ],
+      runes: [
+        { card: { ...furyRune, name: 'Calm Rune', colors: ['Calm'] }, count: 4 },
+        { card: { ...furyRune, cardId: 'r2', name: 'Order Rune', colors: ['Order'] }, count: 4 },
+        { card: { ...furyRune, cardId: 'r3', name: 'Chaos Rune', colors: ['Chaos'] }, count: 4 },
+      ],
+      battlefields: [],
+      sideboard: [],
+    });
+
+    const messages = validateRiftboundDeck(input);
+    expect(messages.some((m) => m.code === 'battlefield_count')).toBe(false);
+    expect(messages).toEqual([{ type: 'valid', code: 'deck_valid', message: 'Deck is valid!' }]);
+  });
+
+  test('rejects a fourth domain', () => {
+    const input = DeckValidateInput.parse({
+      format: 'pre-rift',
+      legend: {
+        ...jinxLegend,
+        colors: ['Calm', 'Order'],
+      },
+      champion: {
+        ...jinxChampion,
+        colors: ['Chaos'],
+      },
+      mainDeck: [
+        {
+          card: {
+            ...jinxChampion,
+            name: 'Body Unit',
+            super: null,
+            type: 'Unit',
+            colors: ['Body'],
+            isSignature: false,
+          },
+          count: 25,
+        },
+      ],
+      runes: [{ card: furyRune, count: 12 }],
+      battlefields: [
+        { card: battlefield, count: 1 },
+        {
+          card: { ...battlefield, cardId: 'bf-2', name: 'Field Two', variantNumber: 'OGN-B02' },
+          count: 1,
+        },
+        {
+          card: { ...battlefield, cardId: 'bf-3', name: 'Field Three', variantNumber: 'OGN-B03' },
+          count: 1,
+        },
+      ],
+      sideboard: [],
+    });
+
+    const messages = validateRiftboundDeck(input);
+    expect(messages.some((m) => m.code === 'domain_cap')).toBe(true);
+  });
+
+  test('treats missing legend as a warning, not an error', () => {
+    const input = DeckValidateInput.parse({
+      format: 'pre-rift',
+      legend: null,
+      champion: null,
+      mainDeck: Array.from({ length: 25 }, (_, i) => ({
+        card: {
+          ...jinxChampion,
+          cardId: `main-${i}`,
+          name: `Main Card ${i}`,
+          super: null,
+          type: 'Unit',
+          isSignature: false,
+        },
+        count: 1,
+      })),
+      runes: [{ card: furyRune, count: 12 }],
+      battlefields: [
+        { card: battlefield, count: 1 },
+        {
+          card: { ...battlefield, cardId: 'bf-2', name: 'Field Two', variantNumber: 'OGN-B02' },
+          count: 1,
+        },
+        {
+          card: { ...battlefield, cardId: 'bf-3', name: 'Field Three', variantNumber: 'OGN-B03' },
+          count: 1,
+        },
+      ],
+      sideboard: [],
+    });
+
+    const messages = validateRiftboundDeck(input);
+    expect(messages.some((m) => m.code === 'missing_legend' && m.type === 'warning')).toBe(true);
+    expect(messages.some((m) => m.type === 'error')).toBe(false);
   });
 });

@@ -16,12 +16,15 @@ interface DeckBuilderInfoDrawerProps {
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
   runeCardsByDomain: ReadonlyMap<string, DeckCard>;
+  runeCardsLoading?: boolean;
   onChangeLegend: () => void;
+  onRemoveLegend?: () => void;
   onAddChampion: () => void;
   onRemoveChampion: () => void;
   onAdjustRune: (domain: string, delta: number) => void;
   onAddBattlefield: () => void;
   onRemoveBattlefield: (name: string) => void;
+  onAdjustBattlefield?: (name: string, delta: number) => void;
   onDescriptionChange?: (description: string) => void;
   paddingBottom?: number;
   /** When false, render as a plain column (parent owns scrolling). */
@@ -34,19 +37,23 @@ export function DeckBuilderInfoDrawer({
   imageByVariant,
   collectionByName,
   runeCardsByDomain,
+  runeCardsLoading = false,
   onChangeLegend,
+  onRemoveLegend,
   onAddChampion,
   onRemoveChampion,
   onAdjustRune,
   onAddBattlefield,
   onRemoveBattlefield,
+  onAdjustBattlefield,
   onDescriptionChange,
   paddingBottom = 0,
   scrollEnabled = true,
 }: DeckBuilderInfoDrawerProps) {
   const identityInnerWidth = DECK_INFO_DRAWER_WIDTH - 32;
   const identityPairGap = 8;
-  const legendTileWidth = deck.legend
+  const identityPairColumns = deck.legend != null || deck.format === 'pre-rift';
+  const legendTileWidth = identityPairColumns
     ? Math.floor((identityInnerWidth - identityPairGap) / 2)
     : identityInnerWidth;
 
@@ -59,7 +66,9 @@ export function DeckBuilderInfoDrawer({
         imageByVariant={imageByVariant}
         collectionByName={collectionByName}
         runeCardsByDomain={runeCardsByDomain}
+        runeCardsLoading={runeCardsLoading}
         onChangeLegend={onChangeLegend}
+        onRemoveLegend={onRemoveLegend}
         onAddChampion={onAddChampion}
         onRemoveChampion={onRemoveChampion}
         onAdjustRune={onAdjustRune}
@@ -71,6 +80,7 @@ export function DeckBuilderInfoDrawer({
         imageByVariant={imageByVariant}
         onAdd={onAddBattlefield}
         onRemove={onRemoveBattlefield}
+        onAdjust={onAdjustBattlefield}
       />
 
       {readOnly ? (

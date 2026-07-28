@@ -438,26 +438,6 @@ export function CatalogDetailPanel({
               </View>
             ) : null}
 
-            {!hidePriceHistory ? (
-              <View className="gap-2" style={{ minHeight: 196 }}>
-                <Text className="text-sm font-semibold text-foreground">Daily trend</Text>
-                {wishlistItem &&
-                wishlistItem.variantNumber === activeVariant.variantNumber ? (
-                  <WishlistPriceHistoryPanel item={wishlistItem} />
-                ) : priceHistory.panelItem ? (
-                  <WishlistPriceHistoryPanel item={priceHistory.panelItem} />
-                ) : (
-                  <View className="min-h-[160px] justify-center rounded-xl border border-border bg-card p-3">
-                    <Text className="text-xs leading-5 text-muted-foreground">
-                      {priceHistory.isLoading
-                        ? 'Loading daily trend history…'
-                        : 'No daily trend snapshots yet. Prices sync once per day from Cardmarket.'}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ) : null}
-
             <View className="gap-2">
               <Pressable
                 accessibilityRole="button"
@@ -493,6 +473,39 @@ export function CatalogDetailPanel({
                 )}
               </Pressable>
             </View>
+
+            {singleMarketPrice || !hidePriceHistory ? (
+              <View className="gap-2 border-t border-border/40 pt-3">
+                {singleMarketPrice ? (
+                  <VariantPriceSummary
+                    label={singleMarketPrice.label}
+                    price={singleMarketPrice.price}
+                    trend={singlePriceTrend}
+                    className="mt-0"
+                    hideLabel={variantFamilies.length > 1}
+                  />
+                ) : null}
+                {!hidePriceHistory ? (
+                  <View className="gap-2" style={{ minHeight: 196 }}>
+                    <Text className="text-sm font-semibold text-foreground">Daily trend</Text>
+                    {wishlistItem &&
+                    wishlistItem.variantNumber === activeVariant.variantNumber ? (
+                      <WishlistPriceHistoryPanel item={wishlistItem} />
+                    ) : priceHistory.panelItem ? (
+                      <WishlistPriceHistoryPanel item={priceHistory.panelItem} />
+                    ) : (
+                      <View className="min-h-[160px] justify-center rounded-xl border border-border bg-card p-3">
+                        <Text className="text-xs leading-5 text-muted-foreground">
+                          {priceHistory.isLoading
+                            ? 'Loading daily trend history…'
+                            : 'No daily trend snapshots yet. Prices sync once per day from Cardmarket.'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
 
             {/* Extra scroll extent so the bottom CTA clears the home indicator. */}
             {isDrawer ? <View style={{ height: 72 }} /> : null}
@@ -559,15 +572,6 @@ export function CatalogDetailPanel({
                 {activeVariant.rarity}
               </Text>
             </View>
-            {singleMarketPrice ? (
-              <VariantPriceSummary
-                label={singleMarketPrice.label}
-                price={singleMarketPrice.price}
-                trend={singlePriceTrend}
-                className="mt-0"
-                hideLabel={variantFamilies.length > 1}
-              />
-            ) : null}
             {watchedElsewhereCount > 0 ? (
               <Text className="text-xs font-medium text-primary">
                 Also on wishlist: {watchedElsewhereCount} other printing

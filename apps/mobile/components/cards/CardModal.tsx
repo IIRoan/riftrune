@@ -277,15 +277,6 @@ function ModalInfoPanel({
         </Text>
       ) : null}
 
-      {singleMarketPrice ? (
-        <VariantPriceSummary
-          label={singleMarketPrice.label}
-          price={singleMarketPrice.price}
-          trend={singlePriceTrend}
-          className="mt-0"
-        />
-      ) : null}
-
       <Stack gap="md">
         <Stack direction="row" className="flex-wrap items-center gap-x-4 gap-y-2">
           <ModalInlineStat label="Cost">
@@ -361,6 +352,21 @@ function ModalInfoPanel({
     </Stack>
   ) : null;
 
+  const pricingBlock =
+    singleMarketPrice || showPriceHistory ? (
+      <Stack gap="sm" className="border-t border-border/40 pt-4">
+        {singleMarketPrice ? (
+          <VariantPriceSummary
+            label={singleMarketPrice.label}
+            price={singleMarketPrice.price}
+            trend={singlePriceTrend}
+            className="mt-0"
+          />
+        ) : null}
+        {priceHistoryBlock}
+      </Stack>
+    ) : null;
+
   return (
     <View
       className={cn(
@@ -376,7 +382,6 @@ function ModalInfoPanel({
         keyboardShouldPersistTaps="handled"
       >
         {headerBlock}
-        {priceHistoryBlock}
         {abilityBlock}
         <PrintingPreviewStrip
           items={printingPreviews}
@@ -385,6 +390,7 @@ function ModalInfoPanel({
           dense
           onSelect={onSelectPrinting}
         />
+        {pricingBlock}
       </ScrollView>
     </View>
   );

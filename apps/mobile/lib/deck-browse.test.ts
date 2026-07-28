@@ -16,6 +16,7 @@ function browseDeck(overrides: Partial<DeckState> = {}): DeckState {
     id: 'deck-1',
     name: 'Vex Control',
     description: '',
+    format: 'constructed',
     createdAt: Date.parse('2026-02-01T00:00:00.000Z'),
     updatedAt: Date.parse('2026-03-01T00:00:00.000Z'),
     legend: null,

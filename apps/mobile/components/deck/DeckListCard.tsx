@@ -126,9 +126,10 @@ function DeckListCardInner({
     ? resolveDeckCardImageUrl(deck.champion, imageByVariant)
     : '';
 
+  const formatLabel = deck.format === 'pre-rift' ? 'Pre-Rift' : 'Constructed';
   const identityLine = deck.legend
-    ? `${deck.legend.name}${deck.champion ? ` · ${deck.champion.name}` : ''}`
-    : 'No legend selected';
+    ? `${formatLabel} · ${deck.legend.name}${deck.champion ? ` · ${deck.champion.name}` : ''}`
+    : `${formatLabel} · No legend selected`;
 
   const description = deck.description?.trim() ?? '';
   const remainingMain = Math.max(0, uniqueMain - previewEntries.length);
@@ -287,6 +288,7 @@ function deckListCardPropsEqual(prev: DeckListCardProps, next: DeckListCardProps
     prev.deck.id === next.deck.id &&
     prev.deck.updatedAt === next.deck.updatedAt &&
     prev.deck.name === next.deck.name &&
+    prev.deck.format === next.deck.format &&
     prev.importBusy === next.importBusy &&
     Boolean(prev.onDelete) === Boolean(next.onDelete) &&
     Boolean(prev.onImport) === Boolean(next.onImport)

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { Pagination } from './cards.js';
-import { DeckCardInput, DeckEntryInput } from './deck-rules.js';
+import { DeckCardInput, DeckEntryInput, DeckFormat } from './deck-rules.js';
 
 export const DeckSortField = z.enum(['trending', 'likes', 'views', 'createdAt', 'editedAt']);
 
@@ -42,6 +42,8 @@ export const StoredDeckPayload = z.object({
   id: z.string().min(1),
   name: z.string(),
   description: z.string().optional(),
+  /** Deckbuilding format / ruleset. Defaults to Constructed for older payloads. */
+  format: DeckFormat.default('constructed'),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
   legend: DeckCardInput.nullable(),

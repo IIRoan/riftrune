@@ -1,3 +1,4 @@
+import type { DeckFormat } from '@riftbound/contracts';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
@@ -8,6 +9,7 @@ import { applyDeckStateIfNewerToCache, setDeckDetailCache } from '@/lib/deck-sta
 import {
   createDeck,
   deleteDeck,
+  duplicateDeck,
   importDeckToAccount,
   listDecks,
   listDecksPage,
@@ -140,7 +142,8 @@ export function useDeckMutations() {
   });
 
   const importDeck = useMutation({
-    mutationFn: (sourceDeckId: string) => importDeckToAccount(sourceDeckId),
+    mutationFn: ({ sourceDeckId, format }: { sourceDeckId: string; format: DeckFormat }) =>
+      importDeckToAccount(sourceDeckId, format),
     onSuccess: (saved) => {
       setDeckDetailCache(queryClient, saved);
       invalidate();
@@ -151,11 +154,26 @@ export function useDeckMutations() {
     },
   });
 
+  const duplicateOwnedDeck = useMutation({
+    mutationFn: (deck: DeckState) => duplicateDeck(deck),
+    onSuccess: (saved) => {
+      setDeckDetailCache(queryClient, saved);
+      invalidate();
+      toast.success('Deck duplicated.');
+    },
+    onError: () => {
+      toast.error('Could not duplicate deck.');
+    },
+  });
+
   const createNewDeck = useMutation({
-    mutationFn: (input?: { name?: string; description?: string }) =>
-      createDeck(input?.name, input?.description),
+    mutationFn: (input?: {
+      name?: string;
+      description?: string;
+      format?: DeckFormat;
+    }) => createDeck(input?.name, input?.description, input?.format ?? 'constructed'),
     onSuccess: invalidate,
   });
 
-  return { saveDeck, saveDeckNow, removeDeck, importDeck, createNewDeck };
+  return { saveDeck, saveDeckNow, removeDeck, importDeck, duplicateOwnedDeck, createNewDeck };
 }

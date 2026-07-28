@@ -16,6 +16,7 @@ function mapToEntries(
 
 function deckToValidateInput(deck: DeckState): DeckValidateInput {
   return {
+    format: deck.format,
     legend: deck.legend,
     champion: deck.champion,
     mainDeck: mapToEntries(deck.mainDeck),

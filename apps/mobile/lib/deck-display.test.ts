@@ -29,6 +29,14 @@ describe('deckSectionProgress', () => {
     expect(progress.target).toBe(40);
     expect(progress.hint).toBe('Includes chosen champion');
   });
+
+  it('uses Pre-Rift main deck minimum of 25', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    const progress = deckSectionProgress(deck, 'mainDeck');
+    expect(progress.current).toBe(0);
+    expect(progress.target).toBe(25);
+  });
 });
 
 describe('deckMainCompositionLines', () => {

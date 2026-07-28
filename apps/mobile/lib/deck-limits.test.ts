@@ -45,6 +45,20 @@ describe('deck-limits', () => {
     expect(deck.battlefields.size).toBe(BATTLEFIELD_MAX);
   });
 
+  test('Pre-Rift allows duplicate battlefield names within 3 slots', () => {
+    let deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    const field = mockCard({ name: 'Field A', type: 'Battlefield' });
+
+    deck = addCardToDeck(deck, field, { section: 'battlefields' });
+    deck = addCardToDeck(deck, field, { section: 'battlefields' });
+    deck = addCardToDeck(deck, field, { section: 'battlefields' });
+
+    expect(deck.battlefields.get('Field A')?.count).toBe(3);
+    expect(canAddBattlefield(deck, 'Field A')).toBe(false);
+    expect(battlefieldsAtCapacity(deck)).toBe(true);
+  });
+
   test('eligibility rejects a fourth unique battlefield', () => {
     let deck = createEmptyDeck();
     const fields = ['Field A', 'Field B', 'Field C', 'Field D'].map((name) =>

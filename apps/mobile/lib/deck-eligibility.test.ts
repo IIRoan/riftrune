@@ -323,5 +323,117 @@ describe('deck-eligibility', () => {
 
     expect(eligible(deck, 'mainDeck', signatureWrongTag)).toBe(false);
   });
+
+  test('Pre-Rift allows three domains and duplicate battlefields', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    deck.legend = legendFuryCalm;
+    deck.champion = mockCard({
+      name: 'Nasus Champion',
+      type: 'Unit',
+      super: 'Champion',
+      tags: ['Nasus'],
+      colors: ['Chaos'],
+    });
+    deck.battlefields.set(battlefieldChaos.name, { card: battlefieldChaos, count: 1 });
+
+    expect(eligible(deck, 'battlefields', battlefieldChaos)).toBe(true);
+    expect(
+      eligible(
+        deck,
+        'mainDeck',
+        mockCard({ name: 'Calm Unit', colors: ['Calm'], type: 'Unit' })
+      )
+    ).toBe(true);
+  });
+
+  test('Pre-Rift allows fourth domain in picker', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    deck.legend = legendFuryCalm;
+    deck.champion = mockCard({
+      name: 'Nasus Champion',
+      type: 'Unit',
+      super: 'Champion',
+      tags: ['Nasus'],
+      colors: ['Chaos'],
+    });
+
+    expect(
+      eligible(
+        deck,
+        'mainDeck',
+        mockCard({ name: 'Body Unit', colors: ['Body'], type: 'Unit' })
+      )
+    ).toBe(true);
+  });
+
+  test('Pre-Rift allows unlimited main deck copies in picker', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    const unit = mockCard({ name: 'Flame Chompers', type: 'Unit' });
+    deck.mainDeck.set(unit.name, { card: unit, count: 5 });
+
+    expect(eligible(deck, 'mainDeck', unit)).toBe(true);
+  });
+
+  test('Pre-Rift does not require champion tag match', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    deck.legend = legendFuryCalm;
+
+    expect(
+      eligible(
+        deck,
+        'champion',
+        mockCard({
+          name: 'Nasus Champion',
+          type: 'Unit',
+          super: 'Champion',
+          tags: ['Nasus'],
+          colors: ['Fury'],
+        })
+      )
+    ).toBe(true);
+  });
+
+  test('Pre-Rift with legend allows a third-domain non-matching champion', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    deck.legend = legendFuryCalm;
+
+    expect(
+      eligible(
+        deck,
+        'champion',
+        mockCard({
+          name: 'Ahri Champion',
+          type: 'Unit',
+          super: 'Champion',
+          tags: ['Ahri'],
+          colors: ['Chaos'],
+        })
+      )
+    ).toBe(true);
+  });
+
+  test('Constructed still requires champion tag match with legend', () => {
+    const deck = createEmptyDeck();
+    deck.legend = legendFuryCalm;
+
+    expect(
+      eligible(
+        deck,
+        'champion',
+        mockCard({
+          name: 'Ahri Champion',
+          type: 'Unit',
+          super: 'Champion',
+          tags: ['Ahri'],
+          colors: ['Fury'],
+        })
+      )
+    ).toBe(false);
+  });
 });
 

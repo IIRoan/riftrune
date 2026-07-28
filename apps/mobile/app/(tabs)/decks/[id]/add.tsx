@@ -1,6 +1,5 @@
 import { ThemedIcon, LibraryIcon } from '@/components/icons';
 import { DeckCatalogGridTile } from '@/components/deck/DeckCatalogGridTile';
-import { DeckAddSectionStatus } from '@/components/deck/DeckAddSectionStatus';
 import { DeckAddScreenHeader } from '@/components/deck/DeckAddScreenHeader';
 import {
   CatalogActiveFilterChips,
@@ -378,8 +377,6 @@ function DeckAddScreenBody({
             {catalog.sectionMeta.contextLine}
           </Text>
         ) : null}
-
-        <DeckAddSectionStatus deck={deck} section={activeSection} />
 
         {!lockedSection ? (
           <DeckSectionTabs

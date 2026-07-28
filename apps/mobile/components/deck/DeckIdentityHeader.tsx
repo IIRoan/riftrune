@@ -16,7 +16,9 @@ interface DeckIdentityHeaderProps {
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
   runeCardsByDomain: ReadonlyMap<string, DeckCard>;
+  runeCardsLoading?: boolean;
   onChangeLegend: () => void;
+  onRemoveLegend?: () => void;
   onAddChampion: () => void;
   onRemoveChampion: () => void;
   onAdjustRune: (domain: string, delta: number) => void;
@@ -51,7 +53,9 @@ export function DeckIdentityHeader({
   imageByVariant,
   collectionByName,
   runeCardsByDomain,
+  runeCardsLoading = false,
   onChangeLegend,
+  onRemoveLegend,
   onAddChampion,
   onRemoveChampion,
   onAdjustRune,
@@ -61,6 +65,11 @@ export function DeckIdentityHeader({
   const legend = deck.legend;
   const tileWidth = legendTileWidth;
   const runesBeside = runePlacement === 'beside';
+  const isPreRift = deck.format === 'pre-rift';
+  const legendTitle = isPreRift ? 'Legend (optional)' : 'Legend';
+  const legendPlaceholder = isPreRift ? 'Add Legend (optional)' : 'Choose Legend';
+  const championTitle = isPreRift ? 'Champion (optional)' : 'Champion';
+  const championPlaceholder = isPreRift ? 'Add Champion (optional)' : 'Add Champion';
 
   const legendSlot = legend ? (
     <DeckCardSlot
@@ -73,20 +82,20 @@ export function DeckIdentityHeader({
       single
       openSource={openSource}
       onPress={readOnly ? undefined : onChangeLegend}
-      onRemove={readOnly ? undefined : onChangeLegend}
+      onRemove={readOnly ? undefined : onRemoveLegend ?? onChangeLegend}
     />
   ) : (
     <DeckCardSlot
       variant="identity"
       tileWidth={tileWidth}
-      label="Choose Legend"
+      label={legendPlaceholder}
       onAdd={readOnly ? undefined : onChangeLegend}
     />
   );
 
-  const championSlot =
-    legend &&
-    (deck.champion ? (
+  const showChampion = Boolean(legend) || deck.format === 'pre-rift';
+  const championSlot = showChampion ? (
+    deck.champion ? (
       <DeckCardSlot
         variant="card"
         tileWidth={tileWidth}
@@ -103,16 +112,19 @@ export function DeckIdentityHeader({
       <DeckCardSlot
         variant="identity"
         tileWidth={tileWidth}
-        label="Add Champion"
+        label={championPlaceholder}
         onAdd={readOnly ? undefined : onAddChampion}
       />
-    ));
+    )
+  ) : null;
 
-  const runePanel = legend ? (
+  const showRunes = Boolean(legend) || deck.format === 'pre-rift';
+  const runePanel = showRunes ? (
     <DeckRunePanel
       deck={deck}
       readOnly={readOnly}
       runeCardsByDomain={runeCardsByDomain}
+      runeCardsLoading={runeCardsLoading}
       onAdjust={onAdjustRune}
       dense
       compact={runesBeside}
@@ -125,9 +137,9 @@ export function DeckIdentityHeader({
     return (
       <View className="flex-row items-end gap-4">
         <View className="flex-row gap-3">
-          <IdentitySlotBlock title="Legend">{legendSlot}</IdentitySlotBlock>
-          {legend ? (
-            <IdentitySlotBlock title="Champion">{championSlot}</IdentitySlotBlock>
+          <IdentitySlotBlock title={legendTitle}>{legendSlot}</IdentitySlotBlock>
+          {championSlot ? (
+            <IdentitySlotBlock title={championTitle}>{championSlot}</IdentitySlotBlock>
           ) : null}
         </View>
         <View className="min-w-[11rem] max-w-[15rem] flex-1 pb-1">{runePanel}</View>
@@ -138,12 +150,12 @@ export function DeckIdentityHeader({
   return (
     <View className="gap-3">
       <View className="flex-row items-stretch gap-2">
-        <IdentitySlotBlock title="Legend" className="flex-1">
+        <IdentitySlotBlock title={legendTitle} className="flex-1">
           {legendSlot}
         </IdentitySlotBlock>
 
-        {legend ? (
-          <IdentitySlotBlock title="Champion" className="flex-1">
+        {championSlot ? (
+          <IdentitySlotBlock title={championTitle} className="flex-1">
             {championSlot}
           </IdentitySlotBlock>
         ) : null}

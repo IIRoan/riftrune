@@ -2,6 +2,7 @@ import { ThemedIcon, LockIcon, PlusIcon } from '@/components/icons';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
+import { CardArtInfoPreviewButton } from '@/components/deck/CardArtInfoPreviewButton';
 import { resolveSlotImage } from '@/components/deck/DeckCardSlot';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
 import { Text } from '@/components/ui/text';
@@ -21,6 +22,7 @@ interface DeckBattlefieldPanelProps {
   openSource?: CardOpenSource;
   onAdd: () => void;
   onRemove: (name: string) => void;
+  onAdjust?: (name: string, delta: number) => void;
 }
 
 function BattlefieldSlot({
@@ -33,6 +35,7 @@ function BattlefieldSlot({
   openSource,
   onAdd,
   onRemove,
+  onAdjust,
 }: {
   index: number;
   slot: DeckEntry | null;
@@ -43,6 +46,7 @@ function BattlefieldSlot({
   openSource?: CardOpenSource;
   onAdd: () => void;
   onRemove: (name: string) => void;
+  onAdjust?: (name: string, delta: number) => void;
 }) {
   const router = useRouter();
   const slotNumber = index + 1;
@@ -82,6 +86,11 @@ function BattlefieldSlot({
   const { card } = slot;
   const imageUri = resolveSlotImage(card, imageByVariant);
   const illegal = isCardTournamentIllegal(card, deck);
+  // Expanded slots are one copy each; Pre-Rift remove decrements qty instead of wiping the name.
+  const removeOne =
+    deck.format === 'pre-rift' && onAdjust != null
+      ? () => onAdjust(card.name, -1)
+      : () => onRemove(card.name);
 
   return (
     <View className="min-w-0 flex-1 gap-1.5">
@@ -104,6 +113,12 @@ function BattlefieldSlot({
           <BattlefieldCardArt uri={imageUri} variantNumber={card.variantNumber} />
         </Pressable>
 
+        <CardArtInfoPreviewButton
+          imageUri={imageUri}
+          variantNumber={card.variantNumber}
+          name={card.name}
+          orientation="landscape"
+        />
       </View>
 
       <Text className="px-0.5 text-[11px] font-semibold text-foreground" numberOfLines={1}>
@@ -115,7 +130,7 @@ function BattlefieldSlot({
           count={1}
           name={card.name}
           single
-          onRemove={() => onRemove(card.name)}
+          onRemove={removeOne}
         />
       )}
     </View>
@@ -129,6 +144,7 @@ export function DeckBattlefieldPanel({
   openSource,
   onAdd,
   onRemove,
+  onAdjust,
 }: DeckBattlefieldPanelProps) {
   const slots = buildBattlefieldSlots(deck.battlefields);
   const count = slots.filter(Boolean).length;
@@ -168,7 +184,7 @@ export function DeckBattlefieldPanel({
       <View className="flex-row gap-2">
         {slots.map((slot, index) => (
           <BattlefieldSlot
-            key={slot?.card.name ?? `bf-empty-${index}`}
+            key={slot ? `${slot.card.name}-${index}` : `bf-empty-${index}`}
             index={index}
             slot={slot}
             deck={deck}
@@ -178,6 +194,7 @@ export function DeckBattlefieldPanel({
             openSource={openSource}
             onAdd={onAdd}
             onRemove={onRemove}
+            onAdjust={onAdjust}
           />
         ))}
       </View>

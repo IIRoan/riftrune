@@ -140,6 +140,22 @@ describe('deck-add-catalog', () => {
     expect(effectiveDeckAddSearch('champion', deck, '')).toBe('Sett');
   });
 
+  test('Pre-Rift does not prefill champion search from legend', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    deck.legend = settLegend;
+    expect(defaultDeckAddSearch('champion', deck)).toBe('');
+    expect(effectiveDeckAddSearch('champion', deck, '')).toBe('');
+    expect(buildDeckAddListQuery('champion', deck, '')).toEqual({
+      page: 1,
+      sortBy: 'name',
+      dir: 'asc',
+      limit: 80,
+      types: 'Unit',
+      super: 'Champion',
+    });
+  });
+
   test('builds champion list query with super filter and legend search', () => {
     const deck = createEmptyDeck();
     deck.legend = settLegend;
@@ -271,6 +287,21 @@ describe('deck-add-catalog', () => {
     expect(eligible.every((c) => c.name === 'Sett, Brawler')).toBe(true);
   });
 
+  test('Pre-Rift keeps all champion candidates eligible', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    deck.legend = settLegend;
+
+    const candidates = buildDeckAddCandidates({
+      section: 'champion',
+      listItems: settListItems,
+      details: [settBrawlerDetail],
+    });
+
+    const eligible = filterEligibleDeckAddCards(deck, 'champion', candidates);
+    expect(eligible).toHaveLength(candidates.length);
+  });
+
   test('filters Sett champion when legend tags are missing but name matches', () => {
     const deck = createEmptyDeck();
     deck.legend = mockDeckCard({
@@ -304,7 +335,7 @@ describe('deck-add-catalog', () => {
     expect(displayed).toHaveLength(1);
   });
 
-  test('sideboard accepts main-deck card types and skips signatures', () => {
+  test('sideboard accepts main-deck card types and skips signatures for Constructed', () => {
     const unitItem = {
       cardId: 'u1',
       variantNumber: 'OGN-010',
@@ -338,6 +369,46 @@ describe('deck-add-catalog', () => {
     });
 
     expect(candidates.map((card) => card.name)).toEqual(['Apprentice Mage']);
+  });
+
+  test('Pre-Rift sideboard includes signature cards', () => {
+    const unitItem = {
+      cardId: 'u1',
+      variantNumber: 'OGN-010',
+      name: 'Apprentice Mage',
+      type: 'Unit',
+      energy: 1,
+      might: 1,
+      power: 0,
+      rarity: 'Common',
+      setCode: 'OGN',
+      colors: ['Mind'],
+      imageUrl: null,
+      cardmarketId: null,
+      priceEur: null,
+      printings: [],
+      isBanned: false,
+    } as CardListItem;
+    const signatureItem = {
+      ...unitItem,
+      cardId: 's1',
+      variantNumber: 'OGN-011',
+      name: 'Signature Spell',
+      type: 'Spell',
+      rarity: 'Signature',
+    } as CardListItem;
+
+    const candidates = buildDeckAddCandidates({
+      section: 'sideboard',
+      listItems: [unitItem, signatureItem],
+      details: [],
+      deck: { ...createEmptyDeck(), format: 'pre-rift' },
+    });
+
+    expect(candidates.map((card) => card.name).sort()).toEqual([
+      'Apprentice Mage',
+      'Signature Spell',
+    ]);
   });
 
   test('shows all champion catalog hits in the add picker', () => {

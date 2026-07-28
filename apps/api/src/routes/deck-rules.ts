@@ -37,6 +37,7 @@ export function createDeckRulesRoutes() {
       },
       {
         body: t.Object({
+          format: t.Optional(t.Union([t.Literal('constructed'), t.Literal('pre-rift')])),
           legend: t.Optional(t.Nullable(t.Any())),
           champion: t.Optional(t.Nullable(t.Any())),
           mainDeck: t.Array(t.Any()),

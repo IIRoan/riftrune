@@ -2,6 +2,7 @@ import { ThemedIcon, BookOpenIcon, GitCompareIcon, VideoIcon } from '@/component
 import * as WebBrowser from 'expo-web-browser';
 import { Pressable, View } from 'react-native';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
+import { DeckFormatBadge } from '@/components/deck/DeckFormatBadge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { deckArchiveViewUrl, deckBrowseSummaryLine } from '@/lib/deck-browse';
@@ -27,6 +28,8 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
 
   return (
     <View className="gap-3">
+      <DeckFormatBadge format={deck.format} />
+
       <View className="gap-2">
         <DeckLegalityBadge isLegal={tournamentLegal} />
         {hasBannedCards ? (

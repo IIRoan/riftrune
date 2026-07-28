@@ -2,6 +2,7 @@ import { LockIcon, PlusIcon, StarIcon, ThemedIcon, XIcon } from '@/components/ic
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, View } from 'react-native';
+import { CardArtInfoPreviewButton } from '@/components/deck/CardArtInfoPreviewButton';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
@@ -165,6 +166,12 @@ function DeckCardSlotInner({
             <StatusKeywordBadge status="illegal" compact />
           </View>
         ) : null}
+
+        <CardArtInfoPreviewButton
+          imageUri={imageUri}
+          variantNumber={card.variantNumber}
+          name={card.name}
+        />
 
         {!showArtRemove ? <DeckCardCountBadge count={count} /> : null}
 

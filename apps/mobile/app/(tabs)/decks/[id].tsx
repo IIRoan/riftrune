@@ -2,11 +2,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { AppLoadingScreen } from '@/components/ui/app-loader';
 import { DeckBuilderCanvas } from '@/components/deck/DeckBuilderCanvas';
+import { DeckFormatPickerSheet } from '@/components/deck/DeckFormatPickerSheet';
 import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
 import { LegendPicker } from '@/components/deck/LegendPicker';
 import { ScreenLayout, ScreenLayoutBody, useScreenLayout } from '@/components/shell/ScreenLayout';
 import { Text } from '@/components/ui/text';
 import { Button, ButtonText } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useDeckAutoSave } from '@/hooks/useDeckAutoSave';
 import { useDeckDetail } from '@/hooks/useDeckDetail';
 import { useDeckMutations } from '@/hooks/useDecks';
@@ -27,21 +29,23 @@ export default function DeckEditorScreen() {
   const router = useRouter();
   const { id, mode } = useLocalSearchParams<{ id: string; mode?: string }>();
   const { deck, isLoading, persist, flushSave } = useDeckDetail(id);
-  const { importDeck } = useDeckMutations();
+  const { importDeck, duplicateOwnedDeck, removeDeck } = useDeckMutations();
   const permanentReadOnly = deck?.readOnly === true;
   const editing = !permanentReadOnly && isDeckEditMode(mode);
   const [ioMode, setIoMode] = useState<IoMode | null>(null);
   const [pickingLegend, setPickingLegend] = useState(false);
+  const [archiveImportOpen, setArchiveImportOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   useDeckAutoSave(editing ? deck : null);
 
   const handleLegendSelect = useCallback(
     (legend: DeckCard) => {
       if (!deck) return;
-      const next = addCardToDeck(
-        { ...deck, legend: null, champion: null, runes: new Map() },
-        legend,
-        { section: 'legend' }
-      );
+      const base =
+        deck.format === 'pre-rift'
+          ? deck
+          : { ...deck, legend: null, champion: null, runes: new Map() };
+      const next = addCardToDeck(base, legend, { section: 'legend' });
       setPickingLegend(false);
       persist(next);
       if (!isDeckEditMode(mode)) {
@@ -53,10 +57,19 @@ export default function DeckEditorScreen() {
 
   const handleImport = useCallback(() => {
     if (!deck?.id) return;
-    void importDeck.mutateAsync(deck.id).then((saved) => {
+    setArchiveImportOpen(true);
+  }, [deck?.id]);
+
+  const handleDuplicate = useCallback(() => {
+    if (!deck) return;
+    void duplicateOwnedDeck.mutateAsync(deck).then((saved) => {
       router.replace(deckViewHref(saved.id));
     });
-  }, [deck?.id, importDeck, router]);
+  }, [deck, duplicateOwnedDeck, router]);
+
+  const handleDelete = useCallback(() => {
+    setDeleteOpen(true);
+  }, []);
 
   const handleEdit = useCallback(() => {
     if (!deck?.id) return;
@@ -96,7 +109,8 @@ export default function DeckEditorScreen() {
     );
   }
 
-  const needsLegendSetup = !permanentReadOnly && !deck.legend;
+  const needsLegendSetup =
+    !permanentReadOnly && !deck.legend && deck.format !== 'pre-rift';
   if (pickingLegend || needsLegendSetup) {
     return (
       <LegendPickerScreen
@@ -118,6 +132,34 @@ export default function DeckEditorScreen() {
         visible={importDeck.isPending}
         message="Importing deck to your collection…"
       />
+      <DeckFormatPickerSheet
+        open={archiveImportOpen}
+        onOpenChange={setArchiveImportOpen}
+        title="Import deck"
+        description={
+          deck ? `Choose a format for “${deck.name}”.` : 'Choose a format for this deck.'
+        }
+        confirmLabel="Import deck"
+        onConfirm={async (format) => {
+          if (!deck?.id) return;
+          const saved = await importDeck.mutateAsync({ sourceDeckId: deck.id, format });
+          router.replace(deckViewHref(saved.id));
+        }}
+      />
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete deck"
+        description={deck ? `Delete “${deck.name}”? This cannot be undone.` : ''}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        tone="destructive"
+        onConfirm={async () => {
+          if (!deck?.id) return;
+          await removeDeck.mutateAsync(deck.id);
+          leaveDeckEditor(router);
+        }}
+      />
       <ScreenLayout mode="flex" contentClassName="min-h-0 flex-1">
         <ScreenLayoutBody className="min-h-0 flex-1">
           <DeckBuilderCanvas
@@ -129,6 +171,9 @@ export default function DeckEditorScreen() {
             onIoModeChange={setIoMode}
             onChangeLegend={() => setPickingLegend(true)}
             onEdit={permanentReadOnly || editing ? undefined : handleEdit}
+            onDuplicate={permanentReadOnly ? undefined : handleDuplicate}
+            onDelete={permanentReadOnly ? undefined : handleDelete}
+            duplicateBusy={duplicateOwnedDeck.isPending}
             onImportToMyDecks={permanentReadOnly ? handleImport : undefined}
             importBusy={importDeck.isPending}
             onBack={handleBack}

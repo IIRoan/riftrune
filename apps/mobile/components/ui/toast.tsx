@@ -1,33 +1,18 @@
 import { cva } from 'class-variance-authority';
 import { ActivityIndicator, View } from 'react-native';
-import * as ToastPrimitive from 'sonner-native';
-import { useUniwind } from 'uniwind';
-import { cn } from '@/lib/utils';
+import { Easing, FadeInUp, FadeOutDown } from 'react-native-reanimated';
+import { useCSSVariable, useUniwind } from 'uniwind';
 import {
   CircleAlertIcon,
   CircleCheckIcon,
   InfoIcon,
   TriangleAlertIcon,
 } from '@/components/icons';
-import { Text } from './text';
+import { toast as sonnerToast, Toaster as SonnerToaster, type ToasterProps } from '@/lib/sonner';
 
-// Types
 type ToastVariant = 'default' | 'success' | 'error' | 'warning' | 'info' | 'loading';
 
-type ToastGlyphProps = {
-  variant: ToastVariant;
-};
-
-type ToastOptions = NonNullable<Parameters<typeof ToastPrimitive.toast.custom>[1]>;
-
-type PromiseOptions = {
-  loading: string;
-  success: string | ((result: unknown) => string);
-  error: string | ((error: unknown) => string);
-} & Omit<ToastOptions, 'description' | 'icon'>;
-
-// Components
-const ToastGlyphIcon = ({ variant }: ToastGlyphProps) => {
+const ToastGlyphIcon = ({ variant }: { variant: ToastVariant }) => {
   const className = iconVariants({ variant });
 
   if (variant === 'success') {
@@ -45,135 +30,88 @@ const ToastGlyphIcon = ({ variant }: ToastGlyphProps) => {
   return <InfoIcon className={className} weight="bold" />;
 };
 
-/** Recessed status slot — same panel grammar as the deck / catalog icon tiles. */
-const ToastGlyph = ({ variant }: ToastGlyphProps) => {
-  if (variant === 'default') return null;
-
-  return (
-    <View className="size-7 shrink-0 items-center justify-center rounded-lg bg-card-panel">
-      {variant === 'loading' ? (
-        <ActivityIndicator className="accent-muted-foreground" size="small" />
-      ) : (
-        <ToastGlyphIcon variant={variant} />
-      )}
-    </View>
-  );
-};
-
-type ToastCardProps = {
-  variant: ToastVariant;
-  title: string;
-  description?: string;
-  icon?: React.ReactNode;
-};
-
-/**
- * Floating archive panel — raised above the screen surface in either theme,
- * status carried by the glyph so meaning survives without color.
- */
-const ToastCard = ({ variant, title, description, icon }: ToastCardProps) => (
-  <View className="w-full items-center px-4">
-    <View
-      accessibilityLabel={description ? `${title}. ${description}` : title}
-      accessibilityLiveRegion={variant === 'error' ? 'assertive' : 'polite'}
-      accessibilityRole="alert"
-      accessible
-      className={cn(
-        'w-full max-w-sm flex-row gap-3 rounded-xl border border-border bg-card px-3.5 py-3 shadow-lg shadow-black/25 dark:bg-popover',
-        description ? 'items-start' : 'items-center'
-      )}
-    >
-      {icon ?? <ToastGlyph variant={variant} />}
-      <View className="min-w-0 flex-1">
-        <Text className="text-sm font-medium leading-5 text-foreground" numberOfLines={2}>
-          {title}
-        </Text>
-        {description ? (
-          <Text
-            className="mt-0.5 text-[13px] leading-snug text-muted-foreground"
-            numberOfLines={3}
-          >
-            {description}
-          </Text>
-        ) : null}
-      </View>
-    </View>
+const ToastIcon = ({ variant }: { variant: ToastVariant }) => (
+  <View className="size-7 shrink-0 items-center justify-center rounded-lg bg-card-panel">
+    {variant === 'loading' ? (
+      <ActivityIndicator className="accent-muted-foreground" size="small" />
+    ) : (
+      <ToastGlyphIcon variant={variant} />
+    )}
   </View>
 );
 
-export const Toaster = (props: Omit<ToastPrimitive.ToasterProps, 'theme'>) => {
+export const Toaster = (props: Omit<ToasterProps, 'theme'>) => {
   const { theme: uniwindTheme } = useUniwind();
   const theme = uniwindTheme === 'dark' ? 'dark' : 'light';
+  const [card, border, foreground, mutedForeground] = useCSSVariable([
+    '--color-card',
+    '--color-border',
+    '--color-foreground',
+    '--color-muted-foreground',
+  ]) as string[];
 
   return (
-    <ToastPrimitive.Toaster
+    <SonnerToaster
+      duration={3_500}
       enableStacking
       gap={8}
       offset={12}
-      position="top-center"
+      position="bottom-center"
       swipeToDismissDirection="up"
       visibleToasts={3}
+      animation={{
+        enter: FadeInUp.duration(280).easing(Easing.out(Easing.cubic)),
+        exit: FadeOutDown.duration(220).easing(Easing.in(Easing.cubic)),
+      }}
+      icons={{
+        error: <ToastIcon variant="error" />,
+        info: <ToastIcon variant="info" />,
+        loading: <ToastIcon variant="loading" />,
+        success: <ToastIcon variant="success" />,
+        warning: <ToastIcon variant="warning" />,
+      }}
+      toastOptions={{
+        style: {
+          alignSelf: 'center',
+          backgroundColor: card,
+          borderColor: border,
+          borderCurve: 'continuous',
+          borderRadius: 12,
+          borderWidth: 1,
+          elevation: 8,
+          maxWidth: 384,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          shadowColor: '#000',
+          shadowOffset: { height: 4, width: 0 },
+          shadowOpacity: 0.25,
+          shadowRadius: 8,
+          width: '100%',
+        },
+        descriptionStyle: {
+          color: mutedForeground,
+          fontSize: 13,
+          lineHeight: 18,
+        },
+        titleStyle: {
+          color: foreground,
+          fontSize: 14,
+          fontWeight: '500',
+          lineHeight: 20,
+        },
+        toastContentStyle: {
+          alignItems: 'center',
+          gap: 12,
+        },
+      }}
       {...props}
       theme={theme}
     />
   );
 };
 
-// Utils
-const showToast = (variant: ToastVariant, title: string, options?: ToastOptions) => {
-  const { description, icon, ...rest } = options ?? {};
+export const toast = sonnerToast;
 
-  return ToastPrimitive.toast.custom(
-    <ToastCard description={description} icon={icon} title={title} variant={variant} />,
-    rest
-  );
-};
-
-export const toast = Object.assign(
-  (message: string, options?: ToastOptions) => showToast('default', message, options),
-  {
-    custom: ToastPrimitive.toast.custom,
-    dismiss: ToastPrimitive.toast.dismiss,
-    error: (message: string, options?: ToastOptions) =>
-      showToast('error', message, options),
-    info: (message: string, options?: ToastOptions) =>
-      showToast('info', message, options),
-    loading: (message: string, options?: ToastOptions) =>
-      showToast('loading', message, options),
-    promise: <T,>(promise: Promise<T>, options: PromiseOptions) => {
-      const { loading, success, error, ...rest } = options;
-      const id = ToastPrimitive.toast.custom(
-        <ToastCard title={loading} variant="loading" />,
-        { ...rest, duration: Number.POSITIVE_INFINITY }
-      );
-
-      promise
-        .then((data) => {
-          const title = typeof success === 'function' ? success(data) : success;
-          ToastPrimitive.toast.custom(<ToastCard title={title} variant="success" />, {
-            duration: rest.duration,
-            id,
-          });
-        })
-        .catch((err) => {
-          const title = typeof error === 'function' ? error(err) : error;
-          ToastPrimitive.toast.custom(<ToastCard title={title} variant="error" />, {
-            duration: rest.duration,
-            id,
-          });
-        });
-
-      return id;
-    },
-    success: (message: string, options?: ToastOptions) =>
-      showToast('success', message, options),
-    warning: (message: string, options?: ToastOptions) =>
-      showToast('warning', message, options),
-    wiggle: ToastPrimitive.toast.wiggle,
-  }
-);
-
-// Styles
 const iconVariants = cva('size-4', {
   variants: {
     variant: {
