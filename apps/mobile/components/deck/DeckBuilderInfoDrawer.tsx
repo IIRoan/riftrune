@@ -1,10 +1,9 @@
 import { ScrollView, View } from 'react-native';
 import { DeckBattlefieldPanel } from '@/components/deck/DeckBattlefieldPanel';
+import { DeckDescriptionEditor, DeckDescriptionView } from '@/components/deck/DeckDescription';
 import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
 import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
-import { Text } from '@/components/ui/text';
-import { TextareaInput } from '@/components/ui/textarea-input';
 import { deckHasBannedCards } from '@/lib/card-legality';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 
@@ -59,6 +58,12 @@ export function DeckBuilderInfoDrawer({
 
   const body = (
     <>
+      {readOnly ? (
+        <DeckDescriptionView description={deck.description} />
+      ) : onDescriptionChange ? (
+        <DeckDescriptionEditor value={deck.description} onChange={onDescriptionChange} />
+      ) : null}
+
       <DeckIdentityHeader
         deck={deck}
         readOnly={readOnly}
@@ -85,23 +90,11 @@ export function DeckBuilderInfoDrawer({
 
       {readOnly ? (
         <DeckViewInfoPanel deck={deck} />
-      ) : (
-        <View className="gap-2">
-          <Text className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Description
-          </Text>
-          <TextareaInput
-            value={deck.description}
-            onChangeText={onDescriptionChange}
-            placeholder="Deck description (optional)"
-          />
-          {deckHasBannedCards(deck) ? (
-            <View className="self-start">
-              <DeckLegalityBadge isLegal={false} />
-            </View>
-          ) : null}
+      ) : deckHasBannedCards(deck) ? (
+        <View className="self-start">
+          <DeckLegalityBadge isLegal={false} />
         </View>
-      )}
+      ) : null}
     </>
   );
 
