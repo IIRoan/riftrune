@@ -1,23 +1,25 @@
+import { useCallback, useState } from "react";
+import { View, type BlurEvent, type FocusEvent } from "react-native";
 import {
   INPUT_TEXTAREA_SHELL_CLASS,
 } from "@/constants/catalogToolbar";
 import { cn } from "@/lib/utils";
-import {
-  Input,
-  InputPressable,
-  type InputProps,
-  useInputFocusState,
-} from "./input";
+import { Input, type InputProps } from "./input";
 
 // Types
 export type TextareaInputProps = InputProps & {
-  onFocus?: () => void;
-  onBlur?: () => void;
+  onFocus?: (e: FocusEvent) => void;
+  onBlur?: (e: BlurEvent) => void;
   disabled?: boolean;
   invalid?: boolean;
 };
 
 // Components
+/**
+ * Multiline text field. Intentionally NOT wrapped in InputPressable —
+ * a parent Pressable steals the touch responder on web/native and jumps
+ * the caret to the end when clicking mid-text.
+ */
 export const TextareaInput = ({
   onFocus,
   onBlur,
@@ -26,17 +28,35 @@ export const TextareaInput = ({
   className,
   ...props
 }: TextareaInputProps) => {
-  const { isFocused, internalRef, handleFocus, handleBlur, handlePress } =
-    useInputFocusState({ onFocus, onBlur });
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = useCallback(
+    (e: FocusEvent) => {
+      setIsFocused(true);
+      onFocus?.(e);
+    },
+    [onFocus]
+  );
+
+  const handleBlur = useCallback(
+    (e: BlurEvent) => {
+      setIsFocused(false);
+      onBlur?.(e);
+    },
+    [onBlur]
+  );
 
   return (
-    <InputPressable
-      bordered
-      className={cn(INPUT_TEXTAREA_SHELL_CLASS, className)}
-      disabled={disabled}
-      focused={isFocused}
-      invalid={invalid}
-      onPress={handlePress}
+    <View
+      className={cn(
+        INPUT_TEXTAREA_SHELL_CLASS,
+        "border",
+        !invalid && !isFocused && "border-border",
+        !invalid && isFocused && "border-ring/50",
+        invalid && "border-destructive",
+        disabled && "opacity-50",
+        className
+      )}
     >
       <Input
         {...props}
@@ -45,11 +65,9 @@ export const TextareaInput = ({
         multiline
         onBlur={handleBlur}
         onFocus={handleFocus}
-        pointerEvents={isFocused || disabled ? undefined : "none"}
-        ref={internalRef}
-        scrollEnabled={false}
+        scrollEnabled
         textAlignVertical="top"
       />
-    </InputPressable>
+    </View>
   );
 };

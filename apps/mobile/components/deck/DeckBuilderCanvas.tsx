@@ -209,7 +209,8 @@ export function DeckBuilderCanvas({
       onDescriptionChange={
         readOnly
           ? undefined
-          : (description) => onPersist({ ...deck, description, updatedAt: Date.now() })
+          : (description) =>
+              onPersist((prev) => ({ ...prev, description, updatedAt: Date.now() }))
       }
       paddingBottom={paddingBottomInline}
       scrollEnabled={!isMobile}

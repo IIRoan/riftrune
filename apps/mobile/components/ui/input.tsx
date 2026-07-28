@@ -292,7 +292,12 @@ export const useInputFocusState = ({
     [onBlur]
   );
 
-  const handlePress = useCallback(() => internalRef.current?.focus(), []);
+  const handlePress = useCallback(() => {
+    // Re-focusing an already-focused field jumps the caret to the end
+    // (especially on web when Pressable still receives the tap).
+    if (isFocused) return;
+    internalRef.current?.focus();
+  }, [isFocused]);
 
   return {
     isFocused,

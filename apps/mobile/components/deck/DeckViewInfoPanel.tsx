@@ -43,17 +43,6 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
         <Text className="text-[13px] text-muted-foreground">{summary}</Text>
       ) : null}
 
-      {deck.description ? (
-        <View className="gap-1 rounded-lg border border-archive-soft-line/80 bg-background/40 px-2.5 py-2">
-          <Text className="text-[11px] font-semibold text-muted-foreground">
-            Description
-          </Text>
-          <Text className="text-[13px] leading-5 text-foreground">
-            {deck.description}
-          </Text>
-        </View>
-      ) : null}
-
       {deck.videoUrl || deck.hasGuide || deck.hasMatchups ? (
         <View className="flex-row flex-wrap gap-2">
           {deck.videoUrl ? (

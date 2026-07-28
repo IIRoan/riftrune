@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { DeckBattlefieldPanel } from '@/components/deck/DeckBattlefieldPanel';
+import { DeckDescriptionView } from '@/components/deck/DeckDescription';
 import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
 import { DeckSectionGrid } from '@/components/deck/DeckSectionGrid';
 import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
-import { Text } from '@/components/ui/text';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { deckHasBannedCards } from '@/lib/card-legality';
 import { getSectionCount } from '@/lib/deck-card';
@@ -62,6 +62,8 @@ export function DeckShowcasePanel({
       showsVerticalScrollIndicator={false}
       onLayout={onLayout}
     >
+      <DeckDescriptionView description={deck.description} />
+
       <DeckIdentityHeader
         deck={deck}
         readOnly
@@ -126,25 +128,11 @@ export function DeckShowcasePanel({
 
       {deck.readOnly ? (
         <DeckViewInfoPanel deck={deck} />
-      ) : (
-        <View className="gap-2">
-          {deck.description.trim() ? (
-            <View className="gap-1 rounded-lg border border-archive-soft-line/80 bg-background/40 px-2.5 py-2">
-              <Text className="text-[11px] font-semibold text-muted-foreground">
-                Description
-              </Text>
-              <Text className="text-[13px] leading-5 text-foreground">
-                {deck.description.trim()}
-              </Text>
-            </View>
-          ) : null}
-          {deckHasBannedCards(deck) ? (
-            <View className="self-start">
-              <DeckLegalityBadge isLegal={false} />
-            </View>
-          ) : null}
+      ) : deckHasBannedCards(deck) ? (
+        <View className="self-start">
+          <DeckLegalityBadge isLegal={false} />
         </View>
-      )}
+      ) : null}
     </ScrollView>
   );
 }

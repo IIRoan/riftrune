@@ -1,5 +1,5 @@
 import type { CardDetail, CardListItem, DeckFormat } from '@riftbound/contracts';
-import { isUnresolvedDeckVariant } from '@riftbound/contracts';
+import { cardHasAnyType, cardTypeTokens, isUnresolvedDeckVariant } from '@riftbound/contracts';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { findVariantByNumber } from '@/utils/variants';
 import type {
@@ -11,6 +11,8 @@ import type {
   SerializedDeckEntry,
 } from '@/lib/deck-types';
 import { canAddBattlefield } from '@/lib/deck-limits';
+
+export { cardTypeTokens };
 
 const PILTOVER_CDN_HOST = 'cdn.piltoverarchive.com';
 
@@ -99,17 +101,8 @@ export function resolveDeckCardImageUrl(
 }
 
 /** Whitespace-delimited type tokens — dual types like "Unit Gear" are two tokens. */
-export function cardTypeTokens(type: string): string[] {
-  return type
-    .toLowerCase()
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter(Boolean);
-}
-
 export function cardHasType(card: Pick<DeckCard, 'type'>, ...wanted: string[]): boolean {
-  const tokens = new Set(cardTypeTokens(card.type));
-  return wanted.some((value) => tokens.has(value.toLowerCase()));
+  return cardHasAnyType(card.type, wanted);
 }
 
 export function sectionForCardType(card: Pick<DeckCard, 'type' | 'super'>): DeckSectionKey {

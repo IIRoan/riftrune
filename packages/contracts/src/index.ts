@@ -1,4 +1,5 @@
 export * from './card-legality.js';
+export * from './card-types.js';
 export * from './cards.js';
 export * from './prices.js';
 export * from './price-stats.js';
