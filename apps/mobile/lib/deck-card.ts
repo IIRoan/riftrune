@@ -98,24 +98,35 @@ export function resolveDeckCardImageUrl(
   return card.imageUrl ? resolveDeckFallbackImageUrl(card.imageUrl) : '';
 }
 
+/** Whitespace-delimited type tokens — dual types like "Unit Gear" are two tokens. */
+export function cardTypeTokens(type: string): string[] {
+  return type
+    .toLowerCase()
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+export function cardHasType(card: Pick<DeckCard, 'type'>, ...wanted: string[]): boolean {
+  const tokens = new Set(cardTypeTokens(card.type));
+  return wanted.some((value) => tokens.has(value.toLowerCase()));
+}
+
 export function sectionForCardType(card: Pick<DeckCard, 'type' | 'super'>): DeckSectionKey {
-  const type = card.type.toLowerCase();
   const supertype = (card.super ?? '').toLowerCase();
-  if (type === 'legend') return 'legend';
-  if (type === 'battlefield') return 'battlefields';
-  if (type === 'rune') return 'runes';
+  if (cardHasType(card, 'legend')) return 'legend';
+  if (cardHasType(card, 'battlefield')) return 'battlefields';
+  if (cardHasType(card, 'rune')) return 'runes';
   if (supertype === 'champion') return 'champion';
   return 'mainDeck';
 }
 
 export function isLegendCard(card: Pick<DeckCard, 'type'>): boolean {
-  return card.type.toLowerCase() === 'legend';
+  return cardHasType(card, 'legend');
 }
 
 export function isChampionUnit(card: Pick<DeckCard, 'type' | 'super'>): boolean {
-  return (
-    card.type.toLowerCase() === 'unit' && (card.super ?? '').toLowerCase() === 'champion'
-  );
+  return cardHasType(card, 'unit') && (card.super ?? '').toLowerCase() === 'champion';
 }
 
 export function cardMatchesSectionType(

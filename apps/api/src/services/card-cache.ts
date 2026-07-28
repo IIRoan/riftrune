@@ -18,6 +18,7 @@ import {
   buildCardColorsContainsAllCondition,
   buildCardColorsWithinCondition,
 } from '../lib/card-colors-filter.js';
+import { buildCardTypesCondition } from '../lib/card-types-filter.js';
 import { TtlCache } from '../lib/ttl-cache.js';
 import {
   buildUpstreamListParams,
@@ -775,18 +776,8 @@ export class CardCacheService {
       }
     }
     if (query.types) {
-      const typeFilters = query.types
-        .split(',')
-        .map((value) => value.trim().toLowerCase())
-        .filter(Boolean);
-      if (typeFilters.length > 0) {
-        conditions.push(
-          sql`lower(${cards.type}) in (${sql.join(
-            typeFilters.map((value) => sql`${value}`),
-            sql`, `
-          )})`
-        );
-      }
+      const typeCond = buildCardTypesCondition(query.types.split(','));
+      if (typeCond) conditions.push(typeCond);
     }
     if (query.super) {
       const superFilters = query.super
