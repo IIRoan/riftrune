@@ -248,7 +248,7 @@ export function DeckBuilderCanvas({
       readOnly={readOnly}
       imageByVariant={images}
       collectionByName={collectionByName}
-      openSource="deck-view"
+      openSource={readOnly ? 'deck-view' : undefined}
       onMinus={(section, name) =>
         onPersist((prev) => changeDeckCardQty(prev, section, name, -1), { immediate: true })
       }
