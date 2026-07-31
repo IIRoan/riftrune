@@ -20,8 +20,8 @@ const fetchMock = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
   return new Response(
     JSON.stringify({
       data: [
-        { variantNumber: 'OGN-001', quantity: 2 },
-        { variantNumber: 'OGN-999', quantity: 0 },
+        { variantNumber: 'OGN-001', isFoil: false, quantity: 2 },
+        { variantNumber: 'OGN-999', isFoil: false, quantity: 0 },
       ],
     }),
     {
@@ -52,8 +52,8 @@ describe('fetchRemoteCollectionQuantities', () => {
       JSON.stringify({ variantNumbers: ['OGN-001', 'OGN-999'] })
     );
     expect(rows).toEqual([
-      { variantNumber: 'OGN-001', quantity: 2 },
-      { variantNumber: 'OGN-999', quantity: 0 },
+      { variantNumber: 'OGN-001', isFoil: false, quantity: 2 },
+      { variantNumber: 'OGN-999', isFoil: false, quantity: 0 },
     ]);
   });
 

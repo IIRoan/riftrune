@@ -45,6 +45,7 @@ export type CollectionImportItem = {
   quantity: number;
   condition: CardCondition;
   language: string;
+  isFoil?: boolean;
   notes?: string | null;
   isGraded?: boolean;
   gradeCompany?: string | null;
@@ -116,6 +117,17 @@ export function parseLanguageLabel(raw: string): string {
   return trimmed.toLowerCase();
 }
 
+export function parseFoilLabel(raw: string): boolean {
+  const normalized = raw.trim().toLowerCase();
+  if (['true', 'yes', '1', 'foil'].includes(normalized)) return true;
+  if (
+    ['', 'false', 'no', '0', 'non-foil', 'nonfoil', 'standard'].includes(normalized)
+  ) {
+    return false;
+  }
+  throw new Error(`Invalid foil value: ${raw}`);
+}
+
 export function exportRowToCsvRow(row: CollectionExportRow): CollectionCsvRow {
   return {
     'Variant Number': row.variantNumber,
@@ -167,6 +179,17 @@ export function csvRowToImportItem(
   }
 
   const language = parseLanguageLabel(row.Language);
+  let isFoil: boolean;
+  try {
+    isFoil = parseFoilLabel(row.Foil);
+  } catch (err) {
+    return {
+      error: {
+        row: rowNumber,
+        message: err instanceof Error ? err.message : 'Invalid foil value',
+      },
+    };
+  }
   const gradeCompany = row['Grading Company'].trim() || null;
   const gradeScore = row['Grading Value'].trim() || null;
   const notes = row.Notes.trim() || null;
@@ -177,6 +200,7 @@ export function csvRowToImportItem(
       quantity,
       condition,
       language,
+      isFoil,
       notes,
       isGraded: Boolean(gradeCompany || gradeScore),
       gradeCompany,
@@ -185,11 +209,14 @@ export function csvRowToImportItem(
   };
 }
 
-export function aggregateImportItems(items: CollectionImportItem[]): CollectionImportItem[] {
+export function aggregateImportItems(
+  items: CollectionImportItem[]
+): CollectionImportItem[] {
   const merged = new Map<string, CollectionImportItem>();
 
   for (const item of items) {
-    const key = `${item.variantNumber}|${item.condition}|${item.language}`;
+    const finish = item.isFoil === undefined ? 'auto' : item.isFoil ? 'foil' : 'std';
+    const key = `${item.variantNumber}|${item.condition}|${item.language}|${finish}`;
     const existing = merged.get(key);
     if (!existing) {
       merged.set(key, { ...item });
@@ -197,7 +224,8 @@ export function aggregateImportItems(items: CollectionImportItem[]): CollectionI
     }
     existing.quantity += item.quantity;
     if (!existing.notes && item.notes) existing.notes = item.notes;
-    if (!existing.gradeCompany && item.gradeCompany) existing.gradeCompany = item.gradeCompany;
+    if (!existing.gradeCompany && item.gradeCompany)
+      existing.gradeCompany = item.gradeCompany;
     if (!existing.gradeScore && item.gradeScore) existing.gradeScore = item.gradeScore;
     existing.isGraded = Boolean(existing.gradeCompany || existing.gradeScore);
   }
@@ -317,7 +345,9 @@ export function parseCollectionCsv(content: string): {
   if (missingHeaders.length > 0) {
     return {
       rows: [],
-      errors: [{ row: 1, message: `Missing CSV headers: ${missingHeaders.join(', ')}` }],
+      errors: [
+        { row: 1, message: `Missing CSV headers: ${missingHeaders.join(', ')}` },
+      ],
     };
   }
 

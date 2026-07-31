@@ -23,16 +23,20 @@ export function useCollectionRemove() {
       await hapticPress();
 
       if (collected.length === 1) {
-        const only = collected[0];
+        const only = collected[0]!;
         if (only.quantity > 1) {
           await setQuantity.mutateAsync({
             variantNumber: only.variantNumber,
             quantity: only.quantity - 1,
+            isFoil: only.isFoil,
           });
           return;
         }
         confirmRemoveFromCollection(cardName, () => {
-          void removeCard.mutateAsync(only.variantNumber);
+          void removeCard.mutateAsync({
+            variantNumber: only.variantNumber,
+            isFoil: only.isFoil,
+          });
         });
         return;
       }
@@ -43,22 +47,29 @@ export function useCollectionRemove() {
   );
 
   const onSheetRemovePrinting = useCallback(
-    (variantNumber: string) => {
+    (selection: { variantNumber: string; isFoil: boolean }) => {
       if (!sheet) return;
-      const item = sheet.items.find((i) => i.variantNumber === variantNumber);
+      const item = sheet.items.find(
+        (row) =>
+          row.variantNumber === selection.variantNumber && row.isFoil === selection.isFoil
+      );
       if (!item) return;
       closeSheet();
 
       if (item.quantity > 1) {
         void setQuantity.mutateAsync({
-          variantNumber,
+          variantNumber: selection.variantNumber,
           quantity: item.quantity - 1,
+          isFoil: selection.isFoil,
         });
         return;
       }
 
       confirmRemoveFromCollection(sheet.cardName, () => {
-        void removeCard.mutateAsync(variantNumber);
+        void removeCard.mutateAsync({
+          variantNumber: selection.variantNumber,
+          isFoil: selection.isFoil,
+        });
       });
     },
     [sheet, closeSheet, setQuantity, removeCard]
@@ -69,7 +80,8 @@ export function useCollectionRemove() {
     const { cardName, items } = sheet;
     closeSheet();
     confirmRemoveFromCollection(`all printings of ${cardName}`, () => {
-      void removeMany.mutateAsync(items.map((i) => i.variantNumber));
+      // removeMany deletes every finish stack for each variant number.
+      void removeMany.mutateAsync([...new Set(items.map((i) => i.variantNumber))]);
     });
   }, [sheet, closeSheet, removeMany]);
 

@@ -3,17 +3,20 @@ import {
   chunkArray,
   COLLECTION_IMPORT_BATCH_SIZE,
   exportRowsToCsv,
+  isVariantFoil,
   parseCollectionCsvToImportItems,
   type CollectionExportRow,
   type CollectionImportItem,
 } from '@riftbound/contracts';
-import type { CollectionItem as CollectionItemDto, CardCondition } from '@riftbound/contracts';
+import type {
+  CollectionItem as CollectionItemDto,
+  CardCondition,
+} from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { cards, collectionItems, sets, variants } from '../db/schema.js';
 import { logActionFailure } from '../lib/logger.js';
 
 import type { CardCacheService } from './card-cache.js';
-import { isFoilVariant } from './card-mapper.js';
 import type { ImageStoreService } from './image-store.js';
 import { VariantResolver } from './variant-resolver.js';
 
@@ -29,8 +32,7 @@ export function isCollectionVariantFoil(
   variantLabel: string,
   variantType?: string
 ): boolean {
-  if (isFoilVariant(variantNumber, variantLabel, variantType)) return true;
-  return foilMode.toLowerCase() === 'foil_only';
+  return isVariantFoil(foilMode, variantNumber, variantLabel, variantType);
 }
 
 function toIso(value: Date | null): string | null {
@@ -41,9 +43,20 @@ function toIso(value: Date | null): string | null {
  * Next stack quantity after an add/remove delta.
  * Callers treat values <= 0 as "delete this stack".
  */
-export function nextStackQuantity(existingQuantity: number | undefined, delta: number): number {
+export function nextStackQuantity(
+  existingQuantity: number | undefined,
+  delta: number
+): number {
   return (existingQuantity ?? 0) + delta;
 }
+
+const STACK_CONFLICT_TARGET = [
+  collectionItems.collectionId,
+  collectionItems.variantNumber,
+  collectionItems.condition,
+  collectionItems.language,
+  collectionItems.isFoil,
+] as const;
 
 export class CollectionService {
   private readonly variantResolver: VariantResolver;
@@ -69,6 +82,7 @@ export class CollectionService {
         quantity: collectionItems.quantity,
         condition: collectionItems.condition,
         language: collectionItems.language,
+        isFoil: collectionItems.isFoil,
         notes: collectionItems.notes,
         isGraded: collectionItems.isGraded,
         gradeCompany: collectionItems.gradeCompany,
@@ -81,8 +95,6 @@ export class CollectionService {
         imageUrl: variants.imageUrl,
         rarity: variants.rarity,
         variantLabel: variants.variantLabel,
-        variantType: variants.variantType,
-        foilMode: variants.foilMode,
         type: cards.type,
         setCode: sets.code,
       })
@@ -99,12 +111,7 @@ export class CollectionService {
       quantity: row.quantity,
       condition: row.condition as CardCondition,
       language: row.language,
-      isFoil: isCollectionVariantFoil(
-        row.foilMode,
-        row.variantNumber,
-        row.variantLabel,
-        row.variantType
-      ),
+      isFoil: row.isFoil,
       notes: row.notes,
       isGraded: row.isGraded,
       gradeCompany: row.gradeCompany,
@@ -128,13 +135,14 @@ export class CollectionService {
   async quantitiesForVariants(
     collectionId: string,
     variantNumbers: string[]
-  ): Promise<Array<{ variantNumber: string; quantity: number }>> {
+  ): Promise<Array<{ variantNumber: string; isFoil: boolean; quantity: number }>> {
     const unique = [...new Set(variantNumbers)];
     if (unique.length === 0) return [];
 
     const rows = await this.db
       .select({
         variantNumber: collectionItems.variantNumber,
+        isFoil: collectionItems.isFoil,
         quantity: collectionItems.quantity,
       })
       .from(collectionItems)
@@ -145,11 +153,37 @@ export class CollectionService {
         )
       );
 
-    const byVariant = new Map(rows.map((row) => [row.variantNumber, row.quantity]));
-    return unique.map((variantNumber) => ({
-      variantNumber,
-      quantity: byVariant.get(variantNumber) ?? 0,
-    }));
+    const byFinish = new Map<
+      string,
+      { variantNumber: string; isFoil: boolean; quantity: number }
+    >();
+    for (const row of rows) {
+      const isFoil = Boolean(row.isFoil);
+      const key = `${row.variantNumber}\0${isFoil ? '1' : '0'}`;
+      const existing = byFinish.get(key);
+      if (existing) {
+        existing.quantity += row.quantity;
+      } else {
+        byFinish.set(key, {
+          variantNumber: row.variantNumber,
+          isFoil,
+          quantity: row.quantity,
+        });
+      }
+    }
+
+    const result: Array<{ variantNumber: string; isFoil: boolean; quantity: number }> =
+      [];
+    for (const variantNumber of unique) {
+      const std = byFinish.get(`${variantNumber}\0${'0'}`);
+      const foil = byFinish.get(`${variantNumber}\0${'1'}`);
+      if (std) result.push(std);
+      if (foil) result.push(foil);
+      if (!std && !foil) {
+        result.push({ variantNumber, isFoil: false, quantity: 0 });
+      }
+    }
+    return result;
   }
 
   async upsert(
@@ -159,6 +193,7 @@ export class CollectionService {
       quantity: number;
       condition: CardCondition;
       language: string;
+      isFoil?: boolean;
       notes?: string | null;
       isGraded?: boolean;
       gradeCompany?: string | null;
@@ -167,36 +202,19 @@ export class CollectionService {
       acquiredPriceCents?: number | null;
     }
   ): Promise<CollectionItemDto | null> {
+    const isFoil = await this.resolveStackIsFoil(input.variantNumber, input.isFoil);
+
     if (input.quantity <= 0) {
-      await this.remove(collectionId, input.variantNumber, input.condition, input.language);
+      await this.remove(
+        collectionId,
+        input.variantNumber,
+        input.condition,
+        input.language,
+        isFoil
+      );
       return null;
     }
 
-    const [variant] = await this.db
-      .select({
-        variantNumber: variants.variantNumber,
-        foilMode: variants.foilMode,
-        variantLabel: variants.variantLabel,
-        variantType: variants.variantType,
-      })
-      .from(variants)
-      .where(eq(variants.variantNumber, input.variantNumber))
-      .limit(1);
-
-    if (!variant) {
-      logActionFailure('collection.upsert.variant_not_found', new Error('Variant not found'), {
-        variantNumber: input.variantNumber,
-        collectionId,
-      });
-      throw new Error(`Variant ${input.variantNumber} not found`);
-    }
-
-    const isFoil = isCollectionVariantFoil(
-      variant.foilMode,
-      variant.variantNumber,
-      variant.variantLabel,
-      variant.variantType
-    );
     const acquiredAt = input.acquiredAt ? new Date(input.acquiredAt) : null;
 
     await this.db
@@ -216,12 +234,7 @@ export class CollectionService {
         acquiredPriceCents: input.acquiredPriceCents ?? null,
       })
       .onConflictDoUpdate({
-        target: [
-          collectionItems.collectionId,
-          collectionItems.variantNumber,
-          collectionItems.condition,
-          collectionItems.language,
-        ],
+        target: [...STACK_CONFLICT_TARGET],
         set: {
           quantity: input.quantity,
           isFoil,
@@ -235,14 +248,12 @@ export class CollectionService {
         },
       });
 
-    const list = await this.listForCollection(collectionId);
-    return (
-      list.items.find(
-        (item) =>
-          item.variantNumber === input.variantNumber &&
-          item.condition === input.condition &&
-          item.language === input.language
-      ) ?? null
+    return this.findStack(
+      collectionId,
+      input.variantNumber,
+      input.condition,
+      input.language,
+      isFoil
     );
   }
 
@@ -250,13 +261,14 @@ export class CollectionService {
     collectionId: string,
     variantNumber: string,
     delta: number,
-    options?: { condition?: CardCondition; language?: string }
+    options?: { condition?: CardCondition; language?: string; isFoil?: boolean }
   ): Promise<CollectionItemDto | null> {
     const condition = options?.condition ?? 'near_mint';
     const language = options?.language ?? 'en';
+    const isFoil = await this.resolveStackIsFoil(variantNumber, options?.isFoil);
 
     if (delta === 0) {
-      return this.findStack(collectionId, variantNumber, condition, language);
+      return this.findStack(collectionId, variantNumber, condition, language, isFoil);
     }
 
     if (delta < 0) {
@@ -271,18 +283,46 @@ export class CollectionService {
             eq(collectionItems.collectionId, collectionId),
             eq(collectionItems.variantNumber, variantNumber),
             eq(collectionItems.condition, condition),
-            eq(collectionItems.language, language)
+            eq(collectionItems.language, language),
+            eq(collectionItems.isFoil, isFoil)
           )
         )
         .returning({ quantity: collectionItems.quantity });
 
       if (!updated) return null;
       if (updated.quantity <= 0) {
-        await this.remove(collectionId, variantNumber, condition, language);
+        await this.remove(collectionId, variantNumber, condition, language, isFoil);
         return null;
       }
-      return this.findStack(collectionId, variantNumber, condition, language);
+      return this.findStack(collectionId, variantNumber, condition, language, isFoil);
     }
+
+    await this.db
+      .insert(collectionItems)
+      .values({
+        collectionId,
+        variantNumber,
+        quantity: delta,
+        condition,
+        language,
+        isFoil,
+      })
+      .onConflictDoUpdate({
+        target: [...STACK_CONFLICT_TARGET],
+        set: {
+          quantity: sql`${collectionItems.quantity} + ${delta}`,
+          updatedAt: new Date(),
+        },
+      });
+
+    return this.findStack(collectionId, variantNumber, condition, language, isFoil);
+  }
+
+  private async resolveStackIsFoil(
+    variantNumber: string,
+    requested?: boolean
+  ): Promise<boolean> {
+    if (requested !== undefined) return requested;
 
     const [variant] = await this.db
       .select({
@@ -296,52 +336,30 @@ export class CollectionService {
       .limit(1);
 
     if (!variant) {
-      logActionFailure('collection.adjust.variant_not_found', new Error('Variant not found'), {
-        variantNumber,
-        collectionId,
-      });
+      logActionFailure(
+        'collection.resolve_finish.variant_not_found',
+        new Error('Variant not found'),
+        {
+          variantNumber,
+        }
+      );
       throw new Error(`Variant ${variantNumber} not found`);
     }
 
-    const isFoil = isCollectionVariantFoil(
+    return isCollectionVariantFoil(
       variant.foilMode,
       variant.variantNumber,
       variant.variantLabel,
       variant.variantType
     );
-
-    await this.db
-      .insert(collectionItems)
-      .values({
-        collectionId,
-        variantNumber,
-        quantity: delta,
-        condition,
-        language,
-        isFoil,
-      })
-      .onConflictDoUpdate({
-        target: [
-          collectionItems.collectionId,
-          collectionItems.variantNumber,
-          collectionItems.condition,
-          collectionItems.language,
-        ],
-        set: {
-          quantity: sql`${collectionItems.quantity} + ${delta}`,
-          isFoil,
-          updatedAt: new Date(),
-        },
-      });
-
-    return this.findStack(collectionId, variantNumber, condition, language);
   }
 
   private async findStack(
     collectionId: string,
     variantNumber: string,
     condition: CardCondition,
-    language: string
+    language: string,
+    isFoil: boolean
   ): Promise<CollectionItemDto | null> {
     const list = await this.listForCollection(collectionId);
     return (
@@ -349,7 +367,8 @@ export class CollectionService {
         (item) =>
           item.variantNumber === variantNumber &&
           item.condition === condition &&
-          item.language === language
+          item.language === language &&
+          item.isFoil === isFoil
       ) ?? null
     );
   }
@@ -358,8 +377,11 @@ export class CollectionService {
     collectionId: string,
     variantNumber: string,
     condition = 'near_mint',
-    language = 'en'
+    language = 'en',
+    isFoil?: boolean
   ): Promise<void> {
+    const finish =
+      isFoil === undefined ? await this.resolveStackIsFoil(variantNumber) : isFoil;
     await this.db
       .delete(collectionItems)
       .where(
@@ -367,7 +389,8 @@ export class CollectionService {
           eq(collectionItems.collectionId, collectionId),
           eq(collectionItems.variantNumber, variantNumber),
           eq(collectionItems.condition, condition),
-          eq(collectionItems.language, language)
+          eq(collectionItems.language, language),
+          eq(collectionItems.isFoil, finish)
         )
       );
   }
@@ -391,6 +414,7 @@ export class CollectionService {
       quantity: number;
       condition: CardCondition;
       language: string;
+      isFoil?: boolean | undefined;
       notes?: string | null | undefined;
       isGraded?: boolean | undefined;
       gradeCompany?: string | null | undefined;
@@ -406,6 +430,7 @@ export class CollectionService {
         quantity: item.quantity,
         condition: item.condition,
         language: item.language,
+        ...(item.isFoil === undefined ? {} : { isFoil: item.isFoil }),
         notes: item.notes ?? null,
         isGraded: item.isGraded ?? false,
         gradeCompany: item.gradeCompany ?? null,
@@ -425,6 +450,7 @@ export class CollectionService {
         quantity: collectionItems.quantity,
         condition: collectionItems.condition,
         language: collectionItems.language,
+        isFoil: collectionItems.isFoil,
         notes: collectionItems.notes,
         gradeCompany: collectionItems.gradeCompany,
         gradeScore: collectionItems.gradeScore,
@@ -432,7 +458,6 @@ export class CollectionService {
         rarity: variants.rarity,
         variantType: variants.variantType,
         variantLabel: variants.variantLabel,
-        foilMode: variants.foilMode,
         setName: sets.name,
         setPrefix: sets.code,
       })
@@ -455,12 +480,7 @@ export class CollectionService {
       rarity: row.rarity,
       variantType: row.variantType,
       variantLabel: row.variantLabel,
-      isFoil: isCollectionVariantFoil(
-        row.foilMode,
-        row.variantNumber,
-        row.variantLabel,
-        row.variantType
-      ),
+      isFoil: row.isFoil,
       quantity: row.quantity,
       language: row.language,
       condition: row.condition as CardCondition,
@@ -543,7 +563,9 @@ export class CollectionService {
       .select({ variantNumber: variants.variantNumber })
       .from(variants)
       .where(inArray(variants.variantNumber, [...new Set(variantNumbers)]));
-    const knownBefore = new Set(lookupBefore.map((row) => row.variantNumber.toLowerCase()));
+    const knownBefore = new Set(
+      lookupBefore.map((row) => row.variantNumber.toLowerCase())
+    );
 
     const lookup = await this.variantResolver.loadLookupMap(variantNumbers);
     const resolvedFromUpstream = [...new Set(variantNumbers)].filter(
@@ -555,7 +577,10 @@ export class CollectionService {
     let failedRows = 0;
 
     for (const item of items) {
-      const resolved = this.variantResolver.resolveVariantNumber(lookup, item.variantNumber);
+      const resolved = this.variantResolver.resolveVariantNumber(
+        lookup,
+        item.variantNumber
+      );
       if (!resolved) {
         failedRows += 1;
         errors.push({

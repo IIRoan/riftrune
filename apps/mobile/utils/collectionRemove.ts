@@ -1,10 +1,17 @@
 import type { CardListItem } from '@riftbound/contracts';
-import { formatPrintingLabel, getCardPrintings, getSearchGroupVariants, isFoilVariant } from '@/utils/variants';
+import {
+  expandVariantFinishPrintings,
+  formatPrintingLabel,
+  getCardPrintings,
+  getSearchGroupVariants,
+  ownedQuantityForPrinting,
+} from '@/utils/variants';
 
 export interface CollectedPrintingRow {
   variantNumber: string;
   label: string;
   quantity: number;
+  isFoil: boolean;
 }
 
 export function getCollectedPrintingsForListCard(
@@ -12,15 +19,13 @@ export function getCollectedPrintingsForListCard(
   byVariant: ReadonlyMap<string, { quantity: number }>
 ): CollectedPrintingRow[] {
   return getCardPrintings(card)
-    .filter((p) => (byVariant.get(p.variantNumber)?.quantity ?? 0) > 0)
-    .map((p) => {
-      const entry = byVariant.get(p.variantNumber)!;
-      return {
-        variantNumber: p.variantNumber,
-        label: formatPrintingLabel(p.variantLabel, p.isFoil, p.variantNumber),
-        quantity: entry.quantity,
-      };
-    });
+    .map((p) => ({
+      variantNumber: p.variantNumber,
+      label: formatPrintingLabel(p.variantLabel, p.isFoil, p.variantNumber),
+      quantity: ownedQuantityForPrinting(byVariant, p),
+      isFoil: p.isFoil,
+    }))
+    .filter((row) => row.quantity > 0);
 }
 
 export function getCollectedPrintingsForDetailCard(
@@ -29,6 +34,7 @@ export function getCollectedPrintingsForDetailCard(
       variantNumber: string;
       variantLabel: string;
       variantType: string;
+      foilMode?: string;
     }>;
   },
   byVariant: ReadonlyMap<string, { quantity: number }>,
@@ -36,21 +42,19 @@ export function getCollectedPrintingsForDetailCard(
     variantNumber: string;
     variantLabel: string;
     variantType: string;
+    foilMode?: string;
   }
 ): CollectedPrintingRow[] {
   const variants = anchor
     ? getSearchGroupVariants(card.variants, anchor)
     : card.variants;
 
-  return variants
-    .filter((v) => (byVariant.get(v.variantNumber)?.quantity ?? 0) > 0)
-    .map((v) => {
-      const entry = byVariant.get(v.variantNumber)!;
-      const foil = isFoilVariant(v.variantNumber, v.variantLabel, v.variantType);
-      return {
-        variantNumber: v.variantNumber,
-        label: formatPrintingLabel(v.variantLabel, foil, v.variantNumber),
-        quantity: entry.quantity,
-      };
-    });
+  return expandVariantFinishPrintings(variants)
+    .map((p) => ({
+      variantNumber: p.variantNumber,
+      label: formatPrintingLabel(p.variantLabel, p.isFoil, p.variantNumber),
+      quantity: ownedQuantityForPrinting(byVariant, p),
+      isFoil: p.isFoil,
+    }))
+    .filter((row) => row.quantity > 0);
 }

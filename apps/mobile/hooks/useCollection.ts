@@ -34,8 +34,10 @@ import {
   mergeOwnershipFromCollection,
   mergeOwnershipRecords,
   ownershipMapFromRecord,
+  ownershipRecordFromQuantityRows,
   type CollectionOwnershipMap,
 } from '@/utils/collectionOwnership';
+import { collectionFinishKey } from '@riftbound/contracts';
 
 const COLLECTION_STALE_MS = 5 * 60 * 1000;
 const OWNERSHIP_STALE_MS = 5 * 60 * 1000;
@@ -65,10 +67,17 @@ export function syncOwnershipFromCollection(
 function setOwnershipQuantity(
   queryClient: QueryClient,
   variantNumber: string,
-  quantity: number
+  quantity: number,
+  isFoil = false
 ) {
   const current = getOwnershipRecord(queryClient);
-  const merged = mergeOwnershipRecords(current, { [variantNumber]: quantity });
+  const finishKey = collectionFinishKey(variantNumber, isFoil);
+  const otherFinishKey = collectionFinishKey(variantNumber, !isFoil);
+  const otherQty = current[otherFinishKey] ?? 0;
+  const merged = mergeOwnershipRecords(current, {
+    [finishKey]: quantity,
+    [variantNumber]: quantity + otherQty,
+  });
   queryClient.setQueryData(collectionQueryKeys.ownershipRoot, merged);
   queryClient.setQueriesData<OwnershipRecord>(
     { queryKey: collectionQueryKeys.ownershipRoot },
@@ -148,12 +157,13 @@ export function useCollectionOwnership(variantNumbers: readonly string[]): {
       const cachedNow = getOwnershipRecord(queryClient);
       const mutating =
         queryClient.isMutating({ mutationKey: collectionMutationKey }) > 0;
+      const serverRecord = ownershipRecordFromQuantityRows(rows);
       const patch: OwnershipRecord = {};
-      for (const row of rows) {
-        if (cachedNow[row.variantNumber] !== undefined && (!isShared || mutating)) {
+      for (const [key, quantity] of Object.entries(serverRecord)) {
+        if (cachedNow[key] !== undefined && (!isShared || mutating)) {
           continue;
         }
-        patch[row.variantNumber] = row.quantity;
+        patch[key] = quantity;
       }
       const merged = mergeOwnershipRecords(cachedNow, patch);
       queryClient.setQueryData(collectionQueryKeys.ownershipRoot, merged);
@@ -286,30 +296,40 @@ function applyCollectionQuantity(
   queryClient: QueryClient,
   variantNumber: string,
   quantity: number,
-  seed?: CollectionEntrySeed
+  seed?: CollectionEntrySeed,
+  isFoil = false
 ) {
   const now = Date.now();
   const all =
     queryClient.getQueryData<CollectionEntry[]>(collectionQueryKeys.all) ?? [];
-  const index = all.findIndex((entry) => entry.variantNumber === variantNumber);
+  const index = all.findIndex(
+    (entry) => entry.variantNumber === variantNumber && entry.isFoil === isFoil
+  );
 
   if (quantity <= 0) {
     queryClient.setQueryData(
       collectionQueryKeys.all,
-      all.filter((entry) => entry.variantNumber !== variantNumber)
+      all.filter(
+        (entry) => !(entry.variantNumber === variantNumber && entry.isFoil === isFoil)
+      )
     );
     queryClient.setQueryData(collectionQueryKeys.entry(variantNumber), null);
-    setOwnershipQuantity(queryClient, variantNumber, 0);
+    setOwnershipQuantity(queryClient, variantNumber, 0, isFoil);
     return;
   }
 
   if (index >= 0) {
-    const updated: CollectionEntry = { ...all[index], quantity, updatedAt: now };
+    const updated: CollectionEntry = {
+      ...all[index],
+      quantity,
+      isFoil,
+      updatedAt: now,
+    };
     const nextAll = [...all];
     nextAll[index] = updated;
     queryClient.setQueryData(collectionQueryKeys.all, nextAll);
     queryClient.setQueryData(collectionQueryKeys.entry(variantNumber), updated);
-    setOwnershipQuantity(queryClient, variantNumber, quantity);
+    setOwnershipQuantity(queryClient, variantNumber, quantity, isFoil);
     return;
   }
 
@@ -318,21 +338,30 @@ function applyCollectionQuantity(
   const created: CollectionEntry = {
     ...seed,
     variantNumber,
+    isFoil,
     quantity,
     addedAt: now,
     updatedAt: now,
   };
   queryClient.setQueryData(collectionQueryKeys.all, [created, ...all]);
   queryClient.setQueryData(collectionQueryKeys.entry(variantNumber), created);
-  setOwnershipQuantity(queryClient, variantNumber, quantity);
+  setOwnershipQuantity(queryClient, variantNumber, quantity, isFoil);
 }
 
 function entrySeedFromListCard(
   card: CardListItem,
-  variantNumber: string
+  variantNumber: string,
+  isFoil?: boolean
 ): CollectionEntrySeed | null {
   const printings = getCardPrintings(card);
   const printing =
+    (isFoil === undefined
+      ? undefined
+      : printings.find(
+          (item) =>
+            variantNumbersMatch(item.variantNumber, variantNumber) &&
+            item.isFoil === isFoil
+        )) ??
     printings.find((item) => variantNumbersMatch(item.variantNumber, variantNumber)) ??
     printings[0];
   if (!printing) return null;
@@ -350,10 +379,19 @@ function entrySeedFromListCard(
 
 function entrySeedFromDetailCard(
   card: Parameters<typeof addDetailToCollection>[0],
-  variantNumber: string
+  variantNumber: string,
+  isFoil?: boolean
 ): CollectionEntrySeed | null {
   const variant = findVariantByNumber(card.variants, variantNumber);
   if (!variant) return null;
+  const foil =
+    isFoil ??
+    isFoilVariant(
+      variant.variantNumber,
+      variant.variantLabel,
+      variant.variantType,
+      'foilMode' in variant ? (variant.foilMode as string | undefined) : undefined
+    );
 
   return {
     name: card.name,
@@ -362,20 +400,23 @@ function entrySeedFromDetailCard(
     rarity: variant.rarity,
     type: card.type,
     variantLabel: variant.variantLabel,
-    isFoil: isFoilVariant(
-      variant.variantNumber,
-      variant.variantLabel,
-      variant.variantType
-    ),
+    isFoil: foil,
   };
 }
 
-function currentQuantity(queryClient: QueryClient, variantNumber: string): number {
+function currentQuantity(
+  queryClient: QueryClient,
+  variantNumber: string,
+  isFoil = false
+): number {
   const all =
     queryClient.getQueryData<CollectionEntry[]>(collectionQueryKeys.all) ?? [];
-  const fromAll = all.find((entry) => entry.variantNumber === variantNumber)?.quantity;
+  const fromAll = all.find(
+    (entry) => entry.variantNumber === variantNumber && entry.isFoil === isFoil
+  )?.quantity;
   if (fromAll !== undefined) return fromAll;
-  return getOwnershipRecord(queryClient)[variantNumber] ?? 0;
+  const finishKey = collectionFinishKey(variantNumber, isFoil);
+  return getOwnershipRecord(queryClient)[finishKey] ?? 0;
 }
 
 export function useCollectionMutations() {
@@ -383,14 +424,33 @@ export function useCollectionMutations() {
 
   const addCard = useMutation({
     mutationKey: collectionMutationKey,
-    mutationFn: (input: { card: CardListItem; variantNumber?: string }) =>
-      addToCollection(input.card, { variantNumber: input.variantNumber }),
+    mutationFn: (input: {
+      card: CardListItem;
+      variantNumber?: string;
+      isFoil?: boolean;
+    }) =>
+      addToCollection(input.card, {
+        variantNumber: input.variantNumber,
+        isFoil: input.isFoil,
+      }),
     onMutate: (vars) => {
       const variantNumber = vars.variantNumber ?? vars.card.variantNumber;
+      const printings = getCardPrintings(vars.card);
+      const printing =
+        (vars.isFoil === undefined
+          ? undefined
+          : printings.find(
+              (p) =>
+                variantNumbersMatch(p.variantNumber, variantNumber) &&
+                p.isFoil === vars.isFoil
+            )) ??
+        printings.find((p) => variantNumbersMatch(p.variantNumber, variantNumber)) ??
+        printings[0];
+      const isFoil = vars.isFoil ?? printing?.isFoil ?? false;
       const context = beginCollectionMutation(queryClient, variantNumber);
-      const nextQuantity = currentQuantity(queryClient, variantNumber) + 1;
-      const seed = entrySeedFromListCard(vars.card, variantNumber) ?? undefined;
-      applyCollectionQuantity(queryClient, variantNumber, nextQuantity, seed);
+      const nextQuantity = currentQuantity(queryClient, variantNumber, isFoil) + 1;
+      const seed = entrySeedFromListCard(vars.card, variantNumber, isFoil) ?? undefined;
+      applyCollectionQuantity(queryClient, variantNumber, nextQuantity, seed, isFoil);
       return context;
     },
     onError: (error, vars, context) => {
@@ -412,12 +472,34 @@ export function useCollectionMutations() {
     mutationFn: (input: {
       card: Parameters<typeof addDetailToCollection>[0];
       variantNumber: string;
-    }) => addDetailToCollection(input.card, input.variantNumber),
+      isFoil?: boolean;
+    }) => addDetailToCollection(input.card, input.variantNumber, 1, input.isFoil),
     onMutate: (vars) => {
+      const derivedIsFoil =
+        vars.isFoil ??
+        (() => {
+          const variant = findVariantByNumber(vars.card.variants, vars.variantNumber);
+          if (!variant) return false;
+          return isFoilVariant(
+            variant.variantNumber,
+            variant.variantLabel,
+            variant.variantType,
+            'foilMode' in variant ? (variant.foilMode as string | undefined) : undefined
+          );
+        })();
       const context = beginCollectionMutation(queryClient, vars.variantNumber);
-      const nextQuantity = currentQuantity(queryClient, vars.variantNumber) + 1;
-      const seed = entrySeedFromDetailCard(vars.card, vars.variantNumber) ?? undefined;
-      applyCollectionQuantity(queryClient, vars.variantNumber, nextQuantity, seed);
+      const nextQuantity =
+        currentQuantity(queryClient, vars.variantNumber, derivedIsFoil) + 1;
+      const seed =
+        entrySeedFromDetailCard(vars.card, vars.variantNumber, derivedIsFoil) ??
+        undefined;
+      applyCollectionQuantity(
+        queryClient,
+        vars.variantNumber,
+        nextQuantity,
+        seed,
+        derivedIsFoil
+      );
       return context;
     },
     onError: (error, vars, context) => {
@@ -437,13 +519,21 @@ export function useCollectionMutations() {
     mutationFn: ({
       variantNumber,
       quantity,
+      isFoil,
     }: {
       variantNumber: string;
       quantity: number;
-    }) => updateCollectionQuantity(variantNumber, quantity),
+      isFoil?: boolean;
+    }) => updateCollectionQuantity(variantNumber, quantity, isFoil),
     onMutate: (vars) => {
       const context = beginCollectionMutation(queryClient, vars.variantNumber);
-      applyCollectionQuantity(queryClient, vars.variantNumber, vars.quantity);
+      applyCollectionQuantity(
+        queryClient,
+        vars.variantNumber,
+        vars.quantity,
+        undefined,
+        vars.isFoil ?? false
+      );
       return context;
     },
     onError: (error, vars, context) => {
@@ -460,13 +550,27 @@ export function useCollectionMutations() {
 
   const adjustQuantity = useMutation({
     mutationKey: collectionMutationKey,
-    mutationFn: ({ variantNumber, delta }: { variantNumber: string; delta: number }) =>
-      adjustCollectionQuantity(variantNumber, delta),
+    mutationFn: ({
+      variantNumber,
+      delta,
+      isFoil,
+    }: {
+      variantNumber: string;
+      delta: number;
+      isFoil?: boolean;
+    }) => adjustCollectionQuantity(variantNumber, delta, isFoil),
     onMutate: (vars) => {
+      const isFoil = vars.isFoil ?? false;
       const context = beginCollectionMutation(queryClient, vars.variantNumber);
       const nextQuantity =
-        currentQuantity(queryClient, vars.variantNumber) + vars.delta;
-      applyCollectionQuantity(queryClient, vars.variantNumber, nextQuantity);
+        currentQuantity(queryClient, vars.variantNumber, isFoil) + vars.delta;
+      applyCollectionQuantity(
+        queryClient,
+        vars.variantNumber,
+        nextQuantity,
+        undefined,
+        isFoil
+      );
       return context;
     },
     onError: (error, vars, context) => {
@@ -483,17 +587,25 @@ export function useCollectionMutations() {
 
   const removeCard = useMutation({
     mutationKey: collectionMutationKey,
-    mutationFn: (variantNumber: string) => removeFromCollection(variantNumber),
-    onMutate: (variantNumber) => {
+    mutationFn: (input: string | { variantNumber: string; isFoil?: boolean }) => {
+      const variantNumber = typeof input === 'string' ? input : input.variantNumber;
+      const isFoil = typeof input === 'string' ? undefined : input.isFoil;
+      return removeFromCollection(variantNumber, isFoil);
+    },
+    onMutate: (input) => {
+      const variantNumber = typeof input === 'string' ? input : input.variantNumber;
+      const isFoil = typeof input === 'string' ? false : (input.isFoil ?? false);
       const context = beginCollectionMutation(queryClient, variantNumber);
-      applyCollectionQuantity(queryClient, variantNumber, 0);
+      applyCollectionQuantity(queryClient, variantNumber, 0, undefined, isFoil);
       return context;
     },
-    onError: (error, variantNumber, context) => {
+    onError: (error, input, context) => {
+      const variantNumber = typeof input === 'string' ? input : input.variantNumber;
       rollbackCollectionCache(queryClient, variantNumber, context);
       logMutationFailure('collection.remove', error, { variantNumber });
     },
-    onSettled: (_data, error, variantNumber) => {
+    onSettled: (_data, error, input) => {
+      const variantNumber = typeof input === 'string' ? input : input.variantNumber;
       reconcileCollectionEntries(queryClient, [variantNumber], error);
     },
   });
@@ -521,7 +633,9 @@ export function useCollectionMutations() {
       );
       for (const variantNumber of variantNumbers) {
         queryClient.setQueryData(collectionQueryKeys.entry(variantNumber), null);
-        setOwnershipQuantity(queryClient, variantNumber, 0);
+        // Clear both finish keys — removeMany deletes every stack for the VN.
+        setOwnershipQuantity(queryClient, variantNumber, 0, false);
+        setOwnershipQuantity(queryClient, variantNumber, 0, true);
       }
 
       void queryClient.cancelQueries({

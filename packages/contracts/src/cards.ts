@@ -33,6 +33,8 @@ export const CardListPrinting = z.object({
   variantNumber: VariantNumber,
   variantLabel: z.string(),
   isFoil: z.boolean(),
+  /** Upstream finish availability when known (`both` | `foil_only` | `nonfoil_only`). */
+  foilMode: z.string().optional(),
   priceEur: PriceSummary.nullable(),
 });
 
@@ -62,6 +64,8 @@ export const VariantDetail = z.object({
   rarity: z.string(),
   variantType: z.string(),
   variantLabel: z.string(),
+  /** Upstream finish availability (`both` | `foil_only` | `nonfoil_only`). */
+  foilMode: z.string(),
   imageUrl: z.string().url(),
   cardmarketId: z.number().int().nullable(),
   tcgplayerId: z.number().int().nullable(),

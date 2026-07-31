@@ -1,7 +1,11 @@
 import type { CardDetail, CardListItem } from '@riftbound/contracts';
 import { getCardPrintings } from '@/utils/variants';
 
-function placeholderVariantId(cardId: string, variantNumber: string, index: number): string {
+function placeholderVariantId(
+  cardId: string,
+  variantNumber: string,
+  index: number
+): string {
   if (index === 0) return cardId;
   const slug = variantNumber
     .replace(/[^a-zA-Z0-9]/g, '')
@@ -39,6 +43,7 @@ export function cardListItemToDetail(listItem: CardListItem): CardDetail {
       rarity: listItem.rarity,
       variantType: printing.isFoil ? 'Foil' : 'Standard',
       variantLabel: printing.variantLabel,
+      foilMode: printing.foilMode ?? (printing.isFoil ? 'foil_only' : 'nonfoil_only'),
       imageUrl: listItem.imageUrl,
       cardmarketId: listItem.cardmarketId,
       tcgplayerId: null,

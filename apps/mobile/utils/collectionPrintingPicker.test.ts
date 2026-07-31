@@ -6,9 +6,12 @@ import {
   getOwnedPrintingsForPicker,
   getRemovePrintingPickerOptions,
   resolvePrintingPickerState,
+  resolvePrintingSelection,
   resolveQuickAddPrintings,
   resolveQuickAddVariantNumber,
+  resolveQuickRemoveSelection,
   resolveQuickRemoveVariantNumber,
+  resolveUnambiguousQuantitySelection,
   shouldShowPrintingPicker,
   shouldShowRemovePrintingPicker,
 } from '@/utils/collectionPrintingPicker';
@@ -94,13 +97,13 @@ describe('buildPrintingPickerOptions', () => {
   test('labels std and foil finishes for the add dropdown', () => {
     expect(buildPrintingPickerOptions(stdFoilPrintings)).toEqual([
       {
-        id: 'OGN-253',
+        id: 'OGN-253::std',
         label: 'Standard',
         subtitle: 'OGN-253',
         price: '€1.25',
       },
       {
-        id: 'OGN-253-Foil',
+        id: 'OGN-253-Foil::foil',
         label: 'Foil',
         subtitle: 'OGN-253-Foil',
         price: '€4.50',
@@ -111,18 +114,22 @@ describe('buildPrintingPickerOptions', () => {
 
 describe('owned printing picker helpers', () => {
   test('remove picker only appears when multiple owned finishes exist', () => {
-    const printings = attachOwnedToPrintings(stdFoilPrintings, new Map([
-      ['OGN-253', { quantity: 1 }],
-      ['OGN-253-Foil', { quantity: 2 }],
-    ]));
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([
+        ['OGN-253', { quantity: 1 }],
+        ['OGN-253-Foil', { quantity: 2 }],
+      ])
+    );
 
     expect(shouldShowRemovePrintingPicker(printings)).toBe(true);
   });
 
   test('remove picker stays hidden when only one finish is owned', () => {
-    const printings = attachOwnedToPrintings(stdFoilPrintings, new Map([
-      ['OGN-253', { quantity: 1 }],
-    ]));
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([['OGN-253', { quantity: 1 }]])
+    );
 
     expect(shouldShowRemovePrintingPicker(printings)).toBe(false);
   });
@@ -146,14 +153,15 @@ describe('owned printing picker helpers', () => {
   });
 
   test('remove options only include owned finishes', () => {
-    const printings = attachOwnedToPrintings(stdFoilPrintings, new Map([
-      ['OGN-253-Foil', { quantity: 1 }],
-    ]));
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([['OGN-253-Foil', { quantity: 1 }]])
+    );
     const allOptions = buildPrintingPickerOptions(stdFoilPrintings);
 
     expect(getRemovePrintingPickerOptions(printings, allOptions)).toEqual([
       {
-        id: 'OGN-253-Foil',
+        id: 'OGN-253-Foil::foil',
         label: 'Foil',
         subtitle: 'OGN-253-Foil',
         price: '€4.50',
@@ -175,9 +183,9 @@ describe('resolveQuickAddPrintings', () => {
   test('scopes quick add to the selected variant family', () => {
     const card = cardWithPrintings(multiFamilyPrintings);
 
-    expect(resolveQuickAddPrintings(card, 'OGN-253-Release').map((p) => p.variantNumber)).toEqual([
-      'OGN-253-Release',
-    ]);
+    expect(
+      resolveQuickAddPrintings(card, 'OGN-253-Release').map((p) => p.variantNumber)
+    ).toEqual(['OGN-253-Release']);
   });
 
   test('defaults to the standard family when promo and alt art also exist', () => {
@@ -211,25 +219,29 @@ describe('resolvePrintingPickerState', () => {
   });
 
   test('enables remove picker only for finishes the user owns', () => {
-    const printings = attachOwnedToPrintings(stdFoilPrintings, new Map([
-      ['OGN-253', { quantity: 1 }],
-      ['OGN-253-Foil', { quantity: 3 }],
-    ]));
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([
+        ['OGN-253', { quantity: 1 }],
+        ['OGN-253-Foil', { quantity: 3 }],
+      ])
+    );
 
     const state = resolvePrintingPickerState({ printings });
 
     expect(state.showAddPicker).toBe(true);
     expect(state.showRemovePicker).toBe(true);
     expect(state.removeOptions.map((option) => option.id)).toEqual([
-      'OGN-253',
-      'OGN-253-Foil',
+      'OGN-253::std',
+      'OGN-253-Foil::foil',
     ]);
   });
 
   test('pins add/remove to one printing on detail rows', () => {
-    const printings = attachOwnedToPrintings(stdFoilPrintings, new Map([
-      ['OGN-253-Foil', { quantity: 2 }],
-    ]));
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([['OGN-253-Foil', { quantity: 2 }]])
+    );
 
     expect(
       resolvePrintingPickerState({
@@ -274,7 +286,9 @@ describe('resolveQuickRemoveVariantNumber', () => {
       ])
     );
 
-    expect(resolveQuickRemoveVariantNumber(printings, 'OGN-253-Foil')).toBe('OGN-253-Foil');
+    expect(resolveQuickRemoveVariantNumber(printings, 'OGN-253-Foil')).toBe(
+      'OGN-253-Foil'
+    );
   });
 
   test('returns undefined when nothing is owned', () => {
@@ -305,11 +319,88 @@ describe('resolveQuickAddVariantNumber', () => {
   });
 
   test('honors an explicit preferred finish (foil)', () => {
-    expect(resolveQuickAddVariantNumber(stdFoilPrintings, 'OGN-253-Foil')).toBe('OGN-253-Foil');
+    expect(resolveQuickAddVariantNumber(stdFoilPrintings, 'OGN-253-Foil')).toBe(
+      'OGN-253-Foil'
+    );
   });
 
   test('foil-only card group still resolves a variant', () => {
     expect(resolveQuickAddVariantNumber([stdFoilPrintings[1]!])).toBe('OGN-253-Foil');
+  });
+});
+
+describe('resolveUnambiguousQuantitySelection', () => {
+  test('increments and decrements the sole owned finish', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([['OGN-253-Foil::foil', { quantity: 2 }]])
+    );
+
+    expect(resolveUnambiguousQuantitySelection(printings, 1)).toEqual({
+      variantNumber: 'OGN-253-Foil',
+      isFoil: true,
+    });
+    expect(resolveUnambiguousQuantitySelection(printings, -1)).toEqual({
+      variantNumber: 'OGN-253-Foil',
+      isFoil: true,
+    });
+  });
+
+  test('requires a finish choice when both finishes are owned', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([
+        ['OGN-253::std', { quantity: 1 }],
+        ['OGN-253-Foil::foil', { quantity: 1 }],
+      ])
+    );
+
+    expect(resolveUnambiguousQuantitySelection(printings, 1)).toBeUndefined();
+    expect(resolveUnambiguousQuantitySelection(printings, -1)).toBeUndefined();
+  });
+});
+
+describe('same-VN dual finishes (foilMode=both)', () => {
+  const bothPrintings: CardListPrinting[] = [
+    {
+      variantNumber: 'VEN-074',
+      variantLabel: 'Standard',
+      isFoil: false,
+      foilMode: 'both',
+      priceEur: null,
+    },
+    {
+      variantNumber: 'VEN-074',
+      variantLabel: 'Foil',
+      isFoil: true,
+      foilMode: 'both',
+      priceEur: null,
+    },
+  ];
+
+  test('picker options use finish keys so std and foil are distinct', () => {
+    expect(buildPrintingPickerOptions(bothPrintings).map((o) => o.id)).toEqual([
+      'VEN-074::std',
+      'VEN-074::foil',
+    ]);
+  });
+
+  test('quick remove with only foil owned targets the foil finish key', () => {
+    const printings = attachOwnedToPrintings(
+      bothPrintings,
+      new Map([['VEN-074::foil', { quantity: 1 }]])
+    );
+    expect(resolveQuickRemoveSelection(printings)).toEqual({
+      variantNumber: 'VEN-074',
+      isFoil: true,
+    });
+  });
+
+  test('resolvePrintingSelection parses finish keys', () => {
+    expect(resolvePrintingSelection('VEN-074::foil', bothPrintings)).toEqual({
+      variantNumber: 'VEN-074',
+      isFoil: true,
+    });
   });
 });
 
@@ -359,6 +450,9 @@ describe('foil-only ownership search quick-add scenarios', () => {
 
     expect(state.showAddPicker).toBe(true);
     expect(state.showRemovePicker).toBe(true);
-    expect(state.removeOptions.map((o) => o.id)).toEqual(['OGN-253', 'OGN-253-Foil']);
+    expect(state.removeOptions.map((o) => o.id)).toEqual([
+      'OGN-253::std',
+      'OGN-253-Foil::foil',
+    ]);
   });
 });

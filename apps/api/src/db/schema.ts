@@ -306,11 +306,12 @@ export const collectionItems = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex('collection_items_collection_variant_condition_lang_idx').on(
+    uniqueIndex('collection_items_collection_variant_condition_lang_foil_idx').on(
       t.collectionId,
       t.variantNumber,
       t.condition,
-      t.language
+      t.language,
+      t.isFoil
     ),
     index('collection_items_collection_id_idx').on(t.collectionId),
     index('collection_items_variant_number_idx').on(t.variantNumber),

@@ -32,7 +32,11 @@ import { Text } from '@/components/ui/text';
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import { formatStat } from '@/utils/cardFormat';
 import { useCardDetail } from '@/hooks/useCardDetail';
-import { useCollection, useCollectionMutations, useCollectionOwnership } from '@/hooks/useCollection';
+import {
+  useCollection,
+  useCollectionMutations,
+  useCollectionOwnership,
+} from '@/hooks/useCollection';
 import {
   collectVariantNumbers,
   ownershipMapFromCollection,
@@ -44,6 +48,7 @@ import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
 import { useVariantPriceHistory } from '@/hooks/useVariantPriceHistory';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import {
+  expandVariantFinishPrintings,
   formatMarketTrend,
   formatPrintingPrice,
   getCardPrintings,
@@ -51,11 +56,16 @@ import {
   getVariantFamiliesFromCardVariants,
   getVariantMarketPriceDisplays,
   isFoilVariant,
+  ownedQuantityForPrinting,
   pickVariantDisplayPrice,
   toPriceEurSummary,
 } from '@/utils/variants';
+import {
+  collectionFinishKey,
+  isCardBannedAt,
+  parseCollectionFinishKey,
+} from '@riftbound/contracts';
 import { cn } from '@/lib/utils';
-import { isCardBannedAt } from '@riftbound/contracts';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { hapticPress } from '@/utils/haptics';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
@@ -89,10 +99,12 @@ export function CatalogDetailPanel({
     if (detail.card) {
       return detail.card.variants.map((variant) => variant.variantNumber);
     }
-    if (catalogListItem) return collectVariantNumbers([catalogListItem], [variantNumber]);
+    if (catalogListItem)
+      return collectVariantNumbers([catalogListItem], [variantNumber]);
     return [variantNumber];
   }, [catalogListItem, detail.card, variantNumber]);
-  const { collectionByVariant: fetchedOwnership } = useCollectionOwnership(detailVariants);
+  const { collectionByVariant: fetchedOwnership } =
+    useCollectionOwnership(detailVariants);
   const collectionByVariant = useMemo(() => {
     const fromCollection = ownershipMapFromCollection(collectionEntries);
     return preferCollectionOwnership(fetchedOwnership, fromCollection);
@@ -136,8 +148,9 @@ export function CatalogDetailPanel({
     async (targetVariantNumber: string) => {
       if (!detail.card) return;
       const variant =
-        detail.card.variants.find((item) => item.variantNumber === targetVariantNumber) ??
-        detail.activeVariant;
+        detail.card.variants.find(
+          (item) => item.variantNumber === targetVariantNumber
+        ) ?? detail.activeVariant;
       if (!variant) return;
 
       await addWishlist.mutateAsync({
@@ -161,7 +174,8 @@ export function CatalogDetailPanel({
     ? isFoilVariant(
         detail.activeVariant.variantNumber,
         detail.activeVariant.variantLabel,
-        detail.activeVariant.variantType
+        detail.activeVariant.variantType,
+        detail.activeVariant.foilMode
       )
     : false;
   const priceHistory = useVariantPriceHistory(activeVariantNumber, {
@@ -185,7 +199,9 @@ export function CatalogDetailPanel({
   const activeFamilyIndex = Math.max(
     0,
     variantFamilies.findIndex((family) =>
-      family.variants.some((variant) => variant.variantNumber === activeVariant.variantNumber)
+      family.variants.some(
+        (variant) => variant.variantNumber === activeVariant.variantNumber
+      )
     )
   );
   const activeFamily = variantFamilies[activeFamilyIndex] ?? variantFamilies[0];
@@ -211,18 +227,35 @@ export function CatalogDetailPanel({
     colors: card.colors.map((c) => c.name),
     imageUrl: activeVariant.imageUrl,
     cardmarketId: activeVariant.cardmarketId,
-    priceEur: toPriceEurSummary(pickVariantDisplayPrice(activeVariant.prices, activeVariant)),
-    printings: groupVariants.map((v) => {
-      const foil = isFoilVariant(v.variantNumber, v.variantLabel, v.variantType);
-      const display = pickVariantDisplayPrice(v.prices, v);
-      return {
-        variantNumber: v.variantNumber,
-        variantLabel: v.variantLabel,
-        isFoil: foil,
-        priceEur: toPriceEurSummary(display),
-        owned: collectionByVariant.get(v.variantNumber)?.quantity ?? 0,
-      } satisfies CardListPrinting & { owned: number };
-    }),
+    priceEur: toPriceEurSummary(
+      pickVariantDisplayPrice(activeVariant.prices, activeVariant)
+    ),
+    printings: (() => {
+      const expanded = expandVariantFinishPrintings(groupVariants);
+      return expanded.map((printing) => {
+        const source =
+          groupVariants.find((v) => v.variantNumber === printing.variantNumber) ??
+          activeVariant;
+        const display = pickVariantDisplayPrice(source.prices, {
+          variantNumber: printing.variantNumber,
+          variantLabel: printing.variantLabel,
+          variantType: printing.isFoil ? 'Foil' : source.variantType,
+          foilMode: printing.isFoil ? 'foil_only' : printing.foilMode,
+        });
+        // Prefer Cardmarket row matching the finish when both exist on one SKU.
+        const finishPrice =
+          source.prices.find(
+            (row) => row.isFoil === printing.isFoil && row.market != null
+          ) ??
+          source.prices.find((row) => row.isFoil === printing.isFoil) ??
+          display;
+        return {
+          ...printing,
+          priceEur: toPriceEurSummary(finishPrice),
+          owned: ownedQuantityForPrinting(collectionByVariant, printing),
+        } satisfies CardListPrinting & { owned: number };
+      });
+    })(),
     isBanned: isCardBannedAt(card.banEffectiveDate),
   };
 
@@ -237,7 +270,9 @@ export function CatalogDetailPanel({
   const watchedElsewhereCount = card.variants.filter(
     (variant) =>
       wishlistVariants.has(variant.variantNumber) &&
-      !groupVariants.some((groupVariant) => groupVariant.variantNumber === variant.variantNumber)
+      !groupVariants.some(
+        (groupVariant) => groupVariant.variantNumber === variant.variantNumber
+      )
   ).length;
 
   const handleWatchPress = async () => {
@@ -293,11 +328,11 @@ export function CatalogDetailPanel({
     printings.length > 0 ? (
       <View className="bg-card-panel">
         {printings.map((printing, index) => {
-          const qty = collectionByVariant.get(printing.variantNumber)?.quantity ?? 0;
+          const qty = ownedQuantityForPrinting(collectionByVariant, printing);
           const foilTag =
             printing.isFoil && !printing.variantLabel.toLowerCase().includes('foil');
           return (
-            <View key={printing.variantNumber}>
+            <View key={collectionFinishKey(printing.variantNumber, printing.isFoil)}>
               {index > 0 ? <View className="h-hairline bg-border" /> : null}
               <View className="flex-row items-start justify-between gap-3 p-3">
                 <View className="min-w-0 shrink flex-1" style={{ flexBasis: 0 }}>
@@ -316,7 +351,10 @@ export function CatalogDetailPanel({
                       </View>
                     ) : null}
                   </View>
-                  <Text className="font-mono text-[11px] text-archive-subtle" numberOfLines={1}>
+                  <Text
+                    className="font-mono text-[11px] text-archive-subtle"
+                    numberOfLines={1}
+                  >
                     {printing.variantNumber}
                   </Text>
                   <View className="mt-1 flex-row flex-wrap items-center gap-2">
@@ -332,17 +370,21 @@ export function CatalogDetailPanel({
                       owned={qty}
                       name={`${card.name} ${printing.variantLabel}`}
                       compact
-                      printings={listItem.printings}
+                      printings={[printing]}
                       fixedVariantNumber={printing.variantNumber}
+                      fixedIsFoil={printing.isFoil}
                       onAdd={() => {
-                        void detail.onAddToCollection(printing.variantNumber);
+                        void detail.onAddToCollection(
+                          printing.variantNumber,
+                          printing.isFoil
+                        );
                       }}
                       onRemove={() => {
-                        const entry = collectionByVariant.get(printing.variantNumber);
-                        if (!entry) return;
+                        if (qty <= 0) return;
                         adjustQuantity.mutate({
                           variantNumber: printing.variantNumber,
                           delta: -1,
+                          isFoil: printing.isFoil,
                         });
                       }}
                     />
@@ -392,123 +434,130 @@ export function CatalogDetailPanel({
 
   const detailBody = (
     <View className="gap-3 p-3">
-            {collectionAndStats}
+      {collectionAndStats}
 
-            <View className="flex-row flex-wrap gap-x-4 gap-y-3 rounded-xl border border-archive-soft-line p-3">
-              <MetaPill label="Type" icon={<TypeIcon type={card.type} size={16} />}>
-                <Text className="text-sm font-semibold text-foreground">{card.type}</Text>
-              </MetaPill>
-              <MetaPill label="Domain">
-                {card.colors.length > 0 ? (
-                  <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
-                    {card.colors.map((color) => (
-                      <View key={color.id} className="flex-row items-center gap-1">
-                        <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
-                        <Text className="text-sm font-semibold text-foreground">{color.name}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ) : (
-                  <Text className="text-sm font-semibold text-foreground">—</Text>
-                )}
-              </MetaPill>
-              <MetaPill label="Rarity" icon={<RarityIcon rarity={activeVariant.rarity} size={16} />}>
-                <Text className="text-sm font-semibold text-foreground">{activeVariant.rarity}</Text>
-              </MetaPill>
-              {card.tags.length > 0 ? (
-                <MetaPill label="Tags">
-                  <View className="flex-row flex-wrap gap-1">
-                    {card.tags.map((tag) => (
-                      <CardTag key={tag} label={tag} />
-                    ))}
-                  </View>
-                </MetaPill>
-              ) : null}
+      <View className="flex-row flex-wrap gap-x-4 gap-y-3 rounded-xl border border-archive-soft-line p-3">
+        <MetaPill label="Type" icon={<TypeIcon type={card.type} size={16} />}>
+          <Text className="text-sm font-semibold text-foreground">{card.type}</Text>
+        </MetaPill>
+        <MetaPill label="Domain">
+          {card.colors.length > 0 ? (
+            <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
+              {card.colors.map((color) => (
+                <View key={color.id} className="flex-row items-center gap-1">
+                  <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
+                  <Text className="text-sm font-semibold text-foreground">
+                    {color.name}
+                  </Text>
+                </View>
+              ))}
             </View>
-
-            {detail.isPlaceholderData && !card.description ? (
-              <View className="gap-2 rounded-xl bg-card-panel p-3">
-                <Skeleton className="h-3 w-full rounded" />
-                <Skeleton className="h-3 w-[92%] rounded" />
-                <Skeleton className="h-3 w-[80%] rounded" />
-              </View>
-            ) : card.description ? (
-              <View className="rounded-xl bg-card-panel p-3">
-                <CardRulesText text={card.description} />
-              </View>
-            ) : null}
-
-            <View className="gap-2">
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isWatchingActive ? 'Remove from wishlist' : 'Add to wishlist'
-                }
-                className={cn(
-                  'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full web:cursor-pointer',
-                  isWatchingActive
-                    ? 'bg-primary/18 active:bg-primary/24'
-                    : 'bg-primary/12 active:bg-primary/18',
-                  watchBusy && 'opacity-60'
-                )}
-                disabled={watchBusy}
-                onPress={() => {
-                  void handleWatchPress();
-                }}
-              >
-                {watchBusy ? (
-                  <ActivityIndicator size="small" className="accent-primary" />
-                ) : (
-                  <>
-                    <ThemedIcon
-                      icon={BookmarkIcon}
-                      size={16}
-                      color="archive-accent-text"
-                      weight={isWatchingActive ? 'fill' : 'bold'}
-                    />
-                    <Text className="text-sm font-semibold text-archive-accent-text">
-                      {isWatchingActive ? 'Wishlisted · tap to remove' : 'Wishlist card'}
-                    </Text>
-                  </>
-                )}
-              </Pressable>
+          ) : (
+            <Text className="text-sm font-semibold text-foreground">—</Text>
+          )}
+        </MetaPill>
+        <MetaPill
+          label="Rarity"
+          icon={<RarityIcon rarity={activeVariant.rarity} size={16} />}
+        >
+          <Text className="text-sm font-semibold text-foreground">
+            {activeVariant.rarity}
+          </Text>
+        </MetaPill>
+        {card.tags.length > 0 ? (
+          <MetaPill label="Tags">
+            <View className="flex-row flex-wrap gap-1">
+              {card.tags.map((tag) => (
+                <CardTag key={tag} label={tag} />
+              ))}
             </View>
+          </MetaPill>
+        ) : null}
+      </View>
 
-            {singleMarketPrice || !hidePriceHistory ? (
-              <View className="gap-2 border-t border-border/40 pt-3">
-                {singleMarketPrice ? (
-                  <VariantPriceSummary
-                    label={singleMarketPrice.label}
-                    price={singleMarketPrice.price}
-                    trend={singlePriceTrend}
-                    className="mt-0"
-                    hideLabel={variantFamilies.length > 1}
-                  />
-                ) : null}
-                {!hidePriceHistory ? (
-                  <View className="gap-2" style={{ minHeight: 196 }}>
-                    <Text className="text-sm font-semibold text-foreground">Daily trend</Text>
-                    {wishlistItem &&
-                    wishlistItem.variantNumber === activeVariant.variantNumber ? (
-                      <WishlistPriceHistoryPanel item={wishlistItem} />
-                    ) : priceHistory.panelItem ? (
-                      <WishlistPriceHistoryPanel item={priceHistory.panelItem} />
-                    ) : (
-                      <View className="min-h-[160px] justify-center rounded-xl border border-border bg-card p-3">
-                        <Text className="text-xs leading-5 text-muted-foreground">
-                          {priceHistory.isLoading
-                            ? 'Loading daily trend history…'
-                            : 'No daily trend snapshots yet. Prices sync once per day from Cardmarket.'}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
+      {detail.isPlaceholderData && !card.description ? (
+        <View className="gap-2 rounded-xl bg-card-panel p-3">
+          <Skeleton className="h-3 w-full rounded" />
+          <Skeleton className="h-3 w-[92%] rounded" />
+          <Skeleton className="h-3 w-[80%] rounded" />
+        </View>
+      ) : card.description ? (
+        <View className="rounded-xl bg-card-panel p-3">
+          <CardRulesText text={card.description} />
+        </View>
+      ) : null}
 
-            {/* Extra scroll extent so the bottom CTA clears the home indicator. */}
-            {isDrawer ? <View style={{ height: 72 }} /> : null}
+      <View className="gap-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            isWatchingActive ? 'Remove from wishlist' : 'Add to wishlist'
+          }
+          className={cn(
+            'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full web:cursor-pointer',
+            isWatchingActive
+              ? 'bg-primary/18 active:bg-primary/24'
+              : 'bg-primary/12 active:bg-primary/18',
+            watchBusy && 'opacity-60'
+          )}
+          disabled={watchBusy}
+          onPress={() => {
+            void handleWatchPress();
+          }}
+        >
+          {watchBusy ? (
+            <ActivityIndicator size="small" className="accent-primary" />
+          ) : (
+            <>
+              <ThemedIcon
+                icon={BookmarkIcon}
+                size={16}
+                color="archive-accent-text"
+                weight={isWatchingActive ? 'fill' : 'bold'}
+              />
+              <Text className="text-sm font-semibold text-archive-accent-text">
+                {isWatchingActive ? 'Wishlisted · tap to remove' : 'Wishlist card'}
+              </Text>
+            </>
+          )}
+        </Pressable>
+      </View>
+
+      {singleMarketPrice || !hidePriceHistory ? (
+        <View className="gap-2 border-t border-border/40 pt-3">
+          {singleMarketPrice ? (
+            <VariantPriceSummary
+              label={singleMarketPrice.label}
+              price={singleMarketPrice.price}
+              trend={singlePriceTrend}
+              className="mt-0"
+              hideLabel={variantFamilies.length > 1}
+            />
+          ) : null}
+          {!hidePriceHistory ? (
+            <View className="gap-2" style={{ minHeight: 196 }}>
+              <Text className="text-sm font-semibold text-foreground">Daily trend</Text>
+              {wishlistItem &&
+              wishlistItem.variantNumber === activeVariant.variantNumber ? (
+                <WishlistPriceHistoryPanel item={wishlistItem} />
+              ) : priceHistory.panelItem ? (
+                <WishlistPriceHistoryPanel item={priceHistory.panelItem} />
+              ) : (
+                <View className="min-h-[160px] justify-center rounded-xl border border-border bg-card p-3">
+                  <Text className="text-xs leading-5 text-muted-foreground">
+                    {priceHistory.isLoading
+                      ? 'Loading daily trend history…'
+                      : 'No daily trend snapshots yet. Prices sync once per day from Cardmarket.'}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* Extra scroll extent so the bottom CTA clears the home indicator. */}
+      {isDrawer ? <View style={{ height: 72 }} /> : null}
     </View>
   );
 
@@ -589,7 +638,10 @@ export function CatalogDetailPanel({
         {isDrawer ? (
           detailBody
         ) : (
-          <ScrollView className="max-h-[calc(100vh-280px)]" showsVerticalScrollIndicator={false}>
+          <ScrollView
+            className="max-h-[calc(100vh-280px)]"
+            showsVerticalScrollIndicator={false}
+          >
             {detailBody}
           </ScrollView>
         )}
@@ -622,7 +674,8 @@ export function CatalogDetailPanel({
         }}
         onSelect={(id) => {
           detail.setPickerVisible(false);
-          void detail.onAddToCollection(id);
+          const parsed = parseCollectionFinishKey(id);
+          void detail.onAddToCollection(parsed?.variantNumber ?? id, parsed?.isFoil);
         }}
       />
     </>

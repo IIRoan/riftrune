@@ -9,6 +9,7 @@ import {
   parseCollectionCsv,
   parseCollectionCsvToImportItems,
   parseConditionLabel,
+  parseFoilLabel,
   parseLanguageLabel,
   serializeCollectionCsv,
 } from '@riftbound/contracts';
@@ -47,6 +48,39 @@ describe('collection CSV format', () => {
     expect(parseLanguageLabel('English')).toBe('en');
     expect(parseLanguageLabel('')).toBe('en');
     expect(formatLanguageLabel('en')).toBe('English');
+
+    expect(parseFoilLabel('true')).toBe(true);
+    expect(parseFoilLabel('Standard')).toBe(false);
+  });
+
+  test('keeps standard and foil rows for the same variant in separate stacks', () => {
+    const csv = [
+      'Variant Number,Card Name,Set,Set Prefix,Rarity,Variant Type,Variant Label,Foil,Quantity,Language,Condition,Grading Company,Grading Value,Grading Label,Notes',
+      'VEN-074,Test Card,Spiritforged,VEN,Rare,Standard,Standard,false,2,English,Near Mint,,,,',
+      'VEN-074,Test Card,Spiritforged,VEN,Rare,Standard,Standard,true,3,English,Near Mint,,,,',
+    ].join('\n');
+
+    const parsed = parseCollectionCsvToImportItems(csv);
+
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.items).toEqual([
+      expect.objectContaining({ variantNumber: 'VEN-074', isFoil: false, quantity: 2 }),
+      expect.objectContaining({ variantNumber: 'VEN-074', isFoil: true, quantity: 3 }),
+    ]);
+    expect(parsed.uniquePrintings).toBe(2);
+    expect(parsed.totalCopies).toBe(5);
+  });
+
+  test('reports invalid foil values instead of silently importing the wrong finish', () => {
+    const csv = [
+      'Variant Number,Card Name,Set,Set Prefix,Rarity,Variant Type,Variant Label,Foil,Quantity,Language,Condition,Grading Company,Grading Value,Grading Label,Notes',
+      'VEN-074,Test Card,Spiritforged,VEN,Rare,Standard,Standard,sparkly,1,English,Near Mint,,,,',
+    ].join('\n');
+
+    const parsed = parseCollectionCsvToImportItems(csv);
+
+    expect(parsed.items).toEqual([]);
+    expect(parsed.errors).toEqual([{ row: 2, message: 'Invalid foil value: sparkly' }]);
   });
 
   test('aggregates duplicate rows with the same condition by summing quantities', () => {
@@ -70,7 +104,8 @@ describe('collection CSV format', () => {
       'OGN-001,Blazing Scorcher,Origins,OGN,Common,Standard,Standard,false,1,English,,,,,',
     ].join('\n');
 
-    const { items, totalCopies, uniquePrintings } = parseCollectionCsvToImportItems(csv);
+    const { items, totalCopies, uniquePrintings } =
+      parseCollectionCsvToImportItems(csv);
     expect(items).toHaveLength(2);
     expect(totalCopies).toBe(4);
     expect(uniquePrintings).toBe(2);
@@ -126,7 +161,7 @@ describe('collection CSV format', () => {
     const content = readFileSync(sampleCsvPath, 'utf8');
     const parsed = parseCollectionCsvToImportItems(content);
     expect(parsed.totalCopies).toBe(1597);
-    expect(parsed.uniquePrintings).toBe(705);
+    expect(parsed.uniquePrintings).toBe(725);
     expect(parsed.rowsProcessed).toBe(725);
   });
 

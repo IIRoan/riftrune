@@ -32,7 +32,9 @@ export interface CollectionEntry {
   updatedAt: number;
 }
 
-function toEntry(item: Awaited<ReturnType<typeof fetchRemoteCollection>>[number]): CollectionEntry {
+function toEntry(
+  item: Awaited<ReturnType<typeof fetchRemoteCollection>>[number]
+): CollectionEntry {
   return {
     variantNumber: item.variantNumber,
     name: item.name,
@@ -69,12 +71,19 @@ export async function getCollectionEntry(
 
 export async function addToCollection(
   card: CardListItem,
-  options?: { variantNumber?: string; quantity?: number }
+  options?: { variantNumber?: string; quantity?: number; isFoil?: boolean }
 ): Promise<void> {
   const quantity = options?.quantity ?? 1;
   const variantNumber = options?.variantNumber ?? card.variantNumber;
   const printings = getCardPrintings(card);
   const printing =
+    (options?.isFoil === undefined
+      ? undefined
+      : printings.find(
+          (p) =>
+            variantNumbersMatch(p.variantNumber, variantNumber) &&
+            p.isFoil === options.isFoil
+        )) ??
     printings.find((p) => variantNumbersMatch(p.variantNumber, variantNumber)) ??
     printings[0];
   if (!printing) {
@@ -82,7 +91,7 @@ export async function addToCollection(
   }
 
   for (let i = 0; i < quantity; i += 1) {
-    await remoteAddToCollection(printing.variantNumber, 1);
+    await remoteAddToCollection(printing.variantNumber, 1, printing.isFoil);
   }
 }
 
@@ -97,11 +106,13 @@ export async function addDetailToCollection(
       rarity: string;
       variantLabel: string;
       variantType: string;
+      foilMode?: string;
       prices: Array<{ market: number | null; low: number | null; isFoil: boolean }>;
     }>;
   },
   variantNumber: string,
-  quantity = 1
+  quantity = 1,
+  isFoil?: boolean
 ): Promise<void> {
   const variant = findVariantByNumber(card.variants, variantNumber);
   if (!variant) {
@@ -109,7 +120,20 @@ export async function addDetailToCollection(
   }
 
   const setCode = variant.variantNumber.split('-')[0] ?? '';
-  const displayPrice = pickVariantDisplayPrice(variant.prices, variant);
+  const finish =
+    isFoil ??
+    isFoilVariant(
+      variant.variantNumber,
+      variant.variantLabel,
+      variant.variantType,
+      variant.foilMode
+    );
+  const displayPrice =
+    variant.prices.find((row) => row.isFoil === finish && row.market != null) ??
+    pickVariantDisplayPrice(variant.prices, {
+      ...variant,
+      foilMode: finish ? 'foil_only' : variant.foilMode,
+    });
   const priceEur = toPriceEurSummary(displayPrice);
 
   await addToCollection(
@@ -131,48 +155,56 @@ export async function addDetailToCollection(
         {
           variantNumber: variant.variantNumber,
           variantLabel: variant.variantLabel,
-          isFoil: isFoilVariant(
-            variant.variantNumber,
-            variant.variantLabel,
-            variant.variantType
-          ),
+          isFoil: finish,
+          foilMode: variant.foilMode,
           priceEur,
         },
       ],
       isBanned: isCardBannedAt(card.banEffectiveDate),
     },
-    { variantNumber: variant.variantNumber, quantity }
+    {
+      variantNumber: variant.variantNumber,
+      quantity,
+      isFoil: finish,
+    }
   );
 }
 
 export async function updateCollectionQuantity(
   variantNumber: string,
-  quantity: number
+  quantity: number,
+  isFoil?: boolean
 ): Promise<void> {
   if (quantity <= 0) {
-    await remoteDeleteFromCollection(variantNumber);
+    await remoteDeleteFromCollection(variantNumber, isFoil);
     return;
   }
-  await remoteSetCollectionQuantity(variantNumber, quantity);
+  await remoteSetCollectionQuantity(variantNumber, quantity, isFoil);
 }
 
 export async function adjustCollectionQuantity(
   variantNumber: string,
-  delta: number
+  delta: number,
+  isFoil?: boolean
 ): Promise<void> {
   if (delta === 0) return;
   if (delta > 0) {
-    await remoteAddToCollection(variantNumber, delta);
+    await remoteAddToCollection(variantNumber, delta, isFoil);
     return;
   }
-  await remoteRemoveFromCollection(variantNumber, Math.abs(delta));
+  await remoteRemoveFromCollection(variantNumber, Math.abs(delta), isFoil);
 }
 
-export async function removeFromCollection(variantNumber: string): Promise<void> {
-  await remoteDeleteFromCollection(variantNumber);
+export async function removeFromCollection(
+  variantNumber: string,
+  isFoil?: boolean
+): Promise<void> {
+  await remoteDeleteFromCollection(variantNumber, isFoil);
 }
 
-export async function removeManyFromCollection(variantNumbers: string[]): Promise<void> {
+export async function removeManyFromCollection(
+  variantNumbers: string[]
+): Promise<void> {
   if (variantNumbers.length === 0) return;
   for (const variantNumber of variantNumbers) {
     await remoteDeleteFromCollection(variantNumber);

@@ -1,5 +1,8 @@
 import { and, count, eq, sql } from 'drizzle-orm';
-import type { CollectionShareAcceptMode, CollectionShareStatus } from '@riftbound/contracts';
+import type {
+  CollectionShareAcceptMode,
+  CollectionShareStatus,
+} from '@riftbound/contracts';
 import { user as userTable } from '../db/auth-schema.js';
 import type { Database } from '../db/client.js';
 import {
@@ -16,7 +19,8 @@ const MAX_MEMBERS = 2;
 export class CollectionShareError extends Error {
   constructor(
     message: string,
-    readonly code: 'BAD_REQUEST' | 'NOT_FOUND' | 'CONFLICT' | 'FORBIDDEN' = 'BAD_REQUEST'
+    readonly code:
+      'BAD_REQUEST' | 'NOT_FOUND' | 'CONFLICT' | 'FORBIDDEN' = 'BAD_REQUEST'
   ) {
     super(message);
     this.name = 'CollectionShareError';
@@ -37,14 +41,14 @@ export type CollectionStackKey = {
   acquiredPriceCents?: number | null;
 };
 
-/** Pure merge: sum quantities on matching variant/condition/language keys. */
+/** Pure merge: sum quantities on matching variant/condition/language/finish keys. */
 export function mergeCollectionStacks(
   target: CollectionStackKey[],
   source: CollectionStackKey[]
 ): CollectionStackKey[] {
   const map = new Map<string, CollectionStackKey>();
   const keyOf = (s: CollectionStackKey) =>
-    `${s.variantNumber}\0${s.condition}\0${s.language}`;
+    `${s.variantNumber}\0${s.condition}\0${s.language}\0${s.isFoil ? '1' : '0'}`;
 
   for (const item of target) {
     map.set(keyOf(item), { ...item });
@@ -120,7 +124,8 @@ export class CollectionShareService {
         )
       );
 
-    const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+    const token =
+      crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
     const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
 
     await this.db.insert(collectionInvites).values({
@@ -180,7 +185,10 @@ export class CollectionShareService {
       reason = 'You are already a member of this collection';
     } else {
       const theirMembers = await this.countMembers(this.db, invite.collectionId);
-      const yourMembers = await this.countMembers(this.db, joinerMembership.collectionId);
+      const yourMembers = await this.countMembers(
+        this.db,
+        joinerMembership.collectionId
+      );
       if (theirMembers >= MAX_MEMBERS) {
         canAccept = false;
         reason = 'This collection already has 2 members';
@@ -223,7 +231,10 @@ export class CollectionShareService {
         .limit(1);
 
       if (!invite || invite.status !== 'pending') {
-        throw new CollectionShareError('Invite not found or no longer valid', 'NOT_FOUND');
+        throw new CollectionShareError(
+          'Invite not found or no longer valid',
+          'NOT_FOUND'
+        );
       }
       if (invite.expiresAt.getTime() < Date.now()) {
         await tx
@@ -233,7 +244,10 @@ export class CollectionShareService {
         throw new CollectionShareError('Invite has expired', 'BAD_REQUEST');
       }
       if (userId === invite.inviterUserId) {
-        throw new CollectionShareError('You cannot accept your own invite', 'BAD_REQUEST');
+        throw new CollectionShareError(
+          'You cannot accept your own invite',
+          'BAD_REQUEST'
+        );
       }
 
       const [joinerMembership] = await tx
@@ -259,7 +273,10 @@ export class CollectionShareService {
       const theirCount = await this.countMembers(tx, invite.collectionId);
       const yourCount = await this.countMembers(tx, joinerMembership.collectionId);
       if (theirCount >= MAX_MEMBERS) {
-        throw new CollectionShareError('This collection already has 2 members', 'CONFLICT');
+        throw new CollectionShareError(
+          'This collection already has 2 members',
+          'CONFLICT'
+        );
       }
       if (yourCount >= MAX_MEMBERS) {
         throw new CollectionShareError(
@@ -303,6 +320,7 @@ export class CollectionShareService {
                 collectionItems.variantNumber,
                 collectionItems.condition,
                 collectionItems.language,
+                collectionItems.isFoil,
               ],
               set: {
                 quantity: sql`${collectionItems.quantity} + ${item.quantity}`,
@@ -370,7 +388,10 @@ export class CollectionShareService {
 
       const memberCount = await this.countMembers(tx, membership.collectionId);
       if (memberCount < 2) {
-        throw new CollectionShareError('You are not in a shared collection', 'BAD_REQUEST');
+        throw new CollectionShareError(
+          'You are not in a shared collection',
+          'BAD_REQUEST'
+        );
       }
 
       const items = await tx
@@ -378,7 +399,10 @@ export class CollectionShareService {
         .from(collectionItems)
         .where(eq(collectionItems.collectionId, membership.collectionId));
 
-      const [created] = await tx.insert(collections).values({}).returning({ id: collections.id });
+      const [created] = await tx
+        .insert(collections)
+        .values({})
+        .returning({ id: collections.id });
       if (!created) {
         throw new Error('Failed to create personal collection');
       }
@@ -449,10 +473,7 @@ export class CollectionShareService {
     return invite;
   }
 
-  private async countMembers(
-    db: Database | Tx,
-    collectionId: string
-  ): Promise<number> {
+  private async countMembers(db: Database | Tx, collectionId: string): Promise<number> {
     const [row] = await db
       .select({ value: count() })
       .from(collectionMembers)

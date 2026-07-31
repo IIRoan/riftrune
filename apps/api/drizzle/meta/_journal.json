@@ -50,6 +50,13 @@
       "when": 1784610000000,
       "tag": "0006_shared_collections",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785550000000,
+      "tag": "0007_collection_finish_unique",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import type { FilterSnapshot, PaLogicalCard } from '@riftbound/contracts';
+import { isVariantFoil } from '@riftbound/contracts';
 import type { RiftruneClient } from '../upstream/riftrune-client.js';
-import { isFoilVariant } from './card-mapper.js';
 
 export type ExpandedCatalogProbe = {
   catalogPrintTotal: number;
@@ -15,16 +15,12 @@ export function isProbeVariantFoil(variant: {
   variantLabel?: string;
   variantType?: string;
 }): boolean {
-  if (
-    isFoilVariant(
-      variant.variantNumber ?? '',
-      variant.variantLabel,
-      variant.variantType
-    )
-  ) {
-    return true;
-  }
-  return (variant.foilMode ?? '').toLowerCase() === 'foil_only';
+  return isVariantFoil(
+    variant.foilMode,
+    variant.variantNumber ?? '',
+    variant.variantLabel,
+    variant.variantType
+  );
 }
 
 export function accumulatePrintCounts(

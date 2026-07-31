@@ -1,4 +1,5 @@
 import type { CardListItem } from '@riftbound/contracts';
+import { collectionFinishKey } from '@riftbound/contracts';
 import type { CollectionEntry } from '@/services/collectionService';
 
 export type CollectionOwnershipMap = ReadonlyMap<string, { quantity: number }>;
@@ -25,7 +26,10 @@ export function ownershipRecordFromCollection(
   const record: Record<string, number> = {};
   for (const entry of entries) {
     if (entry.quantity > 0) {
-      record[entry.variantNumber] = entry.quantity;
+      const key = collectionFinishKey(entry.variantNumber, entry.isFoil);
+      record[key] = (record[key] ?? 0) + entry.quantity;
+      // Also keep plain VN total for callers that still sum by variant number.
+      record[entry.variantNumber] = (record[entry.variantNumber] ?? 0) + entry.quantity;
     }
   }
   return record;
@@ -41,12 +45,24 @@ export function ownershipMapFromRecord(
   record: Readonly<Record<string, number>>
 ): CollectionOwnershipMap {
   const map = new Map<string, { quantity: number }>();
-  for (const [variantNumber, quantity] of Object.entries(record)) {
+  for (const [key, quantity] of Object.entries(record)) {
     if (quantity > 0) {
-      map.set(variantNumber, { quantity });
+      map.set(key, { quantity });
     }
   }
   return map;
+}
+
+export function ownershipRecordFromQuantityRows(
+  rows: ReadonlyArray<{ variantNumber: string; isFoil: boolean; quantity: number }>
+): Record<string, number> {
+  const record: Record<string, number> = {};
+  for (const row of rows) {
+    const key = collectionFinishKey(row.variantNumber, row.isFoil);
+    record[key] = row.quantity;
+    record[row.variantNumber] = (record[row.variantNumber] ?? 0) + row.quantity;
+  }
+  return record;
 }
 
 /**
@@ -92,12 +108,12 @@ export function mergeOwnershipFromCollection(
   entries: readonly CollectionEntry[]
 ): Record<string, number> {
   const fromCollection = ownershipRecordFromCollection(entries);
-  const ownedVariantNumbers = new Set(Object.keys(fromCollection));
+  const ownedKeys = new Set(Object.keys(fromCollection));
   const next: Record<string, number> = { ...current };
 
-  for (const [variantNumber, quantity] of Object.entries(current)) {
-    if (quantity > 0 && !ownedVariantNumbers.has(variantNumber)) {
-      next[variantNumber] = 0;
+  for (const [key, quantity] of Object.entries(current)) {
+    if (quantity > 0 && !ownedKeys.has(key)) {
+      next[key] = 0;
     }
   }
 

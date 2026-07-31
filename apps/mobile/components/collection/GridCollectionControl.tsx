@@ -6,7 +6,9 @@ import { Text } from '@/components/ui/text';
 import {
   buildPrintingPickerOptions,
   getRemovePrintingPickerOptions,
-  resolveQuickRemoveVariantNumber,
+  printingSelectionId,
+  resolveQuickAddSelection,
+  resolveQuickRemoveSelection,
   shouldShowPrintingPicker,
   shouldShowRemovePrintingPicker,
   type PrintingPickerOption,
@@ -21,8 +23,8 @@ interface Props {
   busy?: boolean;
   printings?: PrintingWithOwned[];
   fixedVariantNumber?: string;
-  onAdd: (variantNumber?: string) => void;
-  onRemove: (variantNumber?: string) => void;
+  onAdd: (selectionId?: string) => void;
+  onRemove: (selectionId?: string) => void;
 }
 
 function wrapWithPicker(
@@ -69,12 +71,20 @@ export function GridCollectionControl({
 
   const handleAdd = () => {
     void hapticPress();
-    onAdd(fixedVariantNumber);
+    if (fixedVariantNumber) {
+      onAdd(fixedVariantNumber);
+      return;
+    }
+    const selection = resolveQuickAddSelection(printings);
+    if (!selection) return;
+    onAdd(printingSelectionId(selection));
   };
 
   const handleRemove = () => {
     void hapticPress();
-    onRemove(resolveQuickRemoveVariantNumber(printings, fixedVariantNumber));
+    const selection = resolveQuickRemoveSelection(printings, fixedVariantNumber);
+    if (!selection) return;
+    onRemove(printingSelectionId(selection));
   };
 
   if (owned === 0) {

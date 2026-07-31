@@ -1,6 +1,10 @@
 import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { CardsListQuery, CardDetail, CardListItem } from '@riftbound/contracts';
-import { PaCardsListResponse, type PaLogicalCard, type PaVariant } from '@riftbound/contracts';
+import {
+  PaCardsListResponse,
+  type PaLogicalCard,
+  type PaVariant,
+} from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { cardColors, cards, colors, sets, syncState, variants } from '../db/schema.js';
 import type { RiftruneClient } from '../upstream/riftrune-client.js';
@@ -97,7 +101,10 @@ function searchCacheKey(
 export class CardCacheService {
   private readonly searchCache = new TtlCache<SearchResult>(SEARCH_RESULT_TTL_MS, 100);
   private readonly upstreamCheckCache = new TtlCache<true>(UPSTREAM_CHECK_TTL_MS, 200);
-  private readonly variantIdResolveCache = new TtlCache<string>(VARIANT_ID_RESOLVE_TTL_MS, 1000);
+  private readonly variantIdResolveCache = new TtlCache<string>(
+    VARIANT_ID_RESOLVE_TTL_MS,
+    1000
+  );
 
   constructor(
     private readonly db: Database,
@@ -225,7 +232,10 @@ export class CardCacheService {
     return true;
   }
 
-  private mapDetail(card: PaLogicalCard, priceRows: Parameters<typeof mapCardDetail>[1]) {
+  private mapDetail(
+    card: PaLogicalCard,
+    priceRows: Parameters<typeof mapCardDetail>[1]
+  ) {
     return mapCardDetail(this.images.rewriteCard(card), priceRows);
   }
 
@@ -235,12 +245,12 @@ export class CardCacheService {
     priceRows: Parameters<typeof mapListItem>[2]
   ) {
     const rewritten = this.images.rewriteCard(card);
-    const rewrittenVariant =
-      rewritten.variants.find((v) => v.variantNumber === variant.variantNumber) ??
-      {
-        ...variant,
-        imageUrl: this.images.rewriteImageUrl(variant.imageUrl),
-      };
+    const rewrittenVariant = rewritten.variants.find(
+      (v) => v.variantNumber === variant.variantNumber
+    ) ?? {
+      ...variant,
+      imageUrl: this.images.rewriteImageUrl(variant.imageUrl),
+    };
     return mapListItem(rewritten, rewrittenVariant, priceRows);
   }
 
@@ -302,10 +312,22 @@ export class CardCacheService {
           cardId,
           variantNumber: variant.variantNumber,
           rarity: variant.rarity,
+          variantType: variant.variantType,
+          foilMode: variant.foilMode,
+          variantTypes: variant.variantTypes,
           imageUrl: variant.imageUrl,
+          flavorText: variant.flavorText ?? null,
+          artist: variant.artist ?? null,
+          releaseDate: variant.releaseDate ?? null,
+          variantLabel: variant.variantLabel,
+          showInLibrary: variant.showInLibrary,
+          isCollectible: variant.isCollectible,
           contentHash: vHash,
           upstreamRaw: variant,
           cardmarketId: variant.cardmarketId ?? null,
+          tcgplayerId: variant.tcgplayerId ?? null,
+          parentVariantId: variant.parentVariantId ?? null,
+          setId: variant.set.id,
           fetchedAt: now,
           updatedAt: now,
         },
@@ -414,7 +436,9 @@ export class CardCacheService {
           const refreshed = await this.getByVariantNumber(seedVariant.variantNumber, {
             refresh: true,
           });
-          const match = refreshed.detail.variants.find((variant) => variant.id === variantId);
+          const match = refreshed.detail.variants.find(
+            (variant) => variant.id === variantId
+          );
           if (match) {
             this.variantIdResolveCache.set(variantId, match.variantNumber);
             return match.variantNumber;
@@ -430,8 +454,12 @@ export class CardCacheService {
     });
     if (sibling) {
       try {
-        const refreshed = await this.getByVariantNumber(sibling.variantNumber, { refresh: true });
-        const match = refreshed.detail.variants.find((variant) => variant.id === variantId);
+        const refreshed = await this.getByVariantNumber(sibling.variantNumber, {
+          refresh: true,
+        });
+        const match = refreshed.detail.variants.find(
+          (variant) => variant.id === variantId
+        );
         if (match) {
           this.variantIdResolveCache.set(variantId, match.variantNumber);
           return match.variantNumber;
@@ -481,7 +509,11 @@ export class CardCacheService {
           typeof (item.card as { id?: unknown }).id === 'string'
             ? (item.card as { id: string }).id
             : undefined;
-        if (!listCardId || !pendingCardIds.has(listCardId) || fetchedCardIds.has(listCardId)) {
+        if (
+          !listCardId ||
+          !pendingCardIds.has(listCardId) ||
+          fetchedCardIds.has(listCardId)
+        ) {
           continue;
         }
 
@@ -610,7 +642,8 @@ export class CardCacheService {
     source: 'cache' | 'upstream' | 'mixed';
   }> {
     const checkKey = upstreamCheckKey(query);
-    const localEmpty = (localResult?.total ?? 0) === 0 || (localResult?.items.length ?? 0) === 0;
+    const localEmpty =
+      (localResult?.total ?? 0) === 0 || (localResult?.items.length ?? 0) === 0;
 
     // Prior successful checks may skip only when we already have local hits.
     // Empty local results always re-query upstream.
@@ -638,7 +671,8 @@ export class CardCacheService {
         upstreamTotal = upstream.pagination?.total ?? upstream.data.length;
 
         const upstreamVariantNumbers = upstream.data.map((item) => item.variantNumber);
-        const existingLocally = await this.findExistingVariantNumbers(upstreamVariantNumbers);
+        const existingLocally =
+          await this.findExistingVariantNumbers(upstreamVariantNumbers);
         const missing = upstream.data.filter(
           (item) => !existingLocally.has(item.variantNumber.toLowerCase())
         );
@@ -827,18 +861,20 @@ export class CardCacheService {
     const hasSearch = Boolean(query.q?.trim());
     const hasDeckBuilderFilters = Boolean(
       query.types ||
-        query.colors ||
-        query.sets ||
-        query.super ||
-        query.variants ||
-        query.rarities ||
-        query.excludeTokens
+      query.colors ||
+      query.sets ||
+      query.super ||
+      query.variants ||
+      query.rarities ||
+      query.excludeTokens
     );
     // Materialize then group so alternate arts / foil merges never split across
     // SQL pages (deck builder scroll must see every matching printing).
     const materializeThenPage =
       hasSearch || hasDeckBuilderFilters || query.sortBy === 'price';
-    const fetchCap = hasSearch ? SEARCH_VARIANT_FETCH_CAP : FILTERED_BROWSE_VARIANT_FETCH_CAP;
+    const fetchCap = hasSearch
+      ? SEARCH_VARIANT_FETCH_CAP
+      : FILTERED_BROWSE_VARIANT_FETCH_CAP;
     const orderBy =
       query.q && query.q.trim().length > 0
         ? [asc(buildSearchRelevanceOrder(query.q)), asc(cards.name)]
