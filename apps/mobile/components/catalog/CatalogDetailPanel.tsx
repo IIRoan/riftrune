@@ -83,7 +83,7 @@ export function CatalogDetailPanel({
   hidePriceHistory = false,
 }: CatalogDetailPanelProps) {
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
-  const { setQuantity } = useCollectionMutations();
+  const { adjustQuantity } = useCollectionMutations();
   const { data: collectionEntries = [] } = useCollection();
   const detailVariants = useMemo(() => {
     if (detail.card) {
@@ -340,9 +340,9 @@ export function CatalogDetailPanel({
                       onRemove={() => {
                         const entry = collectionByVariant.get(printing.variantNumber);
                         if (!entry) return;
-                        setQuantity.mutate({
+                        adjustQuantity.mutate({
                           variantNumber: printing.variantNumber,
-                          quantity: Math.max(0, entry.quantity - 1),
+                          delta: -1,
                         });
                       }}
                     />

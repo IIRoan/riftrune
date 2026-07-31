@@ -12,6 +12,7 @@ import {
   fetchRemoteCollection,
   remoteAddToCollection,
   remoteDeleteFromCollection,
+  remoteRemoveFromCollection,
   remoteSetCollectionQuantity,
 } from '@/services/remoteCollectionService';
 
@@ -153,6 +154,18 @@ export async function updateCollectionQuantity(
     return;
   }
   await remoteSetCollectionQuantity(variantNumber, quantity);
+}
+
+export async function adjustCollectionQuantity(
+  variantNumber: string,
+  delta: number
+): Promise<void> {
+  if (delta === 0) return;
+  if (delta > 0) {
+    await remoteAddToCollection(variantNumber, delta);
+    return;
+  }
+  await remoteRemoveFromCollection(variantNumber, Math.abs(delta));
 }
 
 export async function removeFromCollection(variantNumber: string): Promise<void> {

@@ -83,7 +83,7 @@ function CardTileInner({
     enabled: collectionByVariantProp == null,
   });
   const collectionByVariant = collectionByVariantProp ?? ownershipFromStore;
-  const { addCard, setQuantity } = useCollectionMutations();
+  const { addCard, adjustQuantity } = useCollectionMutations();
   const artInstant = instantArt || _mode === 'search';
 
   // Scope prices + quick-add to this row's printing family. Prefer an explicit
@@ -160,12 +160,12 @@ function CardTileInner({
       const current = entry?.quantity ?? (optimisticOwned ?? owned);
       if (current <= 0) return;
       setOptimisticOwned(Math.max(0, (optimisticOwned ?? owned) - 1));
-      setQuantity.mutate({
+      adjustQuantity.mutate({
         variantNumber: vn,
-        quantity: Math.max(0, current - 1),
+        delta: -1,
       });
     },
-    [collectionByVariant, printingsWithOwned, setQuantity, owned, optimisticOwned]
+    [collectionByVariant, printingsWithOwned, adjustQuantity, owned, optimisticOwned]
   );
 
   const listCompact = isMobile && layout === 'list';

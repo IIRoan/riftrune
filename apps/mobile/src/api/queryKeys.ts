@@ -13,12 +13,7 @@ export const cardQueryKeys = {
     ['cards', 'search', q.toLowerCase(), limit, sortBy, dir] as const,
   browse: (filters?: CatalogFilters, sortBy = 'name', dir = 'asc') =>
     ['cards', 'browse', catalogFiltersQueryKey(filters), sortBy, dir] as const,
-  searchInfinite: (
-    q: string,
-    sortBy: string,
-    dir: string,
-    filters?: CatalogFilters
-  ) =>
+  searchInfinite: (q: string, sortBy: string, dir: string, filters?: CatalogFilters) =>
     [
       'cards',
       'search',
@@ -41,6 +36,9 @@ export const collectionQueryKeys = {
   share: ['collection', 'share'] as const,
 };
 
+/** Shared by collection mutations so live sync can detect in-flight edits. */
+export const collectionMutationKey = ['collection', 'mutation'] as const;
+
 export const wishlistQueryKeys = {
   all: ['wishlist'] as const,
   prices: ['wishlist', 'prices', '30d'] as const,
@@ -55,11 +53,7 @@ export const deckQueryKeys = {
   all: ['decks'] as const,
   list: (source: 'owned' | 'imported', q?: string) =>
     ['decks', 'list', source, q ?? ''] as const,
-  browse: (input: {
-    q?: string;
-    sort: DeckBrowseSort;
-    filters: DeckBrowseFilters;
-  }) =>
+  browse: (input: { q?: string; sort: DeckBrowseSort; filters: DeckBrowseFilters }) =>
     [
       'decks',
       'browse',

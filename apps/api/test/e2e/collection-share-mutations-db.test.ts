@@ -172,6 +172,110 @@ describe('shared collection add/remove mutations', () => {
     expect(rows).toEqual([{ variantNumber: 'OGN-308', quantity: 3 }]);
   });
 
+  test('concurrent adds from both members both apply when the stack is missing', async () => {
+    let status = CollectionShareStatusResponse.parse(
+      await (await authFetch('/api/v1/collection/share', { cookie: cookieOwner })).json()
+    );
+    if (!status.data.shared) {
+      await pairCollections();
+    }
+
+    const variantNumber = 'OGN-310';
+    await authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}`, {
+      method: 'DELETE',
+      cookie: cookieOwner,
+    });
+    expect((await quantitiesFor(cookieOwner, [variantNumber])).get(variantNumber)).toBe(0);
+
+    const [ownerRes, partnerRes] = await Promise.all([
+      authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/add`, {
+        method: 'POST',
+        cookie: cookieOwner,
+        body: JSON.stringify({ delta: 1 }),
+      }),
+      authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/add`, {
+        method: 'POST',
+        cookie: cookiePartner,
+        body: JSON.stringify({ delta: 1 }),
+      }),
+    ]);
+    expect(ownerRes.status).toBe(200);
+    expect(partnerRes.status).toBe(200);
+
+    const finalQty = (await quantitiesFor(cookieOwner, [variantNumber])).get(variantNumber);
+    expect(finalQty).toBe(2);
+  });
+
+  test('concurrent adds from both members both apply when the stack already exists', async () => {
+    let status = CollectionShareStatusResponse.parse(
+      await (await authFetch('/api/v1/collection/share', { cookie: cookieOwner })).json()
+    );
+    if (!status.data.shared) {
+      await pairCollections();
+    }
+
+    const variantNumber = 'OGN-307';
+    await authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}`, {
+      method: 'PUT',
+      cookie: cookieOwner,
+      body: JSON.stringify({ variantNumber, quantity: 5 }),
+    });
+    expect((await quantitiesFor(cookieOwner, [variantNumber])).get(variantNumber)).toBe(5);
+
+    const [ownerRes, partnerRes] = await Promise.all([
+      authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/add`, {
+        method: 'POST',
+        cookie: cookieOwner,
+        body: JSON.stringify({ delta: 1 }),
+      }),
+      authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/add`, {
+        method: 'POST',
+        cookie: cookiePartner,
+        body: JSON.stringify({ delta: 1 }),
+      }),
+    ]);
+    expect(ownerRes.status).toBe(200);
+    expect(partnerRes.status).toBe(200);
+
+    const finalQty = (await quantitiesFor(cookieOwner, [variantNumber])).get(variantNumber);
+    expect(finalQty).toBe(7);
+  });
+
+  test('concurrent removes from both members both apply', async () => {
+    let status = CollectionShareStatusResponse.parse(
+      await (await authFetch('/api/v1/collection/share', { cookie: cookieOwner })).json()
+    );
+    if (!status.data.shared) {
+      await pairCollections();
+    }
+
+    const variantNumber = 'OGN-306';
+    await authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}`, {
+      method: 'PUT',
+      cookie: cookieOwner,
+      body: JSON.stringify({ variantNumber, quantity: 5 }),
+    });
+    expect((await quantitiesFor(cookieOwner, [variantNumber])).get(variantNumber)).toBe(5);
+
+    const [ownerRes, partnerRes] = await Promise.all([
+      authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/remove`, {
+        method: 'POST',
+        cookie: cookieOwner,
+        body: JSON.stringify({ delta: 1 }),
+      }),
+      authFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/remove`, {
+        method: 'POST',
+        cookie: cookiePartner,
+        body: JSON.stringify({ delta: 1 }),
+      }),
+    ]);
+    expect(ownerRes.status).toBe(200);
+    expect(partnerRes.status).toBe(200);
+
+    const finalQty = (await quantitiesFor(cookieOwner, [variantNumber])).get(variantNumber);
+    expect(finalQty).toBe(3);
+  });
+
   test('after leave, partner mutations no longer affect the remaining member', async () => {
     // Ensure still shared from previous test; if not, re-pair.
     let status = CollectionShareStatusResponse.parse(

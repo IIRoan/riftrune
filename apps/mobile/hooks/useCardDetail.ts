@@ -109,7 +109,7 @@ export function useCardDetail(
       ),
     };
   }, [activeVariant, ownedQuantity]);
-  const { addFromDetail, setQuantity } = useCollectionMutations();
+  const { addFromDetail, adjustQuantity } = useCollectionMutations();
   const {
     sheet,
     closeSheet,
@@ -198,12 +198,12 @@ export function useCardDetail(
         return;
       }
       void hapticPress();
-      setQuantity.mutate({
+      adjustQuantity.mutate({
         variantNumber: activeVariant.variantNumber,
-        quantity: next,
+        delta,
       });
     },
-    [activeVariant, ownedQuantity, setQuantity, card, collectedForCard, promptRemove]
+    [activeVariant, ownedQuantity, adjustQuantity, card, collectedForCard, promptRemove]
   );
 
   const onSelectPrinting = useCallback((id: string) => {

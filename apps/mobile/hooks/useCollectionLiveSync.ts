@@ -1,0 +1,95 @@
+import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  flushCollectionLiveInvalidate,
+  onCollectionLiveChanged,
+} from '@/hooks/collectionLiveSync';
+import { useCollectionShareStatus } from '@/hooks/useCollectionShare';
+import { subscribeCollectionLiveEvents } from '@/services/collectionLiveService';
+import { authClient } from '@/src/lib/auth-client';
+
+const RECONNECT_BASE_MS = 1_000;
+const RECONNECT_MAX_MS = 30_000;
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const timer = setTimeout(resolve, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+/**
+ * When the collection is shared, keep an SSE connection open and invalidate
+ * local cache on remote changes — including other sessions for the same user.
+ *
+ * Invalidation is deferred while local collection mutations are in flight so a
+ * partner (or other-device) refetch cannot clobber optimistic cache.
+ */
+export function useCollectionLiveSync(enabled = true) {
+  const queryClient = useQueryClient();
+  const sessionQuery = authClient.useSession();
+  const userId = sessionQuery.data?.user?.id;
+  const signedIn = Boolean(userId);
+  const shareStatus = useCollectionShareStatus(enabled && signedIn);
+  const isShared = shareStatus.data?.shared === true;
+
+  useEffect(() => {
+    if (!enabled || !signedIn || !isShared) return;
+
+    const controller = new AbortController();
+    let attempt = 0;
+    let stopped = false;
+    let pendingInvalidate = false;
+
+    const unsubMutations = queryClient.getMutationCache().subscribe(() => {
+      pendingInvalidate = flushCollectionLiveInvalidate(queryClient, pendingInvalidate);
+    });
+
+    const run = async () => {
+      while (!stopped && !controller.signal.aborted) {
+        try {
+          await subscribeCollectionLiveEvents({
+            signal: controller.signal,
+            onEvent: (event) => {
+              if (event.type === 'heartbeat') return;
+              // Always apply remote changes (including same-user other sessions).
+              // A ready event also refreshes data merged while an invite was accepted.
+              // Defer only while this client has in-flight collection mutations.
+              if (onCollectionLiveChanged(queryClient)) {
+                pendingInvalidate = true;
+              } else {
+                pendingInvalidate = false;
+              }
+            },
+          });
+          attempt = 0;
+        } catch {
+          if (stopped || controller.signal.aborted) break;
+          const delay = Math.min(RECONNECT_BASE_MS * 2 ** attempt, RECONNECT_MAX_MS);
+          attempt += 1;
+          try {
+            await sleep(delay, controller.signal);
+          } catch {
+            break;
+          }
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      stopped = true;
+      controller.abort();
+      unsubMutations();
+    };
+  }, [enabled, signedIn, isShared, queryClient]);
+}

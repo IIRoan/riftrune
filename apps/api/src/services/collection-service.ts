@@ -255,32 +255,103 @@ export class CollectionService {
     const condition = options?.condition ?? 'near_mint';
     const language = options?.language ?? 'en';
 
-    const [existing] = await this.db
-      .select()
-      .from(collectionItems)
-      .where(
-        and(
-          eq(collectionItems.collectionId, collectionId),
-          eq(collectionItems.variantNumber, variantNumber),
-          eq(collectionItems.condition, condition),
-          eq(collectionItems.language, language)
+    if (delta === 0) {
+      return this.findStack(collectionId, variantNumber, condition, language);
+    }
+
+    if (delta < 0) {
+      const [updated] = await this.db
+        .update(collectionItems)
+        .set({
+          quantity: sql`${collectionItems.quantity} + ${delta}`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(collectionItems.collectionId, collectionId),
+            eq(collectionItems.variantNumber, variantNumber),
+            eq(collectionItems.condition, condition),
+            eq(collectionItems.language, language)
+          )
         )
-      )
+        .returning({ quantity: collectionItems.quantity });
+
+      if (!updated) return null;
+      if (updated.quantity <= 0) {
+        await this.remove(collectionId, variantNumber, condition, language);
+        return null;
+      }
+      return this.findStack(collectionId, variantNumber, condition, language);
+    }
+
+    const [variant] = await this.db
+      .select({
+        variantNumber: variants.variantNumber,
+        foilMode: variants.foilMode,
+        variantLabel: variants.variantLabel,
+        variantType: variants.variantType,
+      })
+      .from(variants)
+      .where(eq(variants.variantNumber, variantNumber))
       .limit(1);
 
-    const nextQty = nextStackQuantity(existing?.quantity, delta);
-    return this.upsert(collectionId, {
-      variantNumber,
-      quantity: nextQty,
-      condition,
-      language,
-      notes: existing?.notes ?? null,
-      isGraded: existing?.isGraded ?? false,
-      gradeCompany: existing?.gradeCompany ?? null,
-      gradeScore: existing?.gradeScore ?? null,
-      acquiredAt: existing?.acquiredAt?.toISOString() ?? null,
-      acquiredPriceCents: existing?.acquiredPriceCents ?? null,
-    });
+    if (!variant) {
+      logActionFailure('collection.adjust.variant_not_found', new Error('Variant not found'), {
+        variantNumber,
+        collectionId,
+      });
+      throw new Error(`Variant ${variantNumber} not found`);
+    }
+
+    const isFoil = isCollectionVariantFoil(
+      variant.foilMode,
+      variant.variantNumber,
+      variant.variantLabel,
+      variant.variantType
+    );
+
+    await this.db
+      .insert(collectionItems)
+      .values({
+        collectionId,
+        variantNumber,
+        quantity: delta,
+        condition,
+        language,
+        isFoil,
+      })
+      .onConflictDoUpdate({
+        target: [
+          collectionItems.collectionId,
+          collectionItems.variantNumber,
+          collectionItems.condition,
+          collectionItems.language,
+        ],
+        set: {
+          quantity: sql`${collectionItems.quantity} + ${delta}`,
+          isFoil,
+          updatedAt: new Date(),
+        },
+      });
+
+    return this.findStack(collectionId, variantNumber, condition, language);
+  }
+
+  private async findStack(
+    collectionId: string,
+    variantNumber: string,
+    condition: CardCondition,
+    language: string
+  ): Promise<CollectionItemDto | null> {
+    const list = await this.listForCollection(collectionId);
+    return (
+      list.items.find(
+        (item) =>
+          item.variantNumber === variantNumber &&
+          item.condition === condition &&
+          item.language === language
+      ) ?? null
+    );
   }
 
   async remove(

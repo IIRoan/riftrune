@@ -10,6 +10,7 @@ import { logActionFailure } from '@/lib/logger';
 import {
   addDetailToCollection,
   addToCollection,
+  adjustCollectionQuantity,
   getCollection,
   removeFromCollection,
   removeManyFromCollection,
@@ -21,7 +22,8 @@ import {
   readPersistedCollection,
 } from '@/services/collectionCacheService';
 import { fetchRemoteCollectionQuantities } from '@/services/remoteCollectionService';
-import { collectionQueryKeys } from '@/src/api/queryKeys';
+import { useCollectionShareStatus } from '@/hooks/useCollectionShare';
+import { collectionMutationKey, collectionQueryKeys } from '@/src/api/queryKeys';
 import {
   findVariantByNumber,
   getCardPrintings,
@@ -37,6 +39,8 @@ import {
 
 const COLLECTION_STALE_MS = 5 * 60 * 1000;
 const OWNERSHIP_STALE_MS = 5 * 60 * 1000;
+/** Shared collections stay fresher via SSE; focus/mount refetch is a safety net. */
+const SHARED_COLLECTION_STALE_MS = 30_000;
 
 type OwnershipRecord = Record<string, number>;
 
@@ -96,6 +100,8 @@ export function prefetchCollection(queryClient: QueryClient): Promise<void> {
 
 export function useCollection(options?: { enabled?: boolean }) {
   const queryClient = useQueryClient();
+  const shareStatus = useCollectionShareStatus(options?.enabled ?? true);
+  const isShared = shareStatus.data?.shared === true;
 
   return useQuery({
     queryKey: collectionQueryKeys.all,
@@ -105,8 +111,9 @@ export function useCollection(options?: { enabled?: boolean }) {
       await persistCollection(entries);
       return entries;
     },
-    staleTime: COLLECTION_STALE_MS,
-    refetchOnMount: false,
+    staleTime: isShared ? SHARED_COLLECTION_STALE_MS : COLLECTION_STALE_MS,
+    refetchOnWindowFocus: isShared,
+    refetchOnMount: isShared,
     enabled: options?.enabled ?? true,
   });
 }
@@ -116,6 +123,8 @@ export function useCollectionOwnership(variantNumbers: readonly string[]): {
   isLoading: boolean;
 } {
   const queryClient = useQueryClient();
+  const shareStatus = useCollectionShareStatus();
+  const isShared = shareStatus.data?.shared === true;
   const normalized = useMemo(
     () => [...new Set(variantNumbers.filter(Boolean))].sort(),
     [variantNumbers]
@@ -128,15 +137,22 @@ export function useCollectionOwnership(variantNumbers: readonly string[]): {
       const missing = normalized.filter(
         (variantNumber) => cached[variantNumber] === undefined
       );
-      if (missing.length === 0) return cached;
+      const toFetch = isShared ? normalized : missing;
+      if (toFetch.length === 0) return cached;
 
-      const rows = await fetchRemoteCollectionQuantities(missing);
+      const rows = await fetchRemoteCollectionQuantities(toFetch);
       // Re-read after the await: an optimistic mutation may have filled these
-      // keys while /quantities was in flight. Never clobber newer local values.
+      // keys while /quantities was in flight. Never clobber newer local values
+      // on cold ownership fills. Shared refreshes take server truth unless a
+      // collection mutation is still in flight (SSE/focus refetch race).
       const cachedNow = getOwnershipRecord(queryClient);
+      const mutating =
+        queryClient.isMutating({ mutationKey: collectionMutationKey }) > 0;
       const patch: OwnershipRecord = {};
       for (const row of rows) {
-        if (cachedNow[row.variantNumber] !== undefined) continue;
+        if (cachedNow[row.variantNumber] !== undefined && (!isShared || mutating)) {
+          continue;
+        }
         patch[row.variantNumber] = row.quantity;
       }
       const merged = mergeOwnershipRecords(cachedNow, patch);
@@ -155,8 +171,9 @@ export function useCollectionOwnership(variantNumbers: readonly string[]): {
       return hasAll ? cached : undefined;
     },
     enabled: normalized.length > 0,
-    staleTime: OWNERSHIP_STALE_MS,
-    refetchOnMount: false,
+    staleTime: isShared ? SHARED_COLLECTION_STALE_MS : OWNERSHIP_STALE_MS,
+    refetchOnWindowFocus: isShared,
+    refetchOnMount: isShared,
   });
 
   const ownership = ownershipQuery.data ?? getOwnershipRecord(queryClient);
@@ -186,7 +203,10 @@ function invalidateCollection(queryClient: QueryClient) {
   // `collectionQueryKeys.all` is `['collection']` — use exact so we do not
   // also mark every ownership slice stale (that re-POSTs /quantities for the
   // visible catalog window on every +/- click).
-  void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all, exact: true });
+  void queryClient.invalidateQueries({
+    queryKey: collectionQueryKeys.all,
+    exact: true,
+  });
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
 }
 
@@ -362,6 +382,7 @@ export function useCollectionMutations() {
   const queryClient = useQueryClient();
 
   const addCard = useMutation({
+    mutationKey: collectionMutationKey,
     mutationFn: (input: { card: CardListItem; variantNumber?: string }) =>
       addToCollection(input.card, { variantNumber: input.variantNumber }),
     onMutate: (vars) => {
@@ -387,6 +408,7 @@ export function useCollectionMutations() {
   });
 
   const addFromDetail = useMutation({
+    mutationKey: collectionMutationKey,
     mutationFn: (input: {
       card: Parameters<typeof addDetailToCollection>[0];
       variantNumber: string;
@@ -411,6 +433,7 @@ export function useCollectionMutations() {
   });
 
   const setQuantity = useMutation({
+    mutationKey: collectionMutationKey,
     mutationFn: ({
       variantNumber,
       quantity,
@@ -435,7 +458,31 @@ export function useCollectionMutations() {
     },
   });
 
+  const adjustQuantity = useMutation({
+    mutationKey: collectionMutationKey,
+    mutationFn: ({ variantNumber, delta }: { variantNumber: string; delta: number }) =>
+      adjustCollectionQuantity(variantNumber, delta),
+    onMutate: (vars) => {
+      const context = beginCollectionMutation(queryClient, vars.variantNumber);
+      const nextQuantity =
+        currentQuantity(queryClient, vars.variantNumber) + vars.delta;
+      applyCollectionQuantity(queryClient, vars.variantNumber, nextQuantity);
+      return context;
+    },
+    onError: (error, vars, context) => {
+      rollbackCollectionCache(queryClient, vars.variantNumber, context);
+      logMutationFailure('collection.adjust_quantity', error, {
+        variantNumber: vars.variantNumber,
+        delta: vars.delta,
+      });
+    },
+    onSettled: (_data, error, vars) => {
+      reconcileCollectionEntries(queryClient, [vars.variantNumber], error);
+    },
+  });
+
   const removeCard = useMutation({
+    mutationKey: collectionMutationKey,
     mutationFn: (variantNumber: string) => removeFromCollection(variantNumber),
     onMutate: (variantNumber) => {
       const context = beginCollectionMutation(queryClient, variantNumber);
@@ -452,6 +499,7 @@ export function useCollectionMutations() {
   });
 
   const removeMany = useMutation({
+    mutationKey: collectionMutationKey,
     mutationFn: (variantNumbers: string[]) => removeManyFromCollection(variantNumbers),
     onMutate: (variantNumbers) => {
       const previousAll = queryClient.getQueryData<CollectionEntry[]>(
@@ -476,7 +524,10 @@ export function useCollectionMutations() {
         setOwnershipQuantity(queryClient, variantNumber, 0);
       }
 
-      void queryClient.cancelQueries({ queryKey: collectionQueryKeys.all, exact: true });
+      void queryClient.cancelQueries({
+        queryKey: collectionQueryKeys.all,
+        exact: true,
+      });
       for (const variantNumber of variantNumbers) {
         void queryClient.cancelQueries({
           queryKey: collectionQueryKeys.entry(variantNumber),
@@ -507,7 +558,14 @@ export function useCollectionMutations() {
     },
   });
 
-  return { addCard, addFromDetail, setQuantity, removeCard, removeMany };
+  return {
+    addCard,
+    addFromDetail,
+    setQuantity,
+    adjustQuantity,
+    removeCard,
+    removeMany,
+  };
 }
 
 export type { CollectionEntry };
