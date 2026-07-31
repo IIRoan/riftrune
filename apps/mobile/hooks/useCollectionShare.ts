@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CollectionShareAcceptMode } from '@riftbound/contracts';
+import { collectionSharePollInterval } from '@/hooks/collectionLiveSync';
 import {
   acceptCollectionShareInvite,
   createCollectionShareInvite,
@@ -20,6 +21,7 @@ export function useCollectionShareStatus(enabled = true) {
     queryFn: fetchCollectionShareStatus,
     enabled: enabled && signedIn,
     staleTime: 30_000,
+    refetchInterval: (query) => collectionSharePollInterval(query.state.data),
   });
 }
 
@@ -35,7 +37,10 @@ export function useCollectionShareInvitePreview(token: string | undefined) {
 }
 
 function invalidateCollectionAndShare(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all, exact: true });
+  void queryClient.invalidateQueries({
+    queryKey: collectionQueryKeys.all,
+    exact: true,
+  });
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.share });
 }
