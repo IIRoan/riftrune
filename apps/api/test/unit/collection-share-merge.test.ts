@@ -117,6 +117,40 @@ describe('mergeCollectionStacks', () => {
     expect(source[0]?.quantity).toBe(2);
     expect(merged[0]?.quantity).toBe(3);
   });
+
+  test('keeps standard and foil finishes separate for the same variant number', () => {
+    const merged = mergeCollectionStacks(
+      [
+        {
+          variantNumber: 'VEN-074',
+          condition: 'near_mint',
+          language: 'en',
+          quantity: 2,
+          isFoil: false,
+        },
+      ],
+      [
+        {
+          variantNumber: 'VEN-074',
+          condition: 'near_mint',
+          language: 'en',
+          quantity: 3,
+          isFoil: true,
+        },
+        {
+          variantNumber: 'VEN-074',
+          condition: 'near_mint',
+          language: 'en',
+          quantity: 1,
+          isFoil: false,
+        },
+      ]
+    );
+
+    expect(merged).toHaveLength(2);
+    expect(merged.find((s) => s.isFoil === false)?.quantity).toBe(3);
+    expect(merged.find((s) => s.isFoil === true)?.quantity).toBe(3);
+  });
 });
 
 describe('collection share contracts', () => {

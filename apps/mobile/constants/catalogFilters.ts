@@ -1,7 +1,10 @@
 import type { CardListItem, CardsListQuery } from '@riftbound/contracts';
+import { getCardPrintings, ownedQuantityForPrinting } from '@/utils/variants';
 
 /** Matches Piltover Archive card library stat chips. */
-export const CATALOG_ENERGY_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+export const CATALOG_ENERGY_VALUES = [
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+] as const;
 export const CATALOG_POWER_VALUES = [0, 1, 2, 3, 4] as const;
 export const CATALOG_MIGHT_VALUES = [0, 2, 3, 5, 7, 8, 10] as const;
 
@@ -42,8 +45,7 @@ export function isCatalogBrowsableType(typeName: string): boolean {
 }
 
 export function sanitizeCatalogFilters(filters: CatalogFilters): CatalogFilters {
-  const collection =
-    filters.collection === 'owned' ? 'owned' : 'all';
+  const collection = filters.collection === 'owned' ? 'owned' : 'all';
 
   return {
     ...filters,
@@ -195,7 +197,9 @@ export function catalogFiltersToQuery(
   if (filters.tokensOnly) {
     query.types = 'Card';
   } else {
-    const types = joinFilterValues(filters.types.filter((type) => isCatalogBrowsableType(type)));
+    const types = joinFilterValues(
+      filters.types.filter((type) => isCatalogBrowsableType(type))
+    );
     if (types) query.types = types;
   }
 
@@ -249,7 +253,9 @@ export function cardMatchesColorIdentity(
 }
 
 function isTokenCard(card: CardListItem): boolean {
-  return card.type.trim().toLowerCase() === 'card' || /-T\d+$/i.test(card.variantNumber);
+  return (
+    card.type.trim().toLowerCase() === 'card' || /-T\d+$/i.test(card.variantNumber)
+  );
 }
 
 function cardMatchesVariantFilter(card: CardListItem, variants: string[]): boolean {
@@ -265,8 +271,8 @@ export function cardOwnedQuantity(
   card: CardListItem,
   collectionByVariant: ReadonlyMap<string, { quantity: number }>
 ): number {
-  return (card.printings ?? [{ variantNumber: card.variantNumber }]).reduce(
-    (sum, printing) => sum + (collectionByVariant.get(printing.variantNumber)?.quantity ?? 0),
+  return getCardPrintings(card).reduce(
+    (sum, printing) => sum + ownedQuantityForPrinting(collectionByVariant, printing),
     0
   );
 }
@@ -279,7 +285,10 @@ export function matchesCatalogFilters(
 ): boolean {
   if (!catalogFiltersActive(filters)) return true;
 
-  if (filters.collection === 'owned' && cardOwnedQuantity(card, collectionByVariant) <= 0) {
+  if (
+    filters.collection === 'owned' &&
+    cardOwnedQuantity(card, collectionByVariant) <= 0
+  ) {
     return false;
   }
 

@@ -6,7 +6,9 @@ import { Text } from '@/components/ui/text';
 import {
   buildPrintingPickerOptions,
   getRemovePrintingPickerOptions,
-  resolveQuickRemoveVariantNumber,
+  printingSelectionId,
+  resolveQuickAddSelection,
+  resolveQuickRemoveSelection,
   shouldShowPrintingPicker,
   shouldShowRemovePrintingPicker,
   type PrintingWithOwned,
@@ -24,8 +26,10 @@ interface OwnershipStepperProps {
   busy?: boolean;
   printings?: PrintingWithOwned[];
   fixedVariantNumber?: string;
-  onAdd: (variantNumber?: string) => void;
-  onRemove: (variantNumber?: string) => void;
+  /** When set with fixedVariantNumber, pins add/remove to that finish. */
+  fixedIsFoil?: boolean;
+  onAdd: (selectionId?: string) => void;
+  onRemove: (selectionId?: string) => void;
 }
 
 export function OwnershipStepper({
@@ -37,6 +41,7 @@ export function OwnershipStepper({
   busy = false,
   printings,
   fixedVariantNumber,
+  fixedIsFoil,
   onAdd,
   onRemove,
 }: OwnershipStepperProps) {
@@ -44,6 +49,11 @@ export function OwnershipStepper({
     () => buildPrintingPickerOptions(printings ?? []),
     [printings]
   );
+
+  const pinnedSelectionId =
+    fixedVariantNumber != null && fixedIsFoil !== undefined
+      ? printingSelectionId({ variantNumber: fixedVariantNumber, isFoil: fixedIsFoil })
+      : fixedVariantNumber;
 
   const multiple = shouldShowPrintingPicker(printings, fixedVariantNumber);
   const showRemovePicker = shouldShowRemovePrintingPicker(
@@ -86,7 +96,7 @@ export function OwnershipStepper({
           relaxed && 'px-3',
           busy && 'opacity-60'
         )}
-        onPress={multiple ? undefined : () => onAdd(fixedVariantNumber)}
+        onPress={multiple ? undefined : () => onAdd(pinnedSelectionId)}
         disabled={busy}
       >
         {busy && !multiple ? (
@@ -153,8 +163,11 @@ export function OwnershipStepper({
       >
         {renderStepButton(
           'remove',
-          () =>
-            onRemove(resolveQuickRemoveVariantNumber(printings, fixedVariantNumber)),
+          () => {
+            const selection = resolveQuickRemoveSelection(printings, pinnedSelectionId);
+            if (!selection) return;
+            onRemove(printingSelectionId(selection));
+          },
           showRemovePicker,
           'Remove printing',
           removeOptions,
@@ -176,7 +189,15 @@ export function OwnershipStepper({
         </Text>
         {renderStepButton(
           'add',
-          () => onAdd(fixedVariantNumber),
+          () => {
+            if (pinnedSelectionId) {
+              onAdd(pinnedSelectionId);
+              return;
+            }
+            const selection = resolveQuickAddSelection(printings);
+            if (!selection) return;
+            onAdd(printingSelectionId(selection));
+          },
           multiple,
           'Add printing',
           pickerOptions,

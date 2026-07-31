@@ -21,13 +21,15 @@ import {
   formatMarketTrend,
   formatPrintingPrice,
   hasMultiplePrintings,
+  ownedQuantityForPrinting,
   printingSummary,
   totalOwnedForCard,
 } from '@/utils/variants';
 import {
   attachOwnedToPrintings,
+  resolvePrintingSelection,
   resolveQuickAddPrintings,
-  resolveQuickRemoveVariantNumber,
+  resolveQuickRemoveSelection,
 } from '@/utils/collectionPrintingPicker';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { hapticPress } from '@/utils/haptics';
@@ -91,10 +93,7 @@ function CardTileInner({
   // overnumbered / alt art tiles keep their Cardmarket price.
   const stepperPrintings = useMemo(
     () =>
-      resolveQuickAddPrintings(
-        card,
-        familyContextVariantNumber ?? card.variantNumber
-      ),
+      resolveQuickAddPrintings(card, familyContextVariantNumber ?? card.variantNumber),
     [card, familyContextVariantNumber]
   );
 
@@ -143,29 +142,49 @@ function CardTileInner({
   }, [router, card.variantNumber, onSelectVariant, onPress]);
 
   const onAdd = useCallback(
-    (variantNumber?: string) => {
+    (selectionId?: string) => {
       void hapticPress();
+      const selection = resolvePrintingSelection(selectionId, printings) ?? {
+        variantNumber: card.variantNumber,
+        isFoil:
+          printings.find((p) => !p.isFoil)?.isFoil ?? printings[0]?.isFoil ?? false,
+      };
       setOptimisticOwned((prev) => (prev ?? owned) + 1);
-      addCard.mutate({ card, variantNumber });
+      addCard.mutate({
+        card,
+        variantNumber: selection.variantNumber,
+        isFoil: selection.isFoil,
+      });
     },
-    [addCard, card, owned]
+    [addCard, card, owned, printings]
   );
 
   const onRemove = useCallback(
-    (variantNumber?: string) => {
+    (selectionId?: string) => {
       void hapticPress();
-      const vn = resolveQuickRemoveVariantNumber(printingsWithOwned, variantNumber);
-      if (!vn) return;
-      const entry = collectionByVariant?.get(vn);
-      const current = entry?.quantity ?? (optimisticOwned ?? owned);
+      const selection =
+        resolveQuickRemoveSelection(printingsWithOwned, selectionId) ??
+        resolvePrintingSelection(selectionId, printings);
+      if (!selection) return;
+      const current =
+        ownedQuantityForPrinting(collectionByVariant, selection) ||
+        (optimisticOwned ?? owned);
       if (current <= 0) return;
       setOptimisticOwned(Math.max(0, (optimisticOwned ?? owned) - 1));
       adjustQuantity.mutate({
-        variantNumber: vn,
+        variantNumber: selection.variantNumber,
         delta: -1,
+        isFoil: selection.isFoil,
       });
     },
-    [collectionByVariant, printingsWithOwned, adjustQuantity, owned, optimisticOwned]
+    [
+      collectionByVariant,
+      printingsWithOwned,
+      printings,
+      adjustQuantity,
+      owned,
+      optimisticOwned,
+    ]
   );
 
   const listCompact = isMobile && layout === 'list';
@@ -185,17 +204,18 @@ function CardTileInner({
   };
 
   const desktopGridStepper = enableQuickAdd && layout === 'grid' && !isMobile;
-  const desktopStepper = enableQuickAdd && !mobileGridQuickAdd ? (
-    <OwnershipStepper
-      owned={displayOwned}
-      name={card.name}
-      compact={stepperCompact}
-      relaxed={stepperRelaxed}
-      gridSlot={desktopGridStepper}
-      printings={printingsWithOwned}
-      {...collectionCallbacks}
-    />
-  ) : null;
+  const desktopStepper =
+    enableQuickAdd && !mobileGridQuickAdd ? (
+      <OwnershipStepper
+        owned={displayOwned}
+        name={card.name}
+        compact={stepperCompact}
+        relaxed={stepperRelaxed}
+        gridSlot={desktopGridStepper}
+        printings={printingsWithOwned}
+        {...collectionCallbacks}
+      />
+    ) : null;
 
   const gridControl = mobileGridQuickAdd ? (
     <GridCollectionControl
@@ -258,7 +278,12 @@ function CardTileInner({
               {primaryPrinting?.variantNumber}
             </Text>
           </View>
-          <View className={cn('flex-row items-center gap-1.5', listCompact ? 'mt-0.5' : 'mt-1')}>
+          <View
+            className={cn(
+              'flex-row items-center gap-1.5',
+              listCompact ? 'mt-0.5' : 'mt-1'
+            )}
+          >
             {rarityIconFor(card.rarity) ? (
               <Image
                 source={rarityIconFor(card.rarity)!}
@@ -276,7 +301,8 @@ function CardTileInner({
             >
               <Text
                 className={cn(
-                  PREMIUM_RARITIES.includes(card.rarity) && 'font-semibold text-foreground'
+                  PREMIUM_RARITIES.includes(card.rarity) &&
+                    'font-semibold text-foreground'
                 )}
               >
                 {card.rarity}
@@ -285,7 +311,12 @@ function CardTileInner({
               {card.setCode ? ` · ${card.setCode}` : ''}
             </Text>
           </View>
-          <View className={cn('flex-row items-center gap-1.5', listCompact ? 'mt-1' : 'mt-1.5')}>
+          <View
+            className={cn(
+              'flex-row items-center gap-1.5',
+              listCompact ? 'mt-1' : 'mt-1.5'
+            )}
+          >
             {owned > 0 ? (
               <>
                 <View className="size-1.5 rounded-full bg-success" />
@@ -456,7 +487,10 @@ function CardTileInner({
         {banned ? <CardBannedOverlay /> : null}
       </View>
 
-      <Text className="mt-2 truncate px-0.5 text-[13px] font-semibold text-foreground" numberOfLines={1}>
+      <Text
+        className="mt-2 truncate px-0.5 text-[13px] font-semibold text-foreground"
+        numberOfLines={1}
+      >
         {card.name}
       </Text>
       <View className="min-w-0 flex-row items-center justify-between gap-1.5 px-0.5">
@@ -476,9 +510,7 @@ function CardTileInner({
         ) : null}
       </View>
 
-      {desktopStepper ? (
-        <View className="mt-2 px-0.5">{desktopStepper}</View>
-      ) : null}
+      {desktopStepper ? <View className="mt-2 px-0.5">{desktopStepper}</View> : null}
     </Pressable>
   );
 }
@@ -521,7 +553,10 @@ export function CardTileSkeleton({
           listCompact ? 'gap-3 px-3 py-2' : 'gap-4 px-4 py-3.5'
         )}
       >
-        <Skeleton className={CARD_ART_RADIUS_CLASS} style={{ width: listThumbW, height: listThumbH }} />
+        <Skeleton
+          className={CARD_ART_RADIUS_CLASS}
+          style={{ width: listThumbW, height: listThumbH }}
+        />
         <View className="min-w-0 flex-1 gap-1.5">
           <Skeleton className="h-3 w-[65%] rounded" />
           <Skeleton className="h-2.5 w-[40%] rounded" />

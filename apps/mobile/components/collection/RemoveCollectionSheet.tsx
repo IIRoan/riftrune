@@ -1,3 +1,4 @@
+import { collectionFinishKey } from '@riftbound/contracts';
 import {
   AppSheet,
   AppSheetBody,
@@ -23,7 +24,7 @@ interface Props {
   cardName: string;
   items: CollectedPrintingRow[];
   onClose: () => void;
-  onRemovePrinting: (variantNumber: string) => void;
+  onRemovePrinting: (selection: { variantNumber: string; isFoil: boolean }) => void;
   onRemoveAll: () => void;
 }
 
@@ -56,9 +57,12 @@ export function RemoveCollectionSheet({
             <InlineList>
               {items.map((item) => (
                 <InlineListItem
-                  key={item.variantNumber}
+                  key={collectionFinishKey(item.variantNumber, item.isFoil)}
                   onPress={() => {
-                    onRemovePrinting(item.variantNumber);
+                    onRemovePrinting({
+                      variantNumber: item.variantNumber,
+                      isFoil: item.isFoil,
+                    });
                   }}
                 >
                   <InlineListItemTitle>{item.label}</InlineListItemTitle>

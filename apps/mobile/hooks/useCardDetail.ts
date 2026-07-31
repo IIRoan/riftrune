@@ -15,15 +15,24 @@ import {
 import { useCollectionRemove } from '@/hooks/useCollectionRemove';
 import { cardListItemToDetailResponse } from '@/lib/cardDetailPlaceholder';
 import { formatCardPrice } from '@/utils/cardFormat';
-import { formatPrintingLabel, findVariantByNumber, getSearchGroupVariants, isFoilVariant, cardListItemMatchesVariant, pickVariantDisplayPrice } from '@/utils/variants';
 import {
-  getCollectedPrintingsForDetailCard,
-} from '@/utils/collectionRemove';
+  formatPrintingLabel,
+  findVariantByNumber,
+  getSearchGroupVariants,
+  isFoilVariant,
+  cardListItemMatchesVariant,
+  pickVariantDisplayPrice,
+  expandVariantFinishPrintings,
+  ownedQuantityForPrinting,
+} from '@/utils/variants';
+import { getCollectedPrintingsForDetailCard } from '@/utils/collectionRemove';
 import { hapticPress } from '@/utils/haptics';
 import { closeCard } from '@/utils/cardNavigation';
 import { flushCardDetailPrefetch } from '@/lib/prefetchCardDetail';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
+import { collectionFinishKey, parseCollectionFinishKey } from '@riftbound/contracts';
+import { resolveUnambiguousQuantitySelection } from '@/utils/collectionPrintingPicker';
 
 export function useCardDetail(
   variantNumber: string,
@@ -75,7 +84,8 @@ export function useCardDetail(
     return variantNumber ? [variantNumber] : [];
   }, [card, listItem, variantNumber]);
 
-  const { collectionByVariant: fetchedOwnership } = useCollectionOwnership(detailVariants);
+  const { collectionByVariant: fetchedOwnership } =
+    useCollectionOwnership(detailVariants);
   const { data: collectionEntries = [] } = useCollection();
   const collectionByVariant = useMemo(
     () =>
@@ -92,31 +102,39 @@ export function useCardDetail(
       variantNumber: activeVariant.variantNumber,
       variantLabel: activeVariant.variantLabel,
       variantType: activeVariant.variantType,
+      foilMode: activeVariant.foilMode,
     });
   }, [card, activeVariant, collectionByVariant]);
 
-  const ownedQuantity = activeVariant
-    ? (collectionByVariant.get(activeVariant.variantNumber)?.quantity ?? 0)
-    : 0;
+  const finishPrintingsForActive = useMemo(() => {
+    if (!card || !activeVariant) return [];
+    return expandVariantFinishPrintings(
+      getSearchGroupVariants(card.variants, activeVariant)
+    );
+  }, [card, activeVariant]);
+
+  const ownedQuantity = useMemo(() => {
+    if (!activeVariant) return 0;
+    return finishPrintingsForActive.reduce(
+      (sum, printing) => sum + ownedQuantityForPrinting(collectionByVariant, printing),
+      0
+    );
+  }, [activeVariant, finishPrintingsForActive, collectionByVariant]);
+
   const collectionEntry = useMemo(() => {
     if (!activeVariant || ownedQuantity <= 0) return null;
+    const ownedFinish =
+      finishPrintingsForActive.find(
+        (printing) => ownedQuantityForPrinting(collectionByVariant, printing) > 0
+      ) ?? finishPrintingsForActive[0];
     return {
       quantity: ownedQuantity,
-      isFoil: isFoilVariant(
-        activeVariant.variantNumber,
-        activeVariant.variantLabel,
-        activeVariant.variantType
-      ),
+      isFoil: ownedFinish?.isFoil ?? false,
     };
-  }, [activeVariant, ownedQuantity]);
+  }, [activeVariant, ownedQuantity, finishPrintingsForActive, collectionByVariant]);
   const { addFromDetail, adjustQuantity } = useCollectionMutations();
-  const {
-    sheet,
-    closeSheet,
-    promptRemove,
-    onSheetRemovePrinting,
-    onSheetRemoveAll,
-  } = useCollectionRemove();
+  const { sheet, closeSheet, promptRemove, onSheetRemovePrinting, onSheetRemoveAll } =
+    useCollectionRemove();
 
   const handleClose = useCallback(() => {
     closeCard(router);
@@ -127,27 +145,38 @@ export function useCardDetail(
     return getSearchGroupVariants(card.variants, activeVariant);
   }, [card, activeVariant]);
 
+  const finishPrintings = finishPrintingsForActive;
+
   const needsPrintingPicker = useMemo(() => {
-    return groupVariants.length > 1;
-  }, [groupVariants]);
+    return finishPrintings.length > 1;
+  }, [finishPrintings]);
 
   const pickerOptions = useMemo(() => {
-    return groupVariants.map((variant) => {
-      const foil = isFoilVariant(
-        variant.variantNumber,
-        variant.variantLabel,
-        variant.variantType
-      );
-      const price = pickVariantDisplayPrice(variant.prices, variant);
+    return finishPrintings.map((printing) => {
+      const source =
+        groupVariants.find(
+          (variant) => variant.variantNumber === printing.variantNumber
+        ) ?? groupVariants[0];
+      const price = source
+        ? (source.prices.find((row) => row.isFoil === printing.isFoil) ??
+          pickVariantDisplayPrice(source.prices, {
+            ...source,
+            foilMode: printing.isFoil ? 'foil_only' : source.foilMode,
+          }))
+        : null;
       const amount = price?.market ?? null;
       return {
-        id: variant.variantNumber,
-        label: formatPrintingLabel(variant.variantLabel, foil, variant.variantNumber),
-        subtitle: variant.variantNumber,
+        id: collectionFinishKey(printing.variantNumber, printing.isFoil),
+        label: formatPrintingLabel(
+          printing.variantLabel,
+          printing.isFoil,
+          printing.variantNumber
+        ),
+        subtitle: printing.variantNumber,
         price: amount != null ? `€${amount.toFixed(2)}` : undefined,
       };
     });
-  }, [groupVariants]);
+  }, [finishPrintings, groupVariants]);
 
   const printingPreviews = useMemo(() => {
     return groupVariants.map((variant) => {
@@ -163,11 +192,11 @@ export function useCardDetail(
   }, [groupVariants]);
 
   const onAddToCollection = useCallback(
-    (targetVariantNumber: string) => {
+    (targetVariantNumber: string, isFoil?: boolean) => {
       if (!card) return;
       void hapticPress();
       // Optimistic cache updates in onMutate — never await the network here.
-      addFromDetail.mutate({ card, variantNumber: targetVariantNumber });
+      addFromDetail.mutate({ card, variantNumber: targetVariantNumber, isFoil });
       setSelectedVariant(targetVariantNumber);
     },
     [card, addFromDetail]
@@ -180,8 +209,9 @@ export function useCardDetail(
       setPickerVisible(true);
       return;
     }
-    onAddToCollection(activeVariant.variantNumber);
-  }, [card, activeVariant, needsPrintingPicker, onAddToCollection]);
+    const finish = finishPrintings[0];
+    onAddToCollection(activeVariant.variantNumber, finish?.isFoil);
+  }, [card, activeVariant, needsPrintingPicker, onAddToCollection, finishPrintings]);
 
   const onRemovePress = useCallback(() => {
     if (!card) return;
@@ -198,17 +228,45 @@ export function useCardDetail(
         return;
       }
       void hapticPress();
+      const target = resolveUnambiguousQuantitySelection(
+        finishPrintings.map((printing) => ({
+          ...printing,
+          owned: ownedQuantityForPrinting(collectionByVariant, printing),
+        })),
+        delta
+      );
+      if (!target && delta < 0) {
+        if (!card) return;
+        void promptRemove(card.name, collectedForCard);
+        return;
+      }
+      if (!target && delta > 0) {
+        setPickerVisible(true);
+        return;
+      }
+      if (!target) return;
       adjustQuantity.mutate({
-        variantNumber: activeVariant.variantNumber,
+        variantNumber: target.variantNumber,
         delta,
+        isFoil: target.isFoil,
       });
     },
-    [activeVariant, ownedQuantity, adjustQuantity, card, collectedForCard, promptRemove]
+    [
+      activeVariant,
+      ownedQuantity,
+      adjustQuantity,
+      card,
+      collectedForCard,
+      promptRemove,
+      finishPrintings,
+      collectionByVariant,
+    ]
   );
 
   const onSelectPrinting = useCallback((id: string) => {
     void hapticPress();
-    setSelectedVariant(id);
+    const parsed = parseCollectionFinishKey(id);
+    setSelectedVariant(parsed?.variantNumber ?? id);
   }, []);
 
   return {

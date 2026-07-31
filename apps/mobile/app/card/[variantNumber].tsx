@@ -18,6 +18,7 @@ import { useCardPresentation } from '@/hooks/useCardPresentation';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useWishlistPrices } from '@/hooks/useWishlistPrices';
 import { parseCardOpenSource } from '@/utils/cardNavigation';
+import { parseCollectionFinishKey } from '@riftbound/contracts';
 
 function PageLoading() {
   return <AppLoadingScreen size="lg" />;
@@ -40,7 +41,7 @@ export default function CardDetailScreen() {
   const isMobile = useMobileLayout();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const raw = params.variantNumber;
-  const variantNumber = Array.isArray(raw) ? raw[0] : (raw || '');
+  const variantNumber = Array.isArray(raw) ? raw[0] : raw || '';
   const source = parseCardOpenSource(params.source);
   const isModal = present === 'modal';
   const useDrawer = isModal && isMobile;
@@ -57,7 +58,8 @@ export default function CardDetailScreen() {
     <>
       {detail.isLoading ? <CardModalLoading onClose={detail.handleClose} /> : null}
 
-      {!detail.isLoading && (detail.isError || !detail.card || !detail.activeVariant) ? (
+      {!detail.isLoading &&
+      (detail.isError || !detail.card || !detail.activeVariant) ? (
         <CardModalError onClose={detail.handleClose} />
       ) : null}
 
@@ -172,7 +174,8 @@ export default function CardDetailScreen() {
           detail.setPickerVisible(false);
         }}
         onSelect={(id) => {
-          void detail.onAddToCollection(id);
+          const parsed = parseCollectionFinishKey(id);
+          void detail.onAddToCollection(parsed?.variantNumber ?? id, parsed?.isFoil);
         }}
       />
 

@@ -117,6 +117,54 @@ describe('mapListItem', () => {
     expect(foil.printings[0]?.isFoil).toBe(true);
   });
 
+  test('synthesizes std + foil printings for foilMode=both without a sibling', () => {
+    const bothOnly = variant(
+      VARIANT_STANDARD_ID,
+      'VEN-074',
+      'Standard',
+      'Standard',
+      200
+    );
+    bothOnly.foilMode = 'both';
+    const item = mapListItem({ ...logical, variants: [bothOnly] }, bothOnly, [
+      {
+        cardmarketId: 200,
+        isFoil: false,
+        marketPrice: '1.00',
+        lowPrice: '0.50',
+        avg7Day: '0.90',
+        lastUpdated: '2026-01-01',
+      },
+      {
+        cardmarketId: 200,
+        isFoil: true,
+        marketPrice: '3.00',
+        lowPrice: '2.00',
+        avg7Day: '2.80',
+        lastUpdated: '2026-01-01',
+      },
+    ]);
+    expect(item.printings).toHaveLength(2);
+    expect(item.printings.map((p) => p.isFoil)).toEqual([false, true]);
+    expect(item.printings[0]?.priceEur?.market).toBe(1);
+    expect(item.printings[1]?.priceEur?.market).toBe(3);
+  });
+
+  test('marks foil_only printings as foil even when labeled Standard', () => {
+    const foilOnly = variant(
+      VARIANT_STANDARD_ID,
+      'OGN-025',
+      'Standard',
+      'Standard',
+      201
+    );
+    foilOnly.foilMode = 'foil_only';
+    const item = mapListItem({ ...logical, variants: [foilOnly] }, foilOnly, []);
+    expect(item.printings).toHaveLength(1);
+    expect(item.printings[0]?.isFoil).toBe(true);
+    expect(item.printings[0]?.variantLabel).toBe('Foil');
+  });
+
   test('ignores zero-trend plain rows when foil guide has the real price', () => {
     const showcase = variant(
       VARIANT_ALT_ID,
@@ -157,6 +205,7 @@ describe('getSearchGroupKey', () => {
   test('groups foil with standard but keeps alternate art separate', () => {
     expect(getSearchGroupKey('OGN-001', 'Standard')).toBe('OGN-001');
     expect(getSearchGroupKey('OGN-001-Foil', 'Foil')).toBe('OGN-001');
+    expect(getSearchGroupKey('SFD-R05a', 'Foil')).toBe('SFD-R05');
     expect(getSearchGroupKey('OGN-001a', 'Alt Art', 'Alternate Art')).toBe('OGN-001a');
   });
 });
@@ -172,7 +221,9 @@ describe('groupCardListItems', () => {
   });
 
   test('splits catalog-grouped rows so promo and overnumbered stay separate', () => {
-    const rows = logical.variants.map((entry) => mapListItem(logical, entry, priceRows));
+    const rows = logical.variants.map((entry) =>
+      mapListItem(logical, entry, priceRows)
+    );
     const catalogGrouped = groupCatalogListItems(rows);
     expect(catalogGrouped).toHaveLength(1);
 
@@ -187,7 +238,8 @@ describe('groupCardListItems', () => {
         expect(
           row.printings.every(
             (printing) =>
-              printing.variantLabel === 'Standard' || /foil/i.test(printing.variantLabel)
+              printing.variantLabel === 'Standard' ||
+              /foil/i.test(printing.variantLabel)
           )
         ).toBe(true);
       }
@@ -197,11 +249,33 @@ describe('groupCardListItems', () => {
 
 describe('groupCatalogListItems', () => {
   test('merges all printings for the same logical card', () => {
-    const rows = logical.variants.map((entry) => mapListItem(logical, entry, priceRows));
+    const rows = logical.variants.map((entry) =>
+      mapListItem(logical, entry, priceRows)
+    );
     const grouped = groupCatalogListItems(rows);
     expect(grouped).toHaveLength(1);
     expect(grouped[0]?.printings).toHaveLength(3);
     expect(grouped[0]?.variantNumber).toBe('OGN-001');
+  });
+
+  test('drops synthetic same-VN foil when a real -Foil sibling is present', () => {
+    const std = { ...logical.variants[0]!, foilMode: 'both' };
+    const foil = { ...logical.variants[1]!, foilMode: 'both' };
+    const stdItem = mapListItem({ ...logical, variants: [std, foil] }, std, priceRows);
+    const foilItem = mapListItem(
+      { ...logical, variants: [std, foil] },
+      foil,
+      priceRows
+    );
+    expect(stdItem.printings).toHaveLength(2);
+
+    const grouped = groupCatalogListItems([stdItem, foilItem]);
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0]?.printings.map((p) => p.variantNumber)).toEqual([
+      'OGN-001',
+      'OGN-001-Foil',
+    ]);
+    expect(grouped[0]?.printings.filter((p) => p.isFoil)).toHaveLength(1);
   });
 });
 

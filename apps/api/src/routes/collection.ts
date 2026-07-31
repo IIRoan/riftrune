@@ -29,6 +29,7 @@ const AdjustBody = z.object({
   delta: z.number().int().positive().optional(),
   condition: CardCondition.optional(),
   language: z.string().optional(),
+  isFoil: z.boolean().optional(),
 });
 
 const _UpsertBody = CollectionUpsertRequest.omit({ variantNumber: true });
@@ -181,7 +182,10 @@ export function createCollectionRoutes(
         }
         const { collectionId } = await ensureCollectionMembership(db, user.id);
         const { variantNumbers } = CollectionQuantitiesRequest.parse(body);
-        const rows = await collection.quantitiesForVariants(collectionId, variantNumbers);
+        const rows = await collection.quantitiesForVariants(
+          collectionId,
+          variantNumbers
+        );
         return CollectionQuantitiesResponse.parse({ data: rows });
       },
       { detail: { tags: ['collection'] } }
@@ -204,6 +208,7 @@ export function createCollectionRoutes(
           quantity: parsed.quantity,
           condition: parsed.condition,
           language: parsed.language,
+          ...(parsed.isFoil === undefined ? {} : { isFoil: parsed.isFoil }),
           notes: parsed.notes ?? null,
           isGraded: parsed.isGraded ?? false,
           gradeCompany: parsed.gradeCompany ?? null,
@@ -237,10 +242,18 @@ export function createCollectionRoutes(
           : 'near_mint';
         const language = parsed.success ? (parsed.data.language ?? 'en') : 'en';
 
-        const item = await collection.adjustQuantity(collectionId, params.variantNumber, delta, {
-          condition,
-          language,
-        });
+        const item = await collection.adjustQuantity(
+          collectionId,
+          params.variantNumber,
+          delta,
+          {
+            condition,
+            language,
+            ...(parsed.success && parsed.data.isFoil !== undefined
+              ? { isFoil: parsed.data.isFoil }
+              : {}),
+          }
+        );
         notifyLive(liveHub, collectionId, 'add', user.id);
         if (!item) return { data: null };
         return collectionItemResponse('collection.add', item, {
@@ -273,6 +286,9 @@ export function createCollectionRoutes(
           {
             condition,
             language,
+            ...(parsed.success && parsed.data.isFoil !== undefined
+              ? { isFoil: parsed.data.isFoil }
+              : {}),
           }
         );
         notifyLive(liveHub, collectionId, 'remove', user.id);
@@ -296,11 +312,14 @@ export function createCollectionRoutes(
         const condition = CardCondition.safeParse(query.condition).success
           ? CardCondition.parse(query.condition)
           : 'near_mint';
+        const isFoilQuery =
+          query.isFoil === 'true' ? true : query.isFoil === 'false' ? false : undefined;
         await collection.remove(
           collectionId,
           params.variantNumber,
           condition,
-          query.language ?? 'en'
+          query.language ?? 'en',
+          isFoilQuery
         );
         notifyLive(liveHub, collectionId, 'delete', user.id);
         return { data: { ok: true } };
@@ -377,6 +396,7 @@ export function createCollectionRoutes(
               quantity: item.quantity,
               condition: item.condition,
               language: item.language,
+              ...(item.isFoil === undefined ? {} : { isFoil: item.isFoil }),
               notes: item.notes ?? null,
               isGraded: item.isGraded ?? false,
               gradeCompany: item.gradeCompany ?? null,

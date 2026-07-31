@@ -16,50 +16,61 @@ export async function fetchRemoteCollection(): Promise<CollectionItem[]> {
 
 export async function fetchRemoteCollectionQuantities(
   variantNumbers: string[]
-): Promise<Array<{ variantNumber: string; quantity: number }>> {
+): Promise<Array<{ variantNumber: string; isFoil: boolean; quantity: number }>> {
   if (variantNumbers.length === 0) return [];
-  const res = await authedFetch<{ data: Array<{ variantNumber: string; quantity: number }> }>(
-    '/api/v1/collection/quantities',
-    {
-      method: 'POST',
-      body: { variantNumbers },
-    }
-  );
-  return parseOrThrow('collection.quantities.parse', CollectionQuantitiesResponse, res).data;
+  const res = await authedFetch<{
+    data: Array<{ variantNumber: string; isFoil: boolean; quantity: number }>;
+  }>('/api/v1/collection/quantities', {
+    method: 'POST',
+    body: { variantNumbers },
+  });
+  return parseOrThrow('collection.quantities.parse', CollectionQuantitiesResponse, res)
+    .data;
 }
 
 export async function remoteAddToCollection(
   variantNumber: string,
-  delta = 1
+  delta = 1,
+  isFoil?: boolean
 ): Promise<void> {
   await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/add`, {
     method: 'POST',
-    body: { delta },
+    body: { delta, ...(isFoil === undefined ? {} : { isFoil }) },
   });
 }
 
 export async function remoteRemoveFromCollection(
   variantNumber: string,
-  delta = 1
+  delta = 1,
+  isFoil?: boolean
 ): Promise<void> {
   await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}/remove`, {
     method: 'POST',
-    body: { delta },
+    body: { delta, ...(isFoil === undefined ? {} : { isFoil }) },
   });
 }
 
 export async function remoteSetCollectionQuantity(
   variantNumber: string,
-  quantity: number
+  quantity: number,
+  isFoil?: boolean
 ): Promise<void> {
   await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}`, {
     method: 'PUT',
-    body: { variantNumber, quantity },
+    body: {
+      variantNumber,
+      quantity,
+      ...(isFoil === undefined ? {} : { isFoil }),
+    },
   });
 }
 
-export async function remoteDeleteFromCollection(variantNumber: string): Promise<void> {
-  await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}`, {
+export async function remoteDeleteFromCollection(
+  variantNumber: string,
+  isFoil?: boolean
+): Promise<void> {
+  const query = isFoil === undefined ? '' : `?isFoil=${isFoil ? 'true' : 'false'}`;
+  await authedFetch(`/api/v1/collection/${encodeURIComponent(variantNumber)}${query}`, {
     method: 'DELETE',
   });
 }
@@ -90,6 +101,7 @@ export async function remoteImportCollectionItems(
     quantity: number;
     condition?: string;
     language?: string;
+    isFoil?: boolean;
     notes?: string | null;
     isGraded?: boolean;
     gradeCompany?: string | null;
@@ -105,7 +117,11 @@ export async function remoteImportCollectionItems(
     method: 'POST',
     body: { items },
   });
-  const parsed = parseOrThrow('collection.import.parse', CollectionImportResponse, res).data;
+  const parsed = parseOrThrow(
+    'collection.import.parse',
+    CollectionImportResponse,
+    res
+  ).data;
   return {
     imported: parsed.imported,
     totalCopies: parsed.totalCopies,

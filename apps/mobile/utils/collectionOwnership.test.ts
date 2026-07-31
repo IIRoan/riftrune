@@ -7,6 +7,7 @@ import {
   mergeOwnershipRecords,
   ownershipMapFromRecord,
   ownershipRecordFromCollection,
+  ownershipRecordFromQuantityRows,
   preferCollectionOwnership,
 } from '@/utils/collectionOwnership';
 
@@ -61,7 +62,10 @@ describe('collectionOwnership', () => {
   });
 
   test('ownershipRecordFromCollection skips zero quantities', () => {
-    expect(ownershipRecordFromCollection(sampleEntries)).toEqual({ 'OGN-001': 2 });
+    expect(ownershipRecordFromCollection(sampleEntries)).toEqual({
+      'OGN-001': 2,
+      'OGN-001::std': 2,
+    });
   });
 
   test('ownershipMapFromRecord omits zero quantities', () => {
@@ -86,10 +90,15 @@ describe('collectionOwnership', () => {
   test('mergeOwnershipFromCollection preserves known zeros and clears removed owned', () => {
     expect(
       mergeOwnershipFromCollection(
-        { 'OGN-001': 2, 'OGN-099': 0, 'OGN-050': 1 },
+        { 'OGN-001': 2, 'OGN-001::std': 2, 'OGN-099': 0, 'OGN-050': 1 },
         [{ ...sampleEntries[0]!, variantNumber: 'OGN-001', quantity: 3 }]
       )
-    ).toEqual({ 'OGN-001': 3, 'OGN-099': 0, 'OGN-050': 0 });
+    ).toEqual({
+      'OGN-001': 3,
+      'OGN-001::std': 3,
+      'OGN-099': 0,
+      'OGN-050': 0,
+    });
   });
 
   test('preferCollectionOwnership lets collection win over stale ownership', () => {
@@ -110,12 +119,27 @@ describe('collectionOwnership', () => {
       {
         ...sampleEntries[0]!,
         variantNumber: 'OGN-015-Foil',
+        isFoil: true,
         quantity: 1,
       },
     ]);
     const map = ownershipMapFromRecord(record);
     expect(map.get('OGN-015')?.quantity).toBe(2);
+    expect(map.get('OGN-015::std')?.quantity).toBe(2);
     expect(map.get('OGN-015-Foil')?.quantity).toBe(1);
-    expect(map.size).toBe(2);
+    expect(map.get('OGN-015-Foil::foil')?.quantity).toBe(1);
+    expect(map.size).toBe(4);
+  });
+
+  test('ownershipRecordFromQuantityRows keeps finishes separate and aggregates VN totals', () => {
+    const record = ownershipRecordFromQuantityRows([
+      { variantNumber: 'VEN-074', isFoil: false, quantity: 2 },
+      { variantNumber: 'VEN-074', isFoil: true, quantity: 1 },
+    ]);
+    expect(record).toEqual({
+      'VEN-074::std': 2,
+      'VEN-074::foil': 1,
+      'VEN-074': 3,
+    });
   });
 });

@@ -105,14 +105,14 @@ beforeEach(() => {
   getAuthCookieHeader.mockClear();
 });
 
-function expectPostToSelectedVariant(variantNumber: string) {
+function expectPostToSelectedVariant(variantNumber: string, isFoil = true) {
   expect(requests).toHaveLength(1);
   expect(requests[0]?.url).toBe(
     `http://localhost:7000/api/v1/collection/${variantNumber}/add`
   );
   expect(requests[0]?.init?.method).toBe('POST');
   expect(requests[0]?.init?.credentials).toBe('include');
-  expect(requests[0]?.init?.body).toBe(JSON.stringify({ delta: 1 }));
+  expect(requests[0]?.init?.body).toBe(JSON.stringify({ delta: 1, isFoil }));
   expect(new Headers(requests[0]?.init?.headers).get('content-type')).toBe(
     'application/json'
   );
@@ -143,10 +143,10 @@ function expectWriteRequest({
 
 describe('remote collection writes', () => {
   test('adds a selected variant with an authenticated POST request', async () => {
-    await remoteAddToCollection('SFD-R05a');
+    await remoteAddToCollection('SFD-R05a', 1, true);
 
     expect(getAuthCookieHeader).toHaveBeenCalled();
-    expectPostToSelectedVariant('SFD-R05a');
+    expectPostToSelectedVariant('SFD-R05a', true);
   });
 });
 

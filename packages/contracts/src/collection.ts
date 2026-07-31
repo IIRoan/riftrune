@@ -43,6 +43,12 @@ export const CollectionUpsertRequest = z.object({
   quantity: z.number().int().min(0).default(1),
   condition: CardCondition.default('near_mint'),
   language: z.string().default('en'),
+  /**
+   * Finish stack to write. Required to distinguish standard vs foil when a single
+   * upstream SKU has `foilMode=both` without a distinct `-Foil` sibling.
+   * When omitted, the API derives finish from catalog metadata.
+   */
+  isFoil: z.boolean().optional(),
   notes: z.string().nullable().optional(),
   isGraded: z.boolean().optional(),
   gradeCompany: z.string().nullable().optional(),
@@ -77,6 +83,7 @@ export type CollectionQuantitiesRequest = z.infer<typeof CollectionQuantitiesReq
 
 export const CollectionQuantityRow = z.object({
   variantNumber: z.string(),
+  isFoil: z.boolean(),
   quantity: z.number().int().nonnegative(),
 });
 
@@ -129,6 +136,7 @@ export const CollectionImportRequest = z.object({
         quantity: z.number().int().positive(),
         condition: CardCondition.default('near_mint'),
         language: z.string().default('en'),
+        isFoil: z.boolean().optional(),
         notes: z.string().nullable().optional(),
         isGraded: z.boolean().optional(),
         gradeCompany: z.string().nullable().optional(),

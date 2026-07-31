@@ -1,10 +1,12 @@
 import type { CardListItem, CardListPrinting } from '@riftbound/contracts';
+import { collectionFinishKey, parseCollectionFinishKey } from '@riftbound/contracts';
 import {
   formatPrintingLabel,
   formatPrintingPrice,
   getCardPrintings,
   getPrintingsInSearchGroup,
   getVariantFamiliesFromPrintings,
+  ownedQuantityForPrinting,
 } from '@/utils/variants';
 
 export type PrintingPickerOption = {
@@ -16,6 +18,11 @@ export type PrintingPickerOption = {
 
 export type PrintingWithOwned = CardListPrinting & { owned?: number };
 
+export type PrintingSelection = {
+  variantNumber: string;
+  isFoil: boolean;
+};
+
 /** Show foil/std picker when multiple finish printings exist and none is pinned. */
 export function shouldShowPrintingPicker(
   printings: readonly CardListPrinting[] | undefined,
@@ -24,11 +31,31 @@ export function shouldShowPrintingPicker(
   return fixedVariantNumber == null && (printings?.length ?? 0) > 1;
 }
 
+export function printingSelectionId(
+  printing: Pick<CardListPrinting, 'variantNumber' | 'isFoil'>
+): string {
+  return collectionFinishKey(printing.variantNumber, printing.isFoil);
+}
+
+export function resolvePrintingSelection(
+  id: string | undefined,
+  printings: readonly CardListPrinting[] | undefined
+): PrintingSelection | undefined {
+  if (!id) return undefined;
+  const parsed = parseCollectionFinishKey(id);
+  if (parsed) return parsed;
+  const printing = (printings ?? []).find((row) => row.variantNumber === id);
+  if (printing) {
+    return { variantNumber: printing.variantNumber, isFoil: printing.isFoil };
+  }
+  return { variantNumber: id, isFoil: /foil/i.test(id) };
+}
+
 export function buildPrintingPickerOptions(
   printings: readonly CardListPrinting[]
 ): PrintingPickerOption[] {
   return printings.map((printing) => ({
-    id: printing.variantNumber,
+    id: printingSelectionId(printing),
     label: formatPrintingLabel(
       printing.variantLabel,
       printing.isFoil,
@@ -47,31 +74,72 @@ export function getOwnedPrintingsForPicker(
 }
 
 /**
- * Resolve which variant to decrement when the UI calls remove without a picker choice.
+ * Resolve which finish to decrement when the UI calls remove without a picker choice.
  * Prefer the single owned finish (e.g. foil-only) over the card's primary/standard printing.
  */
+export function resolveQuickRemoveSelection(
+  printings: readonly PrintingWithOwned[] | undefined,
+  preferredId?: string
+): PrintingSelection | undefined {
+  if (preferredId) return resolvePrintingSelection(preferredId, printings);
+  const owned = getOwnedPrintingsForPicker(printings);
+  if (owned.length === 0) return undefined;
+  const printing = owned[0]!;
+  return { variantNumber: printing.variantNumber, isFoil: printing.isFoil };
+}
+
+/**
+ * Resolve a detail +/- action only when its finish is unambiguous.
+ * Once both finishes are owned, callers should ask which finish to change.
+ */
+export function resolveUnambiguousQuantitySelection(
+  printings: readonly PrintingWithOwned[],
+  delta: number
+): PrintingSelection | undefined {
+  const owned = getOwnedPrintingsForPicker(printings);
+  if (owned.length === 1) {
+    const printing = owned[0]!;
+    return { variantNumber: printing.variantNumber, isFoil: printing.isFoil };
+  }
+  if (delta > 0 && owned.length === 0 && printings.length === 1) {
+    const printing = printings[0]!;
+    return { variantNumber: printing.variantNumber, isFoil: printing.isFoil };
+  }
+  return undefined;
+}
+
+/** @deprecated Prefer resolveQuickRemoveSelection */
 export function resolveQuickRemoveVariantNumber(
   printings: readonly PrintingWithOwned[] | undefined,
   preferredVariantNumber?: string
 ): string | undefined {
-  if (preferredVariantNumber) return preferredVariantNumber;
-  const owned = getOwnedPrintingsForPicker(printings);
-  if (owned.length === 0) return undefined;
-  return owned[0]?.variantNumber;
+  return resolveQuickRemoveSelection(printings, preferredVariantNumber)?.variantNumber;
 }
 
 /**
- * Resolve which variant to increment when add is pressed without a picker choice.
- * Single printing → that id; multiple → non-foil primary (matches catalog list primary).
+ * Resolve which finish to increment when add is pressed without a picker choice.
+ * Single printing → that finish; multiple → non-foil primary (matches catalog list primary).
  */
+export function resolveQuickAddSelection(
+  printings: readonly CardListPrinting[] | undefined,
+  preferredId?: string
+): PrintingSelection | undefined {
+  if (preferredId) return resolvePrintingSelection(preferredId, printings);
+  if (!printings?.length) return undefined;
+  const printing =
+    printings.length === 1
+      ? printings[0]
+      : (printings.find((row) => !row.isFoil) ?? printings[0]);
+  if (!printing) return undefined;
+  return { variantNumber: printing.variantNumber, isFoil: printing.isFoil };
+}
+
+/** @deprecated Prefer resolveQuickAddSelection */
 export function resolveQuickAddVariantNumber(
   printings: readonly CardListPrinting[] | undefined,
   preferredVariantNumber?: string
 ): string | undefined {
-  if (preferredVariantNumber) return preferredVariantNumber;
-  if (!printings?.length) return undefined;
-  if (printings.length === 1) return printings[0]?.variantNumber;
-  return printings.find((printing) => !printing.isFoil)?.variantNumber ?? printings[0]?.variantNumber;
+  return resolveQuickAddSelection(printings, preferredVariantNumber)?.variantNumber;
 }
 
 export function shouldShowRemovePrintingPicker(
@@ -87,7 +155,9 @@ export function getRemovePrintingPickerOptions(
   allOptions: PrintingPickerOption[]
 ): PrintingPickerOption[] {
   const ownedIds = new Set(
-    getOwnedPrintingsForPicker(printings).map((printing) => printing.variantNumber)
+    getOwnedPrintingsForPicker(printings).map((printing) =>
+      printingSelectionId(printing)
+    )
   );
   return allOptions.filter((option) => ownedIds.has(option.id));
 }
@@ -98,7 +168,7 @@ export function attachOwnedToPrintings(
 ): PrintingWithOwned[] {
   return printings.map((printing) => ({
     ...printing,
-    owned: collectionByVariant?.get(printing.variantNumber)?.quantity ?? 0,
+    owned: ownedQuantityForPrinting(collectionByVariant, printing),
   }));
 }
 
@@ -115,7 +185,8 @@ export function resolveQuickAddPrintings(
     return getPrintingsInSearchGroup(allPrintings, familyContextVariantNumber);
   }
   const families = getVariantFamiliesFromPrintings(allPrintings);
-  const standardFamily = families.find((family) => family.label === 'Standard') ?? families[0];
+  const standardFamily =
+    families.find((family) => family.label === 'Standard') ?? families[0];
   return standardFamily?.variants ?? allPrintings;
 }
 
@@ -129,7 +200,10 @@ export function resolvePrintingPickerState(input: {
   removeOptions: PrintingPickerOption[];
 } {
   const addOptions = buildPrintingPickerOptions(input.printings);
-  const showAddPicker = shouldShowPrintingPicker(input.printings, input.fixedVariantNumber);
+  const showAddPicker = shouldShowPrintingPicker(
+    input.printings,
+    input.fixedVariantNumber
+  );
   const showRemovePicker = shouldShowRemovePrintingPicker(
     input.printings,
     input.fixedVariantNumber

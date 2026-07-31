@@ -10,6 +10,8 @@ import {
   groupCardListItems,
   pickVariantDisplayPrice,
   totalOwnedForCard,
+  ownedQuantityForPrinting,
+  expandVariantFinishPrintings,
 } from '@/utils/variants';
 import type { CardListItem } from '@riftbound/contracts';
 
@@ -330,8 +332,87 @@ describe('formatListPrice / totalOwnedForCard', () => {
     expect(totalOwnedForCard(stdFoilCard, ownership)).toBe(3);
   });
 
+  test('totalOwnedForCard uses finish keys without double-counting aggregate VN totals', () => {
+    const bothCard = listCard({
+      variantNumber: 'VEN-074',
+      printings: [
+        {
+          variantNumber: 'VEN-074',
+          variantLabel: 'Standard',
+          isFoil: false,
+          foilMode: 'both',
+          priceEur: null,
+        },
+        {
+          variantNumber: 'VEN-074',
+          variantLabel: 'Foil',
+          isFoil: true,
+          foilMode: 'both',
+          priceEur: null,
+        },
+      ],
+    });
+    const ownership = new Map([
+      ['VEN-074::std', { quantity: 2 }],
+      ['VEN-074', { quantity: 2 }],
+    ]);
+    expect(ownedQuantityForPrinting(ownership, bothCard.printings[0]!)).toBe(2);
+    expect(ownedQuantityForPrinting(ownership, bothCard.printings[1]!)).toBe(0);
+    expect(totalOwnedForCard(bothCard, ownership)).toBe(2);
+  });
+
   test('totalOwnedForCard is zero when ownership map is missing', () => {
     expect(totalOwnedForCard(stdFoilCard)).toBe(0);
+  });
+});
+
+describe('expandVariantFinishPrintings', () => {
+  test('expands foilMode=both into standard and foil finishes', () => {
+    const printings = expandVariantFinishPrintings([
+      {
+        variantNumber: 'VEN-074',
+        variantLabel: 'Standard',
+        variantType: 'Standard',
+        foilMode: 'both',
+      },
+    ]);
+    expect(printings.map((p) => ({ vn: p.variantNumber, foil: p.isFoil }))).toEqual([
+      { vn: 'VEN-074', foil: false },
+      { vn: 'VEN-074', foil: true },
+    ]);
+  });
+
+  test('marks foil_only as a single foil printing', () => {
+    const printings = expandVariantFinishPrintings([
+      {
+        variantNumber: 'OGN-025',
+        variantLabel: 'Standard',
+        variantType: 'Standard',
+        foilMode: 'foil_only',
+      },
+    ]);
+    expect(printings).toHaveLength(1);
+    expect(printings[0]?.isFoil).toBe(true);
+    expect(printings[0]?.variantLabel).toBe('Foil');
+  });
+
+  test('keeps distinct foil sibling instead of synthesizing a same-VN foil', () => {
+    const printings = expandVariantFinishPrintings([
+      {
+        variantNumber: 'OGN-015',
+        variantLabel: 'Standard',
+        variantType: 'Standard',
+        foilMode: 'both',
+      },
+      {
+        variantNumber: 'OGN-015-Foil',
+        variantLabel: 'Foil',
+        variantType: 'Standard',
+        foilMode: 'both',
+      },
+    ]);
+    expect(printings.map((p) => p.variantNumber)).toEqual(['OGN-015', 'OGN-015-Foil']);
+    expect(printings.every((p) => p.variantNumber !== 'OGN-015' || !p.isFoil)).toBe(true);
   });
 });
 
