@@ -17,6 +17,8 @@ export type PriceHistoryPanelItem = {
   trend: string;
   baselinePrice: number | null;
   listingLow: number | null;
+  /** Cardmarket `idProduct` for deep-linking to listings. */
+  cardmarketId: number | null;
 };
 
 export function priceHistoryFromStats(
@@ -28,6 +30,7 @@ export function priceHistoryFromStats(
     trend: formatTrendLabel(stats.changePercent ?? null, stats.trend),
     baselinePrice: stats.baselinePrice,
     listingLow: stats.listingLow,
+    cardmarketId: stats.cardmarketId,
   };
 }
 

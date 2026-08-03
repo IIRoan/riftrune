@@ -332,30 +332,37 @@ function ModalInfoPanel({
   ) : null;
 
   const priceHistoryBlock = showPriceHistory ? (
-    <Stack gap="sm">
-      <SectionLabel>{wishlistContext ? 'Wishlist tracking' : 'Daily trend'}</SectionLabel>
-      {historyItem ? (
-        <WishlistPriceHistoryPanel item={historyItem} />
-      ) : priceHistory.isLoading ? (
-        <View className="rounded-xl border border-border bg-card p-3">
-          <Text className="text-xs leading-5 text-muted-foreground">
-            Loading daily trend history…
-          </Text>
-        </View>
-      ) : (
-        <View className="rounded-xl border border-border bg-card p-3">
-          <Text className="text-xs leading-5 text-muted-foreground">
-            No daily trend snapshots yet. Prices sync once per day from Cardmarket.
-          </Text>
-        </View>
-      )}
-    </Stack>
+    historyItem ? (
+      <WishlistPriceHistoryPanel
+        item={{
+          ...historyItem,
+          cardmarketId:
+            historyItem.cardmarketId ?? activeVariant.cardmarketId ?? null,
+        }}
+      />
+    ) : priceHistory.isLoading ? (
+      <View className="rounded-xl border border-border bg-card p-3">
+        <Text className="text-xs leading-5 text-muted-foreground">
+          Loading daily trend history…
+        </Text>
+      </View>
+    ) : (
+      <WishlistPriceHistoryPanel
+        item={{
+          points: [],
+          trend: '—',
+          baselinePrice: null,
+          listingLow: null,
+          cardmarketId: activeVariant.cardmarketId ?? null,
+        }}
+      />
+    )
   ) : null;
 
   const pricingBlock =
-    singleMarketPrice || showPriceHistory ? (
+    (singleMarketPrice && !showPriceHistory) || showPriceHistory ? (
       <Stack gap="sm" className="border-t border-border/40 pt-4">
-        {singleMarketPrice ? (
+        {singleMarketPrice && !showPriceHistory ? (
           <VariantPriceSummary
             label={singleMarketPrice.label}
             price={singleMarketPrice.price}

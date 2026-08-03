@@ -40,6 +40,7 @@ export interface WishlistPriceItem extends WishlistEntry {
   priceSourceNote: string;
   dataPointCount: number;
   points: WishlistPricePoint[];
+  cardmarketId: number | null;
 }
 
 function toWishlistPriceItem(
@@ -68,6 +69,7 @@ function toWishlistPriceItem(
     priceSourceNote: stats?.priceSourceNote ?? CARDMARKET_PRICE_SCOPE_NOTE,
     dataPointCount: points.length,
     points,
+    cardmarketId: stats?.cardmarketId ?? null,
   };
 }
 
