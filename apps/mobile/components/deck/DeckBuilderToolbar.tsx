@@ -10,11 +10,14 @@ import { TextInput } from '@/components/ui/text-input';
 import { Text } from '@/components/ui/text';
 import { countCatalogFilters, type CatalogFilters } from '@/constants/catalogFilters';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
+import { useFocusedTextDraft } from '@/hooks/useFocusedTextDraft';
 import type { DeckState, DeckValidationMessage } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
 type DeckCatalogSection = 'mainDeck' | 'sideboard';
+
+const noopNameChange = (_name: string) => undefined;
 
 /** Shared size for every deck-builder toolbar control (36×36). */
 const TOOLBAR_CONTROL =
@@ -75,6 +78,7 @@ export function DeckBuilderToolbar({
   onOpenCatalogFilters,
 }: DeckBuilderToolbarProps) {
   const isMobile = useMobileLayout();
+  const nameDraft = useFocusedTextDraft(deckName, onNameChange ?? noopNameChange);
   const showCatalogFilters =
     isMobile && !readOnly && catalogFilters != null && onOpenCatalogFilters != null;
   const filterCount = showCatalogFilters ? countCatalogFilters(catalogFilters) : 0;
@@ -246,8 +250,10 @@ export function DeckBuilderToolbar({
             <View className="min-h-0 min-w-0 flex-1 justify-center">
               {!readOnly && onNameChange ? (
                 <TextInput
-                  value={deckName}
-                  onChangeText={onNameChange}
+                  value={nameDraft.value}
+                  onChangeText={nameDraft.onChangeText}
+                  onFocus={nameDraft.onFocus}
+                  onBlur={nameDraft.onBlur}
                   placeholder="Deck name"
                   className="h-9 min-h-9 py-0 text-base font-semibold"
                 />

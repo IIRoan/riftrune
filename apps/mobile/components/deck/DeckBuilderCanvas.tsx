@@ -364,7 +364,8 @@ export function DeckBuilderCanvas({
           onNameChange={
             readOnly
               ? undefined
-              : (name) => onPersist({ ...deck, name, updatedAt: Date.now() })
+              : (name) =>
+                  onPersist((prev) => ({ ...prev, name, updatedAt: Date.now() }))
           }
           onToggleValidation={() => setValidationExpanded((v) => !v)}
           validationExpanded={validationExpanded}

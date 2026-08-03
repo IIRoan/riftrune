@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { EyeIcon, PencilIcon, ThemedIcon } from '@/components/icons';
 import { SecureMarkdown } from '@/components/ui/markdown';
 import { Text } from '@/components/ui/text';
 import { TextareaInput } from '@/components/ui/textarea-input';
+import { useFocusedTextDraft } from '@/hooks/useFocusedTextDraft';
 import { clampMarkdownSource } from '@/lib/markdown-safe';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
@@ -107,34 +108,22 @@ export function DeckDescriptionEditor({
   fill = false,
 }: DeckDescriptionEditorProps) {
   const [mode, setMode] = useState<EditorMode>('write');
-  // Keep a local draft so parent deck re-renders (persist/autosave) cannot
-  // reset the caret while the field is focused.
-  const [draft, setDraft] = useState(value);
-  const focusedRef = useRef(false);
+  // Local draft + debounced parent commit — persist/query cache refreshes must
+  // not rewrite `value` mid-keystroke or the caret jumps to the end.
+  const descriptionDraft = useFocusedTextDraft(value, onChange, {
+    transform: clampMarkdownSource,
+  });
 
-  useEffect(() => {
-    if (focusedRef.current) return;
-    setDraft(value);
-  }, [value]);
-
-  const trimmed = draft.trim();
+  const trimmed = descriptionDraft.value.trim();
 
   const body =
     mode === 'write' ? (
       <>
         <TextareaInput
-          value={draft}
-          onChangeText={(next) => {
-            const clamped = clampMarkdownSource(next);
-            setDraft(clamped);
-            onChange(clamped);
-          }}
-          onFocus={() => {
-            focusedRef.current = true;
-          }}
-          onBlur={() => {
-            focusedRef.current = false;
-          }}
+          value={descriptionDraft.value}
+          onChangeText={descriptionDraft.onChangeText}
+          onFocus={descriptionDraft.onFocus}
+          onBlur={descriptionDraft.onBlur}
           placeholder={'# Matchup guide\n\n**Game plan**\n- Keep pressure early\n- [Guide](https://…)'}
           className={cn(fill ? 'min-h-0 flex-1' : 'min-h-32')}
         />
