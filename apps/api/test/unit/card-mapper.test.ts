@@ -105,6 +105,45 @@ describe('mapCardDetail', () => {
     expect(detail.variants[0]?.prices).toHaveLength(2);
     expect(detail.variants[2]?.prices).toHaveLength(0);
   });
+
+  test('inherits cardmarket id + prices onto a -Foil SKU missing its own id', () => {
+    const foilMissingId = {
+      ...logical,
+      variants: [
+        variant(VARIANT_STANDARD_ID, 'SFD-001', 'Standard', 'Standard', 866723),
+        {
+          ...variant(VARIANT_FOIL_ID, 'SFD-001-Foil', 'Foil', 'Standard', 0),
+          cardmarketId: null,
+          foilMode: 'both',
+        },
+      ],
+    };
+    const detail = mapCardDetail(
+      PaLogicalCard.parse(foilMissingId),
+      [
+        {
+          cardmarketId: 866723,
+          isFoil: false,
+          marketPrice: '0.07',
+          lowPrice: '0.02',
+          avg7Day: '0.07',
+          lastUpdated: '2026-01-01',
+        },
+        {
+          cardmarketId: 866723,
+          isFoil: true,
+          marketPrice: '0.22',
+          lowPrice: '0.02',
+          avg7Day: '0.31',
+          lastUpdated: '2026-01-01',
+        },
+      ]
+    );
+    const foil = detail.variants.find((v) => v.variantNumber === 'SFD-001-Foil');
+    expect(foil?.cardmarketId).toBe(866723);
+    expect(foil?.prices).toHaveLength(2);
+    expect(foil?.prices.find((p) => p.isFoil)?.market).toBe(0.22);
+  });
 });
 
 describe('mapListItem', () => {

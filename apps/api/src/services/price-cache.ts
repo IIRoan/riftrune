@@ -17,6 +17,10 @@ import {
   utcDateString,
 } from '../lib/price-stats.js';
 import {
+  baseVariantNumberForCardmarket,
+  resolveCardmarketIdFromMap,
+} from '../lib/variant-cardmarket.js';
+import {
   fetchCardmarketPriceGuide,
   priceGuideDownloadUrl,
 } from '../upstream/cardmarket-export.js';
@@ -241,8 +245,12 @@ export class PriceCacheService {
     if (await this.hasUsablePriceGuide(cardmarketId, isFoil)) {
       return { cardmarketId, isFoil };
     }
+    // Showcase / signed / foil-only products often publish only one finish in the guide.
     if (!isFoil && (await this.hasUsablePriceGuide(cardmarketId, true))) {
       return { cardmarketId, isFoil: true };
+    }
+    if (isFoil && (await this.hasUsablePriceGuide(cardmarketId, false))) {
+      return { cardmarketId, isFoil: false };
     }
     return { cardmarketId, isFoil };
   }
@@ -278,7 +286,16 @@ export class PriceCacheService {
   ): Promise<PriceStats[]> {
     if (items.length === 0) return [];
 
-    const variantNumbers = items.map((item) => item.variantNumber);
+    const variantNumbers = [
+      ...new Set(
+        items.flatMap((item) => {
+          const numbers = [item.variantNumber];
+          const base = baseVariantNumberForCardmarket(item.variantNumber);
+          if (base != null) numbers.push(base);
+          return numbers;
+        })
+      ),
+    ];
     const variantRows = await this.db
       .select({
         variantNumber: variants.variantNumber,
@@ -308,7 +325,7 @@ export class PriceCacheService {
           targetPriceCents?: number | null;
         } = {
           variantNumber: item.variantNumber,
-          cardmarketId: variantByNumber.get(item.variantNumber.toLowerCase()) ?? null,
+          cardmarketId: resolveCardmarketIdFromMap(item.variantNumber, variantByNumber),
           isFoil: item.isFoil ?? false,
           days,
         };
