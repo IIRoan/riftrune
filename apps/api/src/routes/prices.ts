@@ -7,9 +7,13 @@ import {
   PricesListQuery,
 } from '@riftbound/contracts';
 import type { PriceCacheService } from '../services/price-cache.js';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { variants } from '../db/schema.js';
 import type { Database } from '../db/client.js';
+import {
+  baseVariantNumberForCardmarket,
+  resolveCardmarketIdFromMap,
+} from '../lib/variant-cardmarket.js';
 
 async function resolveCardmarketId(
   db: Database,
@@ -17,10 +21,28 @@ async function resolveCardmarketId(
   cardmarketId: number | undefined
 ): Promise<number | undefined> {
   if (!variantNumber || cardmarketId !== undefined) return cardmarketId;
-  const row = await db.query.variants.findFirst({
-    where: eq(variants.variantNumber, variantNumber),
-  });
-  return row?.cardmarketId ?? undefined;
+
+  const numbers = [variantNumber];
+  const base = baseVariantNumberForCardmarket(variantNumber);
+  if (base != null) numbers.push(base);
+
+  const rows = await db
+    .select({
+      variantNumber: variants.variantNumber,
+      cardmarketId: variants.cardmarketId,
+    })
+    .from(variants)
+    .where(
+      sql`lower(${variants.variantNumber}) in (${sql.join(
+        numbers.map((value) => sql`${value.toLowerCase()}`),
+        sql`, `
+      )})`
+    );
+
+  const byNumber = new Map(
+    rows.map((row) => [row.variantNumber.toLowerCase(), row.cardmarketId] as const)
+  );
+  return resolveCardmarketIdFromMap(variantNumber, byNumber) ?? undefined;
 }
 
 export function createPricesRoutes(prices: PriceCacheService, db: Database) {

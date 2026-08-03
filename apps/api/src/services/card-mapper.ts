@@ -12,6 +12,7 @@ import {
 } from '@riftbound/contracts';
 import type { PaLogicalCard, PaPriceRow, PaVariant } from '@riftbound/contracts';
 import { entityHash } from '../lib/hash.js';
+import { baseVariantNumberForCardmarket } from '../lib/variant-cardmarket.js';
 
 function parseDecimal(value: string | null | undefined): number | null {
   if (value === null || value === undefined || value === '') return null;
@@ -158,6 +159,7 @@ export function mapCardDetail(
   card: PaLogicalCard,
   priceRows: PaPriceRow[] = []
 ): CardDetail {
+  const variants = card.variants.map((v) => mapVariantDetail(v, priceRows));
   return {
     id: card.id,
     name: card.name,
@@ -174,9 +176,36 @@ export function mapCardDetail(
       hexCode: c.hexCode,
       imageUrl: c.imageUrl,
     })),
-    variants: card.variants.map((v) => mapVariantDetail(v, priceRows)),
+    variants: inheritFoilSiblingCardmarket(variants, priceRows),
     banEffectiveDate: card.banEffectiveDate ?? null,
   };
+}
+
+/**
+ * Upstream often leaves `cardmarketId` null on distinct `-Foil` SKUs. Reuse the
+ * base printing's id so prices and history attach to that sibling too.
+ */
+export function inheritFoilSiblingCardmarket(
+  variants: VariantDetail[],
+  priceRows: PaPriceRow[] = []
+): VariantDetail[] {
+  const byNumber = new Map(
+    variants.map((variant) => [variant.variantNumber.toLowerCase(), variant] as const)
+  );
+
+  return variants.map((variant) => {
+    if (variant.cardmarketId != null) return variant;
+    const base = baseVariantNumberForCardmarket(variant.variantNumber);
+    if (base == null) return variant;
+    const sibling = byNumber.get(base.toLowerCase());
+    const cmId = sibling?.cardmarketId ?? null;
+    if (cmId == null) return variant;
+    return {
+      ...variant,
+      cardmarketId: cmId,
+      prices: mapPriceRows(priceRows, cmId),
+    };
+  });
 }
 
 function mapVariantDetail(variant: PaVariant, priceRows: PaPriceRow[]): VariantDetail {
