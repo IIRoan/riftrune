@@ -2,6 +2,7 @@ export type { AppIcon, AppIconProps, IconWeight, LucideIcon } from './styled-ico
 
 import {
   ArchiveIcon as PhosphorArchive,
+  ArrowSquareOutIcon as PhosphorArrowSquareOut,
   ArrowsDownUpIcon as PhosphorArrowsDownUp,
   BellIcon as PhosphorBell,
   BookOpenTextIcon as PhosphorBookOpenText,
@@ -67,6 +68,7 @@ export { ThemedIcon } from './themed-icon';
 export type { ThemedIconProps } from './themed-icon';
 
 export const ArchiveIcon = createStyledSvg(PhosphorArchive);
+export const ArrowSquareOutIcon = createStyledSvg(PhosphorArrowSquareOut);
 export const ArrowUpDownIcon = createStyledSvg(PhosphorArrowsDownUp);
 export const BadgeCheckIcon = createStyledSvg(PhosphorSealCheck);
 export const BellIcon = createStyledSvg(PhosphorBell);

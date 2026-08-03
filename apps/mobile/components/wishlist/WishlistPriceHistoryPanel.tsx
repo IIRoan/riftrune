@@ -1,22 +1,42 @@
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { TrendTag } from '@/components/catalog/TrendTag';
+import { ShoppingCartIcon, ThemedIcon } from '@/components/icons';
 import { Text } from '@/components/ui/text';
 import type { PriceHistoryPanelItem } from '@/hooks/useVariantPriceHistory';
-import type { WishlistPricePoint } from '@/lib/wishlist-price-points';
-import { formatPricePointDate } from '@/lib/wishlist-price-points';
+import { buildCardmarketProductUrl } from '@/lib/cardmarket';
+import { openExternalUrl } from '@/lib/open-external';
+import {
+  chartScaleMax,
+  chartScaleTicks,
+  formatAxisPrice,
+  formatPricePointDate,
+} from '@/lib/wishlist-price-points';
 import { cn } from '@/lib/utils';
+
+const CHART_HEIGHT = 88;
 
 function formatPrice(value: number | null): string {
   return value == null ? '—' : `€${value.toFixed(2)}`;
 }
 
-function pointDisplayLabel(point: WishlistPricePoint): string {
-  return point.label || formatPricePointDate(point.priceDate);
+function CardmarketIconButton({ cardmarketId }: { cardmarketId: number }) {
+  return (
+    <Pressable
+      onPress={() => {
+        void openExternalUrl(buildCardmarketProductUrl(cardmarketId));
+      }}
+      accessibilityRole="link"
+      accessibilityLabel="Open on Cardmarket"
+      hitSlop={8}
+      className="h-9 w-9 items-center justify-center rounded-md bg-secondary web:cursor-pointer active:opacity-70"
+    >
+      <ThemedIcon icon={ShoppingCartIcon} size={16} color="archive-accent-text" />
+    </Pressable>
+  );
 }
 
 /**
- * Interactive daily trend history — every bar shows its EUR price; tap to highlight a day.
+ * Daily trend chart — zero-based EUR scale; hover/tap a day for its price.
  */
 export function WishlistPriceHistoryPanel({
   item,
@@ -26,9 +46,11 @@ export function WishlistPriceHistoryPanel({
   className?: string;
 }) {
   const points = item.points;
+  const cardmarketId = item.cardmarketId ?? null;
   const [selectedDate, setSelectedDate] = useState<string | null>(
     points.at(-1)?.priceDate ?? null
   );
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
   useEffect(() => {
     const latest = points.at(-1)?.priceDate ?? null;
@@ -38,106 +60,114 @@ export function WishlistPriceHistoryPanel({
       }
       return latest;
     });
+    setHoveredDate(null);
   }, [points]);
 
-  const selected =
-    points.find((point) => point.priceDate === selectedDate) ?? points.at(-1) ?? null;
+  const activeDate = hoveredDate ?? selectedDate;
+  const active =
+    points.find((point) => point.priceDate === activeDate) ?? points.at(-1) ?? null;
 
   if (points.length === 0) {
     return (
       <View className={cn('rounded-xl border border-border bg-card p-3', className)}>
-        <Text className="text-xs leading-5 text-muted-foreground">
-          No daily trend snapshots yet. Prices sync once per day from Cardmarket.
-        </Text>
+        <View className="flex-row items-center gap-3">
+          <Text className="min-w-0 flex-1 text-xs leading-5 text-muted-foreground">
+            No trend history yet.
+          </Text>
+          {cardmarketId != null ? <CardmarketIconButton cardmarketId={cardmarketId} /> : null}
+        </View>
       </View>
     );
   }
 
-  const values = points.map((point) => point.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = Math.max(max - min, 0.01);
+  const maxValue = Math.max(...points.map((point) => point.value));
+  const scaleMax = chartScaleMax(maxValue);
+  const [tickTop, tickMid, tickBottom] = chartScaleTicks(scaleMax);
   const first = points[0]!;
   const last = points.at(-1)!;
-  const dense = points.length > 8;
 
   return (
     <View className={cn('rounded-xl border border-border bg-card p-3', className)}>
-      <View className="mb-3 flex-row items-center justify-between gap-3">
-        <Text className="text-[11px] text-muted-foreground">
-          {pointDisplayLabel(first)}
-          {points.length > 1 ? ` – ${pointDisplayLabel(last)}` : ''}
-          {` · ${String(points.length)} day${points.length === 1 ? '' : 's'}`}
-        </Text>
-        <TrendTag trend={item.trend} />
+      <View className="mb-3 flex-row items-center gap-3">
+        <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
+          <Text className="font-mono text-lg font-semibold tabular-nums text-foreground">
+            {formatPrice(active?.value ?? null)}
+          </Text>
+          {active ? (
+            <Text className="text-xs text-muted-foreground">
+              {formatPricePointDate(active.priceDate)}
+            </Text>
+          ) : null}
+        </View>
+        {cardmarketId != null ? <CardmarketIconButton cardmarketId={cardmarketId} /> : null}
       </View>
 
-      <View className={cn('flex-row items-end gap-1', dense ? 'h-[100px]' : 'h-[108px]')}>
-        {points.map((point) => {
-          const pct = (point.value - min) / span;
-          const barHeight = 10 + pct * (dense ? 44 : 52);
-          const isSelected = point.priceDate === selected?.priceDate;
-          return (
-            <Pressable
-              key={point.priceDate}
-              onPress={() => {
-                setSelectedDate(point.priceDate);
-              }}
-              className="min-w-0 flex-1 items-center justify-end gap-1"
-              accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              accessibilityLabel={`${pointDisplayLabel(point)}, ${formatPrice(point.value)}`}
-            >
-              <Text
-                className={cn(
-                  'font-mono tabular-nums',
-                  dense ? 'text-[8px]' : 'text-[10px]',
-                  isSelected
-                    ? 'font-bold text-foreground'
-                    : 'font-medium text-muted-foreground'
-                )}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-              >
-                {formatPrice(point.value)}
-              </Text>
-              <View
-                className={cn(
-                  'w-full max-w-6 rounded-t-sm',
-                  isSelected ? 'bg-primary' : 'bg-muted-foreground/30'
-                )}
-                style={{ height: barHeight }}
-              />
-              <Text
-                className={cn(
-                  'font-mono text-[9px] tabular-nums',
-                  isSelected ? 'font-semibold text-foreground' : 'text-archive-subtle'
-                )}
-                numberOfLines={1}
-              >
-                {isSelected || point.label || points.length <= 5
-                  ? pointDisplayLabel(point)
-                  : ' '}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <View className="flex-row gap-2">
+        <View className="w-10 justify-between" style={{ height: CHART_HEIGHT }}>
+          <Text className="font-mono text-[10px] tabular-nums text-muted-foreground">
+            {formatAxisPrice(tickTop)}
+          </Text>
+          <Text className="font-mono text-[10px] tabular-nums text-muted-foreground">
+            {formatAxisPrice(tickMid)}
+          </Text>
+          <Text className="font-mono text-[10px] tabular-nums text-muted-foreground">
+            {formatAxisPrice(tickBottom)}
+          </Text>
+        </View>
 
-      <View className="mt-3 flex-row flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2">
-        <Text className="font-mono text-[11px] text-muted-foreground">
-          Start{' '}
-          <Text className="font-semibold text-foreground">
-            {formatPrice(item.baselinePrice)}
-          </Text>
-        </Text>
-        <Text className="font-mono text-[11px] text-muted-foreground">
-          List low{' '}
-          <Text className="font-semibold text-foreground">
-            {formatPrice(item.listingLow)}
-          </Text>
-        </Text>
+        <View className="min-w-0 flex-1">
+          <View
+            className="relative flex-row items-end border-b border-border/50"
+            style={{ height: CHART_HEIGHT }}
+          >
+            <View
+              pointerEvents="none"
+              className="absolute inset-x-0 border-t border-border/35"
+              style={{ top: CHART_HEIGHT / 2 }}
+            />
+            {points.map((point) => {
+              const barHeight = Math.max((point.value / scaleMax) * CHART_HEIGHT, 2);
+              const isActive = point.priceDate === active?.priceDate;
+              return (
+                <Pressable
+                  key={point.priceDate}
+                  onPress={() => {
+                    setSelectedDate(point.priceDate);
+                  }}
+                  onHoverIn={() => {
+                    setHoveredDate(point.priceDate);
+                  }}
+                  onHoverOut={() => {
+                    setHoveredDate((current) =>
+                      current === point.priceDate ? null : current
+                    );
+                  }}
+                  className="h-full min-w-0 flex-1 items-center justify-end px-px web:cursor-pointer"
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: point.priceDate === selectedDate }}
+                  accessibilityLabel={`${formatPricePointDate(point.priceDate)}, ${formatPrice(point.value)}`}
+                >
+                  <View
+                    className={cn(
+                      'w-full rounded-t-sm',
+                      isActive ? 'bg-primary' : 'bg-muted-foreground/35'
+                    )}
+                    style={{ height: barHeight }}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View className="mt-1.5 flex-row items-center justify-between">
+            <Text className="font-mono text-[10px] tabular-nums text-muted-foreground">
+              {formatPricePointDate(first.priceDate)}
+            </Text>
+            <Text className="font-mono text-[10px] tabular-nums text-muted-foreground">
+              {formatPricePointDate(last.priceDate)}
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   );

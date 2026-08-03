@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import type { PriceDailyPoint } from '@riftbound/contracts';
 import {
+  chartScaleMax,
+  chartScaleTicks,
+  formatAxisPrice,
   formatPricePointDate,
   shouldShowPricePointLabel,
   toWishlistChartPoints,
@@ -50,6 +53,32 @@ describe('shouldShowPricePointLabel', () => {
   test('always shows first and last for longer series', () => {
     expect(shouldShowPricePointLabel(0, 12)).toBe(true);
     expect(shouldShowPricePointLabel(11, 12)).toBe(true);
+  });
+});
+
+describe('chartScaleMax', () => {
+  test('rounds up to a readable EUR ceiling from zero', () => {
+    expect(chartScaleMax(0.29)).toBe(0.5);
+    expect(chartScaleMax(1.2)).toBe(2);
+    expect(chartScaleMax(8)).toBe(10);
+  });
+
+  test('falls back for empty or invalid maxima', () => {
+    expect(chartScaleMax(0)).toBe(1);
+    expect(chartScaleMax(Number.NaN)).toBe(1);
+  });
+});
+
+describe('chartScaleTicks', () => {
+  test('returns top, mid, and zero', () => {
+    expect(chartScaleTicks(0.5)).toEqual([0.5, 0.25, 0]);
+  });
+});
+
+describe('formatAxisPrice', () => {
+  test('keeps cents for sub-euro ticks', () => {
+    expect(formatAxisPrice(0.25)).toBe('€0.25');
+    expect(formatAxisPrice(0)).toBe('€0.00');
   });
 });
 

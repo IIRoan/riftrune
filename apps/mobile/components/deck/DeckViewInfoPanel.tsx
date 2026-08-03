@@ -1,22 +1,16 @@
-import { ThemedIcon, BookOpenIcon, GitCompareIcon, VideoIcon } from '@/components/icons';
-import * as WebBrowser from 'expo-web-browser';
 import { Pressable, View } from 'react-native';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
 import { DeckFormatBadge } from '@/components/deck/DeckFormatBadge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { deckArchiveViewUrl, deckBrowseSummaryLine } from '@/lib/deck-browse';
+import { openExternalUrl } from '@/lib/open-external';
 import { collectIllegalCardNames, deckHasBannedCards } from '@/lib/card-legality';
 import type { DeckState } from '@/lib/deck-types';
-import { hapticPress } from '@/utils/haptics';
+import { ThemedIcon, BookOpenIcon, GitCompareIcon, VideoIcon } from '@/components/icons';
 
 interface DeckViewInfoPanelProps {
   deck: DeckState;
-}
-
-async function openExternalUrl(url: string) {
-  hapticPress();
-  await WebBrowser.openBrowserAsync(url);
 }
 
 export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {

@@ -36,6 +36,29 @@ export function shouldShowPricePointLabel(index: number, total: number): boolean
   return false;
 }
 
+/**
+ * Nice EUR ceiling for a zero-based bar chart so heights stay proportional to price.
+ * Tiny day-to-day moves no longer fill the full plot height.
+ */
+export function chartScaleMax(maxValue: number): number {
+  if (!Number.isFinite(maxValue) || maxValue <= 0) return 1;
+  const padded = maxValue * 1.05;
+  const exp = 10 ** Math.floor(Math.log10(padded));
+  const n = padded / exp;
+  const nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+  return nice * exp;
+}
+
+/** Top / mid / baseline ticks for a zero-based EUR scale. */
+export function chartScaleTicks(scaleMax: number): [number, number, number] {
+  return [scaleMax, scaleMax / 2, 0];
+}
+
+export function formatAxisPrice(value: number): string {
+  if (value >= 10) return `€${Math.round(value)}`;
+  return `€${value.toFixed(2)}`;
+}
+
 function trendValue(
   point: Pick<PriceDailyPoint, 'marketPrice' | 'midPrice' | 'lowPrice'>
 ): number | null {

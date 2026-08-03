@@ -523,36 +523,55 @@ export function CatalogDetailPanel({
         </Pressable>
       </View>
 
-      {singleMarketPrice || !hidePriceHistory ? (
-        <View className="gap-2 border-t border-border/40 pt-3">
-          {singleMarketPrice ? (
-            <VariantPriceSummary
-              label={singleMarketPrice.label}
-              price={singleMarketPrice.price}
-              trend={singlePriceTrend}
-              className="mt-0"
-              hideLabel={variantFamilies.length > 1}
+      {singleMarketPrice && hidePriceHistory ? (
+        <View className="border-t border-border/40 pt-3">
+          <VariantPriceSummary
+            label={singleMarketPrice.label}
+            price={singleMarketPrice.price}
+            trend={singlePriceTrend}
+            className="mt-0"
+            hideLabel={variantFamilies.length > 1}
+          />
+        </View>
+      ) : null}
+      {!hidePriceHistory ? (
+        <View className="border-t border-border/40 pt-3" style={{ minHeight: 140 }}>
+          {wishlistItem &&
+          wishlistItem.variantNumber === activeVariant.variantNumber ? (
+            <WishlistPriceHistoryPanel
+              item={{
+                ...wishlistItem,
+                cardmarketId:
+                  wishlistItem.cardmarketId ?? activeVariant.cardmarketId ?? null,
+              }}
             />
-          ) : null}
-          {!hidePriceHistory ? (
-            <View className="gap-2" style={{ minHeight: 196 }}>
-              <Text className="text-sm font-semibold text-foreground">Daily trend</Text>
-              {wishlistItem &&
-              wishlistItem.variantNumber === activeVariant.variantNumber ? (
-                <WishlistPriceHistoryPanel item={wishlistItem} />
-              ) : priceHistory.panelItem ? (
-                <WishlistPriceHistoryPanel item={priceHistory.panelItem} />
-              ) : (
-                <View className="min-h-[160px] justify-center rounded-xl border border-border bg-card p-3">
-                  <Text className="text-xs leading-5 text-muted-foreground">
-                    {priceHistory.isLoading
-                      ? 'Loading daily trend history…'
-                      : 'No daily trend snapshots yet. Prices sync once per day from Cardmarket.'}
-                  </Text>
-                </View>
-              )}
+          ) : priceHistory.panelItem ? (
+            <WishlistPriceHistoryPanel
+              item={{
+                ...priceHistory.panelItem,
+                cardmarketId:
+                  priceHistory.panelItem.cardmarketId ??
+                  activeVariant.cardmarketId ??
+                  null,
+              }}
+            />
+          ) : priceHistory.isLoading ? (
+            <View className="min-h-[140px] justify-center rounded-xl border border-border bg-card p-3">
+              <Text className="text-xs leading-5 text-muted-foreground">
+                Loading daily trend history…
+              </Text>
             </View>
-          ) : null}
+          ) : (
+            <WishlistPriceHistoryPanel
+              item={{
+                points: [],
+                trend: '—',
+                baselinePrice: null,
+                listingLow: null,
+                cardmarketId: activeVariant.cardmarketId ?? null,
+              }}
+            />
+          )}
         </View>
       ) : null}
 
