@@ -1,11 +1,10 @@
 import { forwardRef, useEffect } from "react";
-import type { TextInput as RNTextInput } from "react-native";
+import { View, type TextInput as RNTextInput } from "react-native";
 import { INPUT_SHELL_CLASS } from "@/constants/catalogToolbar";
 import { cn } from "@/lib/utils";
 import {
   Input,
   type InputAddonChildren,
-  InputPressable,
   type InputProps,
   useInputAddons,
   useInputFocusState,
@@ -21,12 +20,17 @@ export type TextInputProps = InputProps & {
 };
 
 // Components
+/**
+ * Single-line text field. Intentionally NOT wrapped in InputPressable —
+ * a parent Pressable steals the touch responder on web/native and jumps
+ * the caret to the end when clicking mid-text (same fix as TextareaInput).
+ */
 export const TextInput = forwardRef<RNTextInput, TextInputProps>(
   (
     { onFocus, onBlur, disabled, invalid, children, className, ...props },
     ref
   ) => {
-    const { isFocused, internalRef, handleFocus, handleBlur, handlePress } =
+    const { isFocused, internalRef, handleFocus, handleBlur } =
       useInputFocusState({ onFocus, onBlur });
 
     useEffect(() => {
@@ -45,19 +49,23 @@ export const TextInput = forwardRef<RNTextInput, TextInputProps>(
       useInputAddons(children);
 
     return (
-      <InputPressable
-        bordered
-        className={cn(pressableClassName, INPUT_SHELL_CLASS, className)}
-        disabled={disabled}
-        focused={isFocused}
-        invalid={invalid}
-        onPress={handlePress}
+      <View
+        className={cn(
+          pressableClassName,
+          INPUT_SHELL_CLASS,
+          "flex-row items-center gap-2 border",
+          !invalid && !isFocused && "border-border",
+          !invalid && isFocused && "border-ring/50",
+          invalid && "border-destructive",
+          disabled && "opacity-50",
+          className
+        )}
       >
         {startAddons}
 
         <Input
           {...props}
-          className="shrink"
+          className="min-w-0 flex-1 shrink"
           disabled={disabled}
           onBlur={handleBlur}
           onFocus={handleFocus}
@@ -65,7 +73,7 @@ export const TextInput = forwardRef<RNTextInput, TextInputProps>(
         />
 
         {endAddons}
-      </InputPressable>
+      </View>
     );
   }
 );
