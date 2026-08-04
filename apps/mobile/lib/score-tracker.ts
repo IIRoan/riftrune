@@ -152,15 +152,25 @@ export function evaluateWinners(
     const b = teamPoints(state.seats, 'b');
     if (a >= format.victoryScore && a > b) return { winnerSeatId: null, winnerTeam: 'a' };
     if (b >= format.victoryScore && b > a) return { winnerSeatId: null, winnerTeam: 'b' };
-    if (a >= format.victoryScore && b >= format.victoryScore) {
-      if (a === b) return { winnerSeatId: null, winnerTeam: null };
-      return { winnerSeatId: null, winnerTeam: a > b ? 'a' : 'b' };
+    // Further taps can bring the trailing team to the threshold (or a tie). Keep the
+    // already-declared winner while they still sit at/above the victory score.
+    if (
+      state.winnerTeam &&
+      teamPoints(state.seats, state.winnerTeam) >= format.victoryScore
+    ) {
+      return { winnerSeatId: null, winnerTeam: state.winnerTeam };
     }
     return { winnerSeatId: null, winnerTeam: null };
   }
 
   const winners = state.seats.filter((seat) => seat.points >= format.victoryScore);
   if (winners.length === 1) {
+    return { winnerSeatId: winners[0]?.id ?? null, winnerTeam: null };
+  }
+  if (winners.length > 1) {
+    if (state.winnerSeatId && winners.some((seat) => seat.id === state.winnerSeatId)) {
+      return { winnerSeatId: state.winnerSeatId, winnerTeam: null };
+    }
     return { winnerSeatId: winners[0]?.id ?? null, winnerTeam: null };
   }
   return { winnerSeatId: null, winnerTeam: null };
@@ -230,13 +240,13 @@ export function adjustXp(
   };
 }
 
-/** Clear VP, XP, and legends for a new game; keep match wins. */
+/** Clear VP and XP for a new game; keep legends and match wins. */
 export function resetGame(state: ScoreTrackerState): ScoreTrackerState {
   return withWinners({
     ...state,
     winnerSeatId: null,
     winnerTeam: null,
-    seats: state.seats.map((seat) => ({ ...seat, points: 0, xp: 0, legend: null })),
+    seats: state.seats.map((seat) => ({ ...seat, points: 0, xp: 0 })),
   });
 }
 

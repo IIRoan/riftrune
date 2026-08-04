@@ -62,7 +62,7 @@ export function DeckFormatPickerSheet({
     <AppSheet open={open} onOpenChange={(next) => (!next ? close() : onOpenChange(next))} dismissible={!busy}>
       <AppSheetPortal name="deck-format-picker">
         <AppSheetOverlay />
-        <AppSheetContent enableDynamicSizing enablePanDownToClose={!busy}>
+        <AppSheetContent>
           <AppSheetHeader>
             <AppSheetTitle>{title}</AppSheetTitle>
           </AppSheetHeader>

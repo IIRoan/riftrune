@@ -6,7 +6,7 @@ import {
   type ComponentProps,
   type ReactNode,
 } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import {
   BottomSheet,
   BottomSheetBody,
@@ -155,13 +155,18 @@ export function AppSheetOverlay({ className }: { className?: string }) {
   );
 }
 
+type AppSheetContentGestures = {
+  panDownToClose?: boolean;
+  overDrag?: boolean;
+  contentPanning?: boolean;
+};
+
 type AppSheetContentProps = ComponentProps<typeof View> & {
-  enableDynamicSizing?: boolean;
-  enablePanDownToClose?: boolean;
-  enableOverDrag?: boolean;
-  enableContentPanningGesture?: boolean;
+  /** Fixed snap points; omit for content-driven dynamic height. */
   snapPoints?: Array<number | string>;
   defaultSnapIndex?: number;
+  /** Sheet gesture behavior (ignored in dialog mode). */
+  gestures?: AppSheetContentGestures;
   /** Lifts the sheet above the screen bottom (Gorhom bottomInset). */
   bottomInset?: number;
 };
@@ -169,12 +174,9 @@ type AppSheetContentProps = ComponentProps<typeof View> & {
 export function AppSheetContent({
   children,
   className,
-  enableDynamicSizing,
-  enablePanDownToClose,
-  enableOverDrag,
-  enableContentPanningGesture,
   snapPoints,
   defaultSnapIndex,
+  gestures,
   bottomInset,
   ...props
 }: AppSheetContentProps) {
@@ -183,10 +185,10 @@ export function AppSheetContent({
   if (mode === 'sheet') {
     return (
       <BottomSheetContent
-        enableDynamicSizing={enableDynamicSizing}
-        enablePanDownToClose={enablePanDownToClose ?? dismissible}
-        enableOverDrag={enableOverDrag}
-        enableContentPanningGesture={enableContentPanningGesture}
+        enableDynamicSizing={snapPoints == null || snapPoints.length === 0}
+        enablePanDownToClose={gestures?.panDownToClose ?? dismissible}
+        enableOverDrag={gestures?.overDrag}
+        enableContentPanningGesture={gestures?.contentPanning}
         snapPoints={snapPoints}
         defaultSnapIndex={defaultSnapIndex}
         bottomInset={bottomInset}
@@ -200,7 +202,7 @@ export function AppSheetContent({
   return (
     <View
       className={cn(
-        'z-10 max-h-[90%] w-full max-w-md overflow-hidden rounded-2xl bg-background',
+        'z-10 flex max-h-[90%] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-background',
         className
       )}
       {...props}
@@ -297,8 +299,74 @@ export function AppSheetFooter({ className, ...props }: ComponentProps<typeof Vi
 /** Same displayName as BottomSheetFooter so sheet content splitting stays correct. */
 AppSheetFooter.displayName = 'BottomSheetFooter';
 
-export const AppSheetScrollView = BottomSheetScrollView;
-export const AppSheetClose = BottomSheetClose;
+type AppSheetScrollViewProps = ComponentProps<typeof BottomSheetScrollView> & {
+  contentContainerClassName?: string;
+  headerInset?: number;
+};
+
+/**
+ * Scroll body for AppSheet.
+ * Sheet mode → Gorhom BottomSheetScrollView (needs BottomSheet context).
+ * Dialog mode (wide web) → RN ScrollView so legend/settings never call useBottomSheetInternal.
+ */
+export function AppSheetScrollView({
+  className,
+  contentContainerStyle,
+  headerInset = 0,
+  style,
+  ...props
+}: AppSheetScrollViewProps) {
+  const { mode } = useAppSheetContext();
+
+  if (mode === 'sheet') {
+    return (
+      <BottomSheetScrollView
+        className={className}
+        contentContainerStyle={contentContainerStyle}
+        headerInset={headerInset}
+        style={style}
+        {...props}
+      />
+    );
+  }
+
+  const dialogContentStyle = StyleSheet.flatten([
+    { paddingHorizontal: 16, paddingBottom: 16 },
+    headerInset > 0 ? { paddingTop: headerInset } : null,
+    contentContainerStyle as StyleProp<ViewStyle> | undefined,
+  ]);
+
+  return (
+    <ScrollView
+      className={cn('min-h-0 flex-1', className)}
+      contentContainerStyle={dialogContentStyle}
+      style={style as StyleProp<ViewStyle> | undefined}
+      {...(props as ComponentProps<typeof ScrollView>)}
+    />
+  );
+}
+
+/** Keep sticky-scroll sheet splitting recognizing this as the scroll body. */
+AppSheetScrollView.displayName = 'BottomSheetScrollView';
+
+export function AppSheetClose(props: ComponentProps<typeof BottomSheetClose>) {
+  const { mode, onOpenChange, dismissible } = useAppSheetContext();
+
+  if (mode === 'sheet') {
+    return <BottomSheetClose {...props} />;
+  }
+
+  const { asChild: _asChild, onPress, ...rest } = props;
+  return (
+    <Pressable
+      {...rest}
+      onPress={(event) => {
+        onPress?.(event);
+        if (dismissible) onOpenChange(false);
+      }}
+    />
+  );
+}
 
 export function useAppSheetDismiss() {
   const { onOpenChange, dismissible } = useAppSheetContext();
