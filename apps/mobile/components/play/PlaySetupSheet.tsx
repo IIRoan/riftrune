@@ -25,7 +25,7 @@ import {
   type SeatLegend,
 } from '@/lib/score-tracker';
 import { hapticPress } from '@/utils/haptics';
-import { ScrollView, useWindowDimensions } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 
 type PlaySetupSheetProps = {
   open: boolean;
@@ -54,100 +54,100 @@ export function PlaySetupSheet({
   const format = PLAY_FORMATS.find((entry) => entry.id === state.format)!;
   const canAdvance = Boolean(format.trackMatchWins && state.winnerSeatId);
   const pickingSeat = state.seats.find((seat) => seat.id === pickingSeatId) ?? null;
-  const legendListMaxHeight = Math.min(440, Math.round(windowHeight * 0.55));
+  /** Tall enough for the art grid on web dialog; mobile uses 92% snap. */
+  const legendDialogHeight = Math.min(720, Math.round(windowHeight * 0.82));
 
   return (
     <AppSheet open={open} onOpenChange={onOpenChange}>
       <AppSheetPortal name="play-setup">
         <AppSheetOverlay />
-        <AppSheetContent>
+        <AppSheetContent
+          {...(pickingSeat
+            ? {
+                snapPoints: ['92%'] as string[],
+                defaultSnapIndex: 0,
+                // Dialog mode ignores snap points — give the grid a real height.
+                style: { height: legendDialogHeight },
+              }
+            : {})}
+        >
           <AppSheetHeader>
             <AppSheetTitle>
               {pickingSeat ? 'Choose legend' : 'Play settings'}
             </AppSheetTitle>
           </AppSheetHeader>
-          <AppSheetBody className="gap-3 pb-4">
-            {pickingSeat ? (
-              <>
-                <Text className="text-sm leading-snug text-muted-foreground">
-                  Seat art and name on the scoreboard
-                </Text>
-                <ScrollView
-                  style={{ maxHeight: legendListMaxHeight }}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}
+
+          {pickingSeat ? (
+            <View className="min-h-0 flex-1 px-4 pb-4">
+              <PlayLegendPicker
+                selectedVariantNumber={pickingSeat.legend?.variantNumber}
+                onSelect={(legend) => {
+                  onSetLegend(pickingSeat.id, legend);
+                  onOpenChange(false);
+                }}
+                onClear={() => {
+                  onSetLegend(pickingSeat.id, null);
+                  onOpenChange(false);
+                }}
+              />
+            </View>
+          ) : (
+            <AppSheetBody className="gap-3 pb-4">
+              <Text className="text-sm leading-snug text-muted-foreground">
+                How this table scores
+              </Text>
+
+              <InlineList>
+                {PLAY_FORMATS.map((entry) => {
+                  const selected = entry.id === state.format;
+                  return (
+                    <InlineListItem
+                      key={entry.id}
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={`${entry.label}. ${entry.description}`}
+                      onPress={() => {
+                        void hapticPress();
+                        onSelectFormat(entry.id);
+                        onOpenChange(false);
+                      }}
+                    >
+                      <InlineListItemTitle>{entry.label}</InlineListItemTitle>
+                      <InlineListItemDescription>
+                        {entry.description}
+                      </InlineListItemDescription>
+                      {selected ? (
+                        <InlineListItemAddon align="inline-end">
+                          <ThemedIcon
+                            icon={CheckIcon}
+                            size={18}
+                            color="archive-accent-text"
+                          />
+                        </InlineListItemAddon>
+                      ) : null}
+                    </InlineListItem>
+                  );
+                })}
+              </InlineList>
+
+              {canAdvance ? (
+                <Button
+                  variant="outline"
+                  className="border-primary/40 bg-primary/5"
+                  onPress={() => {
+                    void hapticPress();
+                    onAdvanceMatch();
+                    onOpenChange(false);
+                  }}
                 >
-                  <PlayLegendPicker
-                    selectedVariantNumber={pickingSeat.legend?.variantNumber}
-                    onSelect={(legend) => {
-                      onSetLegend(pickingSeat.id, legend);
-                      onOpenChange(false);
-                    }}
-                    onClear={() => {
-                      onSetLegend(pickingSeat.id, null);
-                      onOpenChange(false);
-                    }}
-                  />
-                </ScrollView>
-              </>
-            ) : (
-              <>
-                <Text className="text-sm leading-snug text-muted-foreground">
-                  How this table scores
-                </Text>
-
-                <InlineList>
-                  {PLAY_FORMATS.map((entry) => {
-                    const selected = entry.id === state.format;
-                    return (
-                      <InlineListItem
-                        key={entry.id}
-                        accessibilityState={{ selected }}
-                        accessibilityLabel={`${entry.label}. ${entry.description}`}
-                        onPress={() => {
-                          void hapticPress();
-                          onSelectFormat(entry.id);
-                          onOpenChange(false);
-                        }}
-                      >
-                        <InlineListItemTitle>{entry.label}</InlineListItemTitle>
-                        <InlineListItemDescription>
-                          {entry.description}
-                        </InlineListItemDescription>
-                        {selected ? (
-                          <InlineListItemAddon align="inline-end">
-                            <ThemedIcon
-                              icon={CheckIcon}
-                              size={18}
-                              color="archive-accent-text"
-                            />
-                          </InlineListItemAddon>
-                        ) : null}
-                      </InlineListItem>
-                    );
-                  })}
-                </InlineList>
-
-                {canAdvance ? (
-                  <Button
-                    variant="outline"
-                    className="border-primary/40 bg-primary/5"
-                    onPress={() => {
-                      void hapticPress();
-                      onAdvanceMatch();
-                      onOpenChange(false);
-                    }}
-                  >
-                    <ButtonText className="text-primary">Next game</ButtonText>
-                  </Button>
-                ) : null}
-
-                <Button variant="ghost" onPress={() => onOpenChange(false)}>
-                  <ButtonText className="text-muted-foreground">Cancel</ButtonText>
+                  <ButtonText className="text-primary">Next game</ButtonText>
                 </Button>
-              </>
-            )}
-          </AppSheetBody>
+              ) : null}
+
+              <Button variant="ghost" onPress={() => onOpenChange(false)}>
+                <ButtonText className="text-muted-foreground">Cancel</ButtonText>
+              </Button>
+            </AppSheetBody>
+          )}
         </AppSheetContent>
       </AppSheetPortal>
     </AppSheet>

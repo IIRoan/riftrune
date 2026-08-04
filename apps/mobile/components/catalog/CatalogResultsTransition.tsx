@@ -4,12 +4,14 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
-const HANDOFF_MS = 120;
+const HANDOFF_MS = 180;
 const EASE_OUT = Easing.out(Easing.cubic);
 
 interface CatalogResultsTransitionProps {
@@ -21,8 +23,8 @@ interface CatalogResultsTransitionProps {
 }
 
 /**
- * Light opacity pulse when catalog sort/filter state changes — enough to
- * acknowledge the reorder without dimming the grid into a laggy fade.
+ * Soft slide+fade when catalog sort/filter state changes — acknowledges
+ * the reorder without a laggy full-grid remount.
  */
 export function CatalogResultsTransition({
   transitionKey,
@@ -32,18 +34,23 @@ export function CatalogResultsTransition({
 }: CatalogResultsTransitionProps) {
   const reduceMotion = useReduceMotion();
   const opacity = useSharedValue(1);
+  const translateY = useSharedValue(0);
 
   useEffect(() => {
     if (reduceMotion) {
       opacity.value = 1;
+      translateY.value = 0;
       return;
     }
-    opacity.value = 0.88;
+    opacity.value = 0.82;
+    translateY.value = 10;
     opacity.value = withTiming(1, { duration: HANDOFF_MS, easing: EASE_OUT });
-  }, [opacity, reduceMotion, transitionKey]);
+    translateY.value = withSpring(0, MOTION.snappy);
+  }, [opacity, reduceMotion, transitionKey, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
   }));
 
   return (

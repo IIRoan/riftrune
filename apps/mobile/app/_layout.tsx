@@ -10,12 +10,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { StatusBar } from 'react-native';
+import { Platform, StatusBar } from 'react-native';
 import { CatalogBootstrap } from '@/components/CatalogBootstrap';
 import { TetraProvider } from '@/components/TetraProvider';
 import { AppLoadingScreen } from '@/components/ui/app-loader';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useAppFonts } from '@/hooks/useAppFonts';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { createQueryClient } from '@/src/api/queryClient';
 import { hydrateSecureStorage } from '@/src/lib/secure-storage';
 
@@ -26,6 +27,7 @@ const queryClient = createQueryClient();
 function RootNav() {
   const { actualTheme } = useTheme();
   const fontsLoaded = useAppFonts();
+  const reduceMotion = useReduceMotion();
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
@@ -57,8 +59,14 @@ function RootNav() {
   return (
     <NavThemeProvider value={actualTheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StatusBar translucent backgroundColor="transparent" />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          animation: reduceMotion ? 'fade' : 'default',
+          gestureEnabled: true,
+          fullScreenGestureEnabled: Platform.OS === 'ios',
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen
           name="loading"
           options={{

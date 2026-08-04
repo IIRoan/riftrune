@@ -1,15 +1,18 @@
-import { CheckIcon, ThemedIcon, ImageIcon, SearchIcon } from '@/components/icons';
+import { ThemedIcon, ImageIcon, SearchIcon } from '@/components/icons';
+import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { AppLoader } from '@/components/ui/app-loader';
 import { Button, ButtonText } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
-import { DeckCardArt } from '@/components/deck/DeckCardArt';
+import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { useLegendCatalog } from '@/hooks/useLegendCatalog';
+import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import type { SeatLegend } from '@/lib/score-tracker';
+import { cn } from '@/lib/utils';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { hapticPress } from '@/utils/haptics';
-import { cn } from '@/lib/utils';
-import { Pressable, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, Pressable, View, type LayoutChangeEvent } from 'react-native';
 
 type PlayLegendPickerProps = {
   selectedVariantNumber?: string | null;
@@ -17,11 +20,21 @@ type PlayLegendPickerProps = {
   onClear?: () => void;
 };
 
+/**
+ * Art-forward legend grid for the Play scoreboard — same picking language as
+ * deck `LegendPicker`, sized for an AppSheet body.
+ */
 export function PlayLegendPicker({
   selectedVariantNumber,
   onSelect,
   onClear,
 }: PlayLegendPickerProps) {
+  const [contentWidth, setContentWidth] = useState(0);
+  const { tileWidth, gap, numColumns } = useResponsiveColumns('grid', {
+    measuredWidth: contentWidth > 0 ? contentWidth : undefined,
+    fillAvailable: true,
+  });
+
   const {
     query,
     setQuery,
@@ -32,8 +45,13 @@ export function PlayLegendPicker({
     fetchNextPage,
   } = useLegendCatalog();
 
+  const onLayout = (event: LayoutChangeEvent) => {
+    const next = Math.round(event.nativeEvent.layout.width);
+    if (next > 0 && next !== contentWidth) setContentWidth(next);
+  };
+
   return (
-    <View className="gap-4">
+    <View className="min-h-0 flex-1 gap-3" onLayout={onLayout}>
       <SearchInput
         value={query}
         onChangeText={setQuery}
@@ -42,105 +60,119 @@ export function PlayLegendPicker({
       />
 
       {onClear && selectedVariantNumber ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Clear legend"
+        <Button
+          variant="ghost"
           onPress={() => {
             hapticPress();
             onClear();
           }}
-          className="min-h-11 justify-center border-b border-border pb-3 active:opacity-70"
         >
-          <Text className="text-sm font-medium text-muted-foreground">Clear legend</Text>
-        </Pressable>
+          <ButtonText className="text-muted-foreground">Clear legend</ButtonText>
+        </Button>
       ) : null}
 
       {loading && legends.length === 0 ? (
-        <View className="items-center py-12">
+        <View className="flex-1 items-center justify-center py-16">
           <AppLoader size="md" />
         </View>
-      ) : legends.length === 0 ? (
-        <View className="items-center gap-2 py-12">
-          <ThemedIcon icon={SearchIcon} size={28} color="muted-foreground" />
-          <Text className="text-sm text-muted-foreground">No legends match your search</Text>
-        </View>
       ) : (
-        <View>
-          {legends.map((legend, index) => {
-            const selected = legend.variantNumber === selectedVariantNumber;
+        <FlatList
+          data={legends}
+          key={numColumns}
+          keyExtractor={(item) => item.variantNumber}
+          numColumns={numColumns}
+          columnWrapperStyle={
+            numColumns > 1 ? { gap, marginBottom: gap } : undefined
+          }
+          contentContainerStyle={{
+            gap: numColumns === 1 ? gap : undefined,
+            flexGrow: legends.length === 0 ? 1 : undefined,
+            paddingBottom: 8,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          className="min-h-0 flex-1"
+          ListEmptyComponent={
+            <View className="items-center gap-2 py-16">
+              <ThemedIcon icon={SearchIcon} size={28} color="muted-foreground" />
+              <Text className="text-sm text-muted-foreground">
+                No legends match your search
+              </Text>
+            </View>
+          }
+          ListFooterComponent={
+            hasNextPage ? (
+              <View className="pt-2">
+                <Button
+                  variant="outline"
+                  busy={loadingMore}
+                  disabled={loadingMore}
+                  onPress={fetchNextPage}
+                >
+                  <ButtonText>
+                    {loadingMore ? 'Loading…' : 'Load more legends'}
+                  </ButtonText>
+                </Button>
+              </View>
+            ) : null
+          }
+          renderItem={({ item }) => {
+            const selected = item.variantNumber === selectedVariantNumber;
             const artLabel =
-              legend.variantType && legend.variantType !== 'Standard'
-                ? legend.variantType
+              item.variantType && item.variantType !== 'Standard'
+                ? item.variantType
                 : null;
-            const isLast = index === legends.length - 1;
             return (
               <Pressable
-                key={legend.variantNumber}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                accessibilityLabel={`Select ${legend.name}${artLabel ? `, ${artLabel}` : ''}`}
+                accessibilityLabel={`Select ${item.name}${artLabel ? `, ${artLabel}` : ''}`}
+                style={{ width: tileWidth }}
+                className="gap-1.5 active:opacity-90"
                 onPress={() => {
                   hapticPress();
                   onSelect({
-                    name: legend.name,
-                    variantNumber: legend.variantNumber,
-                    imageUrl: legend.imageUrl ?? null,
+                    name: item.name,
+                    variantNumber: item.variantNumber,
+                    imageUrl: item.imageUrl ?? null,
                     ...(artLabel ? { variantLabel: artLabel } : {}),
                   });
                 }}
-                className={cn(
-                  'min-h-16 flex-row items-center gap-3 py-3 active:bg-accent/60',
-                  !isLast && 'border-b border-border'
-                )}
               >
-                <View className="h-14 w-10 overflow-hidden bg-card-panel">
-                  {legend.imageUrl ? (
+                <View
+                  className={cn(
+                    'aspect-[5/7] w-full overflow-hidden border bg-background',
+                    CARD_ART_RADIUS_CLASS,
+                    selected ? 'border-primary' : 'border-border'
+                  )}
+                >
+                  {item.imageUrl ? (
                     <DeckCardArt
-                      uri={resolveImageUrl(legend.imageUrl)}
-                      variantNumber={legend.variantNumber}
+                      uri={resolveImageUrl(item.imageUrl)}
+                      variantNumber={item.variantNumber}
                     />
                   ) : (
-                    <View className="flex-1 items-center justify-center">
-                      <ThemedIcon icon={ImageIcon} size={16} color="muted-foreground" />
+                    <View className="flex-1 items-center justify-center bg-card-panel">
+                      <ThemedIcon icon={ImageIcon} size={20} color="muted-foreground" />
                     </View>
                   )}
                 </View>
-                <View className="min-w-0 flex-1 gap-0.5">
-                  <Text
-                    className={cn(
-                      'text-sm font-semibold',
-                      selected ? 'text-primary' : 'text-foreground'
-                    )}
-                    numberOfLines={2}
-                  >
-                    {legend.name}
-                  </Text>
-                  <Text className="font-mono text-[11px] text-muted-foreground" numberOfLines={1}>
-                    {legend.variantNumber}
-                    {artLabel ? ` · ${artLabel}` : ''}
-                    {legend.colors.length > 0 ? ` · ${legend.colors.join(' · ')}` : ''}
-                  </Text>
-                </View>
-                {selected ? (
-                  <ThemedIcon icon={CheckIcon} size={18} color="archive-accent-text" />
-                ) : null}
+                <Text
+                  className={cn(
+                    'text-[12px] font-semibold',
+                    selected ? 'text-primary' : 'text-foreground'
+                  )}
+                  numberOfLines={2}
+                >
+                  {item.name}
+                </Text>
+                <Text className="font-mono text-[10px] text-muted-foreground" numberOfLines={1}>
+                  {artLabel ?? item.variantNumber}
+                </Text>
               </Pressable>
             );
-          })}
-
-          {hasNextPage ? (
-            <View className="pt-3">
-              <Button
-                variant="outline"
-                busy={loadingMore}
-                disabled={loadingMore}
-                onPress={fetchNextPage}
-              >
-                <ButtonText>{loadingMore ? 'Loading…' : 'Load more legends'}</ButtonText>
-              </Button>
-            </View>
-          ) : null}
-        </View>
+          }}
+        />
       )}
     </View>
   );

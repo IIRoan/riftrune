@@ -3,6 +3,7 @@ import { memo, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { getSectionCount, resolveDeckCardImageUrl } from '@/lib/deck-card';
@@ -135,14 +136,16 @@ function DeckListCardInner({
   const remainingMain = Math.max(0, uniqueMain - previewEntries.length);
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`${deck.name}. ${identityLine}`}
       onPress={() => {
         hapticPress();
         onPress();
       }}
-      className="overflow-hidden rounded-xl border border-border bg-card active:border-ring active:bg-card-panel"
+      className="overflow-hidden rounded-xl border border-border bg-card"
+      contentClassName="overflow-hidden"
+      depth={0.985}
     >
       <View className="gap-3 p-3.5">
         <View className="flex-row gap-3">
@@ -279,7 +282,7 @@ function DeckListCardInner({
           </Pressable>
         ) : null}
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -1,6 +1,7 @@
 import { cva } from 'class-variance-authority';
 import { ActivityIndicator, View } from 'react-native';
 import { Easing, FadeInUp, FadeOutDown } from 'react-native-reanimated';
+import { MOTION } from '@/lib/motion';
 import { useCSSVariable, useUniwind } from 'uniwind';
 import {
   CircleAlertIcon,
@@ -60,8 +61,11 @@ export const Toaster = (props: Omit<ToasterProps, 'theme'>) => {
       swipeToDismissDirection="up"
       visibleToasts={3}
       animation={{
-        enter: FadeInUp.duration(280).easing(Easing.out(Easing.cubic)),
-        exit: FadeOutDown.duration(220).easing(Easing.in(Easing.cubic)),
+        enter: FadeInUp.springify()
+          .damping(MOTION.snappy.damping)
+          .stiffness(MOTION.snappy.stiffness)
+          .mass(MOTION.snappy.mass),
+        exit: FadeOutDown.duration(200).easing(Easing.in(Easing.cubic)),
       }}
       icons={{
         error: <ToastIcon variant="error" />,

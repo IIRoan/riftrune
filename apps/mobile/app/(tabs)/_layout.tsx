@@ -39,6 +39,8 @@ export default function TabLayout() {
             }
             screenOptions={{
               headerShown: false,
+              // iOS/Android tab apps swap instantly — motion lives in the tab bar indicator.
+              animation: 'none',
               sceneStyle: { backgroundColor: background, flex: 1 },
             }}
           >

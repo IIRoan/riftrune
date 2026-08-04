@@ -22,11 +22,13 @@ import Animated, {
   type SharedValue,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 import { Uniwind } from "uniwind";
+import { MOTION } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Button, ButtonIcon } from "./button";
 import { XIcon } from "@/components/icons";
@@ -113,10 +115,7 @@ export const NativeSheet = ({
         setVisible(true);
         // When opening, set visibility to 0 first (off-screen position)
         // The animation will start after layout is measured in onLayout
-        visibilityProgress.value = visibilityProgress.value = withTiming(1, {
-          duration: ANIMATION_DURATION,
-          easing: ANIMATION_EASING,
-        });
+        visibilityProgress.value = withSpring(1, MOTION.smooth);
       });
     } else {
       // When closing, animate immediately (we already have the height)

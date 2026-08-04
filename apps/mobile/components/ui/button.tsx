@@ -3,12 +3,28 @@ import {
   Children,
   cloneElement,
   createContext,
+  useCallback,
   useContext,
   useMemo,
 } from "react";
-import { ActivityIndicator, Pressable, Text } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  type GestureResponderEvent,
+} from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
+import { MOTION, PRESS } from "@/lib/motion";
 import { textFontStyleForClassName } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // Types
 type InternalButtonContextType = VariantProps<typeof buttonVariants> & {
@@ -47,8 +63,15 @@ export const Button = ({
   disabled,
   children,
   accessibilityRole = "button",
+  onPressIn,
+  onPressOut,
+  style,
   ...props
 }: ButtonProps) => {
+  const reduceMotion = useReduceMotion();
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
   const ctx = useMemo(() => {
     return {
       variant,
@@ -58,9 +81,40 @@ export const Button = ({
     };
   }, [variant, size, busy, disabled]);
 
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  const handlePressIn = useCallback(
+    (event: GestureResponderEvent) => {
+      if (!(disabled || busy)) {
+        if (reduceMotion) {
+          opacity.value = withTiming(0.75, { duration: PRESS.inMs });
+        } else {
+          scale.value = withTiming(PRESS.depth, { duration: PRESS.inMs });
+        }
+      }
+      onPressIn?.(event);
+    },
+    [busy, disabled, onPressIn, opacity, reduceMotion, scale]
+  );
+
+  const handlePressOut = useCallback(
+    (event: GestureResponderEvent) => {
+      if (reduceMotion) {
+        opacity.value = withTiming(1, { duration: 140 });
+      } else {
+        scale.value = withSpring(1, MOTION.bouncy);
+      }
+      onPressOut?.(event);
+    },
+    [onPressOut, opacity, reduceMotion, scale]
+  );
+
   return (
     <ButtonContext.Provider value={ctx}>
-      <Pressable
+      <AnimatedPressable
         accessibilityRole={accessibilityRole}
         accessibilityState={{ busy, disabled }}
         className={cn(
@@ -69,6 +123,9 @@ export const Button = ({
           disabled && "opacity-50"
         )}
         disabled={disabled || busy}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[pressStyle, style]}
         {...props}
       >
         {Children.map(children, (child) => {
@@ -83,7 +140,7 @@ export const Button = ({
           return child;
         })}
         {busy ? <ButtonSpinner /> : null}
-      </Pressable>
+      </AnimatedPressable>
     </ButtonContext.Provider>
   );
 };

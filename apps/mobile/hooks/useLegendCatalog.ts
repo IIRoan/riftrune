@@ -119,6 +119,8 @@ export function useLegendCatalog() {
   return {
     query,
     setQuery,
+    /** Debounced search string — use as a transition key when results settle. */
+    searchKey: debounced,
     legends: displayedLegends as typeof legends,
     loading,
     loadingMore,

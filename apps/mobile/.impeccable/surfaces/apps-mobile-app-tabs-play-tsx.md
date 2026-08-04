@@ -26,5 +26,8 @@ Play settings drawer is a **scoreboard strip**: current format called out, then 
 ## Memorable moment
 “Final point” cue at victoryScore−1; Victory banner when a seat/team hits the threshold.
 
+## Motion
+Apple-restraint scoreboard motion via Reanimated (`lib/play-motion.ts`): spring VP/XP pops, Final-point pulse + Victory zoom/frame settle, rail pressure + Next enter. All gated by `useReduceMotion`.
+
 ## Unresolved
 Seat rename UI deferred; timer/coin-toss deliberately out of lean scope.

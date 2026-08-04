@@ -7,9 +7,7 @@ import {
   LogOutIcon,
   type LucideIcon,
 } from '@/components/icons';
-import { usePathname, useRouter } from 'expo-router';
-import { Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
@@ -18,6 +16,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { removeUserDataQueries } from '@/src/api/queryClient';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
+import { hapticPress } from '@/utils/haptics';
+import { usePathname, useRouter } from 'expo-router';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type NavId = 'search' | 'collection' | 'wishlist' | 'decks' | 'play' | 'settings';
 
@@ -101,17 +103,19 @@ export function SideRail() {
     >
       <View className="h-full w-12 items-center gap-1 overflow-visible rounded-xl border border-border bg-card py-3 shadow-sm shadow-black/20">
         <HoverTooltip label="Home" description="Open the card catalog" side="right">
-          <Pressable
+          <PressableScale
             accessibilityLabel="riftrune home"
             className="mb-2 size-8 items-center justify-center rounded-md bg-primary"
+            contentClassName="items-center justify-center"
             onPress={() => {
+              void hapticPress();
               router.push('/(tabs)/search');
             }}
           >
             <Text className="font-mono text-sm font-bold text-primary-foreground">
               r
             </Text>
-          </Pressable>
+          </PressableScale>
         </HoverTooltip>
 
         <View className="h-px w-6 bg-border" />
@@ -126,17 +130,20 @@ export function SideRail() {
                 description={description}
                 side="right"
               >
-                <Pressable
+                <PressableScale
                   accessibilityRole="tab"
                   accessibilityState={{ selected: isActive }}
                   accessibilityLabel={`${label}. ${description}`}
                   onPress={() => {
+                    void hapticPress();
                     router.push(href as '/(tabs)/search');
                   }}
                   className={cn(
                     'size-9 items-center justify-center rounded-md',
-                    isActive ? 'bg-accent' : 'active:bg-accent/70'
+                    isActive && 'bg-accent'
                   )}
+                  contentClassName="items-center justify-center"
+                  depth={0.92}
                 >
                   <Icon
                     className={cn(
@@ -144,7 +151,7 @@ export function SideRail() {
                       isActive ? 'text-accent-foreground' : 'text-muted-foreground'
                     )}
                   />
-                </Pressable>
+                </PressableScale>
               </HoverTooltip>
             );
           })}
@@ -158,13 +165,15 @@ export function SideRail() {
             description="Account, appearance, and app preferences"
             side="right"
           >
-            <Pressable
+            <PressableScale
               accessibilityLabel={`Account: ${userName}. Open settings`}
               className={cn(
                 'size-9 items-center justify-center rounded-md',
-                active === 'settings' ? 'bg-accent' : 'active:bg-accent/70'
+                active === 'settings' && 'bg-accent'
               )}
+              contentClassName="items-center justify-center"
               onPress={() => {
+                void hapticPress();
                 router.push('/(tabs)/settings');
               }}
             >
@@ -178,22 +187,24 @@ export function SideRail() {
               >
                 {userInitial}
               </Text>
-            </Pressable>
+            </PressableScale>
           </HoverTooltip>
           <HoverTooltip
             label="Sign out"
             description="End your Riftrune session"
             side="right"
           >
-            <Pressable
+            <PressableScale
               accessibilityLabel="Sign out"
-              className="size-9 items-center justify-center rounded-md active:bg-accent/70"
+              className="size-9 items-center justify-center rounded-md"
+              contentClassName="items-center justify-center"
               onPress={() => {
+                void hapticPress();
                 void handleSignOut();
               }}
             >
               <LogOutIcon className="size-4 text-muted-foreground" />
-            </Pressable>
+            </PressableScale>
           </HoverTooltip>
         </View>
       </View>
