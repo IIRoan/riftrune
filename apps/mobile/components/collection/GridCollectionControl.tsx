@@ -42,11 +42,11 @@ function wrapWithPicker(
   );
 }
 
-/** Fixed footer height — both Add and stepper states must match to avoid grid layout shift. */
-const CONTROL_HEIGHT = 'h-6';
-const ICON_SIZE = 9;
+/** Tray footer height — Add and stepper must match to avoid grid layout shift. */
+const CONTROL_HEIGHT = 'h-9';
+const ICON_SIZE = 14;
 
-/** Compact collection control for 3-column mobile grid tiles. */
+/** Collection control for tray tiles — full-width soft Add / compact −n+. */
 export function GridCollectionControl({
   owned,
   name,
@@ -98,20 +98,18 @@ export function GridCollectionControl({
         accessibilityLabel={`Add ${name} to collection`}
         className={cn(
           CONTROL_HEIGHT,
-          'w-full flex-row items-center justify-center gap-1 rounded-md bg-primary/12 px-1.5 active:bg-primary/18',
+          'w-full flex-row items-center justify-center gap-1.5 rounded-full border border-border bg-card active:opacity-80',
           busy && 'opacity-60'
         )}
         onPress={showAddPicker ? undefined : handleAdd}
         disabled={busy}
       >
         {busy && !showAddPicker ? (
-          <ActivityIndicator size="small" className="accent-primary" />
+          <ActivityIndicator size="small" className="accent-foreground" />
         ) : (
           <>
-            <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="archive-accent-text" />
-            <Text className="text-[11px] font-semibold text-archive-accent-text">
-              Add
-            </Text>
+            <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="foreground" />
+            <Text className="text-[13px] font-semibold text-foreground">Add</Text>
           </>
         )}
       </Pressable>
@@ -122,35 +120,42 @@ export function GridCollectionControl({
       : addBtn;
   }
 
-  const stepBtn =
-    'h-full flex-1 items-center justify-center rounded-full active:bg-primary/14';
-
   const decrement = (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={`Remove one ${name}`}
-      className={stepBtn}
+      hitSlop={6}
+      className={cn(
+        'size-8 items-center justify-center rounded-full active:bg-foreground/8',
+        busy && 'opacity-60'
+      )}
       onPress={showRemovePicker ? undefined : handleRemove}
       disabled={busy}
     >
       {busy && !showRemovePicker ? (
-        <ActivityIndicator size="small" className="accent-primary" />
+        <ActivityIndicator size="small" className="accent-foreground" />
       ) : (
-        <ThemedIcon icon={MinusIcon} size={ICON_SIZE} color="archive-accent-text" />
+        <ThemedIcon icon={MinusIcon} size={ICON_SIZE} color="foreground" />
       )}
     </Pressable>
   );
 
   const increment = (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={`Add one ${name}`}
-      className={stepBtn}
+      hitSlop={6}
+      className={cn(
+        'size-8 items-center justify-center rounded-full active:bg-foreground/8',
+        busy && 'opacity-60'
+      )}
       onPress={showAddPicker ? undefined : handleAdd}
       disabled={busy}
     >
       {busy && !showAddPicker ? (
-        <ActivityIndicator size="small" className="accent-primary" />
+        <ActivityIndicator size="small" className="accent-foreground" />
       ) : (
-        <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="archive-accent-text" />
+        <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="foreground" />
       )}
     </Pressable>
   );
@@ -159,14 +164,14 @@ export function GridCollectionControl({
     <View
       className={cn(
         CONTROL_HEIGHT,
-        'w-full flex-row items-center justify-between',
+        'w-full flex-row items-center justify-between rounded-full bg-background/80 px-0.5',
         busy && 'opacity-60'
       )}
     >
       {showRemovePicker
         ? wrapWithPicker('Remove printing', removeOptions, onRemove, decrement)
         : decrement}
-      <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
+      <Text className="min-w-6 text-center font-mono text-[13px] font-semibold tabular-nums text-foreground">
         {owned}
       </Text>
       {showAddPicker

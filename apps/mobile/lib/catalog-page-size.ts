@@ -12,8 +12,9 @@ export const CATALOG_FAST_SCROLL_VELOCITY = 0.55;
 /** Stable network page size — kept out of react-query keys. */
 export const CATALOG_NETWORK_PAGE_SIZE = MAX_CATALOG_PAGE_SIZE;
 
-const GRID_META_HEIGHT_COMPACT = 68;
-const GRID_META_HEIGHT = 84;
+/** Tray tile: art + panel (name, price, Add h-9) + gap. */
+const GRID_META_HEIGHT_COMPACT = 100;
+const GRID_META_HEIGHT = 104;
 const LIST_ROW_HEIGHT_COMPACT = 56;
 const LIST_ROW_HEIGHT = 72;
 

@@ -8,7 +8,6 @@ import { GridDeckControl } from '@/components/deck/GridDeckControl';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
-import { gridCardTitleStyle } from '@/lib/cardTileGridTitle';
 import type { DeckCard } from '@/lib/deck-types';
 import { deckOwnershipBorderClass } from '@/lib/deck-validation';
 import { hapticPress } from '@/utils/haptics';
@@ -56,6 +55,7 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
   const imageUri = candidate.imageUrl ? resolveImageUrl(candidate.imageUrl) : '';
   const inDeck = selected || count > 0;
   const shortfall = owned != null && count > 0 && owned < count;
+  const showControl = !readOnly || count > 0;
 
   const handleOpenCard = () => {
     void hapticPress();
@@ -65,7 +65,8 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
   return (
     <View
       className={cn(
-        'overflow-hidden rounded-lg border bg-card',
+        'overflow-hidden border bg-card',
+        CARD_ART_RADIUS_CLASS,
         illegal
           ? 'border-destructive/70'
           : inDeck
@@ -79,15 +80,14 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`View ${candidate.name}`}
-        className="active:opacity-90"
+        className="active:opacity-95"
         onPress={handleOpenCard}
       >
         <View
           className={cn(
-            'relative w-full overflow-hidden',
+            'relative w-full overflow-hidden bg-card-panel',
             horizontal ? 'aspect-[7/5]' : 'aspect-[5/7]',
-            CARD_ART_RADIUS_CLASS,
-            ownershipBorder ? `border-2 ${ownershipBorder}` : ''
+            ownershipBorder ? `border-b-2 ${ownershipBorder}` : ''
           )}
         >
           {imageUri ? (
@@ -115,52 +115,54 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
             orientation={horizontal ? 'landscape' : 'portrait'}
           />
         </View>
-
-        <Text
-          className={cn(
-            'mt-1 px-1 font-semibold',
-            illegal ? 'text-destructive' : 'text-foreground'
-          )}
-          ellipsizeMode="tail"
-          numberOfLines={2}
-          style={gridCardTitleStyle()}
-        >
-          {candidate.name}
-        </Text>
-
-        <View className="min-w-0 flex-row items-center justify-between gap-1 px-1 pb-0.5">
-          <Text
-            className="min-w-0 shrink font-mono text-[10px] text-muted-foreground"
-            numberOfLines={1}
-          >
-            {candidate.variantNumber}
-          </Text>
-          {owned != null && count > 0 ? (
-            <Text
-              className={cn(
-                'shrink-0 font-mono text-[10px] tabular-nums',
-                shortfall ? 'text-warning' : 'text-success'
-              )}
-              numberOfLines={1}
-            >
-              Own {Math.min(owned, count)}/{count}
-            </Text>
-          ) : null}
-        </View>
       </Pressable>
 
-      <View className="px-1 pb-1 pt-0">
-        <GridDeckControl
-          count={count}
-          name={candidate.name}
-          canAdd={canAdd}
-          canRemove={canRemove}
-          blocked={blocked}
-          blockedLabel={blockedLabel}
-          readOnly={readOnly}
-          onAdd={onAdd}
-          onRemove={onRemove}
-        />
+      <View className="gap-2 border-t border-border bg-card-panel px-2.5 py-2.5">
+        <Pressable onPress={handleOpenCard} accessibilityRole="button">
+          <View className="gap-0.5">
+            <Text
+              className={cn(
+                'text-[13px] font-semibold leading-4',
+                illegal ? 'text-destructive' : 'text-foreground'
+              )}
+              numberOfLines={2}
+            >
+              {candidate.name}
+            </Text>
+            <View className="flex-row items-center justify-between gap-2">
+              {owned != null && count > 0 ? (
+                <Text
+                  className={cn(
+                    'font-mono text-[11px] tabular-nums',
+                    shortfall ? 'text-warning' : 'text-success'
+                  )}
+                >
+                  Own {Math.min(owned, count)}/{count}
+                </Text>
+              ) : (
+                <Text
+                  className="font-mono text-[10px] text-muted-foreground"
+                  numberOfLines={1}
+                >
+                  {candidate.variantNumber}
+                </Text>
+              )}
+            </View>
+          </View>
+        </Pressable>
+        {showControl ? (
+          <GridDeckControl
+            count={count}
+            name={candidate.name}
+            canAdd={canAdd}
+            canRemove={canRemove}
+            blocked={blocked}
+            blockedLabel={blockedLabel}
+            readOnly={readOnly}
+            onAdd={onAdd}
+            onRemove={onRemove}
+          />
+        ) : null}
       </View>
     </View>
   );

@@ -4,9 +4,9 @@ import { Text } from '@/components/ui/text';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
-/** Fixed footer height — matches `GridCollectionControl` to avoid grid layout shift. */
-const CONTROL_HEIGHT = 'h-6';
-const ICON_SIZE = 9;
+/** Tray footer height — matches `GridCollectionControl`. */
+const CONTROL_HEIGHT = 'h-9';
+const ICON_SIZE = 14;
 
 interface GridDeckControlProps {
   count: number;
@@ -20,7 +20,7 @@ interface GridDeckControlProps {
   onRemove: () => void;
 }
 
-/** Compact deck control for catalog grid tiles — mirrors `GridCollectionControl`. */
+/** Deck control for tray tiles — mirrors `GridCollectionControl`. */
 export function GridDeckControl({
   count,
   name,
@@ -46,7 +46,7 @@ export function GridDeckControl({
     if (count === 0) return null;
     return (
       <View className={`${CONTROL_HEIGHT} w-full flex-row items-center justify-center`}>
-        <Text className="font-mono text-xs font-semibold tabular-nums text-foreground">
+        <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
           ×{count}
         </Text>
       </View>
@@ -57,10 +57,10 @@ export function GridDeckControl({
     if (blocked) {
       return (
         <View
-          className={`${CONTROL_HEIGHT} w-full items-center justify-center rounded-md bg-card-panel px-1`}
+          className={`${CONTROL_HEIGHT} w-full items-center justify-center rounded-full border border-border/70 bg-card px-2`}
         >
           <Text
-            className="text-center text-[10px] font-medium text-muted-foreground"
+            className="text-center text-[11px] font-medium text-muted-foreground"
             numberOfLines={1}
           >
             {blockedLabel}
@@ -76,48 +76,56 @@ export function GridDeckControl({
         accessibilityState={{ disabled: !canAdd }}
         className={cn(
           CONTROL_HEIGHT,
-          'w-full flex-row items-center justify-center gap-1 rounded-md bg-primary/12 px-1.5 active:bg-primary/18',
+          'w-full flex-row items-center justify-center gap-1.5 rounded-full border border-border bg-card active:opacity-80',
           !canAdd && 'opacity-45'
         )}
         disabled={!canAdd}
         onPress={handleAdd}
       >
-        <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="archive-accent-text" />
-        <Text className="text-[11px] font-semibold text-archive-accent-text">Add</Text>
+        <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="foreground" />
+        <Text className="text-[13px] font-semibold text-foreground">Add</Text>
       </Pressable>
     );
   }
 
-  const stepBtn =
-    'h-full flex-1 items-center justify-center rounded-full active:bg-primary/14';
-
   return (
     <View
-      className={cn(CONTROL_HEIGHT, 'w-full flex-row items-center justify-between')}
+      className={cn(
+        CONTROL_HEIGHT,
+        'w-full flex-row items-center justify-between rounded-full bg-background/80 px-0.5'
+      )}
     >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Remove one ${name}`}
-        className={cn(stepBtn, !canRemove && 'opacity-40')}
+        hitSlop={6}
+        className={cn(
+          'size-8 items-center justify-center rounded-full active:bg-foreground/8',
+          !canRemove && 'opacity-40'
+        )}
         disabled={!canRemove}
         onPress={handleRemove}
       >
-        <ThemedIcon icon={MinusIcon} size={ICON_SIZE} color="archive-accent-text" />
+        <ThemedIcon icon={MinusIcon} size={ICON_SIZE} color="foreground" />
       </Pressable>
-      <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
+      <Text className="min-w-6 text-center font-mono text-[13px] font-semibold tabular-nums text-foreground">
         {count}
       </Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Add one ${name}`}
-        className={cn(stepBtn, !canAdd && 'opacity-40')}
+        hitSlop={6}
+        className={cn(
+          'size-8 items-center justify-center rounded-full active:bg-foreground/8',
+          !canAdd && 'opacity-40'
+        )}
         disabled={!canAdd}
         onPress={handleAdd}
       >
         <ThemedIcon
           icon={PlusIcon}
           size={ICON_SIZE}
-          color={canAdd ? 'archive-accent-text' : 'muted-foreground'}
+          color={canAdd ? 'foreground' : 'muted-foreground'}
         />
       </Pressable>
     </View>
