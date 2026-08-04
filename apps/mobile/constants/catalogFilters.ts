@@ -15,6 +15,8 @@ export const CATALOG_HIDDEN_TYPE_FILTERS = new Set(['card']);
 
 export type CatalogFilters = {
   collection: CatalogCollectionFilter;
+  /** Skip foil/non-foil picker on quick-add; inserts the default (non-foil) finish. */
+  simpleAdd: boolean;
   colors: string[];
   sets: string[];
   types: string[];
@@ -30,6 +32,7 @@ export type CatalogFilters = {
 
 export const DEFAULT_CATALOG_FILTERS: CatalogFilters = {
   collection: 'all',
+  simpleAdd: false,
   colors: [],
   sets: [],
   types: [],
@@ -50,6 +53,7 @@ export function sanitizeCatalogFilters(filters: CatalogFilters): CatalogFilters 
   return {
     ...filters,
     collection,
+    simpleAdd: Boolean(filters.simpleAdd),
     types: filters.types.filter((type) => isCatalogBrowsableType(type)),
     excludeTokens: filters.tokensOnly ? false : filters.excludeTokens,
     tokensOnly: filters.excludeTokens ? false : filters.tokensOnly,
@@ -58,6 +62,7 @@ export function sanitizeCatalogFilters(filters: CatalogFilters): CatalogFilters 
 
 export type CatalogFilterSegment =
   | 'collection'
+  | 'adding'
   | 'colors'
   | 'sets'
   | 'types'
@@ -68,6 +73,7 @@ export type CatalogFilterSegment =
 
 export const CATALOG_FILTER_SEGMENTS: { id: CatalogFilterSegment; label: string }[] = [
   { id: 'collection', label: 'Collection' },
+  { id: 'adding', label: 'Adding' },
   { id: 'colors', label: 'Colors' },
   { id: 'sets', label: 'Sets' },
   { id: 'types', label: 'Type' },
@@ -80,6 +86,7 @@ export const CATALOG_FILTER_SEGMENTS: { id: CatalogFilterSegment; label: string 
 export function catalogFiltersActive(filters: CatalogFilters): boolean {
   return (
     filters.collection !== 'all' ||
+    filters.simpleAdd ||
     filters.colors.length > 0 ||
     filters.sets.length > 0 ||
     filters.types.length > 0 ||
@@ -97,6 +104,7 @@ export function catalogFiltersActive(filters: CatalogFilters): boolean {
 export function countCatalogFilters(filters: CatalogFilters): number {
   let count = 0;
   if (filters.collection !== 'all') count += 1;
+  if (filters.simpleAdd) count += 1;
   if (filters.colors.length > 0) count += 1;
   if (filters.sets.length > 0) count += 1;
   if (filters.types.length > 0) count += 1;
@@ -118,6 +126,8 @@ export function catalogFilterSegmentActive(
   switch (segment) {
     case 'collection':
       return filters.collection !== 'all';
+    case 'adding':
+      return filters.simpleAdd;
     case 'colors':
       return filters.colors.length > 0;
     case 'sets':
@@ -152,6 +162,8 @@ export function catalogFilterSegmentSummary(
     case 'collection':
       if (filters.collection === 'owned') return 'Owned';
       return undefined;
+    case 'adding':
+      return filters.simpleAdd ? 'Simple add' : undefined;
     case 'colors':
       return filters.colors.length > 0 ? filters.colors.join(', ') : undefined;
     case 'sets':
@@ -348,6 +360,14 @@ export type CatalogFilterChip = {
 export function catalogFilterChips(filters: CatalogFilters): CatalogFilterChip[] {
   const chips: CatalogFilterChip[] = [];
 
+  if (filters.simpleAdd) {
+    chips.push({
+      id: 'simple-add',
+      label: 'Simple add',
+      keywordBase: 'ACCELERATE',
+      clear: () => ({ ...filters, simpleAdd: false }),
+    });
+  }
   if (filters.colors.length > 0) {
     chips.push({
       id: 'colors',
@@ -453,7 +473,9 @@ export function catalogFilterChips(filters: CatalogFilters): CatalogFilterChip[]
   return chips;
 }
 
+/** Query/cache key — omits preference-only fields that do not change result sets. */
 export function catalogFiltersQueryKey(filters?: CatalogFilters): string {
   if (!filters) return 'default';
-  return JSON.stringify(filters);
+  const { simpleAdd: _simpleAdd, ...queryRelevant } = filters;
+  return JSON.stringify(queryRelevant);
 }

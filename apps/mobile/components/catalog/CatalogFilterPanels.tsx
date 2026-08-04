@@ -169,6 +169,19 @@ export function CatalogFilterSegmentPanel({
         </View>
       );
 
+    case 'adding':
+      return (
+        <View className="gap-0.5">
+          <FilterToggleRow
+            label="Simple add"
+            subtitle="Skip foil choice — add the standard printing"
+            active={filters.simpleAdd}
+            onPress={() => update({ simpleAdd: !filters.simpleAdd })}
+            compact={compact}
+          />
+        </View>
+      );
+
     case 'colors':
       if (colorOptions.length === 0) {
         return (

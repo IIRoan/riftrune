@@ -193,6 +193,8 @@ export function resolveQuickAddPrintings(
 export function resolvePrintingPickerState(input: {
   printings: readonly PrintingWithOwned[];
   fixedVariantNumber?: string;
+  /** When true, skip the foil/standard add picker and use resolveQuickAddSelection. */
+  simpleAdd?: boolean;
 }): {
   showAddPicker: boolean;
   showRemovePicker: boolean;
@@ -200,10 +202,9 @@ export function resolvePrintingPickerState(input: {
   removeOptions: PrintingPickerOption[];
 } {
   const addOptions = buildPrintingPickerOptions(input.printings);
-  const showAddPicker = shouldShowPrintingPicker(
-    input.printings,
-    input.fixedVariantNumber
-  );
+  const showAddPicker =
+    shouldShowPrintingPicker(input.printings, input.fixedVariantNumber) &&
+    !input.simpleAdd;
   const showRemovePicker = shouldShowRemovePrintingPicker(
     input.printings,
     input.fixedVariantNumber

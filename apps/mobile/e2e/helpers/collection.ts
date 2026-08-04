@@ -56,14 +56,31 @@ export function removeOneButton(page: Page, cardName: string, variantNumber: str
   });
 }
 
+/** Mirrors collectionFinishKey — picker testIDs use `VN::std` / `VN::foil`. */
+export function printingOptionId(variantNumber: string): string {
+  return `${variantNumber}::${/foil/i.test(variantNumber) ? 'foil' : 'std'}`;
+}
+
 export function printingOption(page: Page, variantNumber: string): Locator {
-  return page.getByTestId(`printing-option-${variantNumber}`);
+  return page.getByTestId(`printing-option-${printingOptionId(variantNumber)}`);
 }
 
 export async function pickPrinting(page: Page, variantNumber: string): Promise<void> {
   const option = printingOption(page, variantNumber);
   await expect(option).toBeVisible();
   await option.click();
+}
+
+export async function enableSimpleAdd(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Adding', exact: true }).click();
+  const toggle = page.getByRole('checkbox', { name: 'Simple add', exact: true });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+    await toggle.click();
+  }
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  // Close the filter popover so it doesn't block the search results.
+  await page.keyboard.press('Escape');
 }
 
 export function detailWishlistButton(page: Page): Locator {

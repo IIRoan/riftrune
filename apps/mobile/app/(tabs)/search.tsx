@@ -595,6 +595,7 @@ function SearchScreenBody() {
               mode="search"
               compact={compact}
               enableQuickAdd
+              simpleAdd={catalogFilters.simpleAdd}
               selected={tileSelected}
               collectionByVariant={collectionByVariant}
               familyContextVariantNumber={familyContextVariantNumber}
@@ -612,6 +613,7 @@ function SearchScreenBody() {
             mode="search"
             compact={compact}
             enableQuickAdd
+            simpleAdd={catalogFilters.simpleAdd}
             selected={tileSelected}
             collectionByVariant={collectionByVariant}
             familyContextVariantNumber={familyContextVariantNumber}
@@ -628,6 +630,7 @@ function SearchScreenBody() {
       splitLayout,
       handleSelectCard,
       collectionByVariant,
+      catalogFilters.simpleAdd,
     ]
   );
 
@@ -637,8 +640,9 @@ function SearchScreenBody() {
       // FlatList skips cell updates unless extraData changes — ownership must be included
       // or tiles keep showing Add after collection mutations.
       ownership: collectionByVariant,
+      simpleAdd: catalogFilters.simpleAdd,
     }),
-    [selectedVariant, collectionByVariant]
+    [selectedVariant, collectionByVariant, catalogFilters.simpleAdd]
   );
 
   const listContentStyle = useMemo(() => ({ flexGrow: 1 }), []);

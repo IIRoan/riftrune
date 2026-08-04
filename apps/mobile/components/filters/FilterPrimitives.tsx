@@ -37,6 +37,9 @@ export function FilterToggleRow({
       onPress={onPress}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: active }}
+      accessibilityLabel={label}
+      // RN web does not always map accessibilityState.checked → aria-checked.
+      {...(Platform.OS === 'web' ? { 'aria-checked': active } : null)}
     >
       <View className="min-w-0 flex-1 flex-row items-center gap-2.5 pr-3">
         {leading}

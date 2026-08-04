@@ -1,7 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  catalogFilterChips,
+  catalogFilterSegmentActive,
+  catalogFiltersActive,
+  catalogFiltersQueryKey,
+  countCatalogFilters,
   DEFAULT_CATALOG_FILTERS,
   matchesCatalogFilters,
+  sanitizeCatalogFilters,
 } from '@/constants/catalogFilters';
 
 const sampleCard = {
@@ -133,5 +139,40 @@ describe('matchesCatalogFilters', () => {
         new Map()
       )
     ).toBe(true);
+  });
+
+  test('simple add does not change which cards match', () => {
+    expect(
+      matchesCatalogFilters(
+        sampleCard,
+        { ...DEFAULT_CATALOG_FILTERS, simpleAdd: true },
+        new Map()
+      )
+    ).toBe(true);
+  });
+});
+
+describe('simple add preference', () => {
+  test('sanitize coerces simpleAdd to a boolean', () => {
+    expect(sanitizeCatalogFilters({ ...DEFAULT_CATALOG_FILTERS, simpleAdd: true }).simpleAdd).toBe(
+      true
+    );
+    expect(sanitizeCatalogFilters({ ...DEFAULT_CATALOG_FILTERS, simpleAdd: false }).simpleAdd).toBe(
+      false
+    );
+  });
+
+  test('counts toward active filters and the Adding segment', () => {
+    const filters = { ...DEFAULT_CATALOG_FILTERS, simpleAdd: true };
+    expect(catalogFiltersActive(filters)).toBe(true);
+    expect(countCatalogFilters(filters)).toBe(1);
+    expect(catalogFilterSegmentActive('adding', filters)).toBe(true);
+    expect(catalogFilterChips(filters).map((chip) => chip.id)).toEqual(['simple-add']);
+  });
+
+  test('query key ignores simpleAdd so result caches stay stable', () => {
+    expect(
+      catalogFiltersQueryKey({ ...DEFAULT_CATALOG_FILTERS, simpleAdd: true })
+    ).toBe(catalogFiltersQueryKey(DEFAULT_CATALOG_FILTERS));
   });
 });
