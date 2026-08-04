@@ -1,4 +1,10 @@
-import { MinusIcon, PlusIcon } from '@/components/icons';
+/**
+ * THESIS: The seat half is the control — refuse floating ± discs and bordered chips.
+ * OWN-WORLD: Soft typographic etch marks + bare legend identity inside tetra-ui tokens.
+ * STORY: Tap left to lose a point, right to gain; legend is quiet identity, not chrome.
+ * FIRST VIEWPORT: Hero VP numeral; etched −/+ in each half; legend name or art without a ring.
+ * FORM: Etched halves (chosen direction).
+ */
 import { TypeIcon } from '@/components/riftbound/CardIcons';
 import { CardArtImage } from '@/components/cards/CardArtImage';
 import { Text } from '@/components/ui/text';
@@ -41,7 +47,6 @@ function XpStepper({
   label: 'plus' | 'minus';
   onPress: () => void;
 }) {
-  const Icon = label === 'plus' ? PlusIcon : MinusIcon;
   return (
     <Pressable
       accessibilityRole="button"
@@ -50,14 +55,18 @@ function XpStepper({
         void hapticPress();
         onPress();
       }}
-      className="size-9 items-center justify-center rounded-full border border-border bg-background/50 active:bg-primary/20"
+      hitSlop={8}
+      className="min-w-8 items-center justify-center px-1 py-1 active:opacity-60"
     >
-      <Icon size={18} className="text-foreground" />
+      <Text className="font-mono text-lg font-medium tabular-nums text-muted-foreground">
+        {label === 'plus' ? '+' : '−'}
+      </Text>
     </Pressable>
   );
 }
 
-function ScoreHint({
+/** Soft typographic etch in a seat half — no plate, no Phosphor disc. */
+function ScoreEtch({
   kind,
   compact,
 }: {
@@ -66,26 +75,19 @@ function ScoreHint({
 }) {
   const { actualTheme } = useTheme();
   const tone = playScoreHintClasses(actualTheme);
-  const Icon = kind === 'plus' ? PlusIcon : MinusIcon;
-  const iconSize = compact ? 26 : 32;
   return (
-    <View
+    <Text
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       className={cn(
-        'items-center justify-center rounded-full shadow-sm',
-        tone.plateClassName,
-        compact ? 'size-12' : 'size-14'
+        'font-mono font-light tabular-nums',
+        tone.textClassName,
+        compact ? 'text-5xl' : 'text-6xl'
       )}
     >
-      <Icon
-        size={iconSize}
-        color={tone.iconColor}
-        className={tone.iconClassName}
-        weight="bold"
-      />
-    </View>
+      {kind === 'plus' ? '+' : '−'}
+    </Text>
   );
 }
 
@@ -115,7 +117,7 @@ export function PlayerScoreSeat({
   return (
     <View
       className={cn(
-        'relative min-h-0 min-w-0 flex-1 overflow-hidden border border-border/60',
+        'relative min-h-0 min-w-0 flex-1 overflow-hidden',
         surface,
         isWinner && 'bg-primary/15'
       )}
@@ -131,7 +133,7 @@ export function PlayerScoreSeat({
             transition={0}
             priority="normal"
           />
-          <View className="absolute inset-0 bg-background/70" />
+          <View className="absolute inset-0 bg-background/72" />
         </View>
       ) : null}
 
@@ -139,13 +141,13 @@ export function PlayerScoreSeat({
         accessibilityRole="button"
         accessibilityLabel={`Decrease points for ${name}`}
         onPress={() => bump(-1)}
-        className="absolute bottom-0 left-0 top-0 z-0 w-1/2 active:bg-foreground/5"
+        className="absolute bottom-0 left-0 top-0 z-0 w-1/2 active:bg-foreground/[0.06]"
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Increase points for ${name}`}
         onPress={() => bump(1)}
-        className="absolute bottom-0 right-0 top-0 z-0 w-1/2 active:bg-foreground/5"
+        className="absolute bottom-0 right-0 top-0 z-0 w-1/2 active:bg-foreground/[0.06]"
       />
 
       {isWinner ? (
@@ -153,86 +155,91 @@ export function PlayerScoreSeat({
           pointerEvents="none"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-          className="absolute inset-1.5 z-20 rounded-xl border-4 border-primary"
+          className="absolute inset-2 z-20 border-2 border-primary"
         />
+      ) : null}
+
+      {!seat.legend ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Set legend"
+          onPress={() => {
+            void hapticPress();
+            onPressLegend();
+          }}
+          hitSlop={8}
+          className="absolute right-2 top-2 z-30 size-12 items-center justify-center active:opacity-70"
+        >
+          <TypeIcon type="Legend" size={24} tone="default" />
+        </Pressable>
       ) : null}
 
       <View
         pointerEvents="none"
-        className="absolute bottom-0 left-0 top-0 z-[5] w-1/2 items-center justify-center"
+        className="absolute bottom-0 left-0 top-0 z-[5] w-1/2 items-start justify-center pl-4"
       >
-        <ScoreHint kind="minus" compact={compact} />
+        <ScoreEtch kind="minus" compact={compact} />
       </View>
       <View
         pointerEvents="none"
-        className="absolute bottom-0 right-0 top-0 z-[5] w-1/2 items-center justify-center"
+        className="absolute bottom-0 right-0 top-0 z-[5] w-1/2 items-end justify-center pr-4"
       >
-        <ScoreHint kind="plus" compact={compact} />
+        <ScoreEtch kind="plus" compact={compact} />
       </View>
 
       <View
         pointerEvents="box-none"
         className={cn(
-          'z-10 h-full w-full items-center justify-center gap-3 px-4',
+          'z-10 h-full w-full items-center justify-center gap-3 px-5',
           compact ? 'py-3' : 'py-5'
         )}
       >
         <View
           pointerEvents="box-none"
-          className="flex-row flex-wrap items-center justify-center gap-2"
+          className="flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2"
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              seat.legend ? `Change legend, currently ${name}` : 'Set legend'
-            }
-            onPress={() => {
-              void hapticPress();
-              onPressLegend();
-            }}
-            className={cn(
-              'flex-row items-center gap-1.5 rounded-full border active:opacity-80',
-              seat.legend
-                ? 'border-border bg-background/55 px-2.5 py-1'
-                : 'size-10 items-center justify-center border-primary/50 bg-primary/15'
-            )}
-          >
-            <TypeIcon type="Legend" size={seat.legend ? 14 : 18} tone="foreground" />
-            {seat.legend ? (
-              <Text className="max-w-[9rem] text-xs font-semibold text-foreground" numberOfLines={1}>
-                {name}
-              </Text>
-            ) : null}
-          </Pressable>
-          {seat.team ? (
-            <View
-              pointerEvents="none"
-              className="rounded-full border border-border bg-background/55 px-2.5 py-1"
-            >
-              <Text className="font-mono text-[11px] font-semibold text-muted-foreground">
-                Team {seat.team.toUpperCase()}
-              </Text>
-            </View>
-          ) : null}
-          {format.trackMatchWins ? (
-            <View
-              pointerEvents="none"
-              className="rounded-full border border-border bg-background/55 px-2.5 py-1"
+          {seat.legend ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Change legend, currently ${name}`}
+              onPress={() => {
+                void hapticPress();
+                onPressLegend();
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+              className="min-h-11 items-center justify-center px-3 py-2.5 active:opacity-70"
             >
               <Text
-                accessibilityLabel={`${seat.matchWins} match wins`}
-                className="font-mono text-[11px] font-semibold text-muted-foreground"
+                className="text-base font-semibold text-foreground"
+                numberOfLines={1}
               >
-                Games {seat.matchWins}
+                {name}
               </Text>
-            </View>
+            </Pressable>
+          ) : null}
+          {seat.team ? (
+            <Text
+              pointerEvents="none"
+              className="font-mono text-[11px] font-medium text-muted-foreground"
+            >
+              Team {seat.team.toUpperCase()}
+            </Text>
+          ) : null}
+          {format.trackMatchWins ? (
+            <Text
+              pointerEvents="none"
+              accessibilityLabel={`${seat.matchWins} match wins`}
+              className="font-mono text-[11px] font-medium text-muted-foreground"
+            >
+              Games {seat.matchWins}
+            </Text>
           ) : null}
         </View>
 
         {oneAway && !isWinner ? (
           <Text
             pointerEvents="none"
-            className="font-mono text-[11px] font-semibold uppercase tracking-wide text-primary"
+            className="text-[11px] font-semibold uppercase tracking-wide text-primary"
           >
             Final point
           </Text>
@@ -255,24 +262,22 @@ export function PlayerScoreSeat({
           {seat.points}
         </Text>
 
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row items-center gap-1">
           <Text
             pointerEvents="none"
-            className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            className="pr-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
           >
             XP
           </Text>
-          <View className="flex-row items-center gap-2 rounded-full border border-border bg-background/55 px-1.5 py-1">
-            <XpStepper label="minus" onPress={() => onAdjustXp(-1)} />
-            <Text
-              pointerEvents="none"
-              accessibilityLabel={`${seat.xp} XP`}
-              className="min-w-8 text-center font-mono text-base font-semibold tabular-nums text-foreground"
-            >
-              {seat.xp}
-            </Text>
-            <XpStepper label="plus" onPress={() => onAdjustXp(1)} />
-          </View>
+          <XpStepper label="minus" onPress={() => onAdjustXp(-1)} />
+          <Text
+            pointerEvents="none"
+            accessibilityLabel={`${seat.xp} XP`}
+            className="min-w-7 text-center font-mono text-base font-semibold tabular-nums text-foreground"
+          >
+            {seat.xp}
+          </Text>
+          <XpStepper label="plus" onPress={() => onAdjustXp(1)} />
         </View>
       </View>
     </View>

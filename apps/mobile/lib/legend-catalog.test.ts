@@ -223,24 +223,22 @@ describe('smooth search display helpers', () => {
 });
 
 describe('playScoreHintClasses', () => {
-  test('uses dark plate + white icon on light scheme', () => {
+  test('etches darker ink on light seats', () => {
     const tone = playScoreHintClasses('light');
-    expect(tone.plateClassName).toContain('bg-black');
-    expect(tone.iconClassName).toBe('text-white');
-    expect(tone.iconColor.toUpperCase()).toBe('#FFFFFF');
+    expect(tone.textClassName).toContain('text-black');
   });
 
-  test('uses light plate + dark icon on dark scheme', () => {
+  test('etches lighter ink on dark seats', () => {
     const tone = playScoreHintClasses('dark');
-    expect(tone.plateClassName).toContain('bg-white');
-    expect(tone.iconColor.toUpperCase()).toBe('#0A0A0A');
+    expect(tone.textClassName).toContain('text-white');
   });
 
-  test('always pairs plate darkness with opposing glyph brightness', () => {
-    const light = playScoreHintClasses('light');
-    const dark = playScoreHintClasses('dark');
-    expect(light.iconColor).not.toBe(dark.iconColor);
-    expect(light.plateClassName.includes('bg-black')).toBe(true);
-    expect(dark.plateClassName.includes('bg-white')).toBe(true);
+  test('never returns plate chrome', () => {
+    for (const scheme of ['light', 'dark'] as const) {
+      const tone = playScoreHintClasses(scheme);
+      expect(tone).not.toHaveProperty('plateClassName');
+      expect(tone).not.toHaveProperty('iconColor');
+      expect(Object.keys(tone)).toEqual(['textClassName']);
+    }
   });
 });

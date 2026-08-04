@@ -28,6 +28,8 @@ interface OwnershipStepperProps {
   fixedVariantNumber?: string;
   /** When set with fixedVariantNumber, pins add/remove to that finish. */
   fixedIsFoil?: boolean;
+  /** Skip foil/standard picker on add; inserts the default (non-foil) finish. */
+  simpleAdd?: boolean;
   onAdd: (selectionId?: string) => void;
   onRemove: (selectionId?: string) => void;
 }
@@ -42,6 +44,7 @@ export function OwnershipStepper({
   printings,
   fixedVariantNumber,
   fixedIsFoil,
+  simpleAdd = false,
   onAdd,
   onRemove,
 }: OwnershipStepperProps) {
@@ -56,6 +59,7 @@ export function OwnershipStepper({
       : fixedVariantNumber;
 
   const multiple = shouldShowPrintingPicker(printings, fixedVariantNumber);
+  const showAddPicker = multiple && !simpleAdd;
   const showRemovePicker = shouldShowRemovePrintingPicker(
     printings,
     fixedVariantNumber
@@ -83,6 +87,16 @@ export function OwnershipStepper({
     </PrintingPickerMenu>
   );
 
+  const addDefaultFinish = () => {
+    if (pinnedSelectionId) {
+      onAdd(pinnedSelectionId);
+      return;
+    }
+    const selection = resolveQuickAddSelection(printings);
+    if (!selection) return;
+    onAdd(printingSelectionId(selection));
+  };
+
   const renderAddButton = (title: string) => {
     const button = (
       <Pressable
@@ -96,10 +110,10 @@ export function OwnershipStepper({
           relaxed && 'px-3',
           busy && 'opacity-60'
         )}
-        onPress={multiple ? undefined : () => onAdd(pinnedSelectionId)}
+        onPress={showAddPicker ? undefined : addDefaultFinish}
         disabled={busy}
       >
-        {busy && !multiple ? (
+        {busy && !showAddPicker ? (
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
           <>
@@ -112,7 +126,7 @@ export function OwnershipStepper({
       </Pressable>
     );
 
-    return multiple ? wrapWithPicker(title, pickerOptions, onAdd, button) : button;
+    return showAddPicker ? wrapWithPicker(title, pickerOptions, onAdd, button) : button;
   };
 
   const renderStepButton = (
@@ -189,16 +203,8 @@ export function OwnershipStepper({
         </Text>
         {renderStepButton(
           'add',
-          () => {
-            if (pinnedSelectionId) {
-              onAdd(pinnedSelectionId);
-              return;
-            }
-            const selection = resolveQuickAddSelection(printings);
-            if (!selection) return;
-            onAdd(printingSelectionId(selection));
-          },
-          multiple,
+          addDefaultFinish,
+          showAddPicker,
           'Add printing',
           pickerOptions,
           onAdd

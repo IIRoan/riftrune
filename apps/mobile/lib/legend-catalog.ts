@@ -95,27 +95,17 @@ export function resolveDisplayedLegends<T>(
 }
 
 export type PlayScoreHintTone = {
-  plateClassName: string;
-  iconClassName: string;
-  /** Explicit Phosphor color — Uniwind className alone can lose to defaults. */
-  iconColor: string;
+  /** Soft etch mark — darker on light seats, lighter on dark seats. */
+  textClassName: string;
 };
 
 /**
- * Contrast plate for seat ± hints so icons stay readable on any seat art.
- * Light UI → dark plate + white glyph; dark UI → light plate + dark glyph.
+ * Typographic −/+ etch for seat halves (no floating plates).
+ * Light UI → darker ink; dark UI → lighter ink. Always readable, never chrome.
  */
 export function playScoreHintClasses(scheme: 'light' | 'dark'): PlayScoreHintTone {
   if (scheme === 'light') {
-    return {
-      plateClassName: 'border border-white/25 bg-black/75',
-      iconClassName: 'text-white',
-      iconColor: '#FFFFFF',
-    };
+    return { textClassName: 'text-black/35' };
   }
-  return {
-    plateClassName: 'border border-black/20 bg-white/92',
-    iconClassName: 'text-neutral-950',
-    iconColor: '#0A0A0A',
-  };
+  return { textClassName: 'text-white/40' };
 }

@@ -218,6 +218,23 @@ describe('resolvePrintingPickerState', () => {
     });
   });
 
+  test('simple add skips the foil picker while leave remove picker intact', () => {
+    const printings = attachOwnedToPrintings(
+      stdFoilPrintings,
+      new Map([
+        ['OGN-253', { quantity: 1 }],
+        ['OGN-253-Foil', { quantity: 1 }],
+      ])
+    );
+
+    expect(resolvePrintingPickerState({ printings, simpleAdd: true })).toEqual({
+      showAddPicker: false,
+      showRemovePicker: true,
+      addOptions: buildPrintingPickerOptions(stdFoilPrintings),
+      removeOptions: buildPrintingPickerOptions(stdFoilPrintings),
+    });
+  });
+
   test('enables remove picker only for finishes the user owns', () => {
     const printings = attachOwnedToPrintings(
       stdFoilPrintings,

@@ -162,6 +162,8 @@ type AppSheetContentProps = ComponentProps<typeof View> & {
   enableContentPanningGesture?: boolean;
   snapPoints?: Array<number | string>;
   defaultSnapIndex?: number;
+  /** Lifts the sheet above the screen bottom (Gorhom bottomInset). */
+  bottomInset?: number;
 };
 
 export function AppSheetContent({
@@ -173,6 +175,7 @@ export function AppSheetContent({
   enableContentPanningGesture,
   snapPoints,
   defaultSnapIndex,
+  bottomInset,
   ...props
 }: AppSheetContentProps) {
   const { mode, dismissible } = useAppSheetContext();
@@ -186,6 +189,7 @@ export function AppSheetContent({
         enableContentPanningGesture={enableContentPanningGesture}
         snapPoints={snapPoints}
         defaultSnapIndex={defaultSnapIndex}
+        bottomInset={bottomInset}
         className={className}
       >
         {children}

@@ -29,6 +29,7 @@ import {
   attachOwnedToPrintings,
   resolvePrintingSelection,
   resolveQuickAddPrintings,
+  resolveQuickAddSelection,
   resolveQuickRemoveSelection,
 } from '@/utils/collectionPrintingPicker';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
@@ -53,6 +54,8 @@ interface Props {
   style?: ViewStyle;
   compact?: boolean;
   enableQuickAdd?: boolean;
+  /** Skip foil/standard picker on quick-add; inserts the default (non-foil) finish. */
+  simpleAdd?: boolean;
   selected?: boolean;
   familyContextVariantNumber?: string | null;
   hidePrice?: boolean;
@@ -71,6 +74,7 @@ function CardTileInner({
   style,
   compact = false,
   enableQuickAdd = false,
+  simpleAdd = false,
   selected = false,
   familyContextVariantNumber,
   hidePrice = false,
@@ -144,11 +148,12 @@ function CardTileInner({
   const onAdd = useCallback(
     (selectionId?: string) => {
       void hapticPress();
-      const selection = resolvePrintingSelection(selectionId, printings) ?? {
-        variantNumber: card.variantNumber,
-        isFoil:
-          printings.find((p) => !p.isFoil)?.isFoil ?? printings[0]?.isFoil ?? false,
-      };
+      const selection =
+        resolvePrintingSelection(selectionId, printings) ??
+        resolveQuickAddSelection(printings) ?? {
+          variantNumber: card.variantNumber,
+          isFoil: false,
+        };
       setOptimisticOwned((prev) => (prev ?? owned) + 1);
       addCard.mutate({
         card,
@@ -213,6 +218,7 @@ function CardTileInner({
         relaxed={stepperRelaxed}
         gridSlot={desktopGridStepper}
         printings={printingsWithOwned}
+        simpleAdd={simpleAdd}
         {...collectionCallbacks}
       />
     ) : null;
@@ -222,6 +228,7 @@ function CardTileInner({
       owned={displayOwned}
       name={card.name}
       printings={printingsWithOwned}
+      simpleAdd={simpleAdd}
       {...collectionCallbacks}
     />
   ) : null;
@@ -523,6 +530,7 @@ export const CardTile = memo(
     prev.layout === next.layout &&
     prev.compact === next.compact &&
     prev.enableQuickAdd === next.enableQuickAdd &&
+    prev.simpleAdd === next.simpleAdd &&
     prev.selected === next.selected &&
     prev.familyContextVariantNumber === next.familyContextVariantNumber &&
     prev.hidePrice === next.hidePrice &&

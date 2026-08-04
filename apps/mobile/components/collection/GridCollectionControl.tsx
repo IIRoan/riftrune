@@ -23,6 +23,8 @@ interface Props {
   busy?: boolean;
   printings?: PrintingWithOwned[];
   fixedVariantNumber?: string;
+  /** Skip foil/standard picker on add; inserts the default (non-foil) finish. */
+  simpleAdd?: boolean;
   onAdd: (selectionId?: string) => void;
   onRemove: (selectionId?: string) => void;
 }
@@ -51,6 +53,7 @@ export function GridCollectionControl({
   busy = false,
   printings,
   fixedVariantNumber,
+  simpleAdd = false,
   onAdd,
   onRemove,
 }: Props) {
@@ -60,6 +63,7 @@ export function GridCollectionControl({
   );
 
   const multiple = shouldShowPrintingPicker(printings, fixedVariantNumber);
+  const showAddPicker = multiple && !simpleAdd;
   const showRemovePicker = shouldShowRemovePrintingPicker(
     printings,
     fixedVariantNumber
@@ -97,10 +101,10 @@ export function GridCollectionControl({
           'w-full flex-row items-center justify-center gap-1 rounded-md bg-primary/12 px-1.5 active:bg-primary/18',
           busy && 'opacity-60'
         )}
-        onPress={multiple ? undefined : handleAdd}
+        onPress={showAddPicker ? undefined : handleAdd}
         disabled={busy}
       >
-        {busy && !multiple ? (
+        {busy && !showAddPicker ? (
           <ActivityIndicator size="small" className="accent-primary" />
         ) : (
           <>
@@ -113,7 +117,7 @@ export function GridCollectionControl({
       </Pressable>
     );
 
-    return multiple
+    return showAddPicker
       ? wrapWithPicker('Select printing', pickerOptions, onAdd, addBtn)
       : addBtn;
   }
@@ -140,10 +144,10 @@ export function GridCollectionControl({
     <Pressable
       accessibilityLabel={`Add one ${name}`}
       className={stepBtn}
-      onPress={multiple ? undefined : handleAdd}
+      onPress={showAddPicker ? undefined : handleAdd}
       disabled={busy}
     >
-      {busy && !multiple ? (
+      {busy && !showAddPicker ? (
         <ActivityIndicator size="small" className="accent-primary" />
       ) : (
         <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="archive-accent-text" />
@@ -165,7 +169,7 @@ export function GridCollectionControl({
       <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
         {owned}
       </Text>
-      {multiple
+      {showAddPicker
         ? wrapWithPicker('Add printing', pickerOptions, onAdd, increment)
         : increment}
     </View>
