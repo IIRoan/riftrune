@@ -110,7 +110,7 @@ describe('score-tracker match', () => {
     expect(matchSeriesWinner(state)).toBe(seatA);
   });
 
-  test('resetGame clears points, xp, and legends but keeps match wins', () => {
+  test('resetGame clears points and xp but keeps legends and match wins', () => {
     let state = createScoreTrackerState('match');
     const seatA = state.seats[0]!.id;
     state = setSeatLegend(state, seatA, {
@@ -128,7 +128,27 @@ describe('score-tracker match', () => {
     expect(state.seats[0]!.matchWins).toBe(1);
     expect(state.seats[0]!.points).toBe(0);
     expect(state.seats[0]!.xp).toBe(0);
-    expect(state.seats[0]!.legend).toBeNull();
+    expect(state.seats[0]!.legend?.variantNumber).toBe('OGN-123');
+  });
+
+  test('keeps the first duel winner when a second seat also reaches 8', () => {
+    let state = createScoreTrackerState('duel');
+    const seatA = state.seats[0]!.id;
+    const seatB = state.seats[1]!.id;
+    for (let i = 0; i < 8; i++) state = adjustPoints(state, seatA, 1);
+    expect(state.winnerSeatId).toBe(seatA);
+    for (let i = 0; i < 8; i++) state = adjustPoints(state, seatB, 1);
+    expect(state.winnerSeatId).toBe(seatA);
+  });
+
+  test('keeps the magma winner when the trailing team catches the threshold', () => {
+    let state = createScoreTrackerState('magma');
+    const a1 = state.seats[0]!.id;
+    const b1 = state.seats[1]!.id;
+    for (let i = 0; i < 11; i++) state = adjustPoints(state, a1, 1);
+    expect(state.winnerTeam).toBe('a');
+    for (let i = 0; i < 11; i++) state = adjustPoints(state, b1, 1);
+    expect(state.winnerTeam).toBe('a');
   });
 
   test('setPlayFormat rebuilds seats', () => {

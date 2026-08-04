@@ -48,7 +48,7 @@ export function VariantPickerSheet({
     >
       <AppSheetPortal name="variant-picker">
         <AppSheetOverlay />
-        <AppSheetContent enableDynamicSizing enablePanDownToClose>
+        <AppSheetContent>
           <AppSheetHeader>
             <AppSheetTitle>{title}</AppSheetTitle>
           </AppSheetHeader>

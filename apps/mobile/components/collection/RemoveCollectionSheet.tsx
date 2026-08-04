@@ -45,7 +45,7 @@ export function RemoveCollectionSheet({
     >
       <AppSheetPortal name="remove-collection">
         <AppSheetOverlay />
-        <AppSheetContent enableDynamicSizing enablePanDownToClose>
+        <AppSheetContent>
           <AppSheetHeader>
             <AppSheetTitle>Remove from collection</AppSheetTitle>
           </AppSheetHeader>

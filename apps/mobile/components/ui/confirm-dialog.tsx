@@ -62,7 +62,7 @@ export function ConfirmDialog({
     <AppSheet open={open} onOpenChange={onOpenChange} dismissible={!busy}>
       <AppSheetPortal name="confirm-dialog">
         <AppSheetOverlay />
-        <AppSheetContent enableDynamicSizing enablePanDownToClose={!busy}>
+        <AppSheetContent>
           <AppSheetHeader>
             <AppSheetTitle>{title}</AppSheetTitle>
           </AppSheetHeader>

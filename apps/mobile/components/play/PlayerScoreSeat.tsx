@@ -129,7 +129,7 @@ export function PlayerScoreSeat({
             recyclingKey={`play-bg-${seat.legend.variantNumber}`}
             className="h-full w-full"
             contentFit="cover"
-            contentPosition="center"
+            contentPosition="top"
             transition={0}
             priority="normal"
           />

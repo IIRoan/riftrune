@@ -133,7 +133,7 @@ export function DeckImportExportSheet({
       >
         <AppSheetPortal name="deck-import">
           <AppSheetOverlay />
-          <AppSheetContent enableDynamicSizing enablePanDownToClose={!busy}>
+          <AppSheetContent>
             <AppSheetHeader>
               <AppSheetTitle>Import deck</AppSheetTitle>
             </AppSheetHeader>
