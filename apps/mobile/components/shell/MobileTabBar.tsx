@@ -1,6 +1,7 @@
 import {
   BookmarkIcon,
   CardsThreeIcon,
+  CompassIcon,
   LayersIcon,
   LayoutGridIcon,
   SettingsIcon,
@@ -51,6 +52,7 @@ const TAB_ITEMS: {
   { routeName: 'collection', label: 'Collection', icon: CardsThreeIcon },
   { routeName: 'wishlist', label: 'Wishlist', icon: BookmarkIcon },
   { routeName: 'decks', label: 'Decks', icon: LayersIcon },
+  { routeName: 'play', label: 'Play', icon: CompassIcon },
   { routeName: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 

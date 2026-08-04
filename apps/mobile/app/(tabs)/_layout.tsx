@@ -16,7 +16,10 @@ export default function TabLayout() {
   const showRail = useShowSideRail();
   const isDeepDeckRoute =
     pathname.startsWith('/decks/') && pathname !== '/decks/browse';
-  const showTabBar = !pathname.startsWith('/card/') && !showRail && !isDeepDeckRoute;
+  const isPlayRoute = pathname === '/play' || pathname.startsWith('/play/');
+  // Hide the floating tab bar on Play so the phone can sit flat as a scoreboard.
+  const showTabBar =
+    !pathname.startsWith('/card/') && !showRail && !isDeepDeckRoute && !isPlayRoute;
   const [backgroundRaw] = useCSSVariable(['--color-background']);
   const background = String(backgroundRaw ?? 'oklch(0.130 0 0)');
 
@@ -44,6 +47,7 @@ export default function TabLayout() {
             <Tabs.Screen name="collection" options={{ title: 'Collection' }} />
             <Tabs.Screen name="wishlist" options={{ title: 'Wishlist' }} />
             <Tabs.Screen name="decks" options={{ title: 'Decks' }} />
+            <Tabs.Screen name="play" options={{ title: 'Play' }} />
             <Tabs.Screen
               name="settings"
               options={{

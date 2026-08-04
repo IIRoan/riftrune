@@ -158,6 +158,10 @@ export function AppSheetOverlay({ className }: { className?: string }) {
 type AppSheetContentProps = ComponentProps<typeof View> & {
   enableDynamicSizing?: boolean;
   enablePanDownToClose?: boolean;
+  enableOverDrag?: boolean;
+  enableContentPanningGesture?: boolean;
+  snapPoints?: Array<number | string>;
+  defaultSnapIndex?: number;
 };
 
 export function AppSheetContent({
@@ -165,6 +169,10 @@ export function AppSheetContent({
   className,
   enableDynamicSizing,
   enablePanDownToClose,
+  enableOverDrag,
+  enableContentPanningGesture,
+  snapPoints,
+  defaultSnapIndex,
   ...props
 }: AppSheetContentProps) {
   const { mode, dismissible } = useAppSheetContext();
@@ -174,6 +182,10 @@ export function AppSheetContent({
       <BottomSheetContent
         enableDynamicSizing={enableDynamicSizing}
         enablePanDownToClose={enablePanDownToClose ?? dismissible}
+        enableOverDrag={enableOverDrag}
+        enableContentPanningGesture={enableContentPanningGesture}
+        snapPoints={snapPoints}
+        defaultSnapIndex={defaultSnapIndex}
         className={className}
       >
         {children}
@@ -184,7 +196,7 @@ export function AppSheetContent({
   return (
     <View
       className={cn(
-        'z-10 w-full max-w-md overflow-hidden rounded-2xl bg-background',
+        'z-10 max-h-[90%] w-full max-w-md overflow-hidden rounded-2xl bg-background',
         className
       )}
       {...props}
@@ -232,6 +244,9 @@ export function AppSheetHeader({
   );
 }
 
+/** Same displayName as BottomSheetHeader so sticky-scroll sheets can extract it. */
+AppSheetHeader.displayName = 'BottomSheetHeader';
+
 export function AppSheetTitle({ className, ...props }: ComponentProps<typeof Text>) {
   const { mode } = useAppSheetContext();
 
@@ -274,6 +289,9 @@ export function AppSheetFooter({ className, ...props }: ComponentProps<typeof Vi
     />
   );
 }
+
+/** Same displayName as BottomSheetFooter so sheet content splitting stays correct. */
+AppSheetFooter.displayName = 'BottomSheetFooter';
 
 export const AppSheetScrollView = BottomSheetScrollView;
 export const AppSheetClose = BottomSheetClose;

@@ -1,6 +1,7 @@
 import {
   BookmarkIcon,
   CardsThreeIcon,
+  CompassIcon,
   LayersIcon,
   LayoutGridIcon,
   LogOutIcon,
@@ -18,7 +19,7 @@ import { removeUserDataQueries } from '@/src/api/queryClient';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 
-type NavId = 'search' | 'collection' | 'wishlist' | 'decks' | 'settings';
+type NavId = 'search' | 'collection' | 'wishlist' | 'decks' | 'play' | 'settings';
 
 const NAV_ITEMS: {
   id: NavId;
@@ -55,12 +56,20 @@ const NAV_ITEMS: {
     description: 'Build decks and browse community lists',
     icon: LayersIcon,
   },
+  {
+    id: 'play',
+    href: '/(tabs)/play',
+    label: 'Play',
+    description: 'Table scoreboard for victory points and XP',
+    icon: CompassIcon,
+  },
 ];
 
 function routeToNav(pathname: string): NavId {
   if (pathname.includes('/collection')) return 'collection';
   if (pathname.includes('/wishlist')) return 'wishlist';
   if (pathname.includes('/decks')) return 'decks';
+  if (pathname.includes('/play')) return 'play';
   if (pathname.includes('/settings')) return 'settings';
   return 'search';
 }
