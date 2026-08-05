@@ -24,6 +24,7 @@ import {
   fetchCardmarketPriceGuide,
   priceGuideDownloadUrl,
 } from '../upstream/cardmarket-export.js';
+import { CardmarketIdBackfillService } from './cardmarket-id-backfill.js';
 
 export type PriceSyncTrigger = 'http' | 'cron' | 'script' | 'test';
 
@@ -380,6 +381,7 @@ export class PriceCacheService {
     source: 'cardmarket';
     gameId: number;
     exportCreatedAt: string;
+    cardmarketIdsBackfilled: number;
   }> {
     const trigger = options?.trigger ?? 'http';
     const startedAt = Date.now();
@@ -419,7 +421,15 @@ export class PriceCacheService {
         startedAt,
       });
 
-      return result;
+      const backfill = new CardmarketIdBackfillService(this.db);
+      const backfillResult = await backfill.backfillMissingIds(gameId);
+      if (backfillResult.updated > 0) {
+        console.log(
+          `[prices] Backfilled ${String(backfillResult.updated)} missing Cardmarket product ids (${String(backfillResult.skipped)} still unmapped)`
+        );
+      }
+
+      return { ...result, cardmarketIdsBackfilled: backfillResult.updated };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(

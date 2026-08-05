@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { CardsListQuery, CardDetail, CardListItem } from '@riftbound/contracts';
 import {
   PaCardsListResponse,
@@ -120,6 +120,46 @@ export class CardCacheService {
     return this.prices.getRowsForCardmarketIds(cardmarketIds);
   }
 
+  private overlayVariantMarketplaceIds(
+    variant: PaVariant,
+    dbVariant: {
+      cardmarketId: number | null;
+      tcgplayerId: number | null;
+    }
+  ): PaVariant {
+    return {
+      ...variant,
+      cardmarketId: dbVariant.cardmarketId ?? variant.cardmarketId ?? null,
+      tcgplayerId: dbVariant.tcgplayerId ?? variant.tcgplayerId ?? null,
+    };
+  }
+
+  private mergeVariantMarketplaceIds(
+    card: PaLogicalCard,
+    dbVariants: Array<{
+      variantNumber: string;
+      cardmarketId: number | null;
+      tcgplayerId: number | null;
+    }>
+  ): PaLogicalCard {
+    const byNumber = new Map(
+      dbVariants.map((row) => [row.variantNumber.toLowerCase(), row] as const)
+    );
+
+    return {
+      ...card,
+      variants: card.variants.map((variant) => {
+        const dbRow = byNumber.get(variant.variantNumber.toLowerCase());
+        if (!dbRow) return variant;
+        return {
+          ...variant,
+          cardmarketId: dbRow.cardmarketId ?? variant.cardmarketId ?? null,
+          tcgplayerId: dbRow.tcgplayerId ?? variant.tcgplayerId ?? null,
+        };
+      }),
+    };
+  }
+
   invalidateSearchCache(): void {
     this.searchCache.clear();
   }
@@ -132,10 +172,17 @@ export class CardCacheService {
   }
 
   async getPricesCatalogHash(): Promise<string> {
-    const row = await this.db.query.syncState.findFirst({
-      where: eq(syncState.key, 'prices'),
-    });
-    return row?.contentHash ?? '';
+    const [pricesRow, mappedCountRow] = await Promise.all([
+      this.db.query.syncState.findFirst({
+        where: eq(syncState.key, 'prices'),
+      }),
+      this.db
+        .select({ value: count() })
+        .from(variants)
+        .where(isNotNull(variants.cardmarketId)),
+    ]);
+    const mappedCount = mappedCountRow[0]?.value ?? 0;
+    return `${pricesRow?.contentHash ?? ''}:${String(mappedCount)}`;
   }
 
   async upsertFromUpstream(card: PaLogicalCard): Promise<boolean> {
@@ -245,11 +292,16 @@ export class CardCacheService {
     priceRows: Parameters<typeof mapListItem>[2]
   ) {
     const rewritten = this.images.rewriteCard(card);
-    const rewrittenVariant = rewritten.variants.find(
+    const fromCard = rewritten.variants.find(
       (v) => v.variantNumber === variant.variantNumber
-    ) ?? {
-      ...variant,
-      imageUrl: this.images.rewriteImageUrl(variant.imageUrl),
+    );
+    // Prefer marketplace IDs from the caller — DB overlays / Cardmarket backfill
+    // live on `variant`, while `upstreamRaw` often still has null ids (e.g. VEN).
+    const rewrittenVariant: PaVariant = {
+      ...(fromCard ?? variant),
+      imageUrl: this.images.rewriteImageUrl((fromCard ?? variant).imageUrl),
+      cardmarketId: variant.cardmarketId ?? fromCard?.cardmarketId ?? null,
+      tcgplayerId: variant.tcgplayerId ?? fromCard?.tcgplayerId ?? null,
     };
     return mapListItem(rewritten, rewrittenVariant, priceRows);
   }
@@ -324,7 +376,7 @@ export class CardCacheService {
           isCollectible: variant.isCollectible,
           contentHash: vHash,
           upstreamRaw: variant,
-          cardmarketId: variant.cardmarketId ?? null,
+          cardmarketId: sql`coalesce(excluded.cardmarket_id, ${variants.cardmarketId})`,
           tcgplayerId: variant.tcgplayerId ?? null,
           parentVariantId: variant.parentVariantId ?? null,
           setId: variant.set.id,
@@ -550,7 +602,19 @@ export class CardCacheService {
     });
     if (!cardRow) return null;
 
-    const upstream = cardRow.upstreamRaw as PaLogicalCard;
+    const dbVariants = await this.db
+      .select({
+        variantNumber: variants.variantNumber,
+        cardmarketId: variants.cardmarketId,
+        tcgplayerId: variants.tcgplayerId,
+      })
+      .from(variants)
+      .where(eq(variants.cardId, variantRow.cardId));
+
+    const upstream = this.mergeVariantMarketplaceIds(
+      cardRow.upstreamRaw as PaLogicalCard,
+      dbVariants
+    );
     const priceRows = await this.priceRowsForLogicalCard(upstream);
     return {
       detail: this.mapDetail(upstream, priceRows),
@@ -904,7 +968,10 @@ export class CardCacheService {
 
     const rawItems = rows.map((row) => {
       const logical = row.card.upstreamRaw as PaLogicalCard;
-      const variant = row.variant.upstreamRaw as PaVariant;
+      const variant = this.overlayVariantMarketplaceIds(
+        row.variant.upstreamRaw as PaVariant,
+        row.variant
+      );
       return this.mapItem(logical, variant, priceRows);
     });
 
@@ -980,7 +1047,10 @@ export class CardCacheService {
 
     const rawItems = rows.map((row) => {
       const logical = row.card.upstreamRaw as PaLogicalCard;
-      const variant = row.variant.upstreamRaw as PaVariant;
+      const variant = this.overlayVariantMarketplaceIds(
+        row.variant.upstreamRaw as PaVariant,
+        row.variant
+      );
       return this.mapItem(logical, variant, priceRows);
     });
 

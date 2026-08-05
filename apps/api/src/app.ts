@@ -166,6 +166,9 @@ export function startSyncCrons(ctx: AppContext, env: Env): void {
         if (result.changed) {
           ctx.cardCache.invalidateSearchCache();
           console.log('[prices] Search cache invalidated after cron price change');
+        } else if (result.cardmarketIdsBackfilled > 0) {
+          ctx.cardCache.invalidateSearchCache();
+          console.log('[prices] Search cache invalidated after cron Cardmarket id backfill');
         }
       })
       .catch((err: unknown) => {

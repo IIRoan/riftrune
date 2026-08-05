@@ -37,6 +37,9 @@ export function createSyncRoutes(
       if (result.changed) {
         cards.invalidateSearchCache();
         console.log('[prices] Search cache invalidated after price change');
+      } else if (result.cardmarketIdsBackfilled > 0) {
+        cards.invalidateSearchCache();
+        console.log('[prices] Search cache invalidated after Cardmarket id backfill');
       } else {
         console.log('[prices] Prices unchanged; search cache left intact');
       }
