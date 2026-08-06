@@ -33,6 +33,8 @@ describe('resolveDeckCardImageUrl', () => {
     const cached = new Map([['OGS-011', '/api/v1/images/cards/ogs-011.webp']]);
     const uri = resolveDeckCardImageUrl(mockDeckCard({ imageUrl: cdnUrl }), cached);
 
-    expect(uri).toBe('http://localhost:7000/api/v1/images/cards/ogs-011.webp');
+    // Absolute host comes from EXPO_PUBLIC_API_URL (env-dependent); assert rewrite only.
+    expect(uri).not.toBe(cdnUrl);
+    expect(uri).toMatch(/\/api\/v1\/images\/cards\/ogs-011\.webp$/);
   });
 });

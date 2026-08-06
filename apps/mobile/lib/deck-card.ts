@@ -1,5 +1,5 @@
 import type { CardDetail, CardListItem, DeckFormat } from '@riftbound/contracts';
-import { cardHasAnyType, cardTypeTokens, isUnresolvedDeckVariant } from '@riftbound/contracts';
+import { cardHasAnyType, isUnresolvedDeckVariant } from '@riftbound/contracts';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { findVariantByNumber } from '@/utils/variants';
 import type {
@@ -12,11 +12,9 @@ import type {
 } from '@/lib/deck-types';
 import { canAddBattlefield } from '@/lib/deck-limits';
 
-export { cardTypeTokens };
-
 const PILTOVER_CDN_HOST = 'cdn.piltoverarchive.com';
 
-export function isSignatureVariant(rarity: string, variantType: string): boolean {
+function isSignatureVariant(rarity: string, variantType: string): boolean {
   const combined = `${rarity} ${variantType}`.toLowerCase();
   return combined.includes('signature');
 }
@@ -185,15 +183,6 @@ export function cloneDeck(
     bannedCardNames: undefined,
   });
   return cloned;
-}
-
-export function getSectionEntries(
-  deck: DeckState,
-  section: DeckSectionKey
-): Map<string, DeckEntry> | DeckCard | null {
-  if (section === 'legend') return deck.legend;
-  if (section === 'champion') return deck.champion;
-  return deck[section];
 }
 
 export function getSectionCount(deck: DeckState, section: DeckSectionKey): number {

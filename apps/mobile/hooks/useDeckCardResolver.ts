@@ -1,28 +1,9 @@
 import { useMemo } from 'react';
-import type { CardsListQuery } from '@riftbound/contracts';
 import { api } from '@/src/api/client';
 import { deckCardFromDetail } from '@/lib/deck-card';
 import type { DeckCard } from '@/lib/deck-types';
-import type { DeckSectionKey } from '@/lib/deck-types';
 
 const cardResolveCache = new Map<string, DeckCard>();
-
-export function catalogQueryForSection(
-  section: DeckSectionKey
-): Partial<CardsListQuery> | undefined {
-  switch (section) {
-    case 'legend':
-      return { types: 'Legend' };
-    case 'battlefields':
-      return { types: 'Battlefield' };
-    case 'runes':
-      return { types: 'Rune' };
-    case 'champion':
-      return { types: 'Unit' };
-    default:
-      return undefined;
-  }
-}
 
 export async function resolveDeckCardByName(name: string): Promise<DeckCard | null> {
   const cached = cardResolveCache.get(name);

@@ -1,5 +1,5 @@
 import { useReduceMotion } from '@/hooks/useReduceMotion';
-import { MOTION, PRESS } from '@/lib/motion';
+import { PRESS } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { useCallback, type ComponentProps, type ReactNode } from 'react';
 import { Pressable, type GestureResponderEvent } from 'react-native';
@@ -81,6 +81,3 @@ export function PressableScale({
     </Pressable>
   );
 }
-
-/** Shared spring config for indicator slides / layout morphs. */
-export const INDICATOR_SPRING = MOTION.snappy;

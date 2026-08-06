@@ -106,7 +106,7 @@ export function QuantityPip({
     >
       <View
         className="size-full items-center justify-center rounded-full border border-black/25 bg-white"
-        style={{ shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 1, shadowOffset: { width: 0, height: 1 } }}
+        style={{ boxShadow: '0px 1px 1px rgba(0, 0, 0, 0.15)' }}
       >
         <Text
           className="font-extrabold text-black"

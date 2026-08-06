@@ -9,9 +9,11 @@ import { useCSSVariable } from 'uniwind';
 import {
   HoverTooltip,
   ToolbarIconSlot,
+} from '@/components/ui/hover-tooltip';
+import {
   toolbarButtonSize,
   toolbarIconSize,
-} from '@/components/ui/hover-tooltip';
+} from '@/components/ui/hover-tooltip.constants';
 import { Text } from '@/components/ui/text';
 import { useCollectionImportExport } from '@/hooks/useCollectionImportExport';
 import { cn } from '@/lib/utils';

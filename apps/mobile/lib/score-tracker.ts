@@ -250,11 +250,6 @@ export function resetGame(state: ScoreTrackerState): ScoreTrackerState {
   });
 }
 
-/** Full reset including match wins. */
-export function resetMatch(state: ScoreTrackerState): ScoreTrackerState {
-  return createScoreTrackerState(state.format);
-}
-
 /**
  * After a game win in Match (Bo3), credit the winner and clear VP/XP for the next game.
  * No-op when there is no winner or format does not track match wins.
@@ -283,8 +278,4 @@ export function matchSeriesWinner(state: ScoreTrackerState): string | null {
   if (!format.trackMatchWins) return null;
   const champ = state.seats.find((seat) => seat.matchWins >= 2);
   return champ?.id ?? null;
-}
-
-export function victoryLabel(format: PlayFormat): string {
-  return format.teams ? `First team to ${format.victoryScore}` : `First to ${format.victoryScore}`;
 }

@@ -67,8 +67,3 @@ export function useDeckRuneCards(deck: {
     staleTime: 60 * 60 * 1000,
   });
 }
-
-/** @deprecated Use useDeckRuneCards */
-export function useLegendRuneCards(legend: DeckCard | null) {
-  return useDeckRuneCards({ legend, format: 'constructed' });
-}

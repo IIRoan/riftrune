@@ -137,6 +137,9 @@ export const Popover = ({
 
   const onOpenChange = useCallback(
     (nextOpen: boolean) => {
+      if (!nextOpen) {
+        setContentLayout(undefined);
+      }
       setInternalOpen(nextOpen);
       onOpenChangeProp?.(nextOpen);
     },
@@ -150,12 +153,6 @@ export const Popover = ({
     });
   }, [open, visibilityProgress]);
 
-  useEffect(() => {
-    if (!open) {
-      setContentLayout(undefined);
-    }
-  }, [open]);
-
   const ctx = useMemo(
     () => ({
       open,
@@ -167,7 +164,7 @@ export const Popover = ({
       triggerPosition,
       setTriggerPosition,
     }),
-    [open, switchKey, triggerPosition, contentLayout, visibilityProgress, onOpenChange]
+    [open, switchKey, triggerPosition, contentLayout, visibilityProgress, onOpenChange, setTriggerPosition]
   );
 
   return (

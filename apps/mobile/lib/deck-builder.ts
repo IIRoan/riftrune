@@ -122,6 +122,21 @@ export function buildDeckGridRows(
   return rows;
 }
 
+export function deckGridCellKey(cell: DeckGridCell): string {
+  switch (cell.kind) {
+    case 'card':
+      return cell.name;
+    case 'add':
+      return 'add';
+    case 'empty':
+      return 'empty';
+  }
+}
+
+export function deckGridRowKey(row: DeckGridCell[]): string {
+  return row.map(deckGridCellKey).join('|');
+}
+
 export function totalRuneCount(runes: ReadonlyMap<string, DeckEntry>): number {
   let total = 0;
   for (const [, entry] of runes) {

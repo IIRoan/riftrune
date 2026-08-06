@@ -3,6 +3,7 @@ import {
   createEmptyDeck,
   sectionForCardType,
 } from '@/lib/deck-card';
+import { mapPool } from '@/lib/asyncPool';
 import {
   importDeckCode,
   looksLikeDeckCode,
@@ -12,33 +13,23 @@ import type { DeckCard, DeckSectionKey, DeckState } from '@/lib/deck-types';
 
 export type CardResolver = (name: string) => Promise<DeckCard | null> | DeckCard | null;
 
+async function resolveCardByNames(
+  resolveCard: CardResolver,
+  names: string[]
+): Promise<DeckCard | null> {
+  const results = await Promise.all(names.map((name) => resolveCard(name)));
+  for (const card of results) {
+    if (card) return card;
+  }
+  return null;
+}
+
 function formatPAName(name: string): string {
   return name.replace(' - ', ', ');
 }
 
 function parsePAName(paName: string): string {
   return paName.replace(', ', ' - ');
-}
-
-function* iterateDeck(deck: DeckState): Generator<{
-  card: DeckCard;
-  count: number;
-  section: DeckSectionKey;
-}> {
-  if (deck.legend) yield { card: deck.legend, count: 1, section: 'legend' };
-  if (deck.champion) yield { card: deck.champion, count: 1, section: 'champion' };
-  for (const [, entry] of deck.battlefields) {
-    yield { card: entry.card, count: entry.count, section: 'battlefields' };
-  }
-  for (const [, entry] of deck.runes) {
-    yield { card: entry.card, count: entry.count, section: 'runes' };
-  }
-  for (const [, entry] of deck.mainDeck) {
-    yield { card: entry.card, count: entry.count, section: 'mainDeck' };
-  }
-  for (const [, entry] of deck.sideboard) {
-    yield { card: entry.card, count: entry.count, section: 'sideboard' };
-  }
 }
 
 export function exportPiltoverArchive(deck: DeckState): string {
@@ -78,29 +69,12 @@ export function exportPiltoverArchive(deck: DeckState): string {
   return sections.join('\n\n');
 }
 
-export function exportFlatDeckList(deck: DeckState): string {
-  const lines: string[] = [];
-  for (const { card, count, section } of iterateDeck(deck)) {
-    if (section === 'sideboard') continue;
-    lines.push(`${count} ${card.name} (${card.variantNumber})`);
-  }
-  if (deck.sideboard.size > 0) {
-    lines.push('');
-    lines.push('// Sideboard');
-    for (const [, entry] of deck.sideboard) {
-      lines.push(`${entry.count} ${entry.card.name} (${entry.card.variantNumber})`);
-    }
-  }
-  return lines.join('\n');
-}
-
 export async function importPiltoverArchive(
   text: string,
   resolveCard: CardResolver
 ): Promise<{ deck: DeckState; unresolved: string[] }> {
   let deck = createEmptyDeck();
   const unresolved: string[] = [];
-  let currentSection: DeckSectionKey | null = null;
 
   const sectionMap: Record<string, DeckSectionKey> = {
     legend: 'legend',
@@ -110,6 +84,10 @@ export async function importPiltoverArchive(
     runes: 'runes',
     sideboard: 'sideboard',
   };
+
+  type ParsedLine = { count: number; rawName: string; section: DeckSectionKey };
+  const parsedLines: ParsedLine[] = [];
+  let currentSection: DeckSectionKey | null = null;
 
   for (const rawLine of text.split('\n')) {
     const line = rawLine.trim();
@@ -126,22 +104,35 @@ export async function importPiltoverArchive(
     const match = line.match(/^(\d+)\s+(.+)$/);
     if (!match) continue;
 
-    const count = Number.parseInt(match[1], 10);
-    const rawName = match[2].trim();
-    const card =
-      (await resolveCard(parsePAName(rawName))) ?? (await resolveCard(rawName));
+    parsedLines.push({
+      count: Number.parseInt(match[1], 10),
+      rawName: match[2].trim(),
+      section: currentSection,
+    });
+  }
+
+  const uniqueNames = [...new Set(parsedLines.map((entry) => entry.rawName))];
+  const resolvedCards = await mapPool(uniqueNames, 6, (rawName) =>
+    resolveCardByNames(resolveCard, [parsePAName(rawName), rawName])
+  );
+  const cardByName = new Map(
+    uniqueNames.map((rawName, index) => [rawName, resolvedCards[index] ?? null])
+  );
+
+  for (const { count, rawName, section } of parsedLines) {
+    const card = cardByName.get(rawName) ?? null;
 
     if (!card) {
       unresolved.push(rawName);
       continue;
     }
 
-    if (currentSection === 'legend') {
+    if (section === 'legend') {
       deck = { ...deck, legend: card };
-    } else if (currentSection === 'champion') {
+    } else if (section === 'champion') {
       deck = { ...deck, champion: card };
     } else {
-      deck = addCardToDeck(deck, card, { section: currentSection, count });
+      deck = addCardToDeck(deck, card, { section, count });
     }
   }
 
@@ -154,6 +145,9 @@ export async function importFlatDeckList(
 ): Promise<{ deck: DeckState; unresolved: string[] }> {
   let deck = createEmptyDeck();
   const unresolved: string[] = [];
+
+  type ParsedLine = { count: number; name: string; inSideboard: boolean };
+  const parsedLines: ParsedLine[] = [];
   let inSideboard = false;
 
   for (const rawLine of text.split('\n')) {
@@ -168,16 +162,30 @@ export async function importFlatDeckList(
     const match = line.match(/^(\d+)\s+(.+?)\s+\(([A-Za-z0-9-]+)\)$/i);
     if (!match) continue;
 
-    const count = Number.parseInt(match[1], 10);
-    const name = match[2].trim();
-    const card = (await resolveCard(name)) ?? (await resolveCard(parsePAName(name)));
+    parsedLines.push({
+      count: Number.parseInt(match[1], 10),
+      name: match[2].trim(),
+      inSideboard,
+    });
+  }
+
+  const uniqueNames = [...new Set(parsedLines.map((entry) => entry.name))];
+  const resolvedCards = await mapPool(uniqueNames, 6, (name) =>
+    resolveCardByNames(resolveCard, [name, parsePAName(name)])
+  );
+  const cardByName = new Map(
+    uniqueNames.map((name, index) => [name, resolvedCards[index] ?? null])
+  );
+
+  for (const { count, name, inSideboard: sideboardLine } of parsedLines) {
+    const card = cardByName.get(name) ?? null;
 
     if (!card) {
       unresolved.push(name);
       continue;
     }
 
-    if (inSideboard) {
+    if (sideboardLine) {
       deck = addCardToDeck(deck, card, { section: 'sideboard', count });
     } else {
       const section = sectionForCardType(card);

@@ -10,16 +10,18 @@ export async function fetchCardDetailsByVariant(
   const unique = [...new Set(variantNumbers.filter(Boolean))];
   if (unique.length === 0) return detailByVariant;
 
-  for (const batch of chunkArray(unique, 100)) {
-    const { data } = await api.batchCards(batch);
-    for (const card of data) {
-      for (const variant of card.variants) {
-        if (batch.includes(variant.variantNumber)) {
-          detailByVariant.set(variant.variantNumber, card);
+  await Promise.all(
+    chunkArray(unique, 100).map(async (batch) => {
+      const { data } = await api.batchCards(batch);
+      for (const card of data) {
+        for (const variant of card.variants) {
+          if (batch.includes(variant.variantNumber)) {
+            detailByVariant.set(variant.variantNumber, card);
+          }
         }
       }
-    }
-  }
+    })
+  );
 
   return detailByVariant;
 }

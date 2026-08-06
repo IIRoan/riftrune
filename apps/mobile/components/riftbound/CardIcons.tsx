@@ -107,9 +107,9 @@ export function TypeIcon({
   tone?: GameIconTone;
   className?: string;
 }) {
+  const tint = useForegroundIconTint(tone);
   const source = typeIconFor(type);
   if (!source) return null;
-  const tint = useForegroundIconTint(tone);
   return (
     <Image
       source={source}

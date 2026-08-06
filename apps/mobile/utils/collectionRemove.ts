@@ -1,4 +1,5 @@
 import type { CardListItem } from '@riftbound/contracts';
+import { compactMap } from '@/lib/iteration';
 import {
   expandVariantFinishPrintings,
   formatPrintingLabel,
@@ -18,14 +19,16 @@ export function getCollectedPrintingsForListCard(
   card: CardListItem,
   byVariant: ReadonlyMap<string, { quantity: number }>
 ): CollectedPrintingRow[] {
-  return getCardPrintings(card)
-    .map((p) => ({
+  return compactMap(getCardPrintings(card), (p) => {
+    const quantity = ownedQuantityForPrinting(byVariant, p);
+    if (quantity <= 0) return null;
+    return {
       variantNumber: p.variantNumber,
       label: formatPrintingLabel(p.variantLabel, p.isFoil, p.variantNumber),
-      quantity: ownedQuantityForPrinting(byVariant, p),
+      quantity,
       isFoil: p.isFoil,
-    }))
-    .filter((row) => row.quantity > 0);
+    };
+  });
 }
 
 export function getCollectedPrintingsForDetailCard(
@@ -49,12 +52,14 @@ export function getCollectedPrintingsForDetailCard(
     ? getSearchGroupVariants(card.variants, anchor)
     : card.variants;
 
-  return expandVariantFinishPrintings(variants)
-    .map((p) => ({
+  return compactMap(expandVariantFinishPrintings(variants), (p) => {
+    const quantity = ownedQuantityForPrinting(byVariant, p);
+    if (quantity <= 0) return null;
+    return {
       variantNumber: p.variantNumber,
       label: formatPrintingLabel(p.variantLabel, p.isFoil, p.variantNumber),
-      quantity: ownedQuantityForPrinting(byVariant, p),
+      quantity,
       isFoil: p.isFoil,
-    }))
-    .filter((row) => row.quantity > 0);
+    };
+  });
 }

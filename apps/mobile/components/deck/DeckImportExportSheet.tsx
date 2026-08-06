@@ -1,5 +1,5 @@
 import { ThemedIcon, UploadIcon } from '@/components/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -25,7 +25,7 @@ import {
   resolveDeckCardByName,
   resolveDeckCardByVariant,
 } from '@/hooks/useDeckCardResolver';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/toast.api';
 import { DeckImportLoadingOverlay } from '@/components/deck/DeckImportLoadingOverlay';
 
 interface DeckImportExportSheetProps {
@@ -56,15 +56,17 @@ export function DeckImportExportSheet({
   const [text, setText] = useState('');
   const [format, setFormat] = useState<DeckFormat>('constructed');
   const [busy, setBusy] = useState(false);
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setText('');
+      setFormat('constructed');
+    }
+  }
 
   const lineCount = useMemo(() => countDeckListLines(text), [text]);
   const canImport = text.trim().length > 0 && !busy;
-
-  useEffect(() => {
-    if (!open) return;
-    setFormat('constructed');
-    setText('');
-  }, [open]);
 
   const handleImport = async () => {
     if (!text.trim()) {

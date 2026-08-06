@@ -12,10 +12,6 @@ export function battlefieldsAtCapacity(deck: DeckState): boolean {
   return battlefieldCount(deck) >= BATTLEFIELD_MAX;
 }
 
-export function battlefieldSlotsRemaining(deck: DeckState): number {
-  return Math.max(0, BATTLEFIELD_MAX - battlefieldCount(deck));
-}
-
 export function battlefieldPerNameLimit(deck: DeckState): number {
   return getDeckRules(deck.format).copyLimits.battlefieldPerName;
 }

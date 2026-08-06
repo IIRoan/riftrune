@@ -17,7 +17,11 @@ export const MULTI_FAMILY_CARD = {
   promoLabel: 'Release Event Promo',
 } as const;
 
-export async function searchForCard(page: Page, query: string, cardName: string): Promise<void> {
+export async function searchForCard(
+  page: Page,
+  query: string,
+  cardName: string
+): Promise<void> {
   const search = page.getByPlaceholder('Search cards, artists, tags, or set numbers');
   await search.fill(query);
   await expect(cardTile(page, cardName, query)).toBeVisible({ timeout: 30_000 });
@@ -40,17 +44,34 @@ export function cardTile(page: Page, cardName: string, variantNumber: string): L
   });
 }
 
-export function addToCollectionButton(page: Page, cardName: string, variantNumber: string): Locator {
-  return cardTile(page, cardName, variantNumber).getByLabel(`Add ${cardName} to collection`, {
+export function addToCollectionButton(
+  page: Page,
+  cardName: string,
+  variantNumber: string
+): Locator {
+  return cardTile(page, cardName, variantNumber).getByLabel(
+    `Add ${cardName} to collection`,
+    {
+      exact: true,
+    }
+  );
+}
+
+export function addOneButton(
+  page: Page,
+  cardName: string,
+  variantNumber: string
+): Locator {
+  return cardTile(page, cardName, variantNumber).getByLabel(`Add one ${cardName}`, {
     exact: true,
   });
 }
 
-export function addOneButton(page: Page, cardName: string, variantNumber: string): Locator {
-  return cardTile(page, cardName, variantNumber).getByLabel(`Add one ${cardName}`, { exact: true });
-}
-
-export function removeOneButton(page: Page, cardName: string, variantNumber: string): Locator {
+export function removeOneButton(
+  page: Page,
+  cardName: string,
+  variantNumber: string
+): Locator {
   return cardTile(page, cardName, variantNumber).getByLabel(`Remove one ${cardName}`, {
     exact: true,
   });
@@ -72,7 +93,7 @@ export async function pickPrinting(page: Page, variantNumber: string): Promise<v
 }
 
 export async function enableSimpleAdd(page: Page): Promise<void> {
-  const toggle = page.getByRole('switch', { name: 'Simple add', exact: true });
+  const toggle = page.getByRole('switch', { name: 'Quick add', exact: true });
   await expect(toggle).toBeVisible();
   if ((await toggle.getAttribute('aria-checked')) !== 'true') {
     await toggle.click();

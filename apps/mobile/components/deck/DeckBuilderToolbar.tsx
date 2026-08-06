@@ -1,5 +1,4 @@
 import { ThemedIcon, ChevronLeftIcon, DownloadIcon, InfoIcon, ListIcon, MenuIcon, PencilIcon, SlidersHorizontalIcon } from '@/components/icons';
-import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import { DeckFormatBadge } from '@/components/deck/DeckFormatBadge';
 import { DeckManageMenu } from '@/components/deck/DeckManageMenu';
@@ -268,20 +267,6 @@ export function DeckBuilderToolbar({
           {trailingActions}
         </>
       )}
-    </View>
-  );
-}
-
-export function DeckBuilderSection({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <View className={cn('gap-3 rounded-xl border border-border bg-card p-4', className)}>
-      {children}
     </View>
   );
 }

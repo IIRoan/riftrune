@@ -1,7 +1,8 @@
 import { ThemedIcon, StarIcon } from '@/components/icons';
 import { Image } from 'expo-image';
-import { useMemo } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
+import { Pressable, View } from 'react-native';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckCardCountBadge } from '@/components/deck/DeckCardCountBadge';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
@@ -85,6 +86,16 @@ export function DeckBrowseCard({
       .slice(0, MAIN_DECK_PREVIEW_LIMIT);
   }, [deck.mainDeck]);
 
+  const renderMainDeckThumb = useCallback<ListRenderItem<DeckEntry>>(
+    ({ item: entry }) => (
+      <MainDeckThumb
+        entry={entry}
+        imageUri={resolveDeckCardImageUrl(entry.card, imageByVariant)}
+      />
+    ),
+    [imageByVariant]
+  );
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -149,19 +160,14 @@ export function DeckBrowseCard({
                   </Text>
                 ) : null}
               </View>
-              <ScrollView
+              <FlashList
                 horizontal
+                data={mainDeckEntries}
+                keyExtractor={(entry) => entry.card.name}
+                renderItem={renderMainDeckThumb}
                 showsHorizontalScrollIndicator={false}
                 contentContainerClassName="gap-1.5 pr-1"
-              >
-                {mainDeckEntries.map((entry) => (
-                  <MainDeckThumb
-                    key={entry.card.name}
-                    entry={entry}
-                    imageUri={resolveDeckCardImageUrl(entry.card, imageByVariant)}
-                  />
-                ))}
-              </ScrollView>
+              />
             </View>
           ) : descriptionPreview ? (
             <Text className="text-[11px] leading-4 text-muted-foreground" numberOfLines={2}>

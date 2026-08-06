@@ -32,17 +32,6 @@ export function collectionEntryToCardListItem(
   };
 }
 
-export function formatCollectionEntryMeta(entry: CollectionEntry): string {
-  const parts: string[] = [];
-  if (entry.condition && entry.condition !== 'unspecified') {
-    parts.push(formatConditionLabel(entry.condition as CardCondition));
-  }
-  if (entry.language) {
-    parts.push(formatLanguageLabel(entry.language));
-  }
-  return parts.join(' · ');
-}
-
 export function groupCollectionByVariant(entries: CollectionEntry[]): CollectionEntry[] {
   const map = new Map<string, CollectionEntry>();
 
@@ -107,8 +96,4 @@ export function buildCollectionByVariant(
     });
   }
   return map;
-}
-
-export function collectionEntryKey(entry: CollectionEntry): string {
-  return `${entry.variantNumber}-${entry.condition ?? 'unspecified'}-${entry.language ?? 'en'}`;
 }

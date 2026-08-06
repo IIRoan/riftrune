@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLatestRef } from '@/hooks/useLatestRef';
 import {
   blurFocusedTextDraftState,
   changeFocusedTextDraftState,
@@ -31,14 +32,9 @@ export function useFocusedTextDraft(
   const commitMs = options?.commitMs ?? FOCUSED_TEXT_DRAFT_COMMIT_MS;
 
   const [state, setState] = useState(() => createFocusedTextDraftState(value));
-  const stateRef = useRef(state);
-  stateRef.current = state;
-
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
-
-  const transformRef = useRef(transform);
-  transformRef.current = transform;
+  const stateRef = useLatestRef(state);
+  const onChangeRef = useLatestRef(onChange);
+  const transformRef = useLatestRef(transform);
 
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingCommitRef = useRef<string | null>(null);
@@ -52,7 +48,7 @@ export function useFocusedTextDraft(
     pendingCommitRef.current = null;
     if (pending == null) return;
     onChangeRef.current(pending);
-  }, []);
+  }, [onChangeRef]);
 
   const scheduleCommit = useCallback(
     (next: string) => {
@@ -82,7 +78,7 @@ export function useFocusedTextDraft(
       pendingCommitRef.current = null;
       if (pending != null) onChangeRef.current(pending);
     };
-  }, []);
+  }, [onChangeRef]);
 
   const onFocus = useCallback(() => {
     setState((prev) => focusFocusedTextDraftState(prev));
@@ -101,7 +97,7 @@ export function useFocusedTextDraft(
       if (!shouldCommitFocusedTextDraft(previous, next)) return;
       scheduleCommit(next);
     },
-    [scheduleCommit]
+    [scheduleCommit, stateRef, transformRef]
   );
 
   return {

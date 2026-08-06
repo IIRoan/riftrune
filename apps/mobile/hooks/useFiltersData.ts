@@ -3,15 +3,8 @@ import { prefetchFilterIcons } from '@/lib/prefetchFilterIcons';
 import { catalogQueryKeys } from '@/src/api/queryKeys';
 import { api } from '@/src/api/client';
 
-export { catalogQueryKeys };
-
 const FILTERS_STALE_MS = 5 * 60_000;
 const FILTERS_GC_MS = 30 * 60_000;
-
-/** @deprecated Import catalogQueryKeys.filters from @/src/api/queryKeys */
-export const FILTERS_QUERY_KEY = catalogQueryKeys.filters;
-
-export type CatalogFiltersSnapshot = Awaited<ReturnType<typeof fetchCatalogFilters>>;
 
 /** UI loading/error flags for filter panels — avoids treating background refetch as initial load. */
 export function filtersQueryUiState<T>(query: {
@@ -26,7 +19,7 @@ export function filtersQueryUiState<T>(query: {
   };
 }
 
-export async function fetchCatalogFilters() {
+async function fetchCatalogFilters() {
   const res = await api.getFilters();
   const snapshot = {
     ...res.data,

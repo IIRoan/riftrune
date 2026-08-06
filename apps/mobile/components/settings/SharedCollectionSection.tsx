@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Alert, Platform, Pressable, View } from 'react-native';
 import { AuthSlabCorners } from '@/components/auth/AuthArtifacts';
 import { Button, ButtonText } from '@/components/ui/button';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/toast.api';
 import { Text } from '@/components/ui/text';
 import {
   useCollectionShareMutations,

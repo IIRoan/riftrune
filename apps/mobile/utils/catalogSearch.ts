@@ -11,6 +11,7 @@ export function tokenizeSearchQuery(raw: string): string[] {
 }
 
 function buildSearchBlob(card: CardListItem): string {
+  const printings = getCardPrintings(card);
   const parts = [
     card.name,
     card.variantNumber,
@@ -18,10 +19,16 @@ function buildSearchBlob(card: CardListItem): string {
     card.setCode,
     card.rarity,
     ...card.colors,
-    ...getCardPrintings(card).map((printing) => printing.variantNumber),
-    ...getCardPrintings(card).map((printing) => printing.variantLabel),
   ];
+  for (const printing of printings) {
+    parts.push(printing.variantNumber, printing.variantLabel);
+  }
   return parts.join(' ').toLowerCase();
+}
+
+function matchesAllTokens(blob: string, tokens: readonly string[]): boolean {
+  if (tokens.length === 0) return true;
+  return tokens.every((token) => blob.includes(token));
 }
 
 function relevanceScore(card: CardListItem, query: string): number {
@@ -38,19 +45,16 @@ function relevanceScore(card: CardListItem, query: string): number {
   return 4;
 }
 
-function matchesAllTokens(card: CardListItem, tokens: string[]): boolean {
-  if (tokens.length === 0) return true;
-  const blob = buildSearchBlob(card);
-  return tokens.every((token) => blob.includes(token));
-}
-
 function compareBySort(a: CardListItem, b: CardListItem, sort: CatalogSort): number {
   const dir = sort.dir === 'desc' ? -1 : 1;
   switch (sort.sortBy) {
     case 'energy':
       return (a.energy - b.energy) * dir || a.name.localeCompare(b.name);
     case 'variantNumber':
-      return a.variantNumber.localeCompare(b.variantNumber) * dir || a.name.localeCompare(b.name);
+      return (
+        a.variantNumber.localeCompare(b.variantNumber) * dir ||
+        a.name.localeCompare(b.name)
+      );
     case 'price': {
       const diff = (getCardMaxMarketPrice(a) - getCardMaxMarketPrice(b)) * dir;
       return diff || a.name.localeCompare(b.name);
@@ -83,7 +87,9 @@ export function searchCatalogItems(
   if (!trimmed) return [];
 
   const tokens = tokenizeSearchQuery(trimmed);
-  const matches = items.filter((card) => matchesAllTokens(card, tokens));
+  const matches = items.filter((card) =>
+    matchesAllTokens(buildSearchBlob(card), tokens)
+  );
 
   const sorted = matches.slice().sort((a, b) => {
     if (sort.sortBy === 'price') {

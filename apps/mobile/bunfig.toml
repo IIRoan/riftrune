@@ -1,0 +1,3 @@
+[test]
+# Playwright specs live under e2e/ and must not load under `bun test`.
+path-ignore-patterns = ["e2e/**"]

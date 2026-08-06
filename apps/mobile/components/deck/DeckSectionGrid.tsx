@@ -1,8 +1,8 @@
 import { View } from 'react-native';
-import { DeckCardSlot, resolveSlotImage } from '@/components/deck/DeckCardSlot';
+import { DeckCardSlot } from '@/components/deck/DeckCardSlot';
+import { resolveSlotImage } from '@/components/deck/deckCardSlot.utils';
 import { DeckSectionHeader } from '@/components/deck/DeckSectionHeader';
-import { buildDeckGridRows } from '@/lib/deck-builder';
-import { getSectionCount } from '@/lib/deck-card';
+import { buildDeckGridRows, deckGridRowKey } from '@/lib/deck-builder';
 import { deckSectionProgress } from '@/lib/deck-display';
 import type { DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
@@ -55,9 +55,9 @@ function DeckGridRow({
 }) {
   return (
     <View className="flex-row" style={{ gap, marginBottom: gap }}>
-      {row.map((cell, index) => {
+      {row.map((cell) => {
         if (cell.kind === 'add') {
-          return <DeckCardSlot key={`add-${index}`} variant="add" tileWidth={tileWidth} onAdd={onAdd} />;
+          return <DeckCardSlot key="add" variant="add" tileWidth={tileWidth} onAdd={onAdd} />;
         }
 
         if (cell.kind !== 'card') {
@@ -128,9 +128,9 @@ export function DeckSectionGrid({
       />
 
       <View>
-        {rows.map((row, index) => (
+        {rows.map((row) => (
           <DeckGridRow
-            key={`row-${index}`}
+            key={deckGridRowKey(row)}
             row={row}
             tileWidth={tileWidth}
             gap={gap}
@@ -148,15 +148,4 @@ export function DeckSectionGrid({
       </View>
     </View>
   );
-}
-
-export { DeckBattlefieldPanel } from '@/components/deck/DeckBattlefieldPanel';
-
-export function deckSectionSubtitle(deck: DeckState, section: 'mainDeck' | 'sideboard'): string {
-  const count = getSectionCount(deck, section);
-  if (section === 'mainDeck') {
-    const withChampion = count + (deck.champion ? 1 : 0);
-    return `Main ${withChampion}/40`;
-  }
-  return `Side ${count}/8`;
 }

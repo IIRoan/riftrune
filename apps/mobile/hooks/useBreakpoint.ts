@@ -31,8 +31,9 @@ export function useIsTabletWeb() {
 
 /** Catalog title: hidden on phones / narrow web, shown on tablet+ web. */
 export function useShowCatalogTitle() {
-  return useShowSideRail() || useIsTabletWeb();
+  const showSideRail = useShowSideRail();
+  const isTabletWeb = useIsTabletWeb();
+  return showSideRail || isTabletWeb;
 }
 
-export const CATALOG_MAX_WIDTH = 1400;
 export const DETAIL_PANEL_WIDTH = 360;

@@ -21,7 +21,6 @@ import {
   deckQueryKeys,
   wishlistQueryKeys,
 } from '@/src/api/queryKeys';
-
 describe('createQueryClient', () => {
   test('enables focus and reconnect refetch by default', () => {
     const client = createQueryClient();
@@ -124,7 +123,9 @@ describe('query invalidation helpers', () => {
 
   test('removeUserDataQueries clears cached account data', () => {
     const client = new QueryClient();
-    client.setQueryData(collectionQueryKeys.all, [{ variantNumber: 'OGN-001', quantity: 1 }]);
+    client.setQueryData(collectionQueryKeys.all, [
+      { variantNumber: 'OGN-001', quantity: 1 },
+    ]);
     client.setQueryData(wishlistQueryKeys.all, [{ variantNumber: 'OGN-001' }]);
     client.setQueryData(wishlistQueryKeys.prices, [{ variantNumber: 'OGN-001' }]);
 
@@ -177,6 +178,12 @@ describe('query invalidation helpers', () => {
     await client.fetchQuery({ queryKey: catalogQueryKeys.index });
 
     expect(catalogFetches).toBe(2);
-    expect(cardQueryKeys.browse()).toEqual(['cards', 'browse', 'default']);
+    expect(cardQueryKeys.browse()).toEqual([
+      'cards',
+      'browse',
+      'default',
+      'name',
+      'asc',
+    ]);
   });
 });

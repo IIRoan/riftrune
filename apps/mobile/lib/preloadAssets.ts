@@ -1,6 +1,6 @@
 import { Asset } from 'expo-asset';
 import { Image } from 'expo-image';
-import { Image as RNImage, type ImageSourcePropType } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { allFilterPanelIconSources } from '@/constants/gameAssets';
 import { SET_CATALOG } from '@/constants/setCatalog';
 import { markSessionImageLoaded } from '@/lib/imageSessionCache';
@@ -33,8 +33,8 @@ function resolvedAssetUris(modules: number[]): string[] {
   const uris: string[] = [];
   for (const moduleId of modules) {
     try {
-      const resolved = RNImage.resolveAssetSource(moduleId);
-      if (resolved?.uri) uris.push(resolved.uri);
+      const uri = Asset.fromModule(moduleId).uri;
+      if (uri) uris.push(uri);
     } catch {
       // Ignore unresolved modules.
     }

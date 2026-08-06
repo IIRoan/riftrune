@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import {
-  Dimensions,
+  useWindowDimensions,
   type LayoutRectangle,
   type ScaledSize,
 } from "react-native";
@@ -566,9 +566,13 @@ export function useRelativePosition({
   side = "bottom",
   sideOffset = 0,
 }: UseRelativePositionArgs): PositionStyle {
-  return useMemo(() => {
-    const dimensions = Dimensions.get("screen");
+  const { width, height, scale, fontScale } = useWindowDimensions();
+  const dimensions: ScaledSize = useMemo(
+    () => ({ width, height, scale, fontScale }),
+    [width, height, scale, fontScale]
+  );
 
+  return useMemo(() => {
     if (!triggerPosition) {
       return {
         position: "absolute",
@@ -635,5 +639,6 @@ export function useRelativePosition({
     triggerPosition,
     contentLayout,
     sideOffset,
+    dimensions,
   ]);
 }

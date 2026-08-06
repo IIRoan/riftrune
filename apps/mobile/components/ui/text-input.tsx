@@ -1,14 +1,10 @@
-import { forwardRef, useEffect } from "react";
+import { forwardRef } from "react";
 import { View, type TextInput as RNTextInput } from "react-native";
 import { INPUT_SHELL_CLASS } from "@/constants/catalogToolbar";
-import { cn } from "@/lib/utils";
-import {
-  Input,
-  type InputAddonChildren,
-  type InputProps,
-  useInputAddons,
-  useInputFocusState,
-} from "./input";
+import { cn, mergeRefs } from "@/lib/utils";
+import { Input } from "./input";
+import type { InputAddonChildren, InputProps } from "./input.types";
+import { useInputAddons, useInputFocusState } from "./input.hooks";
 
 // Types
 export type TextInputProps = InputProps & {
@@ -32,18 +28,7 @@ export const TextInput = forwardRef<RNTextInput, TextInputProps>(
   ) => {
     const { isFocused, internalRef, handleFocus, handleBlur } =
       useInputFocusState({ onFocus, onBlur });
-
-    useEffect(() => {
-      if (!ref) return;
-      if (typeof ref === "function") {
-        ref(internalRef.current);
-        return () => {
-          ref(null);
-        };
-      }
-      ref.current = internalRef.current;
-      return;
-    });
+    const mergedRef = mergeRefs(internalRef, ref);
 
     const { startAddons, endAddons, pressableClassName } =
       useInputAddons(children);
@@ -69,7 +54,7 @@ export const TextInput = forwardRef<RNTextInput, TextInputProps>(
           disabled={disabled}
           onBlur={handleBlur}
           onFocus={handleFocus}
-          ref={internalRef}
+          ref={mergedRef}
         />
 
         {endAddons}

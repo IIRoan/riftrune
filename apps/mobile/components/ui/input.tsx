@@ -1,84 +1,55 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { type VariantProps } from 'class-variance-authority';
 import {
   Children,
   cloneElement,
   createContext,
-  isValidElement,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
-  useRef,
-  useState,
-} from "react";
+} from 'react';
 import {
-  type BlurEvent,
-  type FocusEvent,
   Pressable,
   TextInput as RNTextInput,
   View,
-} from "react-native";
+} from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from "react-native-reanimated";
-import { useCSSVariable } from "uniwind";
-import { DEFAULT_SANS, textFontStyleForClassName } from "@/lib/fonts";
-import { cn } from "@/lib/utils";
-import { Button, ButtonIcon, type ButtonProps, ButtonText } from "./button";
+} from 'react-native-reanimated';
+import { useCSSVariable } from 'uniwind';
+import type { ButtonProps } from '@/components/ui/button.types';
+import type {
+  InputAddonProps,
+  InputPressableProps,
+  InputProps,
+} from '@/components/ui/input.types';
+import {
+  inputAddonButtonIconVariants,
+  inputAddonButtonVariants,
+  inputAddonVariants,
+} from '@/components/ui/input.variants';
+import { DEFAULT_SANS, textFontStyleForClassName } from '@/lib/fonts';
+import { cn } from '@/lib/utils';
+import { Button, ButtonIcon } from './button';
 
-// Constants
 const ANIMATION_DURATION = 120;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// Types
 type InternalInputAddonButtonContextType = VariantProps<
   typeof inputAddonButtonVariants
 > &
-  Pick<ButtonProps, "variant">;
-
-export type InputProps = Omit<
-  React.ComponentPropsWithRef<typeof RNTextInput>,
-  "editable"
-> & {
-  disabled?: boolean;
-};
-
-export type InputPressableProps = React.ComponentProps<typeof Pressable> & {
-  disabled?: boolean;
-  invalid?: boolean;
-  focused?: boolean;
-  /** Use a static border instead of the animated outline (toolbar fields). */
-  bordered?: boolean;
-};
-
-export type InputAddonProps = React.ComponentProps<typeof View> &
-  VariantProps<typeof inputAddonVariants> & {
-    children: React.ReactNode;
-  };
-
-export type InputAddonChild =
-  | React.ReactElement<InputAddonProps>
-  | null
-  | false;
-export type InputAddonChildren = InputAddonChild | InputAddonChild[];
+  Pick<ButtonProps, 'variant'>;
 
 type InputAddonIconProps = {
   children: React.ReactNode;
   className?: string;
 };
 
-type InputAddonButtonProps = Omit<React.ComponentProps<typeof Button>, "size"> &
+type InputAddonButtonProps = Omit<React.ComponentProps<typeof Button>, 'size'> &
   VariantProps<typeof inputAddonButtonVariants>;
 
-type UseInputFocusStateProps = {
-  onFocus?: (e: FocusEvent) => void;
-  onBlur?: (e: BlurEvent) => void;
-};
-
-// Context
 const InputAddonButtonContext =
   createContext<InternalInputAddonButtonContextType | null>(null);
 
@@ -86,16 +57,15 @@ const useInputAddonButtonContext = () => {
   const context = useContext(InputAddonButtonContext);
   if (!context) {
     throw new Error(
-      "useInputAddonButtonContext must be used within a Button component"
+      'useInputAddonButtonContext must be used within a Button component'
     );
   }
   return context;
 };
 
-// Components
 export const Input = ({ className, disabled, style, ...props }: InputProps) => {
   const merged = cn(
-    "grow font-sans font-normal text-base text-foreground leading-tight outline-none focus:outline-none",
+    'grow font-sans font-normal text-base text-foreground leading-tight outline-none focus:outline-none',
     className
   );
 
@@ -123,9 +93,9 @@ export const InputPressable = ({
   ...props
 }: InputPressableProps) => {
   const [inputColor, ringColor, destructiveColor] = useCSSVariable([
-    "--color-input",
-    "--color-ring",
-    "--color-destructive",
+    '--color-input',
+    '--color-ring',
+    '--color-destructive',
   ]) as [string, string, string];
 
   const outlineWidth = useSharedValue(1);
@@ -174,12 +144,12 @@ export const InputPressable = ({
       {...props}
       accessibilityState={{ disabled }}
       className={cn(
-        "flex min-h-12 w-full flex-row items-center gap-2 rounded-lg bg-background px-3 py-2 active:bg-accent/90 disabled:opacity-50 dark:active:bg-accent/50",
-        bordered && "border",
+        'flex min-h-12 w-full flex-row items-center gap-2 rounded-lg bg-background px-3 py-2 active:bg-accent/90 disabled:opacity-50 dark:active:bg-accent/50',
+        bordered && 'border',
         className,
-        bordered && !invalid && !focused && "border-border",
-        bordered && !invalid && focused && "border-ring/50",
-        bordered && invalid && "border-destructive"
+        bordered && !invalid && !focused && 'border-border',
+        bordered && !invalid && focused && 'border-ring/50',
+        bordered && invalid && 'border-destructive'
       )}
       disabled={disabled}
       onPress={onPress}
@@ -205,22 +175,26 @@ export const InputAddonIcon = ({
   if (!child) {
     if (__DEV__) {
       throw new Error(
-        "InputAddonIcon expects a single React element as children"
+        'InputAddonIcon expects a single React element as children'
       );
     }
     return null;
   }
 
-  return cloneElement(child as React.ReactElement<InputAddonIconProps>, {
-    ...props,
-    className: cn("size-6 text-muted-foreground", props.className),
-  });
+  return (
+    <>
+      {cloneElement(child as React.ReactElement<InputAddonIconProps>, {
+        ...props,
+        className: cn('size-6 text-muted-foreground', props.className),
+      })}
+    </>
+  );
 };
 
 export const InputAddonButton = ({
   className,
-  variant = "ghost",
-  size = "sm",
+  variant = 'ghost',
+  size = 'sm',
   disabled,
   busy,
   ...props
@@ -240,18 +214,6 @@ export const InputAddonButton = ({
   );
 };
 
-export const InputAddonButtonText = (
-  props: React.ComponentProps<typeof ButtonText>
-) => {
-  const ctx = useInputAddonButtonContext();
-  return (
-    <ButtonText
-      {...props}
-      className={cn(inputAddonButtonTextVariants(ctx), props.className)}
-    />
-  );
-};
-
 export const InputAddonButtonIcon = (
   props: React.ComponentProps<typeof ButtonIcon>
 ) => {
@@ -264,137 +226,3 @@ export const InputAddonButtonIcon = (
     />
   );
 };
-
-// Hooks
-export const useInputFocusState = ({
-  onFocus,
-  onBlur,
-}: UseInputFocusStateProps) => {
-  const [isFocused, setIsFocused] = useState(false);
-
-  const internalRef = useRef<RNTextInput>(null);
-
-  const handleFocus = useCallback(
-    (e: FocusEvent) => {
-      onFocus?.(e);
-
-      setIsFocused(true);
-    },
-    [onFocus]
-  );
-
-  const handleBlur = useCallback(
-    (e: BlurEvent) => {
-      onBlur?.(e);
-
-      setIsFocused(false);
-    },
-    [onBlur]
-  );
-
-  const handlePress = useCallback(() => {
-    // Re-focusing an already-focused field jumps the caret to the end
-    // (especially on web when Pressable still receives the tap).
-    if (isFocused) return;
-    internalRef.current?.focus();
-  }, [isFocused]);
-
-  return {
-    isFocused,
-    internalRef,
-    handleFocus,
-    handleBlur,
-    handlePress,
-  };
-};
-
-export const useInputAddons = (
-  children?: InputAddonChildren | React.ReactElement | null
-) => {
-  const startAddons: InputAddonChild[] = [];
-  const endAddons: InputAddonChild[] = [];
-
-  Children.forEach(children, (child) => {
-    if (isValidElement(child) && child.type === InputAddon) {
-      const typedChild = child as InputAddonChild;
-
-      if (typedChild) {
-        if (
-          typeof typedChild.props.align === "undefined" ||
-          typedChild.props.align === "inline-start"
-        ) {
-          startAddons.push(typedChild);
-        } else {
-          endAddons.push(typedChild);
-        }
-      }
-    }
-  });
-
-  return {
-    startAddons,
-    endAddons,
-    pressableClassName: cn(
-      startAddons.length && "pl-0",
-      endAddons.length && "pr-0"
-    ),
-  };
-};
-
-// Styles
-const inputAddonVariants = cva("flex items-center justify-center", {
-  variants: {
-    align: {
-      "inline-start": "pl-3",
-      "inline-end": "pr-3",
-    },
-  },
-  defaultVariants: {
-    align: "inline-start",
-  },
-});
-
-const inputAddonButtonVariants = cva("w-fit gap-1 shadow-none", {
-  variants: {
-    size: { sm: "h-8 px-2", icon: "size-7" },
-  },
-  defaultVariants: {
-    size: "sm",
-  },
-});
-
-const inputAddonButtonTextVariants = cva("text-sm", {
-  variants: {
-    variant: {
-      default: "text-primary-foreground",
-      destructive: "text-white",
-      outline: "text-muted-foreground",
-      secondary: "text-secondary-foreground",
-      ghost: "text-muted-foreground",
-      link: "text-muted-foreground",
-    },
-  },
-  defaultVariants: {
-    variant: "default",
-  },
-});
-
-const inputAddonButtonIconVariants = cva("", {
-  variants: {
-    variant: {
-      default: "text-primary-foreground",
-      destructive: "text-white",
-      outline: "text-muted-foreground",
-      secondary: "text-secondary-foreground",
-      ghost: "text-muted-foreground",
-      link: "text-muted-foreground",
-    },
-    size: {
-      sm: "size-4",
-      icon: "size-5",
-    },
-  },
-  defaultVariants: {
-    size: "sm",
-  },
-});

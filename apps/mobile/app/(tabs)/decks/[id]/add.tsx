@@ -9,6 +9,7 @@ import {
 import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppLoader, AppLoadingScreen } from '@/components/ui/app-loader';
+import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
@@ -22,7 +23,13 @@ import {
   type DeckState,
 } from '@/lib/deck-types';
 import { DeckSectionTabs } from '@/components/deck/DeckSectionList';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { useDeckAddCatalog } from '@/hooks/useDeckAddCatalog';
@@ -102,8 +109,77 @@ const AddOneTile = memo(function AddOneTile({
   );
 });
 
+const DeckAddGridRow = memo(function DeckAddGridRow({
+  item,
+  deck,
+  activeSection,
+  tileWidth,
+  gridCellStyle,
+  isBattlefieldSection,
+  sectionFull,
+  usesSingleSelectUi,
+  onAddOne,
+  onRemoveOne,
+  onOpenCard,
+}: {
+  item: DeckCard;
+  deck: DeckState;
+  activeSection: DeckSectionKey;
+  tileWidth: number;
+  gridCellStyle: { paddingHorizontal: number; marginBottom: number };
+  isBattlefieldSection: boolean;
+  sectionFull: boolean;
+  usesSingleSelectUi: boolean;
+  onAddOne: (candidate: DeckCard) => void;
+  onRemoveOne: (candidate: DeckCard) => void;
+  onOpenCard: (variantNumber: string) => void;
+}) {
+  const count = getDeckCandidateCount(deck, activeSection, item);
+  const inDeck = count > 0;
+  const selected = usesSingleSelectUi && inDeck;
+  const eligibility = isCardEligibleForSection({
+    deck,
+    section: activeSection,
+    candidateCard: item,
+  });
+  const blocked = !eligibility.eligible && !selected;
+  const blockedLabel =
+    activeSection === 'battlefields' && sectionFull && !inDeck
+      ? 'Slots full'
+      : eligibility.reason?.includes('copy')
+        ? 'Max copies'
+        : 'Unavailable';
+  const handleAdd = useCallback(() => onAddOne(item), [onAddOne, item]);
+  const handleRemove = useCallback(() => onRemoveOne(item), [onRemoveOne, item]);
+  const handleOpen = useCallback(
+    () => onOpenCard(item.variantNumber),
+    [onOpenCard, item.variantNumber]
+  );
+
+  return (
+    <View style={gridCellStyle} collapsable={false}>
+      <AddOneTile
+        tileWidth={tileWidth}
+        candidate={item}
+        count={count}
+        selected={selected}
+        showSelected={usesSingleSelectUi}
+        blocked={blocked}
+        blockedLabel={blockedLabel}
+        horizontal={isBattlefieldSection}
+        onAdd={handleAdd}
+        onRemove={handleRemove}
+        onOpenCard={handleOpen}
+      />
+    </View>
+  );
+});
+
 export default function DeckAddScreen() {
-  const { id, section: sectionParam } = useLocalSearchParams<{ id: string; section?: string }>();
+  const { id, section: sectionParam } = useLocalSearchParams<{
+    id: string;
+    section?: string;
+  }>();
   const { deck, isLoading, persist, flushSave } = useDeckDetail(id);
 
   if (isLoading || !deck) {
@@ -144,13 +220,58 @@ function DeckAddScreenBody({
   onFlushSave: () => Promise<DeckState | null>;
 }) {
   const router = useRouter();
-  const isMobile = useMobileLayout();
   const section = normalizeSectionParam(sectionParam);
   const lockedSection = Boolean(sectionParam);
+  const [tabSection, setTabSection] = useState<DeckSectionKey>(section);
+  const activeSection = lockedSection ? section : tabSection;
 
-  const [activeSection, setActiveSection] = useState<DeckSectionKey>(section);
-  useEffect(() => setActiveSection(section), [section]);
+  useDeckAutoSave(deck);
 
+  const handleBack = useCallback(async () => {
+    try {
+      await onFlushSave();
+    } finally {
+      leaveDeckAddScreen(router, deckId);
+    }
+  }, [deckId, onFlushSave, router]);
+
+  return (
+    <View className="flex-1 gap-2">
+      <DeckAddScreenHeader
+        deck={deck}
+        section={activeSection}
+        onBack={() => void handleBack()}
+      />
+      <DeckAddCatalogWorkspace
+        deck={deck}
+        activeSection={activeSection}
+        lockedSection={lockedSection}
+        onSectionChange={setTabSection}
+        onPersist={onPersist}
+      />
+    </View>
+  );
+}
+
+function DeckAddCatalogWorkspace({
+  deck,
+  activeSection,
+  lockedSection,
+  onSectionChange,
+  onPersist,
+}: {
+  deck: DeckState;
+  activeSection: DeckSectionKey;
+  lockedSection: boolean;
+  onSectionChange: (section: DeckSectionKey) => void;
+  onPersist: (
+    deck: DeckState | ((previous: DeckState) => DeckState),
+    options?: { immediate?: boolean }
+  ) => void;
+}) {
+  const router = useRouter();
+  const isMobile = useMobileLayout();
+  const legendKey = deck.legend?.variantNumber ?? '';
   const { paddingBottomInline, contentWidth } = useScreenLayout();
   const grid = useResponsiveColumns('grid', {
     measuredWidth: contentWidth,
@@ -168,13 +289,11 @@ function DeckAddScreenBody({
     };
   }, [contentWidth, grid, isBattlefieldSection, isMobile]);
 
-  const legendKey = deck.legend?.variantNumber ?? '';
-
-  const [query, setQuery] = useState(() => defaultDeckAddSearch(section, deck));
+  const [query, setQuery] = useState(() => defaultDeckAddSearch(activeSection, deck));
   const debouncedQuery = useDebounce(query.trim(), 300);
 
   const [catalogFilters, setCatalogFilters] = useState<CatalogFilters>(() =>
-    defaultDeckAddCatalogFilters(section, deck)
+    defaultDeckAddCatalogFilters(activeSection, deck)
   );
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
@@ -199,16 +318,12 @@ function DeckAddScreenBody({
     }
   }, [activeSection, lockedSection]);
 
-  const catalog = useDeckAddCatalog(deck, activeSection, debouncedQuery, catalogFilters);
-  useDeckAutoSave(deck);
-
-  const handleBack = useCallback(async () => {
-    try {
-      await onFlushSave();
-    } finally {
-      leaveDeckAddScreen(router, deckId);
-    }
-  }, [deckId, onFlushSave, router]);
+  const catalog = useDeckAddCatalog(
+    deck,
+    activeSection,
+    debouncedQuery,
+    catalogFilters
+  );
 
   const handleAddOne = useCallback(
     (candidate: DeckCard) => {
@@ -218,10 +333,9 @@ function DeckAddScreenBody({
         candidateCard: candidate,
       });
       if (!eligibility.eligible) return;
-      onPersist(
-        (prev) => addCardToDeck(prev, candidate, { section: activeSection }),
-        { immediate: true }
-      );
+      onPersist((prev) => addCardToDeck(prev, candidate, { section: activeSection }), {
+        immediate: true,
+      });
     },
     [deck, onPersist, activeSection]
   );
@@ -236,87 +350,73 @@ function DeckAddScreenBody({
       const entry = getDeckCandidateCount(deck, activeSection, candidate);
       if (entry <= 0) return;
 
-      onPersist(
-        (prev) => changeDeckCardQty(prev, activeSection, candidate.name, -1),
-        { immediate: true }
-      );
+      onPersist((prev) => changeDeckCardQty(prev, activeSection, candidate.name, -1), {
+        immediate: true,
+      });
     },
     [activeSection, deck, onPersist]
   );
 
+  const handleOpenCard = useCallback(
+    (variantNumber: string) => {
+      openCard(router, variantNumber, 'modal');
+    },
+    [router]
+  );
+
   const usesSingleSelectUi = deckAddUsesSingleSelectUi(activeSection);
   const membershipRevision = deckMembershipRevision(deck);
-  const sectionFull =
-    activeSection === 'battlefields' && battlefieldsAtCapacity(deck);
+  const sectionFull = activeSection === 'battlefields' && battlefieldsAtCapacity(deck);
 
-  // FlashList v2 grids have no columnWrapperStyle — the gap lives inside the
-  // cell and the list frame is widened by one gap to keep tile edges flush.
   const gridCellStyle = useMemo(
     () => ({ paddingHorizontal: gap / 2, marginBottom: gap }),
     [gap]
   );
-  const listStyle = useMemo(
-    () => ({ flex: 1, marginHorizontal: -gap / 2 }),
-    [gap]
-  );
+  const listStyle = useMemo(() => ({ flex: 1, marginHorizontal: -gap / 2 }), [gap]);
 
   const renderItem = useCallback<ListRenderItem<DeckCard>>(
-    ({ item }) => {
-      const count = getDeckCandidateCount(deck, activeSection, item);
-      const inDeck = count > 0;
-      const selected = usesSingleSelectUi && inDeck;
-      const eligibility = isCardEligibleForSection({
-        deck,
-        section: activeSection,
-        candidateCard: item,
-      });
-      const blocked = !eligibility.eligible && !selected;
-      const blockedLabel =
-        activeSection === 'battlefields' && sectionFull && !inDeck
-          ? 'Slots full'
-          : eligibility.reason?.includes('copy')
-            ? 'Max copies'
-            : 'Unavailable';
-
-      return (
-        <View style={gridCellStyle} collapsable={false}>
-          <AddOneTile
-            tileWidth={tileWidth}
-            candidate={item}
-            count={count}
-            selected={selected}
-            showSelected={usesSingleSelectUi}
-            blocked={blocked}
-            blockedLabel={blockedLabel}
-            horizontal={isBattlefieldSection}
-            onAdd={() => handleAddOne(item)}
-            onRemove={() => handleRemoveOne(item)}
-            onOpenCard={() => openCard(router, item.variantNumber, 'modal')}
-          />
-        </View>
-      );
-    },
+    ({ item }) => (
+      <DeckAddGridRow
+        item={item}
+        deck={deck}
+        activeSection={activeSection}
+        tileWidth={tileWidth}
+        gridCellStyle={gridCellStyle}
+        isBattlefieldSection={isBattlefieldSection}
+        sectionFull={sectionFull}
+        usesSingleSelectUi={usesSingleSelectUi}
+        onAddOne={handleAddOne}
+        onRemoveOne={handleRemoveOne}
+        onOpenCard={handleOpenCard}
+      />
+    ),
     [
       activeSection,
       deck,
       gridCellStyle,
       handleAddOne,
+      handleOpenCard,
       handleRemoveOne,
       isBattlefieldSection,
-      membershipRevision,
-      router,
       sectionFull,
       tileWidth,
       usesSingleSelectUi,
     ]
   );
 
-  const listFooter =
-    catalog.isFetchingNextPage ? (
-      <View className="items-center py-4">
-        <AppLoader size="sm" />
-      </View>
-    ) : null;
+  const listFooter = useMemo(
+    () => (
+      <>
+        {catalog.isFetchingNextPage ? (
+          <View className="items-center py-4">
+            <AppLoader size="sm" />
+          </View>
+        ) : null}
+        <ListBottomSpacer height={paddingBottomInline} />
+      </>
+    ),
+    [catalog.isFetchingNextPage, paddingBottomInline]
+  );
 
   const showBlockingLoader = catalog.isLoading && catalog.cards.length === 0;
 
@@ -335,9 +435,7 @@ function DeckAddScreenBody({
   const filterActive = catalogFiltersActive(catalogFilters);
 
   return (
-    <View className="flex-1 gap-2">
-      <DeckAddScreenHeader deck={deck} section={activeSection} onBack={() => void handleBack()} />
-
+    <>
       <View className="shrink-0 gap-1.5">
         <View className={cn('gap-2', !isMobile && 'flex-row items-center gap-3')}>
           <View className={cn('min-w-0 flex-1', !isMobile && 'flex-1')}>
@@ -382,7 +480,7 @@ function DeckAddScreenBody({
           <DeckSectionTabs
             deck={deck}
             activeSection={activeSection}
-            onSectionChange={setActiveSection}
+            onSectionChange={onSectionChange}
           />
         ) : null}
       </View>
@@ -404,7 +502,6 @@ function DeckAddScreenBody({
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: paddingBottomInline,
           flexGrow: catalog.cards.length === 0 ? 1 : undefined,
         }}
         keyboardShouldPersistTaps="handled"
@@ -423,6 +520,6 @@ function DeckAddScreenBody({
         onClose={() => setFilterSheetOpen(false)}
         onFiltersChange={applyCatalogFilters}
       />
-    </View>
+    </>
   );
 }

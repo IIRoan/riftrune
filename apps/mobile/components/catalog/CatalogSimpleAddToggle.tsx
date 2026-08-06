@@ -26,7 +26,7 @@ export function CatalogSimpleAddToggle({
     <Pressable
       accessibilityRole="switch"
       accessibilityState={{ checked: active }}
-      accessibilityLabel="Simple add"
+      accessibilityLabel="Quick add"
       accessibilityHint="Skip foil choice and add the standard printing"
       onPress={() => {
         void hapticPress();
@@ -52,7 +52,7 @@ export function CatalogSimpleAddToggle({
           )}
           numberOfLines={1}
         >
-          Simple
+          Quick add
         </Text>
       )}
     </Pressable>

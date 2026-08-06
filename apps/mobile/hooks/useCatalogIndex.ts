@@ -11,9 +11,6 @@ import {
   resolveCatalogIndexCacheKey,
 } from '@/services/catalogMetaService';
 
-/** @deprecated Import catalogQueryKeys.index from @/src/api/queryKeys */
-export const catalogIndexQueryKey = catalogQueryKeys.index;
-
 export function useCatalogIndex() {
   const queryClient = useQueryClient();
 

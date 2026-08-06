@@ -2,6 +2,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { Keyboard, Pressable, View } from 'react-native';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { CardTile } from '@/components/cards/CardTile';
+import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { Text } from '@/components/ui/text';
 import type { CollectionEntry } from '@/services/collectionService';
 import {
@@ -181,10 +182,10 @@ export function CollectionCardList({
           </Text>
         ) : null
       }
+      ListFooterComponent={<ListBottomSpacer height={paddingBottom} />}
       contentContainerStyle={{
         width: contentWidth,
         maxWidth: '100%',
-        paddingBottom,
       }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"

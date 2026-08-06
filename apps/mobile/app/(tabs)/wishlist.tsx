@@ -11,6 +11,7 @@ import {
   useScreenLayout,
 } from '@/components/shell/ScreenLayout';
 import { Button, ButtonText } from '@/components/ui/button';
+import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { SearchInput } from '@/components/ui/search-input';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
@@ -33,6 +34,8 @@ const ROW_THUMB = { width: 40, height: 56 } as const;
 const EXPANDED_THUMB = { width: 72, height: 100 } as const;
 
 type SortMode = 'move' | 'price' | 'name';
+
+const EMPTY_WISHLIST_ITEMS: WishlistPriceItem[] = [];
 
 function formatPrice(value: number | null): string {
   return value == null ? '—' : `€${value.toFixed(2)}`;
@@ -266,7 +269,7 @@ function WishlistScreenBody() {
   const [query, setQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const wishlist = useWishlistPrices();
-  const items = wishlist.data ?? [];
+  const items = wishlist.data ?? EMPTY_WISHLIST_ITEMS;
 
   const filtered = useMemo(
     () => sortItems(items.filter((item) => matchesQuery(item, query)), sort),
@@ -421,16 +424,18 @@ function WishlistScreenBody() {
         </View>
       }
       ListFooterComponent={
-        items.length > 0 ? (
-          <Text className="pb-2 pt-5 text-xs leading-5 text-muted-foreground">
-            {CARDMARKET_PRICE_DETAIL_NOTE}
-          </Text>
-        ) : null
+        <>
+          {items.length > 0 ? (
+            <Text className="pb-2 pt-5 text-xs leading-5 text-muted-foreground">
+              {CARDMARKET_PRICE_DETAIL_NOTE}
+            </Text>
+          ) : null}
+          <ListBottomSpacer height={paddingBottomInline} />
+        </>
       }
       contentContainerStyle={{
         width: contentWidth,
         maxWidth: '100%',
-        paddingBottom: paddingBottomInline,
       }}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"

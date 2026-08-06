@@ -124,19 +124,21 @@ async function runBatchPrefetch(
   );
   if (missing.length === 0) return;
 
-  for (const batch of chunkArray(missing, MAX_BATCH)) {
-    const requested = new Set(batch);
-    const response = await api.batchCards(batch);
-    const source = mapBatchSource(response.meta.source);
+  await Promise.all(
+    chunkArray(missing, MAX_BATCH).map(async (batch) => {
+      const requested = new Set(batch);
+      const response = await api.batchCards(batch);
+      const source = mapBatchSource(response.meta.source);
 
-    for (const card of response.data) {
-      const hit = card.variants.some((variant) => requested.has(variant.variantNumber));
-      if (!hit) continue;
-      for (const variant of card.variants) {
-        seedDetailCache(queryClient, variant.variantNumber, card, source);
+      for (const card of response.data) {
+        const hit = card.variants.some((variant) => requested.has(variant.variantNumber));
+        if (!hit) continue;
+        for (const variant of card.variants) {
+          seedDetailCache(queryClient, variant.variantNumber, card, source);
+        }
       }
-    }
-  }
+    })
+  );
 }
 
 function scheduleFlush(queryClient: QueryClient): void {

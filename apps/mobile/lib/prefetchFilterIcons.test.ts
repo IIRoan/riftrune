@@ -1,10 +1,13 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 mock.module('react-native', () => ({
-  Image: {
-    resolveAssetSource: (source: number) => ({ uri: `bundled://${String(source)}` }),
-  },
   Platform: { OS: 'ios' },
+}));
+
+mock.module('expo-asset', () => ({
+  Asset: {
+    fromModule: (source: number) => ({ uri: `bundled://${String(source)}` }),
+  },
 }));
 
 mock.module('expo-image', () => ({

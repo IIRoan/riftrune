@@ -27,9 +27,6 @@ export const CATALOG_TOOLBAR_SEGMENT_INACTIVE_CLASS = 'active:opacity-70';
 export const CATALOG_TOOLBAR_MOBILE_ROW_CLASS =
   'w-full flex-row items-center justify-between gap-2';
 
-/** @deprecated Prefer natural-width icon buttons; kept for deck browse chrome. */
-export const CATALOG_TOOLBAR_MOBILE_SLOT_CLASS = 'min-w-0 flex-1';
-
 /** Mobile icon control — 44×44 touch target. */
 export const CATALOG_TOOLBAR_CONTROL_CLASS_MOBILE =
   'size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card active:bg-card-panel';
@@ -67,10 +64,6 @@ export function catalogToolbarIconColor(tone: ToolbarIconTone): ThemedIconColor 
 
 export function catalogToolbarGroupClass(mobile = false): string {
   return mobile ? CATALOG_TOOLBAR_GROUP_CLASS_MOBILE : CATALOG_TOOLBAR_GROUP_CLASS;
-}
-
-export function catalogToolbarMobileSlotClass(): string {
-  return CATALOG_TOOLBAR_MOBILE_SLOT_CLASS;
 }
 
 /** Mobile labeled control — compact text + icon (rarely used; prefer icons). */

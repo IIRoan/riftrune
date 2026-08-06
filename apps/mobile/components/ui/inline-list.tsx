@@ -1,4 +1,3 @@
-import { cva, type VariantProps } from "class-variance-authority";
 import {
   Children,
   cloneElement,
@@ -6,64 +5,34 @@ import {
   isValidElement,
   useContext,
   useMemo,
-} from "react";
-import { Pressable, View } from "react-native";
-import { cn } from "@/lib/utils";
-import { Text } from "./text";
+} from 'react';
+import { Pressable, View } from 'react-native';
+import type {
+  InlineListItemAddonAlign,
+  InlineListItemAddonChild,
+  InlineListItemAddonProps,
+  InlineListItemDescriptionProps,
+  InlineListItemProps,
+  InlineListItemTitleProps,
+  InlineListProps,
+} from '@/components/ui/inline-list.types';
+import {
+  inlineListItemAddonVariants,
+  inlineListItemVariants,
+} from '@/components/ui/inline-list.variants';
+import { cn } from '@/lib/utils';
+import { Text } from './text';
 
-// Types
-export type InlineListProps = React.ComponentProps<typeof View> & {
-  title?: string;
-  children: React.ReactNode;
-};
+type InlineListItemVariant = 'default' | 'destructive';
 
-type InlineListItemVariant = "default" | "destructive";
-
-export type InlineListItemProps = React.ComponentProps<typeof Pressable> & {
-  children: React.ReactNode;
-  showSeparator?: boolean;
-  variant?: InlineListItemVariant;
-};
-
-export type InlineListItemTitleProps = React.ComponentProps<typeof Text>;
-export type InlineListItemDescriptionProps = React.ComponentProps<typeof Text>;
-
-export type InlineListItemAddonProps = React.ComponentProps<typeof View> &
-  VariantProps<typeof inlineListItemAddonVariants> & {
-    children: React.ReactNode;
-  };
-
-type InlineListItemAddonIconProps = {
-  children: React.ReactNode;
-  className?: string;
-};
-
-export type InlineListItemAddonChild =
-  | React.ReactElement<InlineListItemAddonProps>
-  | null
-  | false;
-
-export type InlineListItemAddonChildren =
-  | InlineListItemAddonChild
-  | InlineListItemAddonChild[];
-
-type InlineListItemAddonAlign = NonNullable<
-  VariantProps<typeof inlineListItemAddonVariants>["align"]
->;
-
-// Context
-const InlineListItemContext = createContext<InlineListItemVariant>("default");
+const InlineListItemContext = createContext<InlineListItemVariant>('default');
 
 const useInlineListItemContext = () => useContext(InlineListItemContext);
 
 const InlineListItemAddonContext =
-  createContext<InlineListItemAddonAlign>("inline-start");
+  createContext<InlineListItemAddonAlign>('inline-start');
 
-const useInlineListItemAddonContext = () =>
-  useContext(InlineListItemAddonContext);
-
-// Hooks
-export const useInlineListItemAddons = (children?: React.ReactNode) => {
+const useInlineListItemAddons = (children?: React.ReactNode) => {
   const startAddons: InlineListItemAddonChild[] = [];
   const endAddons: InlineListItemAddonChild[] = [];
 
@@ -73,8 +42,8 @@ export const useInlineListItemAddons = (children?: React.ReactNode) => {
 
       if (typedChild) {
         if (
-          typeof typedChild.props.align === "undefined" ||
-          typedChild.props.align === "inline-start"
+          typeof typedChild.props.align === 'undefined' ||
+          typedChild.props.align === 'inline-start'
         ) {
           startAddons.push(typedChild);
         } else {
@@ -124,7 +93,7 @@ const parseInlineListItemContent = (children: React.ReactNode) => {
       return;
     }
 
-    if (typeof child === "string") {
+    if (typeof child === 'string') {
       content.push(
         <InlineListItemTitle key={`inline-list-item-title-${contentIndex}`}>
           {child}
@@ -152,7 +121,6 @@ const parseInlineListItemContent = (children: React.ReactNode) => {
   return content;
 };
 
-// Components
 export const InlineList = ({
   title,
   children,
@@ -162,7 +130,7 @@ export const InlineList = ({
   const items = useMemo(() => renderItemsWithSeparators(children), [children]);
 
   return (
-    <View className={cn("flex w-full flex-col gap-1", className)} {...props}>
+    <View className={cn('flex w-full flex-col gap-1', className)} {...props}>
       {title ? (
         <Text className="px-4 text-muted-foreground text-xs uppercase tracking-wide">
           {title}
@@ -184,7 +152,7 @@ export const InlineListItem = ({
   showSeparator = false,
   onPress,
   disabled,
-  variant = "default",
+  variant = 'default',
   ...props
 }: InlineListItemProps) => {
   const { startAddons, endAddons } = useInlineListItemAddons(children);
@@ -244,8 +212,8 @@ export const InlineListItemTitle = ({
   return (
     <Text
       className={cn(
-        "font-medium text-base text-foreground",
-        variant === "destructive" && "font-normal text-destructive",
+        'font-medium text-base text-foreground',
+        variant === 'destructive' && 'font-normal text-destructive',
         className
       )}
       data-slot="inline-list-item-title"
@@ -260,7 +228,7 @@ export const InlineListItemDescription = ({
 }: InlineListItemDescriptionProps) => {
   return (
     <Text
-      className={cn("text-muted-foreground text-xs leading-none", className)}
+      className={cn('text-muted-foreground text-xs leading-none', className)}
       data-slot="inline-list-item-description"
       {...props}
     />
@@ -273,7 +241,7 @@ export const InlineListItemAddon = ({
   children,
   ...props
 }: InlineListItemAddonProps) => {
-  const resolvedAlign = align ?? "inline-start";
+  const resolvedAlign = align ?? 'inline-start';
 
   return (
     <InlineListItemAddonContext.Provider value={resolvedAlign}>
@@ -287,68 +255,3 @@ export const InlineListItemAddon = ({
     </InlineListItemAddonContext.Provider>
   );
 };
-
-export const InlineListItemAddonIcon = ({
-  children,
-  ...props
-}: InlineListItemAddonIconProps): React.ReactElement | null => {
-  const variant = useInlineListItemContext();
-  const align = useInlineListItemAddonContext();
-  const child = Children.only(children);
-
-  if (!child) {
-    if (__DEV__) {
-      throw new Error(
-        "InlineListItemAddonIcon expects a single React element as children"
-      );
-    }
-    return null;
-  }
-
-  return cloneElement(
-    child as React.ReactElement<InlineListItemAddonIconProps>,
-    {
-      ...props,
-      className: cn(
-        "size-5",
-        align === "inline-start"
-          ? variant === "destructive"
-            ? "text-destructive"
-            : "text-foreground"
-          : "text-muted-foreground",
-        props.className
-      ),
-    }
-  );
-};
-
-// Styles
-const inlineListItemVariants = cva(
-  "min-h-12 w-full flex-row items-center gap-3 px-4 py-2 disabled:opacity-50",
-  {
-    variants: {
-      variant: {
-        default: "active:bg-accent/90 dark:active:bg-accent/50",
-        destructive: "active:bg-destructive/5 dark:active:bg-destructive/10",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
-
-const inlineListItemAddonVariants = cva(
-  "shrink-0 items-center justify-center",
-  {
-    variants: {
-      align: {
-        "inline-start": "",
-        "inline-end": "",
-      },
-    },
-    defaultVariants: {
-      align: "inline-start",
-    },
-  }
-);

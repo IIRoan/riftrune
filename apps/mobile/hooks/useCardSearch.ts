@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useLatestRef } from '@/hooks/useLatestRef';
+import { useValueChangeFlag } from '@/hooks/useValueChangeFlag';
 import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
 import {
   MIN_SEARCH_LENGTH,
@@ -56,8 +58,14 @@ export function useCardSearch(
     term: string;
     response: CardsListResponse;
   } | null>(null);
-  const localHitCountRef = useRef(0);
-
+  const localPageResetKey = `${activeTerm}:${sort.sortBy}:${sort.dir}:${JSON.stringify(filters)}`;
+  const localPageResetChanged = useValueChangeFlag(localPageResetKey);
+  if (localPageResetChanged && localPage !== 1) {
+    setLocalPage(1);
+  }
+  if (immediateTerm && debounced === immediateTerm) {
+    setImmediateTerm(null);
+  }
   const enabled = activeTerm.length >= MIN_SEARCH_LENGTH;
   const inputMatchesActive = trimmed === activeTerm;
   const instantCacheForTerm =
@@ -68,23 +76,13 @@ export function useCardSearch(
     return searchCatalogItems(catalogItems, localActiveTerm, sort);
   }, [indexReady, catalogItems, localActiveTerm, sort]);
 
-  localHitCountRef.current = localAllResults?.length ?? 0;
+  const localHitCountRef = useLatestRef(localAllResults?.length ?? 0);
 
   const localVisibleCount = localPage * pageSize;
   const localResults = useMemo(() => {
     if (!localAllResults) return null;
     return localAllResults.slice(0, localVisibleCount);
   }, [localAllResults, localVisibleCount]);
-
-  useEffect(() => {
-    setLocalPage(1);
-  }, [activeTerm, sort.sortBy, sort.dir, filters]);
-
-  useEffect(() => {
-    if (immediateTerm && debounced === immediateTerm) {
-      setImmediateTerm(null);
-    }
-  }, [debounced, immediateTerm]);
 
   useEffect(() => {
     if (!enabled) {
@@ -211,11 +209,15 @@ export function useCardSearch(
     (localResults === null || localResults.length === 0) &&
     instantCacheForTerm === null;
 
-  const rawItems = preferNetwork
-    ? apiItems
-    : awaitingNetworkResults
-      ? []
-      : (localResults ?? instantCacheForTerm?.data ?? apiItems);
+  const rawItems = useMemo(
+    () =>
+      preferNetwork
+        ? apiItems
+        : awaitingNetworkResults
+          ? []
+          : (localResults ?? instantCacheForTerm?.data ?? apiItems),
+    [preferNetwork, apiItems, awaitingNetworkResults, localResults, instantCacheForTerm]
+  );
 
   const items = useMemo(
     () => groupCardListItems(normalizeCardListItems(rawItems)),

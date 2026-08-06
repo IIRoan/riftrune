@@ -7,6 +7,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
+import { mapPool } from '@/lib/asyncPool';
 import {
   remoteExportCollectionCsv,
   remoteImportCollectionItems,
@@ -94,8 +95,8 @@ export async function pickAndImportCollectionCsv(
   let failedRows = parsed.errors.length;
   const errors = [...parsed.errors];
 
-  for (let index = 0; index < chunks.length; index += 1) {
-    const chunk = chunks[index]!;
+  const chunkResults = await mapPool(chunks, 6, async (chunk) => {
+    const result = await remoteImportCollectionItems(chunk);
     importedCopies += chunk.reduce((sum, item) => sum + item.quantity, 0);
     onProgress?.({
       phase: 'importing',
@@ -103,8 +104,10 @@ export async function pickAndImportCollectionCsv(
       total: parsed.totalCopies,
       message: `Importing ${importedCopies.toLocaleString()} of ${parsed.totalCopies.toLocaleString()} copies (${parsed.uniquePrintings.toLocaleString()} printings)…`,
     });
+    return result;
+  });
 
-    const result = await remoteImportCollectionItems(chunk);
+  for (const result of chunkResults) {
     imported += result.imported;
     failedRows += result.failedRows;
     errors.push(...result.errors);

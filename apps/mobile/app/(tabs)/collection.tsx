@@ -5,9 +5,9 @@ import {
   BreakdownSection,
   DashboardStat,
   DashboardStatGrid,
-  computeTypeStats,
   SetCardGrid,
 } from '@/components/collection/CollectionDashboard';
+import { computeTypeStats } from '@/utils/collectionDashboardStats';
 import { rarityIconFor, typeIconFor } from '@/constants/gameAssets';
 import { CollectionCardList } from '@/components/collection/CollectionCardList';
 import {
@@ -63,8 +63,14 @@ function CollectionScreenBody() {
       })),
     [filtersQuery.data?.sets]
   );
-  const apiTypes = filtersQuery.data?.types ?? [];
-  const apiRarities = filtersQuery.data?.rarities ?? [];
+  const apiTypes = useMemo(
+    () => filtersQuery.data?.types ?? [],
+    [filtersQuery.data?.types]
+  );
+  const apiRarities = useMemo(
+    () => filtersQuery.data?.rarities ?? [],
+    [filtersQuery.data?.rarities]
+  );
   const catalogCardTotal = useMemo(
     () => catalogCardTotalFromTypes(apiTypes),
     [apiTypes]

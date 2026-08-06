@@ -13,6 +13,7 @@ import { type DeckBrowseFilters } from '@/constants/deckBrowse';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useDeckBrowseFilterOptions } from '@/hooks/useDeckBrowseFilters';
 import { type DeckBrowseFilterSegment } from '@/lib/deck-browse';
+import { mapFilter, toMembershipSet } from '@/lib/iteration';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
 
@@ -57,11 +58,15 @@ export function DeckBrowseFilterSegmentPanel({
 
   const legendOptions = useMemo(
     () =>
-      (legendsQuery.data?.data ?? [])
-        .filter((item) => item.type.toLowerCase() === 'legend')
-        .map((item) => item.name),
+      mapFilter(
+        legendsQuery.data?.data ?? [],
+        (item) => item.type.toLowerCase() === 'legend',
+        (item) => item.name
+      ),
     [legendsQuery.data?.data]
   );
+
+  const selectedSets = useMemo(() => toMembershipSet(filters.sets), [filters.sets]);
 
   const update = (patch: Partial<DeckBrowseFilters>) => {
     onFiltersChange({ ...filters, ...patch });
@@ -158,7 +163,7 @@ export function DeckBrowseFilterSegmentPanel({
               <FilterOptionChip
                 key={set.code}
                 label={set.code}
-                active={filters.sets.includes(set.code)}
+                active={selectedSets.has(set.code)}
                 onPress={() => toggleSet(set.code)}
                 accessibilityLabel={`${set.name} (${set.code})`}
               />
@@ -173,7 +178,7 @@ export function DeckBrowseFilterSegmentPanel({
               key={set.code}
               label={set.name}
               subtitle={`${set.code} · ${set.count.toLocaleString()} printings`}
-              active={filters.sets.includes(set.code)}
+              active={selectedSets.has(set.code)}
               onPress={() => toggleSet(set.code)}
               compact={compact}
             />

@@ -12,16 +12,16 @@ interface ViewToggleProps {
   mobile?: boolean;
 }
 
+const VIEW_TOGGLE_OPTIONS = [
+  { id: 'list' as const, icon: ListIcon, label: 'List view' },
+  { id: 'grid' as const, icon: LayoutGridIcon, label: 'Grid view' },
+] as const;
+
 /** Segmented list/grid control — same chrome on phone and desktop. */
 export function ViewToggle({ view, onViewChange, mobile = false }: ViewToggleProps) {
-  const options = [
-    { id: 'list' as const, icon: ListIcon, label: 'List view' },
-    { id: 'grid' as const, icon: LayoutGridIcon, label: 'Grid view' },
-  ] as const;
-
   return (
     <View accessibilityRole="radiogroup" className={catalogToolbarGroupClass(mobile)}>
-      {options.map(({ id, icon, label }) => {
+      {VIEW_TOGGLE_OPTIONS.map(({ id, icon, label }) => {
         const active = view === id;
         const iconTone = active ? 'active' : 'inactive';
         return (

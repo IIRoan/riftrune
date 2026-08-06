@@ -1,17 +1,13 @@
 import { Image } from 'expo-image';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { Children } from 'react';
-import { Platform, Pressable, View, type ImageSourcePropType } from 'react-native';
-import { TrendTag } from '@/components/catalog/TrendTag';
+import { Children, isValidElement, type ReactNode } from 'react';
+import { Platform, View, type ImageSourcePropType } from 'react-native';
 import type { typeIconFor } from '@/constants/gameAssets';
 import { Text } from '@/components/ui/text';
 import { useFillGridLayout } from '@/hooks/useFillGridLayout';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
-import type { CollectionEntry } from '@/services/collectionService';
-import { openCard } from '@/utils/cardNavigation';
 import type { MergedSetStat } from '@/utils/collectionStats';
 import { cn } from '@/lib/utils';
+import { keyHash } from '@/lib/react-list-keys';
 
 const SET_CARD_MIN_WIDTH = 280;
 const SET_CARD_MAX_COLUMNS = 4;
@@ -55,8 +51,6 @@ function SetLogoImage({ source }: { source: ImageSourcePropType }) {
     />
   );
 }
-
-export type { MergedSetStat } from '@/utils/collectionStats';
 
 export function DashboardStat({
   label,
@@ -129,7 +123,7 @@ export function BreakdownSection({
   );
 }
 
-export function SetCard({ set }: { set: MergedSetStat }) {
+function SetCard({ set }: { set: MergedSetStat }) {
   const completion = set.total > 0 ? (set.owned / set.total) * 100 : 0;
   const nonFoilCompletion =
     set.nonFoilTotal > 0 ? (set.nonFoilOwned / set.nonFoilTotal) * 100 : 0;
@@ -254,7 +248,16 @@ export function SetCardGrid({ sets }: { sets: MergedSetStat[] }) {
   );
 }
 
-export function DashboardStatGrid({ children }: { children: React.ReactNode }) {
+function dashboardStatChildKey(child: ReactNode): string {
+  if (isValidElement(child)) {
+    const props = child.props as { label?: unknown };
+    if (typeof props.label === 'string') return props.label;
+    if (child.key != null) return String(child.key);
+  }
+  return keyHash(String(child));
+}
+
+export function DashboardStatGrid({ children }: { children: ReactNode }) {
   const { contentWidth } = useScreenLayout();
   const { columns, itemWidth } = useFillGridLayout({
     minItemWidth: STAT_MIN_WIDTH,
@@ -264,9 +267,9 @@ export function DashboardStatGrid({ children }: { children: React.ReactNode }) {
 
   return (
     <View className="mb-6 flex-row flex-wrap" style={{ gap: STAT_GRID_GAP }}>
-      {Children.map(children, (child, index) => (
+      {Children.map(children, (child) => (
         <View
-          key={index}
+          key={dashboardStatChildKey(child)}
           style={{
             width: columns === 1 ? contentWidth : itemWidth,
           }}
@@ -276,110 +279,4 @@ export function DashboardStatGrid({ children }: { children: React.ReactNode }) {
       ))}
     </View>
   );
-}
-
-export function CollectionListPanel({
-  title,
-  subtitle,
-  children,
-  className,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <View className={cn('rounded-xl border border-border bg-card', className)}>
-      <View className="flex-row items-baseline justify-between gap-3 px-4 pt-4">
-        <Text className="text-sm font-semibold text-foreground">{title}</Text>
-        {subtitle ? (
-          <Text className="font-mono text-xs text-archive-subtle">{subtitle}</Text>
-        ) : null}
-      </View>
-      <View className="px-4 pb-2 pt-2">{children}</View>
-    </View>
-  );
-}
-
-export function WishlistRow({
-  name,
-  variantNumber,
-  price,
-  trend,
-  onPress,
-}: {
-  name: string;
-  variantNumber: string;
-  price: string;
-  trend: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      className="min-h-11 flex-row items-center justify-between gap-3 rounded-lg px-1 py-3 active:opacity-80"
-      onPress={onPress}
-    >
-      <View className="min-w-0 flex-1">
-        <Text className="text-[13px] font-medium text-foreground" numberOfLines={1}>
-          {name}
-        </Text>
-        <Text className="font-mono text-[11px] text-archive-subtle">{variantNumber}</Text>
-      </View>
-      <View className="flex-row items-center gap-3">
-        <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
-          {price}
-        </Text>
-        <TrendTag trend={trend} />
-      </View>
-    </Pressable>
-  );
-}
-
-export function CollectionMoverRow({
-  entry,
-  trend,
-}: {
-  entry: CollectionEntry;
-  trend: string;
-}) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  return (
-    <Pressable
-      className="min-h-11 flex-row items-center justify-between gap-3 rounded-lg px-1 py-3 active:opacity-80"
-      onPress={() => {
-        openCard(router, entry.variantNumber, 'modal', 'collection', queryClient);
-      }}
-    >
-      <View className="min-w-0 flex-1">
-        <Text className="text-[13px] font-medium text-foreground" numberOfLines={1}>
-          {entry.name}
-        </Text>
-        <Text className="font-mono text-[11px] text-archive-subtle">{entry.variantNumber}</Text>
-      </View>
-      <TrendTag trend={trend} />
-    </Pressable>
-  );
-}
-
-export function computeTypeStats(
-  collection: CollectionEntry[],
-  apiTypes: { name: string; count: number }[]
-) {
-  const namesByType = new Map<string, Set<string>>();
-  for (const entry of collection) {
-    if (!entry.type || entry.quantity <= 0) continue;
-    const names = namesByType.get(entry.type) ?? new Set<string>();
-    names.add(entry.name);
-    namesByType.set(entry.type, names);
-  }
-
-  return apiTypes
-    .filter((t) => t.name !== 'Card')
-    .map((t) => ({
-      name: t.name,
-      owned: namesByType.get(t.name)?.size ?? 0,
-      total: t.count,
-    }));
 }

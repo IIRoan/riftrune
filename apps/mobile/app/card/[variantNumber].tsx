@@ -5,8 +5,8 @@ import {
   CardModalError,
   CardModalLoading,
   CardModalOverlay,
-  getModalShellWidth,
 } from '@/components/cards/CardModal';
+import { getModalShellWidth } from '@/components/cards/cardModalLayout';
 import { CardDetailPage } from '@/components/cards/CardDetailPage';
 import { CardDetailDrawer } from '@/components/catalog/CardDetailDrawer';
 import { CatalogDetailPanel } from '@/components/catalog/CatalogDetailPanel';
