@@ -10,7 +10,7 @@ import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilt
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppLoader, AppLoadingScreen } from '@/components/ui/app-loader';
 import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { SearchInput } from '@/components/ui/search-input';
@@ -23,7 +23,13 @@ import {
   type DeckState,
 } from '@/lib/deck-types';
 import { DeckSectionTabs } from '@/components/deck/DeckSectionList';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { useDeckAddCatalog } from '@/hooks/useDeckAddCatalog';
@@ -170,7 +176,10 @@ const DeckAddGridRow = memo(function DeckAddGridRow({
 });
 
 export default function DeckAddScreen() {
-  const { id, section: sectionParam } = useLocalSearchParams<{ id: string; section?: string }>();
+  const { id, section: sectionParam } = useLocalSearchParams<{
+    id: string;
+    section?: string;
+  }>();
   const { deck, isLoading, persist, flushSave } = useDeckDetail(id);
 
   if (isLoading || !deck) {
@@ -215,7 +224,6 @@ function DeckAddScreenBody({
   const lockedSection = Boolean(sectionParam);
   const [tabSection, setTabSection] = useState<DeckSectionKey>(section);
   const activeSection = lockedSection ? section : tabSection;
-  const legendKey = deck.legend?.variantNumber ?? '';
 
   useDeckAutoSave(deck);
 
@@ -229,9 +237,12 @@ function DeckAddScreenBody({
 
   return (
     <View className="flex-1 gap-2">
-      <DeckAddScreenHeader deck={deck} section={activeSection} onBack={() => void handleBack()} />
+      <DeckAddScreenHeader
+        deck={deck}
+        section={activeSection}
+        onBack={() => void handleBack()}
+      />
       <DeckAddCatalogWorkspace
-        key={`${activeSection}-${legendKey}`}
         deck={deck}
         activeSection={activeSection}
         lockedSection={lockedSection}
@@ -260,6 +271,7 @@ function DeckAddCatalogWorkspace({
 }) {
   const router = useRouter();
   const isMobile = useMobileLayout();
+  const legendKey = deck.legend?.variantNumber ?? '';
   const { paddingBottomInline, contentWidth } = useScreenLayout();
   const grid = useResponsiveColumns('grid', {
     measuredWidth: contentWidth,
@@ -289,7 +301,29 @@ function DeckAddCatalogWorkspace({
     setCatalogFilters(sanitizeCatalogFilters(next));
   }, []);
 
-  const catalog = useDeckAddCatalog(deck, activeSection, debouncedQuery, catalogFilters);
+  useEffect(() => {
+    setCatalogFilters(defaultDeckAddCatalogFilters(activeSection, deck));
+  }, [activeSection, legendKey]);
+
+  useEffect(() => {
+    if (!legendKey || activeSection !== 'champion') return;
+    setQuery(defaultDeckAddSearch('champion', deck));
+  }, [legendKey]);
+
+  useEffect(() => {
+    if (activeSection === 'champion') {
+      setQuery((prev) => (prev.trim() ? prev : defaultDeckAddSearch('champion', deck)));
+    } else if (!lockedSection) {
+      setQuery('');
+    }
+  }, [activeSection, lockedSection]);
+
+  const catalog = useDeckAddCatalog(
+    deck,
+    activeSection,
+    debouncedQuery,
+    catalogFilters
+  );
 
   const handleAddOne = useCallback(
     (candidate: DeckCard) => {
@@ -299,10 +333,9 @@ function DeckAddCatalogWorkspace({
         candidateCard: candidate,
       });
       if (!eligibility.eligible) return;
-      onPersist(
-        (prev) => addCardToDeck(prev, candidate, { section: activeSection }),
-        { immediate: true }
-      );
+      onPersist((prev) => addCardToDeck(prev, candidate, { section: activeSection }), {
+        immediate: true,
+      });
     },
     [deck, onPersist, activeSection]
   );
@@ -317,10 +350,9 @@ function DeckAddCatalogWorkspace({
       const entry = getDeckCandidateCount(deck, activeSection, candidate);
       if (entry <= 0) return;
 
-      onPersist(
-        (prev) => changeDeckCardQty(prev, activeSection, candidate.name, -1),
-        { immediate: true }
-      );
+      onPersist((prev) => changeDeckCardQty(prev, activeSection, candidate.name, -1), {
+        immediate: true,
+      });
     },
     [activeSection, deck, onPersist]
   );
@@ -334,17 +366,13 @@ function DeckAddCatalogWorkspace({
 
   const usesSingleSelectUi = deckAddUsesSingleSelectUi(activeSection);
   const membershipRevision = deckMembershipRevision(deck);
-  const sectionFull =
-    activeSection === 'battlefields' && battlefieldsAtCapacity(deck);
+  const sectionFull = activeSection === 'battlefields' && battlefieldsAtCapacity(deck);
 
   const gridCellStyle = useMemo(
     () => ({ paddingHorizontal: gap / 2, marginBottom: gap }),
     [gap]
   );
-  const listStyle = useMemo(
-    () => ({ flex: 1, marginHorizontal: -gap / 2 }),
-    [gap]
-  );
+  const listStyle = useMemo(() => ({ flex: 1, marginHorizontal: -gap / 2 }), [gap]);
 
   const renderItem = useCallback<ListRenderItem<DeckCard>>(
     ({ item }) => (

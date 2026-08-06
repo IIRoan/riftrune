@@ -1,5 +1,17 @@
-import { describe, expect, test } from 'bun:test';
-import { filtersQueryUiState } from '@/hooks/useFiltersData';
+import { describe, expect, mock, test } from 'bun:test';
+
+// Pure helper under test lives beside filter fetching; stub side-effect imports.
+mock.module('@/lib/prefetchFilterIcons', () => ({
+  prefetchFilterIcons: () => undefined,
+}));
+
+mock.module('@/src/api/client', () => ({
+  api: {
+    getFilters: async () => ({ data: {}, meta: { variantCount: 0 } }),
+  },
+}));
+
+const { filtersQueryUiState } = await import('@/hooks/useFiltersData');
 
 describe('filtersQueryUiState', () => {
   test('shows loading only on the initial pending fetch', () => {

@@ -12,7 +12,7 @@
     "build:web": "expo export --platform web",
     "typecheck": "tsc --noEmit",
     "uniwind:types": "uniwind generate-artifacts --css ./global.css --dts ./uniwind-types.d.ts",
-    "test": "bun test",
+    "test": "bun test --isolate --path-ignore-patterns 'e2e/**'",
     "test:ui-e2e": "playwright test",
     "test:ui-e2e:headed": "playwright test --headed",
     "lint": "expo lint",

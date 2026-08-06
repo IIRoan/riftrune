@@ -11,7 +11,13 @@ import {
 } from '@/components/catalog/FilterSheet';
 import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
 import { DeckCatalogGridTile } from '@/components/deck/DeckCatalogGridTile';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
 import {
@@ -246,7 +252,10 @@ function DeckBuilderCatalogBrowse({
         : { filters: catalogFilters, onOpen: openFilterSheet },
     [catalogFilters, isMobile, openFilterSheet, readOnly]
   );
-  publishDeckBuilderMobileFilterChrome(mobileFilterChrome);
+
+  useEffect(() => {
+    publishDeckBuilderMobileFilterChrome(mobileFilterChrome);
+  }, [mobileFilterChrome]);
 
   const catalog = useDeckAddCatalog(deck, section, debouncedQuery, catalogFilters, {
     enabled: !readOnly,
@@ -283,7 +292,9 @@ function DeckBuilderCatalogBrowse({
         candidateCard: candidate,
       });
       if (!eligibility.eligible) return;
-      onPersist((prev) => addCardToDeck(prev, candidate, { section }), { immediate: true });
+      onPersist((prev) => addCardToDeck(prev, candidate, { section }), {
+        immediate: true,
+      });
     },
     [deck, onPersist, readOnly, section]
   );
@@ -344,7 +355,8 @@ function DeckBuilderCatalogBrowse({
     ]
   );
 
-  const showBlockingLoader = !readOnly && catalog.isLoading && catalog.cards.length === 0;
+  const showBlockingLoader =
+    !readOnly && catalog.isLoading && catalog.cards.length === 0;
 
   const emptyState = (
     <Empty className="border border-dashed border-border py-8">

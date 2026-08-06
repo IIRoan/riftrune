@@ -78,7 +78,7 @@ export function DeckBuilderCanvas({
   const { data: collection = [] } = useCollection();
   const validation = useMemo(() => validateDeck(deck), [deck]);
 
-  const { data: runeCards } = useDeckRuneCards(deck);
+  const { data: runeCards, isPending: runeCardsLoading } = useDeckRuneCards(deck);
   const runeCardsByDomain = useMemo(
     () => runeCards?.byDomain ?? EMPTY_RUNE_CARDS_BY_DOMAIN,
     [runeCards?.byDomain]
@@ -144,6 +144,8 @@ export function DeckBuilderCanvas({
     onDescriptionChange: handleDescriptionChange,
     setMobilePanel,
     setInfoDrawerOpen,
+    runeCardsByDomain,
+    runeCardsLoading,
   });
 
   const handleBack = useCallback(() => {
@@ -230,18 +232,26 @@ export function DeckBuilderCanvas({
                 }
               : undefined
           }
-          catalogSection={readOnly || middlePanel === 'description' ? undefined : catalogSection}
+          catalogSection={
+            readOnly || middlePanel === 'description' ? undefined : catalogSection
+          }
           onCatalogSectionChange={
             readOnly || middlePanel === 'description' ? undefined : focusCatalogSection
           }
           catalogSectionItems={
-            readOnly || middlePanel === 'description' ? undefined : browseSectionNavItems
+            readOnly || middlePanel === 'description'
+              ? undefined
+              : browseSectionNavItems
           }
           catalogFilters={
-            readOnly || middlePanel === 'description' ? undefined : mobileFilterChrome?.filters
+            readOnly || middlePanel === 'description'
+              ? undefined
+              : mobileFilterChrome?.filters
           }
           onOpenCatalogFilters={
-            readOnly || middlePanel === 'description' ? undefined : mobileFilterChrome?.onOpen
+            readOnly || middlePanel === 'description'
+              ? undefined
+              : mobileFilterChrome?.onOpen
           }
         />
 

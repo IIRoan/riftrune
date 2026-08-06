@@ -1,6 +1,5 @@
 import type { CardListItem } from '@riftbound/contracts';
 import type { CatalogSort } from '@/constants/catalogSort';
-import { toMembershipSet } from '@/lib/iteration';
 import { getCardMaxMarketPrice, getCardPrintings } from '@/utils/variants';
 
 export function tokenizeSearchQuery(raw: string): string[] {
@@ -27,14 +26,9 @@ function buildSearchBlob(card: CardListItem): string {
   return parts.join(' ').toLowerCase();
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function matchesAllTokens(blob: string, tokens: ReadonlySet<string>): boolean {
-  if (tokens.size === 0) return true;
-  const pattern = [...tokens].map((token) => `(?=.*${escapeRegExp(token)})`).join('');
-  return new RegExp(pattern).test(blob);
+function matchesAllTokens(blob: string, tokens: readonly string[]): boolean {
+  if (tokens.length === 0) return true;
+  return tokens.every((token) => blob.includes(token));
 }
 
 function relevanceScore(card: CardListItem, query: string): number {
@@ -57,7 +51,10 @@ function compareBySort(a: CardListItem, b: CardListItem, sort: CatalogSort): num
     case 'energy':
       return (a.energy - b.energy) * dir || a.name.localeCompare(b.name);
     case 'variantNumber':
-      return a.variantNumber.localeCompare(b.variantNumber) * dir || a.name.localeCompare(b.name);
+      return (
+        a.variantNumber.localeCompare(b.variantNumber) * dir ||
+        a.name.localeCompare(b.name)
+      );
     case 'price': {
       const diff = (getCardMaxMarketPrice(a) - getCardMaxMarketPrice(b)) * dir;
       return diff || a.name.localeCompare(b.name);
@@ -89,8 +86,10 @@ export function searchCatalogItems(
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  const tokens = toMembershipSet(tokenizeSearchQuery(trimmed));
-  const matches = items.filter((card) => matchesAllTokens(buildSearchBlob(card), tokens));
+  const tokens = tokenizeSearchQuery(trimmed);
+  const matches = items.filter((card) =>
+    matchesAllTokens(buildSearchBlob(card), tokens)
+  );
 
   const sorted = matches.slice().sort((a, b) => {
     if (sort.sortBy === 'price') {

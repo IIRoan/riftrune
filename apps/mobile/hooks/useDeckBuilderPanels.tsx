@@ -2,9 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  DeckBuilderInfoDrawer,
-} from '@/components/deck/DeckBuilderInfoDrawer';
+import { DeckBuilderInfoDrawer } from '@/components/deck/DeckBuilderInfoDrawer';
 import { DeckCompositionList } from '@/components/deck/DeckCompositionList';
 import { DeckBuilderCatalogPanel } from '@/components/deck/DeckBuilderCatalogPanel';
 import { DeckDescriptionPanel } from '@/components/deck/DeckDescription';
@@ -13,7 +11,6 @@ import type { DeckBuilderMiddlePanel } from '@/components/deck/DeckBuilderMiddle
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useCollectionByCardName } from '@/hooks/useDeckCardResolver';
 import { useDeckCardImages } from '@/hooks/useDeckCardImages';
-import { useDeckRuneCards } from '@/hooks/useLegendRuneCards';
 import {
   changeDeckCardQty,
   deckVariantNumbersKey,
@@ -25,7 +22,6 @@ import { prefetchDeckAddCatalog } from '@/lib/prefetchDeckAddCatalog';
 import { hapticPress } from '@/utils/haptics';
 
 const EMPTY_IMAGE_MAP = new Map<string, string>();
-const EMPTY_RUNE_CARDS_BY_DOMAIN = new Map<string, DeckCard>();
 
 type CatalogSection = 'mainDeck' | 'sideboard';
 
@@ -46,6 +42,8 @@ interface UseDeckBuilderPanelsOptions {
   onDescriptionChange: (description: string) => void;
   setMobilePanel: (panel: 'info' | 'list' | null) => void;
   setInfoDrawerOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
+  runeCardsByDomain: ReadonlyMap<string, DeckCard>;
+  runeCardsLoading: boolean;
 }
 
 export function useDeckBuilderPanels({
@@ -62,6 +60,8 @@ export function useDeckBuilderPanels({
   onDescriptionChange,
   setMobilePanel,
   setInfoDrawerOpen,
+  runeCardsByDomain,
+  runeCardsLoading,
 }: UseDeckBuilderPanelsOptions) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -70,15 +70,7 @@ export function useDeckBuilderPanels({
   const collectionByName = useCollectionByCardName(collection ?? []);
   const variantKey = deckVariantNumbersKey(deck);
   const { data: imageByVariant } = useDeckCardImages(variantKey);
-  const images = useMemo(
-    () => imageByVariant ?? EMPTY_IMAGE_MAP,
-    [imageByVariant]
-  );
-  const { data: runeCards, isPending: runeCardsLoading } = useDeckRuneCards(deck);
-  const runeCardsByDomain = useMemo(
-    () => runeCards?.byDomain ?? EMPTY_RUNE_CARDS_BY_DOMAIN,
-    [runeCards?.byDomain]
-  );
+  const images = useMemo(() => imageByVariant ?? EMPTY_IMAGE_MAP, [imageByVariant]);
   const sheetPaddingBottom = Math.max(insets.bottom, 16) + 24;
 
   const focusCatalogSection = useCallback(
@@ -141,7 +133,8 @@ export function useDeckBuilderPanels({
         onChangeLegend={onChangeLegend}
         onRemoveLegend={
           deck.format === 'pre-rift'
-            ? () => onPersist((prev) => removeDeckCard(prev, 'legend'), { immediate: true })
+            ? () =>
+                onPersist((prev) => removeDeckCard(prev, 'legend'), { immediate: true })
             : undefined
         }
         onAddChampion={() => openSpecialAdd('champion')}
@@ -149,7 +142,9 @@ export function useDeckBuilderPanels({
         onAdjustRune={handleAdjustRune}
         onAddBattlefield={() => openSpecialAdd('battlefields')}
         onRemoveBattlefield={(name) =>
-          onPersist((prev) => removeDeckCard(prev, 'battlefields', name), { immediate: true })
+          onPersist((prev) => removeDeckCard(prev, 'battlefields', name), {
+            immediate: true,
+          })
         }
         onAdjustBattlefield={(name, delta) =>
           onPersist((prev) => changeDeckCardQty(prev, 'battlefields', name, delta), {
@@ -200,10 +195,14 @@ export function useDeckBuilderPanels({
         collectionByName={collectionByName}
         openSource={readOnly ? 'deck-view' : undefined}
         onMinus={(section, name) =>
-          onPersist((prev) => changeDeckCardQty(prev, section, name, -1), { immediate: true })
+          onPersist((prev) => changeDeckCardQty(prev, section, name, -1), {
+            immediate: true,
+          })
         }
         onPlus={(section, name) =>
-          onPersist((prev) => changeDeckCardQty(prev, section, name, 1), { immediate: true })
+          onPersist((prev) => changeDeckCardQty(prev, section, name, 1), {
+            immediate: true,
+          })
         }
         onRemove={(section, name) => {
           if (section === 'legend') {
@@ -248,7 +247,14 @@ export function useDeckBuilderPanels({
         paddingBottom={paddingBottomInline}
       />
     ),
-    [deck, collectionByName, onPersist, catalogSection, onSectionChange, paddingBottomInline]
+    [
+      deck,
+      collectionByName,
+      onPersist,
+      catalogSection,
+      onSectionChange,
+      paddingBottomInline,
+    ]
   );
 
   const showcasePanel = useMemo(
