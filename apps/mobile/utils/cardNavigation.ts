@@ -1,4 +1,6 @@
 import type { Router } from 'expo-router';
+import type { QueryClient } from '@tanstack/react-query';
+import { ensureCardDetail } from '@/lib/prefetchCardDetail';
 
 export type CardPresentMode = 'modal' | 'page';
 export type CardOpenSource = 'catalog' | 'collection' | 'wishlist' | 'deck-view';
@@ -7,8 +9,13 @@ export function openCard(
   router: Router,
   variantNumber: string,
   present: CardPresentMode = 'modal',
-  source?: CardOpenSource
+  source?: CardOpenSource,
+  queryClient?: QueryClient
 ) {
+  // Start rules-text fetch during the navigation animation.
+  if (queryClient) {
+    ensureCardDetail(queryClient, variantNumber);
+  }
   const params = new URLSearchParams({ present });
   if (source) params.set('source', source);
   router.push(`/card/${encodeURIComponent(variantNumber)}?${params.toString()}`);

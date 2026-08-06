@@ -1,11 +1,26 @@
 import type { DeckFormat } from '@riftbound/contracts';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
 import { toast } from '@/components/ui/toast';
 import type { DeckBrowseFilters, DeckBrowseSort } from '@/constants/deckBrowse';
-import { deckBrowseFiltersToQuery } from '@/constants/deckBrowse';
+import {
+  DEFAULT_DECK_BROWSE_FILTERS,
+  DEFAULT_DECK_BROWSE_SORT,
+  deckBrowseFiltersToQuery,
+} from '@/constants/deckBrowse';
+import { filterDecksByQuery } from '@/lib/deck-list';
 import type { DeckState } from '@/lib/deck-types';
 import { applyDeckStateIfNewerToCache, setDeckDetailCache } from '@/lib/deck-state';
+import {
+  persistOwnedDecks,
+  readPersistedOwnedDecks,
+} from '@/services/deckCacheService';
 import {
   createDeck,
   deleteDeck,
@@ -22,55 +37,47 @@ import { deckQueryKeys } from '@/src/api/queryKeys';
 
 const DECK_LIST_STALE_MS = 60_000;
 
-function seedDeckDetailCaches(
-  queryClient: ReturnType<typeof useQueryClient>,
-  decks: DeckState[]
-): void {
+function seedDeckDetailCaches(queryClient: QueryClient, decks: DeckState[]): void {
   for (const deck of decks) {
     applyDeckStateIfNewerToCache(queryClient, deck.id, deck);
   }
 }
 
-export function useOwnedDecks(query?: string) {
-  const queryClient = useQueryClient();
+async function fetchOwnedDecks(queryClient: QueryClient): Promise<DeckState[]> {
+  const decks = await listDecks({ source: 'owned' });
+  seedDeckDetailCaches(queryClient, decks);
+  await persistOwnedDecks(decks);
+  return decks;
+}
 
-  return useQuery({
-    queryKey: deckQueryKeys.list('owned', query),
-    queryFn: async () => {
-      const decks = await listDecks({ source: 'owned', q: query });
-      seedDeckDetailCaches(queryClient, decks);
-      return decks;
-    },
+/** Seed owned-deck list (+ detail) caches from AsyncStorage before network. */
+export async function hydrateOwnedDecksCache(queryClient: QueryClient): Promise<void> {
+  const cached = await readPersistedOwnedDecks();
+  if (!cached?.length) return;
+  if (!queryClient.getQueryData<DeckState[]>(deckQueryKeys.list('owned'))) {
+    queryClient.setQueryData(deckQueryKeys.list('owned'), cached);
+  }
+  seedDeckDetailCaches(queryClient, cached);
+}
+
+export function prefetchOwnedDecks(queryClient: QueryClient): Promise<void> {
+  return queryClient.prefetchQuery({
+    queryKey: deckQueryKeys.list('owned'),
+    queryFn: () => fetchOwnedDecks(queryClient),
     staleTime: DECK_LIST_STALE_MS,
-    placeholderData: (previous) => previous,
   });
 }
 
-export function useImportedDecks(query?: string) {
-  const queryClient = useQueryClient();
-
-  return useQuery({
-    queryKey: deckQueryKeys.list('imported', query),
-    queryFn: async () => {
-      const decks = await listDecks({ source: 'imported', q: query });
-      seedDeckDetailCaches(queryClient, decks);
-      return decks;
-    },
-    staleTime: DECK_LIST_STALE_MS,
-    placeholderData: (previous) => previous,
-  });
-}
-
-export function useImportedDecksBrowse(options: {
+function deckBrowseQueryOptions(options: {
   q?: string;
   sort: DeckBrowseSort;
   filters: DeckBrowseFilters;
 }) {
   const filterQuery = deckBrowseFiltersToQuery(options.filters);
-
-  return useInfiniteQuery({
+  return {
     queryKey: deckQueryKeys.browse(options),
-    queryFn: ({ pageParam }) =>
+    initialPageParam: 1 as const,
+    queryFn: ({ pageParam }: { pageParam: number }) =>
       listDecksPage({
         source: 'imported',
         preview: true,
@@ -81,11 +88,82 @@ export function useImportedDecksBrowse(options: {
         dir: options.sort.dir,
         ...filterQuery,
       }),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) =>
+    getNextPageParam: (lastPage: Awaited<ReturnType<typeof listDecksPage>>) =>
       lastPage.pagination?.hasNext ? lastPage.pagination.page + 1 : undefined,
-    placeholderData: (previousData) => previousData,
     staleTime: DECK_LIST_STALE_MS,
+  };
+}
+
+/** First page of community browse (default sort/filters) for the Decks tab. */
+export function prefetchDefaultDeckBrowse(queryClient: QueryClient): Promise<void> {
+  return queryClient
+    .prefetchInfiniteQuery(
+      deckBrowseQueryOptions({
+        sort: DEFAULT_DECK_BROWSE_SORT,
+        filters: DEFAULT_DECK_BROWSE_FILTERS,
+      })
+    )
+    .then(() => undefined);
+}
+
+/**
+ * Owned decks — one cached list, filtered client-side so search never misses
+ * the bootstrap/prefetch cache.
+ */
+export function useOwnedDecks(query?: string) {
+  const queryClient = useQueryClient();
+
+  const ownedQuery = useQuery({
+    queryKey: deckQueryKeys.list('owned'),
+    queryFn: () => fetchOwnedDecks(queryClient),
+    staleTime: DECK_LIST_STALE_MS,
+    placeholderData: (previous) => previous,
+  });
+
+  const data = useMemo(
+    () => filterDecksByQuery(ownedQuery.data ?? [], query ?? ''),
+    [ownedQuery.data, query]
+  );
+
+  return {
+    ...ownedQuery,
+    data,
+  };
+}
+
+export function useImportedDecks(query?: string) {
+  const queryClient = useQueryClient();
+
+  const importedQuery = useQuery({
+    queryKey: deckQueryKeys.list('imported'),
+    queryFn: async () => {
+      const decks = await listDecks({ source: 'imported' });
+      seedDeckDetailCaches(queryClient, decks);
+      return decks;
+    },
+    staleTime: DECK_LIST_STALE_MS,
+    placeholderData: (previous) => previous,
+  });
+
+  const data = useMemo(
+    () => filterDecksByQuery(importedQuery.data ?? [], query ?? ''),
+    [importedQuery.data, query]
+  );
+
+  return {
+    ...importedQuery,
+    data,
+  };
+}
+
+export function useImportedDecksBrowse(options: {
+  q?: string;
+  sort: DeckBrowseSort;
+  filters: DeckBrowseFilters;
+}) {
+  return useInfiniteQuery({
+    ...deckBrowseQueryOptions(options),
+    placeholderData: (previousData) => previousData,
   });
 }
 

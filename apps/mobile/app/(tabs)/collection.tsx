@@ -1,5 +1,5 @@
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import {
   BreakdownSection,
@@ -45,15 +45,9 @@ function CollectionScreenBody() {
   const { contentWidth, paddingBottomInline } = useScreenLayout();
   const [query, setQuery] = useState('');
 
-  const { data: collection = [], isLoading, refetch } = useCollection();
+  const { data: collection = [], isLoading } = useCollection();
   const filtersQuery = useFiltersData();
   const insightsQuery = useCollectionInsights(collection);
-
-  useFocusEffect(
-    useCallback(() => {
-      void refetch();
-    }, [refetch])
-  );
 
   const totalCopies = useMemo(() => sumCollectionCopies(collection), [collection]);
   const uniqueCards = useMemo(() => countUniqueCardNames(collection), [collection]);

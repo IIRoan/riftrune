@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { openCard } from '@/utils/cardNavigation';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { CARDMARKET_PRICE_DETAIL_NOTE } from '@riftbound/contracts';
+import { useQueryClient } from '@tanstack/react-query';
 
 /** Compact list thumb — portrait card crop with explicit size for native Image. */
 const ROW_THUMB = { width: 40, height: 56 } as const;
@@ -258,6 +259,7 @@ function WishlistLoadingSkeleton({ compact }: { compact: boolean }) {
 
 function WishlistScreenBody() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const compact = useMobileLayout();
   const { contentWidth, paddingBottomInline } = useScreenLayout();
   const [sort, setSort] = useState<SortMode>('move');
@@ -282,9 +284,9 @@ function WishlistScreenBody() {
 
   const openItem = useCallback(
     (variantNumber: string) => {
-      openCard(router, variantNumber, 'modal', 'wishlist');
+      openCard(router, variantNumber, 'modal', 'wishlist', queryClient);
     },
-    [router]
+    [router, queryClient]
   );
 
   const toggleRow = useCallback((variantNumber: string) => {

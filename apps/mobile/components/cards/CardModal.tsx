@@ -6,6 +6,11 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { CardDetail, VariantDetail } from '@riftbound/contracts';
 import { isCardBannedAt } from '@riftbound/contracts';
@@ -35,6 +40,8 @@ import { Heading } from '@/components/ui/heading';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
+import { useOverlayEnterProgress } from '@/hooks/useOverlayPresence';
+import { OVERLAY } from '@/lib/motion';
 import { formatStat } from '@/utils/cardFormat';
 import {
   formatMarketTrend,
@@ -48,6 +55,8 @@ import { useVariantPriceHistory } from '@/hooks/useVariantPriceHistory';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import { cn } from '@/lib/utils';
 import type { CardOpenSource } from '@/utils/cardNavigation';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const SHELL_MAX_WIDTH = 860;
 const CARD_WIDTH_DESKTOP = 300;
@@ -500,6 +509,44 @@ export function CardModalOverlay({
   const padX = isWide ? OVERLAY_PAD_X_WIDE / 2 : OVERLAY_PAD_X_NARROW / 2;
   const padY = isWide ? OVERLAY_PAD_Y_WIDE / 2 : OVERLAY_PAD_Y_NARROW / 2;
   const contentMaxHeight = windowHeight - insets.top - insets.bottom - padY * 2;
+  const { progress, reduceMotion } = useOverlayEnterProgress();
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      progress.value,
+      [0, 1],
+      [0, OVERLAY.backdropCard],
+      Extrapolation.CLAMP
+    ),
+  }));
+
+  const contentStyle = useAnimatedStyle(() => {
+    if (reduceMotion) {
+      return { opacity: progress.value };
+    }
+
+    return {
+      opacity: progress.value,
+      transform: [
+        {
+          scale: interpolate(
+            progress.value,
+            [0, 1],
+            [OVERLAY.enterScale, 1],
+            Extrapolation.CLAMP
+          ),
+        },
+        {
+          translateY: interpolate(
+            progress.value,
+            [0, 1],
+            [OVERLAY.enterY, 0],
+            Extrapolation.CLAMP
+          ),
+        },
+      ],
+    };
+  });
 
   return (
     <View
@@ -514,20 +561,21 @@ export function CardModalOverlay({
         paddingHorizontal: padX,
       }}
     >
-      <Pressable
-        className="absolute inset-0 bg-black/85"
+      <AnimatedPressable
+        className="absolute inset-0 bg-black"
         onPress={onClose}
         accessibilityLabel="Close dialog"
+        style={backdropStyle}
       />
-      <View
+      <Animated.View
         className="z-10 w-full"
-        style={{ maxWidth: shellWidth, maxHeight: contentMaxHeight }}
+        style={[{ maxWidth: shellWidth, maxHeight: contentMaxHeight }, contentStyle]}
         pointerEvents="box-none"
       >
         <View className="w-full" pointerEvents="auto">
           {children}
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }

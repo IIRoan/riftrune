@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { PriceStats, PriceTrend } from '@riftbound/contracts';
 import {
   CARDMARKET_PRICE_SCOPE_NOTE,
@@ -6,6 +6,7 @@ import {
   formatTrendLabel,
 } from '@riftbound/contracts';
 import { getWishlist, type WishlistEntry } from '@/services/wishlistService';
+import { persistWishlist } from '@/services/wishlistCacheService';
 import { api } from '@/src/api/client';
 import { wishlistQueryKeys } from '@/src/api/queryKeys';
 import {
@@ -16,6 +17,7 @@ import { isFoilVariant } from '@/utils/variants';
 
 /** Fixed history window for wishlist price charts. */
 export const WISHLIST_PRICE_DAYS = 30;
+const WISHLIST_PRICES_STALE_MS = 5 * 60 * 1000;
 
 export type { WishlistPricePoint } from '@/lib/wishlist-price-points';
 export {
@@ -73,74 +75,91 @@ function toWishlistPriceItem(
   };
 }
 
+export async function fetchWishlistPrices(
+  queryClient: QueryClient
+): Promise<WishlistPriceItem[]> {
+  // fetchQuery (not ensureQueryData): after wishlist add/remove, membership
+  // may be invalidated but still cached — ensureQueryData would reuse it.
+  const wishlist = await queryClient.fetchQuery({
+    queryKey: wishlistQueryKeys.all,
+    queryFn: async () => {
+      const entries = await getWishlist();
+      await persistWishlist(entries);
+      return entries;
+    },
+  });
+  if (wishlist.length === 0) return [];
+
+  const batch = await api.batchCards(wishlist.map((item) => item.variantNumber));
+  const cardByVariant = new Map<string, (typeof batch.data)[number]>();
+  const variantByNumber = new Map<
+    string,
+    (typeof batch.data)[number]['variants'][number]
+  >();
+
+  for (const card of batch.data) {
+    for (const variant of card.variants) {
+      cardByVariant.set(variant.variantNumber, card);
+      variantByNumber.set(variant.variantNumber, variant);
+    }
+  }
+
+  const statsResponse = await api.getPriceStatsBatch({
+    days: WISHLIST_PRICE_DAYS,
+    items: wishlist.map((item) => {
+      const variant = variantByNumber.get(item.variantNumber);
+      const isFoil =
+        variant != null
+          ? isFoilVariant(
+              variant.variantNumber,
+              variant.variantLabel,
+              variant.variantType
+            )
+          : false;
+      return {
+        variantNumber: item.variantNumber,
+        isFoil,
+        targetPriceCents: item.targetPriceCents,
+      };
+    }),
+  });
+
+  const statsByVariant = new Map(
+    statsResponse.data.map((stats) => [stats.variantNumber, stats] as const)
+  );
+
+  return wishlist.map((item) => {
+    const card = cardByVariant.get(item.variantNumber);
+    const variant = variantByNumber.get(item.variantNumber);
+    const stats = statsByVariant.get(item.variantNumber);
+
+    return toWishlistPriceItem(
+      {
+        ...item,
+        name: card?.name ?? item.name,
+        imageUrl: variant?.imageUrl ?? item.imageUrl,
+      },
+      stats
+    );
+  });
+}
+
+/** Warm the wishlist tab (membership + Cardmarket stats) before navigation. */
+export function prefetchWishlistPrices(queryClient: QueryClient): Promise<void> {
+  return queryClient.prefetchQuery({
+    queryKey: wishlistQueryKeys.prices,
+    queryFn: () => fetchWishlistPrices(queryClient),
+    staleTime: WISHLIST_PRICES_STALE_MS,
+  });
+}
+
 export function useWishlistPrices(enabled = true) {
   const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: wishlistQueryKeys.prices,
-    queryFn: async (): Promise<WishlistPriceItem[]> => {
-      // fetchQuery (not ensureQueryData): after wishlist add/remove, membership
-      // may be invalidated but still cached — ensureQueryData would reuse it.
-      const wishlist = await queryClient.fetchQuery({
-        queryKey: wishlistQueryKeys.all,
-        queryFn: getWishlist,
-      });
-      if (wishlist.length === 0) return [];
-
-      const batch = await api.batchCards(wishlist.map((item) => item.variantNumber));
-      const cardByVariant = new Map<string, (typeof batch.data)[number]>();
-      const variantByNumber = new Map<
-        string,
-        (typeof batch.data)[number]['variants'][number]
-      >();
-
-      for (const card of batch.data) {
-        for (const variant of card.variants) {
-          cardByVariant.set(variant.variantNumber, card);
-          variantByNumber.set(variant.variantNumber, variant);
-        }
-      }
-
-      const statsResponse = await api.getPriceStatsBatch({
-        days: WISHLIST_PRICE_DAYS,
-        items: wishlist.map((item) => {
-          const variant = variantByNumber.get(item.variantNumber);
-          const isFoil =
-            variant != null
-              ? isFoilVariant(
-                  variant.variantNumber,
-                  variant.variantLabel,
-                  variant.variantType
-                )
-              : false;
-          return {
-            variantNumber: item.variantNumber,
-            isFoil,
-            targetPriceCents: item.targetPriceCents,
-          };
-        }),
-      });
-
-      const statsByVariant = new Map(
-        statsResponse.data.map((stats) => [stats.variantNumber, stats] as const)
-      );
-
-      return wishlist.map((item) => {
-        const card = cardByVariant.get(item.variantNumber);
-        const variant = variantByNumber.get(item.variantNumber);
-        const stats = statsByVariant.get(item.variantNumber);
-
-        return toWishlistPriceItem(
-          {
-            ...item,
-            name: card?.name ?? item.name,
-            imageUrl: variant?.imageUrl ?? item.imageUrl,
-          },
-          stats
-        );
-      });
-    },
+    queryFn: () => fetchWishlistPrices(queryClient),
     enabled,
-    staleTime: 5 * 60 * 1000,
+    staleTime: WISHLIST_PRICES_STALE_MS,
   });
 }

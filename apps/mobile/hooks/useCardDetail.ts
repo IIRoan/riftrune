@@ -28,7 +28,12 @@ import {
 import { getCollectedPrintingsForDetailCard } from '@/utils/collectionRemove';
 import { hapticPress } from '@/utils/haptics';
 import { closeCard } from '@/utils/cardNavigation';
-import { flushCardDetailPrefetch } from '@/lib/prefetchCardDetail';
+import {
+  flushCardDetailPrefetch,
+  fetchCardDetailNow,
+  findCachedCardListItem,
+  isHydratedDetail,
+} from '@/lib/prefetchCardDetail';
 import { api } from '@/src/api/client';
 import { cardQueryKeys } from '@/src/api/queryKeys';
 import { collectionFinishKey, parseCollectionFinishKey } from '@riftbound/contracts';
@@ -42,23 +47,33 @@ export function useCardDetail(
   const queryClient = useQueryClient();
   const [selectedVariant, setSelectedVariant] = useState(variantNumber);
   const [pickerVisible, setPickerVisible] = useState(false);
-  const { listItem } = options ?? {};
+  const { listItem: listItemOption } = options ?? {};
+
+  const listItem = useMemo(() => {
+    if (listItemOption && cardListItemMatchesVariant(listItemOption, variantNumber)) {
+      return listItemOption;
+    }
+    return findCachedCardListItem(queryClient, variantNumber) ?? null;
+  }, [listItemOption, queryClient, variantNumber]);
 
   const listPlaceholder = useMemo(() => {
-    if (!listItem || !cardListItemMatchesVariant(listItem, variantNumber)) {
-      return undefined;
-    }
+    if (!listItem) return undefined;
     return cardListItemToDetailResponse(listItem);
-  }, [listItem, variantNumber]);
+  }, [listItem]);
 
   const { data, isLoading, isError, isPlaceholderData } = useQuery({
     queryKey: cardQueryKeys.detail(variantNumber),
     queryFn: async () => {
-      // Prefer a coalesced batch warm from the catalog over a one-off GET.
-      await flushCardDetailPrefetch();
-      const cached = queryClient.getQueryData(cardQueryKeys.detail(variantNumber));
-      if (cached) return cached as Awaited<ReturnType<typeof api.getCard>>;
-      return api.getCard(variantNumber);
+      // Prefer an already-warmed detail (from scroll prefetch or press ensure).
+      const cached = queryClient.getQueryData(cardQueryKeys.detail(variantNumber)) as
+        | Awaited<ReturnType<typeof api.getCard>>
+        | undefined;
+      if (isHydratedDetail(cached)) return cached;
+
+      // Kick background batch flush but never wait on it — that queue was
+      // delaying rules text behind unrelated catalog prefetches.
+      void flushCardDetailPrefetch();
+      return fetchCardDetailNow(queryClient, variantNumber);
     },
     enabled: Boolean(variantNumber),
     staleTime: 5 * 60 * 1000,

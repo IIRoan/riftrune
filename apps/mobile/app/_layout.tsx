@@ -6,28 +6,36 @@ import {
   DefaultTheme,
   ThemeProvider as NavThemeProvider,
 } from '@react-navigation/native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Platform, StatusBar } from 'react-native';
-import { CatalogBootstrap } from '@/components/CatalogBootstrap';
+import { AppBootstrap } from '@/components/AppBootstrap';
 import { TetraProvider } from '@/components/TetraProvider';
 import { AppLoadingScreen } from '@/components/ui/app-loader';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useAppFonts } from '@/hooks/useAppFonts';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { createQueryClient } from '@/src/api/queryClient';
+import {
+  createQueryPersister,
+  QUERY_PERSIST_MAX_AGE_MS,
+  shouldPersistQuery,
+} from '@/src/api/queryPersist';
 import { hydrateSecureStorage } from '@/src/lib/secure-storage';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 const queryClient = createQueryClient();
+const queryPersister = createQueryPersister();
 
 function RootNav() {
   const { actualTheme } = useTheme();
   const fontsLoaded = useAppFonts();
   const reduceMotion = useReduceMotion();
+  const { isLocalReady } = useAppBootstrap();
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
@@ -46,13 +54,15 @@ function RootNav() {
     };
   }, []);
 
+  const bootReady = fontsLoaded && storageReady && isLocalReady;
+
   useEffect(() => {
-    if (fontsLoaded && storageReady) {
+    if (bootReady) {
       void SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, storageReady]);
+  }, [bootReady]);
 
-  if (!storageReady || !fontsLoaded) {
+  if (!bootReady) {
     return <AppLoadingScreen size="lg" />;
   }
 
@@ -106,14 +116,24 @@ function RootNav() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <CatalogBootstrap />
-        <ThemeProvider>
-          <TetraProvider>
-            <RootNav />
-          </TetraProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister: queryPersister,
+          maxAge: QUERY_PERSIST_MAX_AGE_MS,
+          dehydrateOptions: {
+            shouldDehydrateQuery: shouldPersistQuery,
+          },
+        }}
+      >
+        <AppBootstrap>
+          <ThemeProvider>
+            <TetraProvider>
+              <RootNav />
+            </TetraProvider>
+          </ThemeProvider>
+        </AppBootstrap>
+      </PersistQueryClientProvider>
     </GestureHandlerRootView>
   );
 }

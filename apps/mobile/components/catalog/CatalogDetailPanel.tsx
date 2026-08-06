@@ -4,13 +4,16 @@ import { CardArtImage } from '@/components/cards/CardArtImage';
 import { AppLoader } from '@/components/ui/app-loader';
 import {
   ActivityIndicator,
-  Modal,
+  BackHandler,
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { Pressable as GesturePressable } from 'react-native-gesture-handler';
+import { Portal, PortalOverlay } from '@/components/ui/portal';
 import type { CardListItem, CardListPrinting } from '@riftbound/contracts';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
@@ -69,6 +72,7 @@ import { cn } from '@/lib/utils';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
 import { hapticPress } from '@/utils/haptics';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 
 interface CatalogDetailPanelProps {
   variantNumber: string;
@@ -92,6 +96,7 @@ export function CatalogDetailPanel({
   wishlistItem = null,
   hidePriceHistory = false,
 }: CatalogDetailPanelProps) {
+  const isMobile = useMobileLayout();
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { adjustQuantity } = useCollectionMutations();
   const { data: collectionEntries = [] } = useCollection();
@@ -133,6 +138,15 @@ export function CatalogDetailPanel({
     return () => {
       window.removeEventListener('keydown', onKey);
     };
+  }, [fullscreen]);
+
+  useEffect(() => {
+    if (!fullscreen || Platform.OS === 'web') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setFullscreen(false);
+      return true;
+    });
+    return () => sub.remove();
   }, [fullscreen]);
 
   const openFullscreen = useCallback(() => {
@@ -432,60 +446,77 @@ export function CatalogDetailPanel({
     </View>
   );
 
+  const identityMeta = (
+    <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-1">
+      <TypeIcon type={card.type} size={14} />
+      <Text className="text-xs font-medium text-muted-foreground">{card.type}</Text>
+      {card.colors.length > 0
+        ? card.colors.map((color) => (
+            <View key={color.id} className="flex-row items-center gap-x-1">
+              <Text className="text-xs text-muted-foreground">·</Text>
+              <DomainIcon name={color.name} imageUrl={color.imageUrl} size={14} />
+              <Text className="text-xs font-medium text-muted-foreground">{color.name}</Text>
+            </View>
+          ))
+        : null}
+      <Text className="text-xs text-muted-foreground">·</Text>
+      <RarityIcon rarity={activeVariant.rarity} size={14} />
+      <Text className="text-xs font-medium text-muted-foreground">{activeVariant.rarity}</Text>
+    </View>
+  );
+
+  const desktopMetaPills = (
+    <View className="flex-row flex-wrap gap-x-4 gap-y-3 rounded-xl border border-archive-soft-line p-3">
+      <MetaPill label="Type" icon={<TypeIcon type={card.type} size={16} />}>
+        <Text className="text-sm font-semibold text-foreground">{card.type}</Text>
+      </MetaPill>
+      <MetaPill label="Domain">
+        {card.colors.length > 0 ? (
+          <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
+            {card.colors.map((color) => (
+              <View key={color.id} className="flex-row items-center gap-1">
+                <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
+                <Text className="text-sm font-semibold text-foreground">{color.name}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text className="text-sm font-semibold text-foreground">—</Text>
+        )}
+      </MetaPill>
+      <MetaPill label="Rarity" icon={<RarityIcon rarity={activeVariant.rarity} size={16} />}>
+        <Text className="text-sm font-semibold text-foreground">{activeVariant.rarity}</Text>
+      </MetaPill>
+      {card.tags.length > 0 ? (
+        <MetaPill label="Tags">
+          <View className="flex-row flex-wrap gap-1">
+            {card.tags.map((tag) => (
+              <CardTag key={tag} label={tag} />
+            ))}
+          </View>
+        </MetaPill>
+      ) : null}
+    </View>
+  );
+
+  const descriptionBlock =
+    detail.isPlaceholderData && !card.description ? (
+      <View className="gap-2 rounded-xl bg-card-panel p-3">
+        <Skeleton className="h-3 w-full rounded" />
+        <Skeleton className="h-3 w-[92%] rounded" />
+        <Skeleton className="h-3 w-[80%] rounded" />
+      </View>
+    ) : card.description ? (
+      <View className="rounded-xl bg-card-panel p-3">
+        <CardRulesText text={card.description} />
+      </View>
+    ) : null;
+
   const detailBody = (
     <View className="gap-3 p-3">
       {collectionAndStats}
-
-      <View className="flex-row flex-wrap gap-x-4 gap-y-3 rounded-xl border border-archive-soft-line p-3">
-        <MetaPill label="Type" icon={<TypeIcon type={card.type} size={16} />}>
-          <Text className="text-sm font-semibold text-foreground">{card.type}</Text>
-        </MetaPill>
-        <MetaPill label="Domain">
-          {card.colors.length > 0 ? (
-            <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
-              {card.colors.map((color) => (
-                <View key={color.id} className="flex-row items-center gap-1">
-                  <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
-                  <Text className="text-sm font-semibold text-foreground">
-                    {color.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text className="text-sm font-semibold text-foreground">—</Text>
-          )}
-        </MetaPill>
-        <MetaPill
-          label="Rarity"
-          icon={<RarityIcon rarity={activeVariant.rarity} size={16} />}
-        >
-          <Text className="text-sm font-semibold text-foreground">
-            {activeVariant.rarity}
-          </Text>
-        </MetaPill>
-        {card.tags.length > 0 ? (
-          <MetaPill label="Tags">
-            <View className="flex-row flex-wrap gap-1">
-              {card.tags.map((tag) => (
-                <CardTag key={tag} label={tag} />
-              ))}
-            </View>
-          </MetaPill>
-        ) : null}
-      </View>
-
-      {detail.isPlaceholderData && !card.description ? (
-        <View className="gap-2 rounded-xl bg-card-panel p-3">
-          <Skeleton className="h-3 w-full rounded" />
-          <Skeleton className="h-3 w-[92%] rounded" />
-          <Skeleton className="h-3 w-[80%] rounded" />
-        </View>
-      ) : card.description ? (
-        <View className="rounded-xl bg-card-panel p-3">
-          <CardRulesText text={card.description} />
-        </View>
-      ) : null}
+      {isMobile ? null : desktopMetaPills}
+      {descriptionBlock}
 
       <View className="gap-2">
         <Pressable
@@ -589,7 +620,8 @@ export function CatalogDetailPanel({
         )}
       >
         <View className={cn('flex-row gap-3 p-3', !isDrawer && 'bg-card-panel')}>
-          <Pressable
+          {/* Gesture-handler pressable so taps win over Gorhom sheet pan/scroll. */}
+          <GesturePressable
             className="shrink-0 active:opacity-90 web:cursor-pointer"
             onPress={openFullscreen}
             accessibilityRole="button"
@@ -615,7 +647,7 @@ export function CatalogDetailPanel({
             <Text className="mt-1 text-center font-mono text-[10px] text-archive-subtle">
               {activeVariant.variantNumber}
             </Text>
-          </Pressable>
+          </GesturePressable>
 
           <View className="min-w-0 flex-1 justify-center gap-1.5">
             <View className="flex-row flex-wrap items-center gap-2">
@@ -632,14 +664,28 @@ export function CatalogDetailPanel({
                 Banned in tournament play.
               </Text>
             ) : null}
-            <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-0.5">
-              <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
-              <Text className="text-xs text-muted-foreground">·</Text>
-              <RarityIcon rarity={activeVariant.rarity} size={14} />
-              <Text className="text-xs font-medium text-muted-foreground">
-                {activeVariant.rarity}
-              </Text>
-            </View>
+            {isMobile ? (
+              <>
+                <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
+                {identityMeta}
+                {card.tags.length > 0 ? (
+                  <View className="flex-row flex-wrap gap-1">
+                    {card.tags.map((tag) => (
+                      <CardTag key={tag} label={tag} />
+                    ))}
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
+                <Text className="text-xs text-muted-foreground">·</Text>
+                <RarityIcon rarity={activeVariant.rarity} size={14} />
+                <Text className="text-xs font-medium text-muted-foreground">
+                  {activeVariant.rarity}
+                </Text>
+              </View>
+            )}
             {watchedElsewhereCount > 0 ? (
               <Text className="text-xs font-medium text-primary">
                 Also on wishlist: {watchedElsewhereCount} other printing
@@ -719,24 +765,32 @@ function CatalogCardFullscreen({
   const cardHeight = Math.min(windowHeight * 0.88, 560);
   const cardWidth = cardHeight * (5 / 7);
 
+  // Portal above the sheet — nested Modal inside BottomSheetPortal/FullWindowOverlay
+  // often never appears on native.
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View className="flex-1 items-center justify-center bg-black/85">
-        <Pressable
-          className="absolute inset-0"
-          onPress={onClose}
-          accessibilityLabel="Close full size card"
-        />
-        <CardArtImage
-          uri={resolveImageUrl(imageUrl)}
-          recyclingKey={imageUrl}
-          className={cn('relative z-10', CARD_ART_RADIUS_CLASS)}
-          style={{ width: cardWidth, height: cardHeight }}
-          contentFit="contain"
-          contentPosition="center"
-        />
-      </View>
-    </Modal>
+    <Portal name="catalog-card-fullscreen">
+      <PortalOverlay>
+        <View
+          style={[StyleSheet.absoluteFillObject, { zIndex: 1000, elevation: 1000 }]}
+          className="items-center justify-center bg-black/85"
+        >
+          <GesturePressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close full size card"
+          />
+          <CardArtImage
+            uri={resolveImageUrl(imageUrl)}
+            recyclingKey={imageUrl}
+            className={cn('relative z-10', CARD_ART_RADIUS_CLASS)}
+            style={{ width: cardWidth, height: cardHeight }}
+            contentFit="contain"
+            contentPosition="center"
+          />
+        </View>
+      </PortalOverlay>
+    </Portal>
   );
 }
 

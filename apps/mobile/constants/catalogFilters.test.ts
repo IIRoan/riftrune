@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
   catalogFilterChips,
-  catalogFilterSegmentActive,
   catalogFiltersActive,
   catalogFiltersQueryKey,
   countCatalogFilters,
@@ -162,12 +161,11 @@ describe('simple add preference', () => {
     );
   });
 
-  test('counts toward active filters and the Adding segment', () => {
+  test('simple add is a toolbar preference, not an active filter', () => {
     const filters = { ...DEFAULT_CATALOG_FILTERS, simpleAdd: true };
-    expect(catalogFiltersActive(filters)).toBe(true);
-    expect(countCatalogFilters(filters)).toBe(1);
-    expect(catalogFilterSegmentActive('adding', filters)).toBe(true);
-    expect(catalogFilterChips(filters).map((chip) => chip.id)).toEqual(['simple-add']);
+    expect(catalogFiltersActive(filters)).toBe(false);
+    expect(countCatalogFilters(filters)).toBe(0);
+    expect(catalogFilterChips(filters)).toEqual([]);
   });
 
   test('query key ignores simpleAdd so result caches stay stable', () => {

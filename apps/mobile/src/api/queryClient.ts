@@ -27,7 +27,8 @@ export function createQueryClient(): QueryClient {
     defaultOptions: {
       queries: {
         staleTime: 60_000,
-        gcTime: 30 * 60 * 1000,
+        // Must exceed QUERY_PERSIST_MAX_AGE_MS so restored queries are not GC'd.
+        gcTime: 24 * 60 * 60 * 1000,
         retry: 1,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,

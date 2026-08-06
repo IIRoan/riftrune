@@ -54,7 +54,11 @@ export function CatalogDesktopFilterBar({
       />
 
       {catalogFiltersActive(filters) ? (
-        <FilterClearButton onPress={() => onFiltersChange(DEFAULT_CATALOG_FILTERS)} />
+        <FilterClearButton
+          onPress={() =>
+            onFiltersChange({ ...DEFAULT_CATALOG_FILTERS, simpleAdd: filters.simpleAdd })
+          }
+        />
       ) : null}
     </View>
   );

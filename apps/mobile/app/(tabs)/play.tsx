@@ -1,7 +1,6 @@
 import { PlayCenterRail } from '@/components/play/PlayCenterRail';
 import { PlayScoreboard } from '@/components/play/PlayScoreboard';
 import { PlaySetupSheet } from '@/components/play/PlaySetupSheet';
-import { prefetchPlayLegendCatalog } from '@/hooks/useLegendCatalog';
 import {
   adjustPoints,
   adjustXp,
@@ -15,23 +14,17 @@ import {
   type ScoreTrackerState,
   type SeatLegend,
 } from '@/lib/score-tracker';
-import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PlayScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [state, setState] = useState<ScoreTrackerState>(() => createScoreTrackerState('duel'));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [legendSeatId, setLegendSeatId] = useState<string | null>(null);
-
-  useEffect(() => {
-    void prefetchPlayLegendCatalog(queryClient);
-  }, [queryClient]);
 
   const format = useMemo(() => getPlayFormat(state.format), [state.format]);
 

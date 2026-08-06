@@ -37,7 +37,7 @@ export function collectFilterIconUris(
 }
 
 async function prefetchIconUri(uri: string): Promise<void> {
-  const ok = await Image.prefetch(uri);
+  const ok = await Image.prefetch(uri, { cachePolicy: 'memory-disk' });
   if (ok) markSessionImageLoaded(uri);
 }
 

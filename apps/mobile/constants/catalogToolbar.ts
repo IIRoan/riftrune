@@ -23,23 +23,25 @@ export const CATALOG_TOOLBAR_SEGMENT_CLASS =
 export const CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS = 'bg-card-panel';
 export const CATALOG_TOOLBAR_SEGMENT_INACTIVE_CLASS = 'active:opacity-70';
 
-/** Mobile toolbar row — four equal affordances (list, grid, sort, filter). */
-export const CATALOG_TOOLBAR_MOBILE_ROW_CLASS = 'w-full flex-row items-stretch gap-2';
+/** Mobile toolbar row — leading prefs / trailing tools. */
+export const CATALOG_TOOLBAR_MOBILE_ROW_CLASS =
+  'w-full flex-row items-center justify-between gap-2';
 
-/** Equal-width column for each mobile toolbar control. */
+/** @deprecated Prefer natural-width icon buttons; kept for deck browse chrome. */
 export const CATALOG_TOOLBAR_MOBILE_SLOT_CLASS = 'min-w-0 flex-1';
 
-/** Mobile icon control — full-width slot with 44px touch height. */
+/** Mobile icon control — 44×44 touch target. */
 export const CATALOG_TOOLBAR_CONTROL_CLASS_MOBILE =
-  'h-11 w-full min-w-11 items-center justify-center rounded-xl border border-border bg-card active:bg-card-panel';
+  'size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card active:bg-card-panel';
 
 export const CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS_MOBILE = 'border-ring/50 bg-card-panel';
 
+/** Segmented control shell on phone — natural width, matches 44pt row. */
 export const CATALOG_TOOLBAR_GROUP_CLASS_MOBILE =
-  'w-full flex-row items-center rounded-lg border border-border bg-card p-0.5';
+  'h-11 shrink-0 flex-row items-center rounded-xl border border-border bg-card p-0.5';
 
 export const CATALOG_TOOLBAR_SEGMENT_CLASS_MOBILE =
-  'h-10 min-w-10 flex-1 items-center justify-center rounded-md';
+  'h-10 w-10 items-center justify-center rounded-lg';
 
 export const CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS_MOBILE = 'bg-card-panel';
 
@@ -71,9 +73,9 @@ export function catalogToolbarMobileSlotClass(): string {
   return CATALOG_TOOLBAR_MOBILE_SLOT_CLASS;
 }
 
-/** Mobile labeled control — full-width slot, text + icon. */
+/** Mobile labeled control — compact text + icon (rarely used; prefer icons). */
 export const CATALOG_TOOLBAR_LABELED_CONTROL_CLASS_MOBILE =
-  'h-11 w-full min-w-0 flex-row items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 active:bg-card-panel';
+  'h-11 shrink-0 flex-row items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2.5 active:bg-card-panel';
 
 export function catalogToolbarButtonClasses(
   active = false,

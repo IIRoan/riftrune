@@ -115,7 +115,8 @@ export default function CardDetailScreen() {
         options={{
           headerShown: false,
           presentation: isModal ? 'transparentModal' : 'card',
-          animation: isModal ? (useDrawer ? 'none' : 'fade') : 'default',
+          // Custom Reanimated overlay/drawer owns the entrance — avoid stacking a second fade.
+          animation: isModal ? 'none' : 'default',
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />

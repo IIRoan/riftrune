@@ -72,7 +72,9 @@ export function CatalogFilterSheet({
       onClose={onClose}
       activeCount={activeCount}
       hasActiveFilters={catalogFiltersActive(filters)}
-      onClear={() => onFiltersChange(DEFAULT_CATALOG_FILTERS)}
+      onClear={() =>
+        onFiltersChange({ ...DEFAULT_CATALOG_FILTERS, simpleAdd: filters.simpleAdd })
+      }
       portalName="catalog-filter-sheet"
     >
       <FilterAccordionGroup key={accordionKey} defaultOpen={defaultOpen}>

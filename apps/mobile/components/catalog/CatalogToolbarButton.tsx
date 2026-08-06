@@ -38,8 +38,7 @@ export function CatalogToolbarButton({
       <Pressable
         className={cn(
           catalogToolbarButtonClasses(active, mobile, true),
-          'min-w-0 flex-row gap-1.5',
-          mobile ? 'w-full' : 'shrink-0',
+          'min-w-0 shrink-0 flex-row gap-1.5',
           className
         )}
         onPress={onPress}
@@ -61,8 +60,7 @@ export function CatalogToolbarButton({
     <Pressable
       className={cn(
         catalogToolbarButtonClasses(active, mobile),
-        'relative',
-        mobile ? 'w-full' : 'shrink-0',
+        'relative shrink-0',
         className
       )}
       onPress={onPress}

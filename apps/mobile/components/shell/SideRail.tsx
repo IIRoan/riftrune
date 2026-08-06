@@ -14,8 +14,12 @@ import { cn } from '@/lib/utils';
 import { authClient } from '@/src/lib/auth-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { removeUserDataQueries } from '@/src/api/queryClient';
+import { clearPersistedQueryClient } from '@/src/api/queryPersist';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
+import { clearPersistedOwnedDecks } from '@/services/deckCacheService';
+import { clearPersistedWishlist } from '@/services/wishlistCacheService';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
+import { clearLastCachedUserId } from '@/services/userCacheScope';
 import { hapticPress } from '@/utils/haptics';
 import { usePathname, useRouter } from 'expo-router';
 import { View } from 'react-native';
@@ -89,7 +93,11 @@ export function SideRail() {
     await authClient.signOut();
     await sessionQuery.refetch();
     await clearPersistedCollection();
+    await clearPersistedOwnedDecks();
+    await clearPersistedWishlist();
     await clearPersistedCatalogIndex();
+    await clearPersistedQueryClient();
+    await clearLastCachedUserId();
     removeUserDataQueries(queryClient);
   };
 

@@ -6,7 +6,21 @@ import {
   type ComponentProps,
   type ReactNode,
 } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  type SharedValue,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import {
   BottomSheet,
   BottomSheetBody,
@@ -23,7 +37,9 @@ import { Button, ButtonIcon } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { XIcon } from '@/components/icons';
 import { Portal, PortalOverlay } from '@/components/ui/portal';
+import { useOverlayPresence } from '@/hooks/useOverlayPresence';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
+import { OVERLAY } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 type AppSheetMode = 'sheet' | 'dialog';
@@ -33,6 +49,9 @@ type AppSheetContextValue = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dismissible: boolean;
+  /** Dialog-mode presence (0–1). Null in sheet mode. */
+  presence: SharedValue<number> | null;
+  reduceMotion: boolean;
 };
 
 const AppSheetContext = createContext<AppSheetContextValue | null>(null);
@@ -66,20 +85,36 @@ export function AppSheet({
 }: AppSheetProps) {
   const showRail = useShowSideRail();
   const mode: AppSheetMode = showRail ? 'dialog' : 'sheet';
+  const { visible, progress, reduceMotion } = useOverlayPresence(
+    mode === 'dialog' ? open : false
+  );
+  // Stay mounted through exit: parent `open` may be false while presence is settling.
+  const dialogMounted = mode === 'dialog' && (open || visible);
 
   const value = useMemo(
     () => ({
       mode,
-      open,
+      open: mode === 'dialog' ? dialogMounted : open,
       onOpenChange,
       dismissible,
+      presence: mode === 'dialog' ? progress : null,
+      reduceMotion,
     }),
-    [dismissible, mode, onOpenChange, open]
+    [dialogMounted, dismissible, mode, onOpenChange, open, progress, reduceMotion]
   );
 
   if (mode === 'sheet') {
     return (
-      <AppSheetContext.Provider value={value}>
+      <AppSheetContext.Provider
+        value={{
+          mode,
+          open,
+          onOpenChange,
+          dismissible,
+          presence: null,
+          reduceMotion,
+        }}
+      >
         <BottomSheet
           open={open}
           onOpenChange={(next) => {
@@ -93,6 +128,10 @@ export function AppSheet({
     );
   }
 
+  if (!dialogMounted) {
+    return null;
+  }
+
   return <AppSheetContext.Provider value={value}>{children}</AppSheetContext.Provider>;
 }
 
@@ -104,7 +143,7 @@ export function AppSheetPortal({
   children: ReactNode;
 }) {
   const ctx = useAppSheetContext();
-  const { mode, open, onOpenChange, dismissible } = ctx;
+  const { mode, open, onOpenChange, dismissible, presence } = ctx;
 
   // Portals render outside the React tree — re-provide context (same as BottomSheetPortal).
   const portaled = (
@@ -115,7 +154,7 @@ export function AppSheetPortal({
     return <BottomSheetPortal name={name}>{portaled}</BottomSheetPortal>;
   }
 
-  if (!open) return null;
+  if (!open || !presence) return null;
 
   return (
     <Portal name={name}>
@@ -123,7 +162,7 @@ export function AppSheetPortal({
         <Modal
           visible
           transparent
-          animationType="fade"
+          animationType="none"
           statusBarTranslucent
           onRequestClose={() => {
             if (dismissible) onOpenChange(false);
@@ -137,21 +176,63 @@ export function AppSheetPortal({
 }
 
 export function AppSheetOverlay({ className }: { className?: string }) {
-  const { mode, onOpenChange, dismissible } = useAppSheetContext();
+  const { mode, onOpenChange, dismissible, presence, reduceMotion } = useAppSheetContext();
 
   if (mode === 'sheet') {
     return <BottomSheetOverlay className={className} closeOnPress={dismissible} />;
   }
 
+  if (!presence) return null;
+
   return (
-    <Pressable
-      accessibilityLabel="Dismiss"
-      className={cn('absolute inset-0 bg-black/50', className)}
-      disabled={!dismissible}
-      onPress={() => {
+    <AppSheetDialogOverlay
+      className={className}
+      dismissible={dismissible}
+      presence={presence}
+      reduceMotion={reduceMotion}
+      onDismiss={() => {
         if (dismissible) onOpenChange(false);
       }}
     />
+  );
+}
+
+function AppSheetDialogOverlay({
+  className,
+  dismissible,
+  presence,
+  reduceMotion,
+  onDismiss,
+}: {
+  className?: string;
+  dismissible: boolean;
+  presence: SharedValue<number>;
+  reduceMotion: boolean;
+  onDismiss: () => void;
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      presence.value,
+      [0, 1],
+      [0, OVERLAY.backdropLight],
+      Extrapolation.CLAMP
+    );
+    return { opacity: reduceMotion ? presence.value * OVERLAY.backdropLight : opacity };
+  });
+
+  return (
+    <Animated.View
+      accessibilityLabel="Dismiss"
+      className={cn('absolute inset-0 bg-black', className)}
+      style={animatedStyle}
+    >
+      <Pressable
+        accessibilityLabel="Dismiss"
+        className="absolute inset-0"
+        disabled={!dismissible}
+        onPress={onDismiss}
+      />
+    </Animated.View>
   );
 }
 
@@ -180,7 +261,7 @@ export function AppSheetContent({
   bottomInset,
   ...props
 }: AppSheetContentProps) {
-  const { mode, dismissible } = useAppSheetContext();
+  const { mode, dismissible, presence, reduceMotion } = useAppSheetContext();
 
   if (mode === 'sheet') {
     return (
@@ -199,16 +280,69 @@ export function AppSheetContent({
     );
   }
 
+  if (!presence) return null;
+
   return (
-    <View
+    <AppSheetDialogContent
+      className={className}
+      presence={presence}
+      reduceMotion={reduceMotion}
+      {...props}
+    >
+      {children}
+    </AppSheetDialogContent>
+  );
+}
+
+function AppSheetDialogContent({
+  children,
+  className,
+  presence,
+  reduceMotion,
+  ...props
+}: ComponentProps<typeof View> & {
+  presence: SharedValue<number>;
+  reduceMotion: boolean;
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    if (reduceMotion) {
+      return { opacity: presence.value };
+    }
+
+    return {
+      opacity: presence.value,
+      transform: [
+        {
+          scale: interpolate(
+            presence.value,
+            [0, 1],
+            [OVERLAY.enterScale, 1],
+            Extrapolation.CLAMP
+          ),
+        },
+        {
+          translateY: interpolate(
+            presence.value,
+            [0, 1],
+            [OVERLAY.enterY, 0],
+            Extrapolation.CLAMP
+          ),
+        },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View
+      {...props}
       className={cn(
         'z-10 flex max-h-[90%] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-background',
         className
       )}
-      {...props}
+      style={animatedStyle}
     >
       {children}
-    </View>
+    </Animated.View>
   );
 }
 

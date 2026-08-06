@@ -72,15 +72,12 @@ export async function pickPrinting(page: Page, variantNumber: string): Promise<v
 }
 
 export async function enableSimpleAdd(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Adding', exact: true }).click();
-  const toggle = page.getByRole('checkbox', { name: 'Simple add', exact: true });
+  const toggle = page.getByRole('switch', { name: 'Simple add', exact: true });
   await expect(toggle).toBeVisible();
   if ((await toggle.getAttribute('aria-checked')) !== 'true') {
     await toggle.click();
   }
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
-  // Close the filter popover so it doesn't block the search results.
-  await page.keyboard.press('Escape');
 }
 
 export function detailWishlistButton(page: Page): Locator {

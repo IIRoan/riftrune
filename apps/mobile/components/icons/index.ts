@@ -34,6 +34,7 @@ import {
   GitDiffIcon as PhosphorGitDiff,
   ImageIcon as PhosphorImage,
   InfoIcon as PhosphorInfo,
+  LightningIcon as PhosphorLightning,
   ListIcon as PhosphorList,
   LockIcon as PhosphorLock,
   MagnifyingGlassIcon as PhosphorMagnifyingGlass,
@@ -107,6 +108,8 @@ export const LayersIcon = createStyledSvg(PhosphorStack);
 /** Cards / catalog grid — Phosphor SquaresFour reads clearer than Lucide LayoutGrid. */
 export const LayoutGridIcon = createStyledSvg(PhosphorSquaresFour);
 export const LibraryIcon = createStyledSvg(PhosphorBooks);
+/** Quick/simple add — skip foil picker, insert standard finish. */
+export const LightningIcon = createStyledSvg(PhosphorLightning);
 export const ListIcon = createStyledSvg(PhosphorList);
 export const ListFilterIcon = createStyledSvg(PhosphorFaders);
 export const LockIcon = createStyledSvg(PhosphorLock);

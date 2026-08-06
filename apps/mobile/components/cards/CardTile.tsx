@@ -15,6 +15,7 @@ import { useCollectionMutations } from '@/hooks/useCollection';
 import { useOwnershipMap } from '@/hooks/useOwnershipMap';
 import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
 import { openCard } from '@/utils/cardNavigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   formatListPrice,
   formatMarketTrend,
@@ -83,6 +84,7 @@ function CardTileInner({
   instantArt = false,
 }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isMobile = useMobileLayout();
   const ownershipFromStore = useOwnershipMap({
     enabled: collectionByVariantProp == null,
@@ -141,8 +143,8 @@ function CardTileInner({
       return;
     }
     void hapticPress();
-    openCard(router, card.variantNumber, 'modal');
-  }, [router, card.variantNumber, onSelectVariant, onPress]);
+    openCard(router, card.variantNumber, 'modal', undefined, queryClient);
+  }, [router, queryClient, card.variantNumber, onSelectVariant, onPress]);
 
   const onAdd = useCallback(
     (selectionId?: string) => {
@@ -432,30 +434,31 @@ function CardTileInner({
         </View>
       </Pressable>
 
-      <View className="gap-2 border-t border-border bg-card-panel px-2.5 py-2.5">
+      <View className="gap-1.5 border-t border-border bg-card-panel px-2 py-2">
         <Pressable onPress={onOpenCard} accessibilityRole="button">
-          <View className="gap-0.5">
-            <Text
-              className="text-[13px] font-semibold leading-4 text-foreground"
-              numberOfLines={2}
-            >
-              {card.name}
-            </Text>
-            <View className="flex-row items-center justify-between gap-2">
-              {showPrice ? (
-                <Text className="font-mono text-[12px] font-semibold tabular-nums text-foreground">
-                  {priceLabel ?? '—'}
-                </Text>
-              ) : (
-                <View />
-              )}
+          <Text
+            className="text-[12px] font-semibold leading-4 text-foreground"
+            numberOfLines={1}
+          >
+            {card.name}
+          </Text>
+          <View className="mt-0.5 h-4 flex-row items-center gap-1">
+            {showPrice ? (
               <Text
-                className="font-mono text-[10px] text-muted-foreground"
+                className="min-w-0 flex-1 font-mono text-[11px] font-semibold tabular-nums text-foreground"
                 numberOfLines={1}
               >
-                {primaryPrinting?.variantNumber}
+                {priceLabel ?? '—'}
               </Text>
-            </View>
+            ) : (
+              <View className="min-w-0 flex-1" />
+            )}
+            <Text
+              className="shrink-0 font-mono text-[10px] text-muted-foreground"
+              numberOfLines={1}
+            >
+              {primaryPrinting?.variantNumber}
+            </Text>
           </View>
         </Pressable>
         {gridControl}
@@ -485,7 +488,7 @@ export const CardTile = memo(
 
 export function CardTileSkeleton({
   layout = 'grid',
-  compact = false,
+  compact: _compact = false,
 }: {
   layout?: 'grid' | 'list';
   compact?: boolean;
@@ -524,9 +527,9 @@ export function CardTileSkeleton({
       )}
     >
       <Skeleton className="w-full rounded-none" style={{ aspectRatio: 5 / 7 }} />
-      <View className="gap-2 border-t border-border bg-card-panel px-2.5 py-2.5">
-        <Skeleton className="h-3 w-[80%] rounded" />
-        <Skeleton className="h-2.5 w-[45%] rounded" />
+      <View className="gap-1.5 border-t border-border bg-card-panel px-2 py-2">
+        <Skeleton className="h-4 w-[80%] rounded" />
+        <Skeleton className="h-3 w-[70%] rounded" />
         <Skeleton className="h-9 w-full rounded-full" />
       </View>
     </View>

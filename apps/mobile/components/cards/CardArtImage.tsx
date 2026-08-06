@@ -39,6 +39,7 @@ type CardArtImageProps = {
 
 function initialImageStatus(uri: string | null | undefined): 'loading' | 'loaded' | 'error' {
   if (!uri) return 'error';
+  // Prefetched (memory) or previously decoded this session — no shimmer frame.
   return isSessionImageLoaded(uri) ? 'loaded' : 'loading';
 }
 

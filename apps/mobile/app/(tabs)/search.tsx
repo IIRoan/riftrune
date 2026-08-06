@@ -86,7 +86,7 @@ import {
   useMobileLayout,
 } from '@/hooks/useBreakpoint';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
-import { flushCardDetailPrefetch, prefetchCardDetail } from '@/lib/prefetchCardDetail';
+import { prefetchCardDetail, ensureCardDetail } from '@/lib/prefetchCardDetail';
 import {
   catalogLookaheadCount,
   catalogViewportTargetHeight,
@@ -366,8 +366,9 @@ function SearchScreenBody() {
       );
       if (item) {
         prefetchCardDetail(queryClient, item);
-        void flushCardDetailPrefetch();
       }
+      // Direct GET for rules text — don't wait on the batch prefetch queue.
+      ensureCardDetail(queryClient, variantNumber);
       setSelectedVariant(variantNumber);
     },
     [queryClient]
@@ -870,6 +871,10 @@ function SearchScreenBody() {
         collection={catalogFilters.collection}
         onCollectionChange={(collection) =>
           applyCatalogFilters({ ...catalogFilters, collection })
+        }
+        simpleAdd={catalogFilters.simpleAdd}
+        onSimpleAddChange={(simpleAdd) =>
+          applyCatalogFilters({ ...catalogFilters, simpleAdd })
         }
         showFilterTrigger={isMobile}
       />

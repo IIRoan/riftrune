@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { CollectionShareAcceptMode } from '@riftbound/contracts';
 import { collectionSharePollInterval } from '@/hooks/collectionLiveSync';
 import {
@@ -11,6 +11,14 @@ import {
 } from '@/services/remoteCollectionShareService';
 import { collectionQueryKeys } from '@/src/api/queryKeys';
 import { authClient } from '@/src/lib/auth-client';
+
+export function prefetchCollectionShareStatus(queryClient: QueryClient): Promise<void> {
+  return queryClient.prefetchQuery({
+    queryKey: collectionQueryKeys.share,
+    queryFn: fetchCollectionShareStatus,
+    staleTime: 30_000,
+  });
+}
 
 export function useCollectionShareStatus(enabled = true) {
   const sessionQuery = authClient.useSession();

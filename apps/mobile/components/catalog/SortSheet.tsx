@@ -1,6 +1,9 @@
 import { ThemedIcon, ArrowUpDownIcon, CheckIcon } from '@/components/icons';
 import { Pressable } from 'react-native';
-import { CatalogToolbarButton } from '@/components/catalog/CatalogToolbarButton';
+import {
+  CatalogToolbarBadgeDot,
+  CatalogToolbarButton,
+} from '@/components/catalog/CatalogToolbarButton';
 import {
   BottomSheet,
   BottomSheetContent,
@@ -88,8 +91,9 @@ export function SortTrigger({
   mobile?: boolean;
 }) {
   const option = findSortOption(activeSort);
-  const label = compact || mobile ? option.shortLabel : option.label;
   const active = !isDefaultCatalogSort(activeSort);
+  // Mobile: icon-only (sort choice lives in the sheet). Desktop keeps the label.
+  const label = mobile ? undefined : compact ? option.shortLabel : option.label;
 
   return (
     <CatalogToolbarButton
@@ -99,6 +103,7 @@ export function SortTrigger({
       active={active}
       label={label}
       mobile={mobile}
+      badge={mobile && active ? <CatalogToolbarBadgeDot /> : undefined}
     />
   );
 }

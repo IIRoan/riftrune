@@ -42,6 +42,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Uniwind } from "uniwind";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
+import { OVERLAY, SHEET_REDUCED, SHEET_SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Button, ButtonIcon } from "./button";
 import { XIcon } from "@/components/icons";
@@ -416,7 +418,7 @@ export const BottomSheet = ({
     bottomSheetRef.current?.close();
     const timer = setTimeout(() => {
       setMounted(false);
-    }, 350);
+    }, OVERLAY.unmountMs);
     return () => clearTimeout(timer);
   }, [open]);
 
@@ -567,6 +569,12 @@ export const BottomSheetContent = ({
     setCurrentSnapIndex,
   } = useBottomSheetContext();
 
+  const reduceMotion = useReduceMotion();
+  const animationConfigs = useMemo(
+    () => (reduceMotion ? SHEET_REDUCED : SHEET_SPRING),
+    [reduceMotion]
+  );
+
   const { top, bottom } = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
 
@@ -701,13 +709,15 @@ export const BottomSheetContent = ({
   return (
     <GorhomBottomSheet
       animatedIndex={animatedIndex}
+      animationConfigs={animationConfigs}
+      animateOnMount
       backdropComponent={renderNullBackdrop}
       backgroundComponent={BottomSheetBackground}
       bottomInset={bottomInset ?? 0}
       detached={detached}
       enableContentPanningGesture={enableContentPanningGesture}
       enableDynamicSizing={enableDynamicSizing}
-      enableOverDrag={enableOverDrag}
+      enableOverDrag={enableOverDrag && !reduceMotion}
       enablePanDownToClose={enablePanDownToClose}
       footerComponent={footer ? footerComponent : undefined}
       handleComponent={handleComponent}

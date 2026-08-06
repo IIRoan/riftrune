@@ -4,7 +4,7 @@ import type { CardDetail, CardListItem } from '@riftbound/contracts';
 import { chunkArray } from '@riftbound/contracts';
 import { markSessionImageLoaded } from '@/lib/imageSessionCache';
 import { api } from '@/src/api/client';
-import { cardQueryKeys } from '@/src/api/queryKeys';
+import { cardQueryKeys, catalogQueryKeys } from '@/src/api/queryKeys';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 
 const DETAIL_STALE_MS = 5 * 60 * 1000;
@@ -32,9 +32,21 @@ let flushChain: Promise<void> = Promise.resolve();
 function prefetchCardImage(item: CardListItem): void {
   const imageUri = resolveImageUrl(item.imageUrl);
   if (!imageUri) return;
-  void Image.prefetch(imageUri).then((ok) => {
+  void Image.prefetch(imageUri, { cachePolicy: 'memory-disk' }).then((ok) => {
     if (ok) markSessionImageLoaded(imageUri);
   });
+}
+
+const LIST_PLACEHOLDER_HASH = 'list-placeholder';
+
+/**
+ * True when cache holds a real detail payload (GET / batch), including cards
+ * whose rules text is the empty string. List-row placeholders are not hydrated.
+ */
+export function isHydratedDetail(entry: CardDetailCacheEntry | undefined): boolean {
+  if (!entry?.data) return false;
+  if (entry.meta.contentHash === LIST_PLACEHOLDER_HASH) return false;
+  return typeof entry.data.description === 'string';
 }
 
 function needsDetailPrefetch(
@@ -48,6 +60,8 @@ function needsDetailPrefetch(
   if (!state) return true;
   if (!options?.ignoreInFlight && state.fetchStatus === 'fetching') return false;
   if (state.data && !state.isInvalidated) {
+    // List placeholders / incomplete seeds must still be fetched.
+    if (!isHydratedDetail(state.data)) return true;
     return Date.now() - state.dataUpdatedAt >= DETAIL_STALE_MS;
   }
   return true;
@@ -61,7 +75,11 @@ function seedDetailCache(
 ): void {
   const key = cardQueryKeys.detail(variantNumber);
   const existing = queryClient.getQueryState<CardDetailCacheEntry>(key);
-  if (existing?.data && !existing.isInvalidated) {
+  if (
+    existing?.data &&
+    isHydratedDetail(existing.data) &&
+    !existing.isInvalidated
+  ) {
     if (Date.now() - existing.dataUpdatedAt < DETAIL_STALE_MS) return;
   }
 
@@ -79,13 +97,29 @@ function mapBatchSource(
   return 'cache';
 }
 
+function seedCardDetailResponse(
+  queryClient: QueryClient,
+  response: Awaited<ReturnType<typeof api.getCard>>,
+  source: CardDetailCacheEntry['meta']['source']
+): CardDetailCacheEntry {
+  const payload: CardDetailCacheEntry = {
+    data: response.data,
+    meta: {
+      source,
+      contentHash: response.meta.contentHash ?? 'detail-fetch',
+    },
+  };
+  for (const variant of response.data.variants) {
+    seedDetailCache(queryClient, variant.variantNumber, response.data, source);
+  }
+  return payload;
+}
+
 async function runBatchPrefetch(
   queryClient: QueryClient,
   variantNumbers: string[]
 ): Promise<void> {
   const missing = variantNumbers.filter((variantNumber) =>
-    // Include variants whose detail query already started — caller may be
-    // waiting on this flush before falling back to a one-off GET.
     needsDetailPrefetch(queryClient, variantNumber, { ignoreInFlight: true })
   );
   if (missing.length === 0) return;
@@ -98,7 +132,6 @@ async function runBatchPrefetch(
     for (const card of response.data) {
       const hit = card.variants.some((variant) => requested.has(variant.variantNumber));
       if (!hit) continue;
-      // Seed every printing on cards we paid for — printing switches stay warm.
       for (const variant of card.variants) {
         seedDetailCache(queryClient, variant.variantNumber, card, source);
       }
@@ -138,6 +171,58 @@ export function prefetchCardDetail(queryClient: QueryClient, item: CardListItem)
 
   scheduleFlush(queryClient);
   pending?.variantNumbers.add(variantNumber);
+}
+
+/**
+ * Fetch this card's full detail (including rules text) immediately.
+ * Does not wait on the background batch prefetch queue.
+ */
+export async function fetchCardDetailNow(
+  queryClient: QueryClient,
+  variantNumber: string
+): Promise<CardDetailCacheEntry> {
+  const key = cardQueryKeys.detail(variantNumber);
+  const cached = queryClient.getQueryData<CardDetailCacheEntry>(key);
+  if (isHydratedDetail(cached)) return cached!;
+
+  const response = await api.getCard(variantNumber);
+  const payload = seedCardDetailResponse(queryClient, response, 'upstream');
+  queryClient.setQueryData(key, payload);
+  return payload;
+}
+
+/** Fire-and-forget: start description fetch as soon as the user taps a card. */
+export function ensureCardDetail(queryClient: QueryClient, variantNumber: string): void {
+  if (!variantNumber) return;
+  const cached = queryClient.getQueryData<CardDetailCacheEntry>(
+    cardQueryKeys.detail(variantNumber)
+  );
+  if (isHydratedDetail(cached)) return;
+
+  void queryClient.prefetchQuery({
+    queryKey: cardQueryKeys.detail(variantNumber),
+    queryFn: () => fetchCardDetailNow(queryClient, variantNumber),
+    staleTime: DETAIL_STALE_MS,
+  });
+}
+
+/** Resolve a list row from the catalog index for instant detail chrome. */
+export function findCachedCardListItem(
+  queryClient: QueryClient,
+  variantNumber: string
+): CardListItem | undefined {
+  if (!variantNumber) return undefined;
+  const index = queryClient.getQueryData<{ items: CardListItem[] }>(catalogQueryKeys.index);
+  const items = index?.items;
+  if (!items?.length) return undefined;
+
+  for (const item of items) {
+    if (item.variantNumber === variantNumber) return item;
+    if (item.printings?.some((printing) => printing.variantNumber === variantNumber)) {
+      return item;
+    }
+  }
+  return undefined;
 }
 
 /** Flush any queued detail prefetches (tests / urgent select paths). */

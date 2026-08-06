@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Children } from 'react';
 import { Platform, Pressable, View, type ImageSourcePropType } from 'react-native';
@@ -48,6 +49,8 @@ function SetLogoImage({ source }: { source: ImageSourcePropType }) {
       source={source}
       style={{ width: 88, height: 22 }}
       contentFit="contain"
+      cachePolicy="memory-disk"
+      transition={0}
       accessibilityIgnoresInvertColors
     />
   );
@@ -101,7 +104,13 @@ export function BreakdownSection({
               <View className="flex-row items-center justify-between gap-4">
                 <View className="min-w-0 flex-1 flex-row items-center gap-2">
                   {icon ? (
-                    <Image source={icon} className="size-5 shrink-0" contentFit="contain" />
+                    <Image
+                      source={icon}
+                      className="size-5 shrink-0"
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
+                      transition={0}
+                    />
                   ) : null}
                   <Text className="text-[13px] font-medium text-foreground">{stat.name}</Text>
                 </View>
@@ -137,6 +146,9 @@ export function SetCard({ set }: { set: MergedSetStat }) {
             source={set.art}
             style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
             contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
+            transition={0}
             accessibilityLabel={`${set.name} key art`}
           />
           {Platform.OS === 'web' ? (
@@ -332,11 +344,12 @@ export function CollectionMoverRow({
   trend: string;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   return (
     <Pressable
       className="min-h-11 flex-row items-center justify-between gap-3 rounded-lg px-1 py-3 active:opacity-80"
       onPress={() => {
-        openCard(router, entry.variantNumber, 'modal');
+        openCard(router, entry.variantNumber, 'modal', 'collection', queryClient);
       }}
     >
       <View className="min-w-0 flex-1">

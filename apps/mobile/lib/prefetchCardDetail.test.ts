@@ -8,6 +8,7 @@ const batchCards = mock(async (variantNumbers: string[]) => ({
     {
       id: 'card-1',
       name: 'Test Card',
+      description: 'Batch rules text.',
       banEffectiveDate: null,
       variants: [
         {
@@ -29,6 +30,7 @@ const batchCards = mock(async (variantNumbers: string[]) => ({
     {
       id: 'card-2',
       name: 'Other',
+      description: '',
       banEffectiveDate: null,
       variants: [
         {
@@ -67,6 +69,8 @@ mock.module('@/utils/resolveImageUrl', () => ({
 }));
 
 const {
+  ensureCardDetail,
+  fetchCardDetailNow,
   flushCardDetailPrefetch,
   prefetchCardDetail,
   resetCardDetailPrefetchQueue,
@@ -74,24 +78,28 @@ const {
 
 function listItem(variantNumber: string): CardListItem {
   return {
-    id: variantNumber,
+    cardId: '11111111-1111-1111-1111-111111111111',
     name: variantNumber,
     variantNumber,
-    variantLabel: 'Standard',
-    variantType: 'Standard',
-    imageUrl: null,
-    setCode: 'OGN',
-    rarity: 'Common',
     type: 'Unit',
-    domains: [],
-    energyCost: 1,
+    energy: 1,
     might: 1,
-    power: null,
-    superTypes: [],
-    tags: [],
-    banEffectiveDate: null,
-    prices: [],
-    printings: [],
+    power: 0,
+    rarity: 'Common',
+    setCode: 'OGN',
+    colors: [],
+    imageUrl: 'https://example.com/card.webp',
+    cardmarketId: null,
+    priceEur: null,
+    printings: [
+      {
+        variantNumber,
+        variantLabel: 'Standard',
+        isFoil: false,
+        priceEur: null,
+      },
+    ],
+    isBanned: false,
   };
 }
 
@@ -127,10 +135,16 @@ describe('prefetchCardDetail', () => {
     });
   });
 
-  test('skips variants that already have fresh cache data', async () => {
+  test('skips variants that already have fresh hydrated cache data', async () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(cardQueryKeys.detail('OGN-001'), {
-      data: { id: 'cached', name: 'Cached', banEffectiveDate: null, variants: [] },
+      data: {
+        id: 'cached',
+        name: 'Cached',
+        description: 'Already loaded rules text.',
+        banEffectiveDate: null,
+        variants: [],
+      },
       meta: { source: 'cache', contentHash: 'x' },
     });
 
@@ -138,5 +152,99 @@ describe('prefetchCardDetail', () => {
     await flushCardDetailPrefetch();
 
     expect(batchCards).not.toHaveBeenCalled();
+  });
+
+  test('fetchCardDetailNow uses a direct GET and does not wait on the batch queue', async () => {
+    getCard.mockImplementation(async (variantNumber: string) => ({
+      data: {
+        id: 'card-direct',
+        name: 'Direct',
+        type: 'Unit',
+        super: null,
+        description: 'Rules text from GET.',
+        energy: 1,
+        might: 1,
+        power: 0,
+        tags: [],
+        colors: [],
+        banEffectiveDate: null,
+        variants: [
+          {
+            id: '11111111-1111-1111-1111-111111111111',
+            variantNumber,
+            rarity: 'Common',
+            variantType: 'Standard',
+            variantLabel: 'Standard',
+            foilMode: 'nonfoil_only',
+            imageUrl: 'https://example.com/card.webp',
+            cardmarketId: null,
+            tcgplayerId: null,
+            releaseDate: null,
+            artist: null,
+            prices: [],
+          },
+        ],
+      },
+      meta: { source: 'upstream', contentHash: 'get' },
+    }));
+
+    const queryClient = new QueryClient();
+    // Queue a batch that would otherwise delay the open path.
+    prefetchCardDetail(queryClient, listItem('OGN-099'));
+
+    const detail = await fetchCardDetailNow(queryClient, 'OGN-050');
+    expect(getCard).toHaveBeenCalledWith('OGN-050');
+    expect(detail.data.description).toBe('Rules text from GET.');
+    expect(queryClient.getQueryData(cardQueryKeys.detail('OGN-050'))).toMatchObject({
+      data: { description: 'Rules text from GET.' },
+    });
+  });
+
+  test('ensureCardDetail is a no-op when description is already cached', () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(cardQueryKeys.detail('OGN-001'), {
+      data: { description: 'Cached rules' },
+      meta: { source: 'cache', contentHash: 'x' },
+    });
+    ensureCardDetail(queryClient, 'OGN-001');
+    expect(getCard).not.toHaveBeenCalled();
+  });
+
+  test('skips variants whose hydrated description is an empty string', async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(cardQueryKeys.detail('OGN-002'), {
+      data: {
+        id: 'cached-empty',
+        name: 'Empty Rules',
+        description: '',
+        banEffectiveDate: null,
+        variants: [],
+      },
+      meta: { source: 'cache', contentHash: 'batch-prefetch' },
+    });
+
+    prefetchCardDetail(queryClient, listItem('OGN-002'));
+    await flushCardDetailPrefetch();
+
+    expect(batchCards).not.toHaveBeenCalled();
+  });
+
+  test('still prefetches list-placeholder seeds with empty description', async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(cardQueryKeys.detail('OGN-001'), {
+      data: {
+        id: 'placeholder',
+        name: 'Placeholder',
+        description: '',
+        banEffectiveDate: null,
+        variants: [],
+      },
+      meta: { source: 'cache', contentHash: 'list-placeholder' },
+    });
+
+    prefetchCardDetail(queryClient, listItem('OGN-001'));
+    await flushCardDetailPrefetch();
+
+    expect(batchCards).toHaveBeenCalledTimes(1);
   });
 });

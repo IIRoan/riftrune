@@ -25,8 +25,12 @@ import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { cn } from '@/lib/utils';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
+import { clearPersistedOwnedDecks } from '@/services/deckCacheService';
+import { clearPersistedWishlist } from '@/services/wishlistCacheService';
+import { clearLastCachedUserId } from '@/services/userCacheScope';
 import { migrateLocalCollectionToRemote } from '@/services/collectionService';
 import { invalidateUserDataQueries, removeUserDataQueries } from '@/src/api/queryClient';
+import { clearPersistedQueryClient } from '@/src/api/queryPersist';
 import { authClient } from '@/src/lib/auth-client';
 
 const MODE_TRANSITION_MS = 280;
@@ -341,7 +345,11 @@ export function AuthPanel({
       await authClient.signOut();
       await sessionQuery.refetch();
       await clearPersistedCollection();
+      await clearPersistedOwnedDecks();
+      await clearPersistedWishlist();
       await clearPersistedCatalogIndex();
+      await clearPersistedQueryClient();
+      await clearLastCachedUserId();
       removeUserDataQueries(queryClient);
     } finally {
       setBusy(false);

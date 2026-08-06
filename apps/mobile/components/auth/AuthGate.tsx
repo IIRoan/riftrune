@@ -9,7 +9,6 @@ import {
   KeyboardAwareScrollView,
   useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller';
-import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   AuthBrandLockup,
@@ -20,8 +19,7 @@ import { AuthBackdrop, useAuthWideLayout } from '@/components/auth/AuthBackdrop'
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import type { Mode } from '@/components/auth/auth-types';
 import { AppLoadingScreen } from '@/components/ui/app-loader';
-import { hydrateCollectionCache, prefetchCollection } from '@/hooks/useCollection';
-import { prefetchCatalogIndex } from '@/hooks/useCatalogIndex';
+import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { authClient } from '@/src/lib/auth-client';
 
 /** Mobile: hero art + floating form slab. Whole playmat scrolls with the keyboard. */
@@ -148,23 +146,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const wide = useAuthWideLayout();
   const [mode, setMode] = useState<Mode>('sign-in');
   const [sessionReady, setSessionReady] = useState(false);
-  const queryClient = useQueryClient();
   const { data: session, isPending } = authClient.useSession();
+  const { isUserReady } = useAppBootstrap();
 
   useEffect(() => {
     if (!isPending) {
       setSessionReady(true);
     }
   }, [isPending]);
-
-  useEffect(() => {
-    if (!session?.user) return;
-    void (async () => {
-      await hydrateCollectionCache(queryClient);
-      await prefetchCatalogIndex(queryClient);
-      await prefetchCollection(queryClient);
-    })();
-  }, [session?.user, queryClient]);
 
   // First session resolve only — later refetches must not remount the login UI.
   if (!sessionReady) {
@@ -183,6 +172,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       return <AuthWidePlaymat mode={mode} onModeChange={setMode} insets={insets} />;
     }
     return <AuthMobilePlaymat mode={mode} onModeChange={setMode} insets={insets} />;
+  }
+
+  if (!isUserReady) {
+    return (
+      <View
+        className="flex-1 bg-background"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      >
+        <AppLoadingScreen size="lg" className="bg-transparent" />
+      </View>
+    );
   }
 
   return <>{children}</>;
