@@ -101,7 +101,7 @@ function ModeToggle({
   );
 }
 
-export function DeckDescriptionEditor({
+function DeckDescriptionEditor({
   value,
   onChange,
   className,

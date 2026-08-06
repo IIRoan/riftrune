@@ -5,15 +5,13 @@ import { Portal } from '@/components/ui/portal';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
-const TOOLBAR_BUTTON_SIZE = 32;
-const TOOLBAR_ICON_SIZE = 18;
+import { toolbarIconSize } from '@/components/ui/hover-tooltip.constants';
+
 const EDGE_PAD = 8;
 const GAP = 10;
 /** Match shadcn TooltipProvider delayDuration — wait before show. */
 const SHOW_DELAY_MS = 500;
-
-export const toolbarButtonSize = TOOLBAR_BUTTON_SIZE;
-export const toolbarIconSize = TOOLBAR_ICON_SIZE;
+const TOOLBAR_ICON_SIZE = toolbarIconSize;
 
 type Anchor = {
   x: number;

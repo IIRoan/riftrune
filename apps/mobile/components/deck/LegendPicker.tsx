@@ -1,7 +1,8 @@
 import { ThemedIcon, ChevronLeftIcon, ImageIcon, SearchIcon } from '@/components/icons';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
-import { FlatList, Pressable, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Pressable, View, type ListRenderItem } from 'react-native';
+import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { AppLoader } from '@/components/ui/app-loader';
 import { SearchInput } from '@/components/ui/search-input';
 import { Text } from '@/components/ui/text';
@@ -87,6 +88,56 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
 
   const loading = cardsQuery.isLoading || (variantNumbers.length > 0 && detailsQuery.isLoading);
 
+  const columnWrapperStyle = useMemo(
+    () => ({ gap, marginBottom: gap }),
+    [gap]
+  );
+
+  const listContentStyle = useMemo(
+    () => ({ flexGrow: legends.length === 0 ? 1 : undefined }),
+    [legends.length]
+  );
+
+  const renderLegendItem = useCallback<ListRenderItem<DeckCard>>(
+    ({ item }) => (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Select ${item.name}`}
+        style={{ width: tileWidth }}
+        className="gap-1.5 active:opacity-90"
+        onPress={() => {
+          hapticPress();
+          onSelect(item);
+        }}
+      >
+        <View
+          className={cn(
+            'aspect-[5/7] w-full overflow-hidden border border-white/10 bg-background',
+            CARD_ART_RADIUS_CLASS
+          )}
+        >
+          {item.imageUrl ? (
+            <DeckCardArt
+              uri={resolveImageUrl(item.imageUrl)}
+              variantNumber={item.variantNumber}
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center bg-card-panel">
+              <ThemedIcon icon={ImageIcon} size={20} color="muted-foreground" />
+            </View>
+          )}
+        </View>
+        <Text className="text-[12px] font-semibold text-foreground" numberOfLines={2}>
+          {item.name}
+        </Text>
+        {item.colors.length > 0 ? (
+          <Text className="text-[11px] text-muted-foreground">{item.colors.join(' · ')}</Text>
+        ) : null}
+      </Pressable>
+    ),
+    [onSelect, tileWidth]
+  );
+
   return (
     <View className="min-h-0 flex-1 gap-4">
       <View className="gap-2">
@@ -128,8 +179,8 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
           data={legends}
           keyExtractor={(item) => item.variantNumber}
           numColumns={numColumns}
-          columnWrapperStyle={{ gap, marginBottom: gap }}
-          contentContainerStyle={{ paddingBottom, flexGrow: legends.length === 0 ? 1 : undefined }}
+          columnWrapperStyle={columnWrapperStyle}
+          contentContainerStyle={listContentStyle}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -138,42 +189,8 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
               <Text className="text-sm text-muted-foreground">No legends match your search</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Select ${item.name}`}
-              style={{ width: tileWidth }}
-              className="gap-1.5 active:opacity-90"
-              onPress={() => {
-                hapticPress();
-                onSelect(item);
-              }}
-            >
-              <View
-                className={cn(
-                  'aspect-[5/7] w-full overflow-hidden border border-white/10 bg-background',
-                  CARD_ART_RADIUS_CLASS
-                )}
-              >
-                {item.imageUrl ? (
-                  <DeckCardArt
-                    uri={resolveImageUrl(item.imageUrl)}
-                    variantNumber={item.variantNumber}
-                  />
-                ) : (
-                  <View className="flex-1 items-center justify-center bg-card-panel">
-                    <ThemedIcon icon={ImageIcon} size={20} color="muted-foreground" />
-                  </View>
-                )}
-              </View>
-              <Text className="text-[12px] font-semibold text-foreground" numberOfLines={2}>
-                {item.name}
-              </Text>
-              {item.colors.length > 0 ? (
-                <Text className="text-[11px] text-muted-foreground">{item.colors.join(' · ')}</Text>
-              ) : null}
-            </Pressable>
-          )}
+          ListFooterComponent={<ListBottomSpacer height={paddingBottom} />}
+          renderItem={renderLegendItem}
         />
       )}
     </View>

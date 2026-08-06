@@ -123,10 +123,6 @@ type BottomSheetContentProps = Omit<
     onAnimate?: BottomSheetProps["onAnimate"];
   };
 
-type BottomSheetTriggerProps = PressableProps & {
-  asChild?: boolean;
-};
-
 type BottomSheetCloseProps = PressableProps & {
   asChild?: boolean;
 };
@@ -468,17 +464,6 @@ export const BottomSheet = ({
   );
 };
 
-export const BottomSheetTrigger = ({
-  asChild,
-  ...props
-}: BottomSheetTriggerProps) => {
-  const { onOpenChange } = useBottomSheetContext();
-
-  const Comp = asChild ? Slot.Pressable : Pressable;
-
-  return <Comp {...props} onPress={() => onOpenChange(true)} />;
-};
-
 export const BottomSheetPortal = ({
   children,
   name = BOTTOM_SHEET_PORTAL_NAME,
@@ -570,10 +555,7 @@ export const BottomSheetContent = ({
   } = useBottomSheetContext();
 
   const reduceMotion = useReduceMotion();
-  const animationConfigs = useMemo(
-    () => (reduceMotion ? SHEET_REDUCED : SHEET_SPRING),
-    [reduceMotion]
-  );
+  const animationConfigs = reduceMotion ? SHEET_REDUCED : SHEET_SPRING;
 
   const { top, bottom } = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -856,7 +838,7 @@ export const BottomSheetFooter = ({
 
 BottomSheetFooter.displayName = "BottomSheetFooter";
 
-export const BottomSheetClose = ({
+const BottomSheetClose = ({
   asChild,
   ...props
 }: BottomSheetCloseProps) => {

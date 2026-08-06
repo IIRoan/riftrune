@@ -5,11 +5,15 @@ import {
   type FillGridOptions,
 } from '@/utils/fillGridLayout';
 
-export function useFillGridLayout(options: FillGridOptions) {
+export function useFillGridLayout({
+  minItemWidth,
+  maxColumns,
+  gap,
+}: FillGridOptions) {
   const { contentWidth } = useScreenLayout();
 
   return useMemo(
-    () => computeFillGrid(contentWidth, options),
-    [contentWidth, options.minItemWidth, options.maxColumns, options.gap]
+    () => computeFillGrid(contentWidth, { minItemWidth, maxColumns, gap }),
+    [contentWidth, minItemWidth, maxColumns, gap]
   );
 }

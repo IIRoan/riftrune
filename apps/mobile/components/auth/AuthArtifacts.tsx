@@ -2,10 +2,8 @@ import { Image } from 'expo-image';
 import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { domainIconFor } from '@/constants/gameAssets';
+import { AUTH_DOMAINS } from '@/components/auth/authArtifacts.constants';
 import { cn } from '@/lib/utils';
-
-/** Official Riftbound domain order from core rules. */
-export const AUTH_DOMAINS = ['Fury', 'Calm', 'Mind', 'Body', 'Chaos', 'Order'] as const;
 
 export function AuthDomainStrip({
   className,

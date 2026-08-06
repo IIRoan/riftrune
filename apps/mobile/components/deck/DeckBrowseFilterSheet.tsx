@@ -1,6 +1,7 @@
 import { SlidersHorizontalIcon } from '@/components/icons';
-import { useMemo } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
+import { Pressable, View } from 'react-native';
 import { CatalogToolbarBadgeDot, CatalogToolbarButton } from '@/components/catalog/CatalogToolbarButton';
 import { DeckBrowseFilterSegmentPanel } from '@/components/deck/DeckBrowseFilterPanels';
 import {
@@ -15,6 +16,7 @@ import {
   countDeckBrowseFilters,
   deckBrowseFiltersActive,
   DEFAULT_DECK_BROWSE_FILTERS,
+  type DeckBrowseFilterChipDescriptor,
   type DeckBrowseFilters,
 } from '@/constants/deckBrowse';
 import { useDeckBrowseFilterOptions } from '@/hooks/useDeckBrowseFilters';
@@ -23,6 +25,7 @@ import {
   deckBrowseFilterSegmentActive,
   deckBrowseFilterSegmentSummary,
 } from '@/lib/deck-browse';
+import { mapFilter } from '@/lib/iteration';
 
 interface DeckBrowseFilterSheetProps {
   visible: boolean;
@@ -32,9 +35,11 @@ interface DeckBrowseFilterSheetProps {
 }
 
 function defaultOpenSegments(filters: DeckBrowseFilters): string[] {
-  const active = DECK_BROWSE_FILTER_SEGMENTS.filter((segment) =>
-    deckBrowseFilterSegmentActive(segment.id, filters)
-  ).map((segment) => segment.id);
+  const active = mapFilter(
+    DECK_BROWSE_FILTER_SEGMENTS,
+    (segment) => deckBrowseFilterSegmentActive(segment.id, filters),
+    (segment) => segment.id
+  );
 
   if (active.length > 0) return active;
   return ['legends'];
@@ -132,64 +137,69 @@ export function DeckBrowseActiveFilterChips({
     [filters, setNameByCode]
   );
 
+  const renderChip = useCallback<ListRenderItem<DeckBrowseFilterChipDescriptor>>(
+    ({ item: chip }) => {
+      const keywordBase =
+        chip.key === 'legal'
+          ? 'ACCELERATE'
+          : chip.key === 'not-legal'
+            ? 'ASSAULT'
+            : chip.key === 'video'
+              ? 'REACTION'
+              : chip.key === 'guide'
+                ? 'VISION'
+                : chip.key === 'matchups'
+                  ? 'DEATHKNELL'
+                  : 'DEFAULT';
+
+      const keywordLabel =
+        chip.key === 'legal'
+          ? 'LEGAL'
+          : chip.key === 'not-legal'
+            ? 'ILLEGAL'
+            : chip.key === 'video'
+              ? 'VIDEO'
+              : chip.key === 'guide'
+                ? 'GUIDE'
+                : chip.key === 'matchups'
+                  ? 'MATCHUPS'
+                  : chip.label.toUpperCase();
+
+      if (chip.key === 'legend' || chip.key === 'sets') {
+        return (
+          <Pressable
+            className="h-9 flex-row items-center gap-1.5 rounded-xl border border-border bg-card-panel px-3 active:opacity-80"
+            onPress={() => onFiltersChange(chip.applyClear(filters))}
+            accessibilityLabel={`Clear ${chip.label} filter`}
+          >
+            <Text className="text-sm font-semibold text-foreground">{chip.label}</Text>
+            <Text className="text-muted-foreground">×</Text>
+          </Pressable>
+        );
+      }
+
+      return (
+        <FilterKeywordChip
+          label={keywordLabel}
+          keywordBase={keywordBase}
+          onClear={() => onFiltersChange(chip.applyClear(filters))}
+        />
+      );
+    },
+    [filters, onFiltersChange]
+  );
+
   if (chips.length === 0) return null;
 
   return (
-    <ScrollView
+    <FlashList
       horizontal
+      data={chips}
+      keyExtractor={(chip) => chip.key}
+      getItemType={(chip) => chip.key}
+      renderItem={renderChip}
       showsHorizontalScrollIndicator={false}
       contentContainerClassName="flex-row gap-2 pr-1"
-    >
-      {chips.map((chip) => {
-        const keywordBase =
-          chip.key === 'legal'
-            ? 'ACCELERATE'
-            : chip.key === 'not-legal'
-              ? 'ASSAULT'
-              : chip.key === 'video'
-                ? 'REACTION'
-                : chip.key === 'guide'
-                  ? 'VISION'
-                  : chip.key === 'matchups'
-                    ? 'DEATHKNELL'
-                    : 'DEFAULT';
-
-        const keywordLabel =
-          chip.key === 'legal'
-            ? 'LEGAL'
-            : chip.key === 'not-legal'
-              ? 'ILLEGAL'
-              : chip.key === 'video'
-                ? 'VIDEO'
-                : chip.key === 'guide'
-                  ? 'GUIDE'
-                  : chip.key === 'matchups'
-                    ? 'MATCHUPS'
-                    : chip.label.toUpperCase();
-
-        if (chip.key === 'legend' || chip.key === 'sets') {
-          return (
-            <Pressable
-              key={chip.key}
-              className="h-9 flex-row items-center gap-1.5 rounded-xl border border-border bg-card-panel px-3 active:opacity-80"
-              onPress={() => onFiltersChange(chip.applyClear(filters))}
-              accessibilityLabel={`Clear ${chip.label} filter`}
-            >
-              <Text className="text-sm font-semibold text-foreground">{chip.label}</Text>
-              <Text className="text-muted-foreground">×</Text>
-            </Pressable>
-          );
-        }
-
-        return (
-          <FilterKeywordChip
-            key={chip.key}
-            label={keywordLabel}
-            keywordBase={keywordBase}
-            onClear={() => onFiltersChange(chip.applyClear(filters))}
-          />
-        );
-      })}
-    </ScrollView>
+    />
   );
 }

@@ -90,9 +90,7 @@ export async function addToCollection(
     throw new Error(`No printing found for ${card.name} (${variantNumber})`);
   }
 
-  for (let i = 0; i < quantity; i += 1) {
-    await remoteAddToCollection(printing.variantNumber, 1, printing.isFoil);
-  }
+  await remoteAddToCollection(printing.variantNumber, quantity, printing.isFoil);
 }
 
 export async function addDetailToCollection(
@@ -206,9 +204,9 @@ export async function removeManyFromCollection(
   variantNumbers: string[]
 ): Promise<void> {
   if (variantNumbers.length === 0) return;
-  for (const variantNumber of variantNumbers) {
-    await remoteDeleteFromCollection(variantNumber);
-  }
+  await Promise.all(
+    variantNumbers.map((variantNumber) => remoteDeleteFromCollection(variantNumber))
+  );
 }
 
 export async function migrateLocalCollectionToRemote(): Promise<void> {

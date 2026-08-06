@@ -1,6 +1,6 @@
 import { ThemedIcon, ImageIcon } from '@/components/icons';
 import { Image } from 'expo-image';
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -120,11 +120,14 @@ function CardArtImageInner({
     }
   };
 
-  const hideShimmer = (animated: boolean) => {
-    showShimmerRef.current = false;
-    setShowShimmer(false);
-    overlayOpacity.value = animated && !instant ? withTiming(0, { duration: FADE_MS }) : 0;
-  };
+  const hideShimmer = useCallback(
+    (animated: boolean) => {
+      showShimmerRef.current = false;
+      setShowShimmer(false);
+      overlayOpacity.value = animated && !instant ? withTiming(0, { duration: FADE_MS }) : 0;
+    },
+    [instant, overlayOpacity]
+  );
 
   const scheduleShimmer = () => {
     if (instant || skipLoaderRef.current || shimmerTimerRef.current) return;
@@ -174,7 +177,7 @@ function CardArtImageInner({
       cancelled = true;
       clearShimmerTimer();
     };
-  }, [instant, uri, overlayOpacity]);
+  }, [hideShimmer, instant, overlayOpacity, uri]);
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,

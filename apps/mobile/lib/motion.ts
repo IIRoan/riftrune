@@ -68,14 +68,3 @@ export const OVERLAY_CLOSE: WithTimingConfig = {
   duration: OVERLAY.closeMs,
   easing: OVERLAY.closeEasing,
 };
-
-/** @deprecated Prefer MOTION — kept for play-scoreboard call sites. */
-export const PLAY_SPRINGS = MOTION;
-/** @deprecated Prefer PRESS */
-export const PLAY_PRESS = {
-  depth: PRESS.depth,
-  activeDepth: PRESS.activeDepth,
-  durationMs: PRESS.inMs,
-} as const;
-/** @deprecated Prefer PULSE_MS */
-export const PLAY_PULSE_MS = PULSE_MS;

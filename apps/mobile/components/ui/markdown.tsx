@@ -7,6 +7,11 @@ import {
   isSafeMarkdownUrl,
   prepareMarkdownSource,
 } from '@/lib/markdown-safe';
+import {
+  extendSiblingPath,
+  markdownListItemKey,
+  markdownTokenKey,
+} from '@/lib/markdown-keys';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
@@ -60,22 +65,25 @@ function renderInline(
 
   const nodes: React.ReactNode[] = [];
   let i = 0;
+  let siblingPath = keyPrefix;
   const codeClass = prose
     ? 'rounded-md bg-muted px-1.5 py-0.5 font-mono text-[13px] text-foreground'
     : 'rounded-sm bg-muted px-1 font-mono text-[12px] text-foreground';
 
   while (i < tokens.length) {
     const token = tokens[i]!;
-    const key = `${keyPrefix}-${i}-${token.type}`;
+    const key = markdownTokenKey(keyPrefix, token, siblingPath);
 
     switch (token.type) {
       case 'text':
         nodes.push(token.content);
+        siblingPath = extendSiblingPath(siblingPath, token);
         i += 1;
         break;
       case 'softbreak':
       case 'hardbreak':
         nodes.push('\n');
+        siblingPath = extendSiblingPath(siblingPath, token);
         i += 1;
         break;
       case 'code_inline':
@@ -84,6 +92,7 @@ function renderInline(
             {token.content}
           </Text>
         );
+        siblingPath = extendSiblingPath(siblingPath, token);
         i += 1;
         break;
       case 'strong_open': {
@@ -93,6 +102,7 @@ function renderInline(
             {renderInline(tokens.slice(i + 1, close), key, prose)}
           </Text>
         );
+        siblingPath = extendSiblingPath(siblingPath, token);
         i = close + 1;
         break;
       }
@@ -103,6 +113,7 @@ function renderInline(
             {renderInline(tokens.slice(i + 1, close), key, prose)}
           </Text>
         );
+        siblingPath = extendSiblingPath(siblingPath, token);
         i = close + 1;
         break;
       }
@@ -113,6 +124,7 @@ function renderInline(
             {renderInline(tokens.slice(i + 1, close), key, prose)}
           </Text>
         );
+        siblingPath = extendSiblingPath(siblingPath, token);
         i = close + 1;
         break;
       }
@@ -134,10 +146,12 @@ function renderInline(
         } else {
           nodes.push(<Text key={key}>{label}</Text>);
         }
+        siblingPath = extendSiblingPath(siblingPath, token);
         i = close + 1;
         break;
       }
       case 'image':
+        siblingPath = extendSiblingPath(siblingPath, token);
         i += 1;
         break;
       default:
@@ -146,6 +160,7 @@ function renderInline(
         } else if (token.content) {
           nodes.push(token.content);
         }
+        siblingPath = extendSiblingPath(siblingPath, token);
         i += 1;
         break;
     }
@@ -174,7 +189,7 @@ function findClosingIndex(tokens: Token[], openIndex: number, closeType: string)
 function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   let i = 0;
-  let listKey = 0;
+  let siblingPath = 'md';
   const headingClass = prose ? HEADING_CLASS_PROSE : HEADING_CLASS_COMPACT;
   const bodyClass = prose
     ? 'text-[15px] leading-6 text-foreground'
@@ -185,7 +200,7 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
 
   while (i < tokens.length) {
     const token = tokens[i]!;
-    const key = `b-${i}-${token.type}`;
+    const key = markdownTokenKey(siblingPath, token, siblingPath);
 
     if (token.type === 'heading_open') {
       const level = Number(token.tag.replace('h', '')) || 3;
@@ -195,6 +210,7 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
           {renderInline(inline?.children, key, prose)}
         </Text>
       );
+      siblingPath = extendSiblingPath(siblingPath, token);
       i += 3;
       continue;
     }
@@ -206,6 +222,7 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
           {renderInline(inline?.children, key, prose)}
         </Text>
       );
+      siblingPath = extendSiblingPath(siblingPath, token);
       i += 3;
       continue;
     }
@@ -223,6 +240,7 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
           {renderBlocks(tokens.slice(i + 1, close), prose)}
         </View>
       );
+      siblingPath = extendSiblingPath(siblingPath, token);
       i = close + 1;
       continue;
     }
@@ -231,9 +249,10 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
       const ordered = token.type === 'ordered_list_open';
       const closeType = ordered ? 'ordered_list_close' : 'bullet_list_close';
       const close = findClosingIndex(tokens, i, closeType);
+      const listPath = key;
       const items: React.ReactNode[] = [];
       let j = i + 1;
-      let itemIndex = 0;
+      let itemSiblingPath = listPath;
 
       while (j < close) {
         const item = tokens[j]!;
@@ -242,24 +261,29 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
           continue;
         }
         const itemClose = findClosingIndex(tokens, j, 'list_item_close');
-        const marker = ordered ? `${itemIndex + 1}.` : '•';
+        const itemTokens = tokens.slice(j + 1, itemClose);
+        const itemKey = markdownListItemKey(itemSiblingPath, itemTokens);
+        itemSiblingPath = itemKey;
+        const marker = ordered
+          ? `${items.length + 1}.`
+          : '•';
         items.push(
-          <View key={`${key}-li-${itemIndex}`} className="flex-row gap-2">
+          <View key={itemKey} className="flex-row gap-2">
             <Text className={markerClass}>{marker}</Text>
             <View className={cn('min-w-0 flex-1', prose ? 'gap-2' : 'gap-1.5')}>
-              {renderBlocks(tokens.slice(j + 1, itemClose), prose)}
+              {renderBlocks(itemTokens, prose)}
             </View>
           </View>
         );
-        itemIndex += 1;
         j = itemClose + 1;
       }
 
       nodes.push(
-        <View key={`${key}-${listKey++}`} className={prose ? 'gap-2' : 'gap-1.5'}>
+        <View key={listPath} className={prose ? 'gap-2' : 'gap-1.5'}>
           {items}
         </View>
       );
+      siblingPath = extendSiblingPath(siblingPath, token);
       i = close + 1;
       continue;
     }
@@ -278,12 +302,14 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
           </Text>
         </View>
       );
+      siblingPath = extendSiblingPath(siblingPath, token);
       i += 1;
       continue;
     }
 
     if (token.type === 'hr') {
       nodes.push(<View key={key} className={cn('h-px bg-border', prose ? 'my-3' : 'my-1')} />);
+      siblingPath = extendSiblingPath(siblingPath, token);
       i += 1;
       continue;
     }
@@ -294,10 +320,12 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
           {renderInline(token.children, key, prose)}
         </Text>
       );
+      siblingPath = extendSiblingPath(siblingPath, token);
       i += 1;
       continue;
     }
 
+    siblingPath = extendSiblingPath(siblingPath, token);
     i += 1;
   }
 

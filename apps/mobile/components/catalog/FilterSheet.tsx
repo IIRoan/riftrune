@@ -1,7 +1,8 @@
 import { SlidersHorizontalIcon } from '@/components/icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { FlashList, type ListRenderItem } from '@shopify/flash-list';
+import { useCallback, useEffect, useMemo } from 'react';
+import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import {
   CatalogToolbarBadgeDot,
@@ -25,10 +26,12 @@ import {
   catalogFiltersActive,
   countCatalogFilters,
   DEFAULT_CATALOG_FILTERS,
+  type CatalogFilterChip,
   type CatalogFilters,
 } from '@/constants/catalogFilters';
 import { prefetchCatalogFilters } from '@/hooks/useFiltersData';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { mapFilter } from '@/lib/iteration';
 
 interface CatalogFilterSheetProps {
   visible: boolean;
@@ -42,9 +45,11 @@ const MOBILE_FILTER_SEGMENTS = CATALOG_FILTER_SEGMENTS.filter(
 );
 
 function defaultOpenSegments(filters: CatalogFilters): string[] {
-  const active = MOBILE_FILTER_SEGMENTS.filter((segment) =>
-    catalogFilterSegmentActive(segment.id, filters)
-  ).map((segment) => segment.id);
+  const active = mapFilter(
+    MOBILE_FILTER_SEGMENTS,
+    (segment) => catalogFilterSegmentActive(segment.id, filters),
+    (segment) => segment.id
+  );
 
   if (active.length > 0) return active;
   return ['colors'];
@@ -151,12 +156,59 @@ export function CatalogActiveFilterChips({
     () => new Map(colorOptions.map((color) => [color.name, color])),
     [colorOptions]
   );
-
-  if (!catalogFiltersActive(filters)) return null;
+  const chips = useMemo(
+    () => (catalogFiltersActive(filters) ? catalogFilterChips(filters) : []),
+    [filters]
+  );
 
   const chipEnter = reduceMotion ? undefined : FadeIn.duration(160);
   const chipExit = reduceMotion ? undefined : FadeOut.duration(120);
   const chipLayout = reduceMotion ? undefined : LinearTransition.duration(180);
+
+  const renderChip = useCallback<ListRenderItem<CatalogFilterChip>>(
+    ({ item: chip }) => (
+      <Animated.View entering={chipEnter} exiting={chipExit} layout={chipLayout}>
+        <FilterKeywordChip
+          label={chip.label}
+          keywordBase={chip.keywordBase}
+          trailing={
+            chip.colorNames && chip.colorNames.length > 0 ? (
+              <View className="flex-row items-center gap-2">
+                {chip.colorNames.map((name) => (
+                  <Pressable
+                    key={name}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${name} color filter`}
+                    className="flex-row items-center gap-1 rounded-md px-1 py-0.5 active:bg-accent/80"
+                    onPress={() => {
+                      hapticPress();
+                      onFiltersChange({
+                        ...filters,
+                        colors: filters.colors.filter((color) => color !== name),
+                      });
+                    }}
+                  >
+                    <DomainIcon
+                      name={name}
+                      imageUrl={colorByName.get(name)?.imageUrl}
+                      size={14}
+                    />
+                    <Text className="text-[11px] font-semibold text-muted-foreground">
+                      {name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : undefined
+          }
+          onClear={() => onFiltersChange(chip.clear())}
+        />
+      </Animated.View>
+    ),
+    [chipEnter, chipExit, chipLayout, colorByName, filters, onFiltersChange]
+  );
+
+  if (!catalogFiltersActive(filters)) return null;
 
   return (
     <Animated.View
@@ -165,57 +217,15 @@ export function CatalogActiveFilterChips({
       exiting={chipExit}
       layout={chipLayout}
     >
-      <ScrollView
+      <FlashList
         horizontal
+        data={chips}
+        keyExtractor={(chip) => chip.id}
+        renderItem={renderChip}
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
         contentContainerClassName="flex-row items-center gap-2 pr-1"
-      >
-        {catalogFilterChips(filters).map((chip) => (
-          <Animated.View
-            key={chip.id}
-            entering={chipEnter}
-            exiting={chipExit}
-            layout={chipLayout}
-          >
-            <FilterKeywordChip
-              label={chip.label}
-              keywordBase={chip.keywordBase}
-              trailing={
-                chip.colorNames && chip.colorNames.length > 0 ? (
-                  <View className="flex-row items-center gap-2">
-                    {chip.colorNames.map((name) => (
-                      <Pressable
-                        key={name}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove ${name} color filter`}
-                        className="flex-row items-center gap-1 rounded-md px-1 py-0.5 active:bg-accent/80"
-                        onPress={() => {
-                          hapticPress();
-                          onFiltersChange({
-                            ...filters,
-                            colors: filters.colors.filter((color) => color !== name),
-                          });
-                        }}
-                      >
-                        <DomainIcon
-                          name={name}
-                          imageUrl={colorByName.get(name)?.imageUrl}
-                          size={14}
-                        />
-                        <Text className="text-[11px] font-semibold text-muted-foreground">
-                          {name}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : undefined
-              }
-              onClear={() => onFiltersChange(chip.clear())}
-            />
-          </Animated.View>
-        ))}
-      </ScrollView>
+      />
     </Animated.View>
   );
 }

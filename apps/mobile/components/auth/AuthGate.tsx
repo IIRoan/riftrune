@@ -15,7 +15,8 @@ import {
   AuthDomainStrip,
   AuthSlabCorners,
 } from '@/components/auth/AuthArtifacts';
-import { AuthBackdrop, useAuthWideLayout } from '@/components/auth/AuthBackdrop';
+import { AuthBackdrop } from '@/components/auth/AuthBackdrop';
+import { useAuthWideLayout } from '@/components/auth/useAuthWideLayout';
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import type { Mode } from '@/components/auth/auth-types';
 import { AppLoadingScreen } from '@/components/ui/app-loader';

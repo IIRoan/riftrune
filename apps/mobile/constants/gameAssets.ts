@@ -47,10 +47,6 @@ export function domainIconFor(name: string): ImageSourcePropType | undefined {
   return key ? DOMAIN_ICONS[key] : undefined;
 }
 
-export function isDomainName(name: string): boolean {
-  return domainIconFor(name) !== undefined;
-}
-
 /** Unique bundled icons used by catalog filter panels (type, rarity, domain). */
 export function allFilterPanelIconSources(): ImageSourcePropType[] {
   const seen = new Set<ImageSourcePropType>();

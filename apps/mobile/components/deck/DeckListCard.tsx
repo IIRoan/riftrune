@@ -24,12 +24,14 @@ interface DeckListCardProps {
   importBusy?: boolean;
 }
 
+const UPDATED_AT_FORMAT = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+});
+
 function formatUpdatedAt(updatedAt: number): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
-      month: 'short',
-      day: 'numeric',
-    }).format(new Date(updatedAt));
+    return UPDATED_AT_FORMAT.format(new Date(updatedAt));
   } catch {
     return '';
   }

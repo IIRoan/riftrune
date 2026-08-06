@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { useValueChangeFlag } from '@/hooks/useValueChangeFlag';
 import { cn } from '@/lib/utils';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
@@ -151,12 +152,16 @@ type AuthFieldProps = {
 };
 
 function AuthEmailField({
+  value,
   onChangeText,
   onSubmitEditing,
   inputRef,
   disabled,
   nextFieldRef,
-}: AuthFieldProps & { nextFieldRef?: React.RefObject<RNTextInput | null> }) {
+}: AuthFieldProps & {
+  value: string;
+  nextFieldRef?: React.RefObject<RNTextInput | null>;
+}) {
   const labelId = useId();
 
   return (
@@ -164,7 +169,7 @@ function AuthEmailField({
       <Label nativeID={labelId}>Email</Label>
       <TextInput
         ref={inputRef}
-        defaultValue=""
+        value={value}
         onChangeText={onChangeText}
         onEndEditing={syncFieldText(onChangeText)}
         disabled={disabled}
@@ -198,11 +203,12 @@ function AuthEmailField({
 
 function AuthPasswordField({
   mode,
+  value,
   onChangeText,
   onSubmitEditing,
   inputRef,
   disabled,
-}: AuthFieldProps & { mode: Mode }) {
+}: AuthFieldProps & { mode: Mode; value: string }) {
   const labelId = useId();
   const isSignUp = mode === 'sign-up';
 
@@ -211,7 +217,7 @@ function AuthPasswordField({
       <Label nativeID={labelId}>Password</Label>
       <TextInput
         ref={inputRef}
-        defaultValue=""
+        value={value}
         onChangeText={onChangeText}
         onEndEditing={syncFieldText(onChangeText)}
         disabled={disabled}
@@ -277,23 +283,26 @@ export function AuthPanel({
   const emailRef = useRef<RNTextInput>(null);
   const passwordRef = useRef<RNTextInput>(null);
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // Clear credentials when mode changes — including external controlledMode updates
+  // that never go through setMode (ModeSwitch only covers in-panel clicks).
+  const modeChanged = useValueChangeFlag(mode);
+  if (modeChanged) {
+    setError(null);
+    setEmail('');
+    setPassword('');
+  }
+
   const setMode = (next: Mode) => {
     if (controlledMode === undefined) {
       setInternalMode(next);
     }
     onModeChange?.(next);
   };
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    setError(null);
-    setEmail('');
-    setPassword('');
-  }, [mode]);
 
   const handleSubmit = async () => {
     Keyboard.dismiss();
@@ -429,6 +438,7 @@ export function AuthPanel({
 
       <View key={mode} className="gap-4">
         <AuthEmailField
+          value={email}
           onChangeText={setEmail}
           inputRef={emailRef}
           nextFieldRef={passwordRef}
@@ -437,6 +447,7 @@ export function AuthPanel({
 
         <AuthPasswordField
           mode={mode}
+          value={password}
           onChangeText={setPassword}
           inputRef={passwordRef}
           disabled={busy}

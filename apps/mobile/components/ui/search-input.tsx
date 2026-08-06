@@ -4,13 +4,11 @@ import { SearchIcon } from '@/components/icons';
 import {
   Input,
   InputAddon,
-  type InputAddonChildren,
   InputAddonIcon,
   InputPressable,
-  type InputProps,
-  useInputAddons,
-  useInputFocusState,
 } from './input';
+import type { InputAddonChildren, InputProps } from './input.types';
+import { useInputAddons, useInputFocusState } from './input.hooks';
 
 // Types
 export type SearchInputProps = InputProps & {

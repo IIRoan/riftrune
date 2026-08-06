@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useValueChangeFlag } from '@/hooks/useValueChangeFlag';
 import { Pressable, View } from 'react-native';
 import { ShoppingCartIcon, ThemedIcon } from '@/components/icons';
 import { Text } from '@/components/ui/text';
@@ -47,21 +48,22 @@ export function WishlistPriceHistoryPanel({
 }) {
   const points = item.points;
   const cardmarketId = item.cardmarketId ?? null;
-  const [selectedDate, setSelectedDate] = useState<string | null>(
-    points.at(-1)?.priceDate ?? null
-  );
+  const latestDate = points.at(-1)?.priceDate ?? null;
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
-
-  useEffect(() => {
-    const latest = points.at(-1)?.priceDate ?? null;
-    setSelectedDate((current) => {
-      if (current != null && points.some((point) => point.priceDate === current)) {
-        return current;
-      }
-      return latest;
-    });
-    setHoveredDate(null);
-  }, [points]);
+  const pointsChanged = useValueChangeFlag(points);
+  if (pointsChanged) {
+    if (hoveredDate !== null) {
+      setHoveredDate(null);
+    }
+    if (pickedDate != null && !points.some((point) => point.priceDate === pickedDate)) {
+      setPickedDate(null);
+    }
+  }
+  const selectedDate =
+    pickedDate != null && points.some((point) => point.priceDate === pickedDate)
+      ? pickedDate
+      : latestDate;
 
   const activeDate = hoveredDate ?? selectedDate;
   const active =
@@ -132,7 +134,7 @@ export function WishlistPriceHistoryPanel({
                 <Pressable
                   key={point.priceDate}
                   onPress={() => {
-                    setSelectedDate(point.priceDate);
+                    setPickedDate(point.priceDate);
                   }}
                   onHoverIn={() => {
                     setHoveredDate(point.priceDate);

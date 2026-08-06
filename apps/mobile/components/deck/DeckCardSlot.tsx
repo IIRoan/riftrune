@@ -9,13 +9,12 @@ import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
 import { Text } from '@/components/ui/text';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
-import { resolveDeckCardImageUrl } from '@/lib/deck-card';
 import type { DeckCard, DeckEntry } from '@/lib/deck-types';
 import { openCard, type CardOpenSource } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
-export type DeckCardSlotVariant = 'card' | 'add' | 'empty' | 'identity';
+type DeckCardSlotVariant = 'card' | 'add' | 'empty' | 'identity';
 
 interface DeckCardSlotProps {
   variant: DeckCardSlotVariant;
@@ -241,10 +240,3 @@ function deckCardSlotPropsEqual(prev: DeckCardSlotProps, next: DeckCardSlotProps
 }
 
 export const DeckCardSlot = memo(DeckCardSlotInner, deckCardSlotPropsEqual);
-
-export function resolveSlotImage(
-  card: DeckCard,
-  imageByVariant: ReadonlyMap<string, string>
-): string {
-  return resolveDeckCardImageUrl(card, imageByVariant);
-}

@@ -88,21 +88,25 @@ export const secureStorage = {
 export async function hydrateSecureStorage(): Promise<void> {
   if (isWeb || !SecureStore) return;
 
-  for (const baseKey of KNOWN_KEYS) {
-    const value = await SecureStore.getItemAsync(baseKey);
-    if (value === null) continue;
+  await Promise.all(
+    KNOWN_KEYS.map(async (baseKey) => {
+      const value = await SecureStore.getItemAsync(baseKey);
+      if (value === null) return;
 
-    cache.set(baseKey, value);
+      cache.set(baseKey, value);
 
-    if (value.startsWith(CHUNK_MARKER)) {
-      const count = parseInt(value.slice(CHUNK_MARKER.length), 10);
-      for (let i = 0; i < Math.min(count, MAX_CHUNKS); i++) {
-        const chunkKey = `${baseKey}.${i}`;
-        const chunk = await SecureStore.getItemAsync(chunkKey);
-        if (chunk !== null) {
-          cache.set(chunkKey, chunk);
-        }
+      if (value.startsWith(CHUNK_MARKER)) {
+        const count = parseInt(value.slice(CHUNK_MARKER.length), 10);
+        await Promise.all(
+          Array.from({ length: Math.min(count, MAX_CHUNKS) }, async (_, i) => {
+            const chunkKey = `${baseKey}.${i}`;
+            const chunk = await SecureStore.getItemAsync(chunkKey);
+            if (chunk !== null) {
+              cache.set(chunkKey, chunk);
+            }
+          })
+        );
       }
-    }
-  }
+    })
+  );
 }

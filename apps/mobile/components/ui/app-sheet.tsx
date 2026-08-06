@@ -1,7 +1,4 @@
 import {
-  createContext,
-  useCallback,
-  useContext,
   useMemo,
   type ComponentProps,
   type ReactNode,
@@ -24,7 +21,6 @@ import Animated, {
 import {
   BottomSheet,
   BottomSheetBody,
-  BottomSheetClose,
   BottomSheetContent,
   BottomSheetFooter,
   BottomSheetHeader,
@@ -33,6 +29,7 @@ import {
   BottomSheetScrollView,
   BottomSheetTitle,
 } from '@/components/ui/bottom-sheet';
+import { AppSheetContext, useAppSheetContext } from '@/components/ui/app-sheet.hooks';
 import { Button, ButtonIcon } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { XIcon } from '@/components/icons';
@@ -41,28 +38,9 @@ import { useOverlayPresence } from '@/hooks/useOverlayPresence';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
 import { OVERLAY } from '@/lib/motion';
 import { cn } from '@/lib/utils';
+import type { AppSheetContextValue } from '@/components/ui/app-sheet.hooks';
 
-type AppSheetMode = 'sheet' | 'dialog';
-
-type AppSheetContextValue = {
-  mode: AppSheetMode;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  dismissible: boolean;
-  /** Dialog-mode presence (0–1). Null in sheet mode. */
-  presence: SharedValue<number> | null;
-  reduceMotion: boolean;
-};
-
-const AppSheetContext = createContext<AppSheetContextValue | null>(null);
-
-function useAppSheetContext() {
-  const ctx = useContext(AppSheetContext);
-  if (!ctx) {
-    throw new Error('AppSheet components must be used within AppSheet');
-  }
-  return ctx;
-}
+type AppSheetMode = AppSheetContextValue['mode'];
 
 interface AppSheetProps {
   open: boolean;
@@ -105,16 +83,7 @@ export function AppSheet({
 
   if (mode === 'sheet') {
     return (
-      <AppSheetContext.Provider
-        value={{
-          mode,
-          open,
-          onOpenChange,
-          dismissible,
-          presence: null,
-          reduceMotion,
-        }}
-      >
+      <AppSheetContext.Provider value={value}>
         <BottomSheet
           open={open}
           onOpenChange={(next) => {
@@ -482,29 +451,3 @@ export function AppSheetScrollView({
 
 /** Keep sticky-scroll sheet splitting recognizing this as the scroll body. */
 AppSheetScrollView.displayName = 'BottomSheetScrollView';
-
-export function AppSheetClose(props: ComponentProps<typeof BottomSheetClose>) {
-  const { mode, onOpenChange, dismissible } = useAppSheetContext();
-
-  if (mode === 'sheet') {
-    return <BottomSheetClose {...props} />;
-  }
-
-  const { asChild: _asChild, onPress, ...rest } = props;
-  return (
-    <Pressable
-      {...rest}
-      onPress={(event) => {
-        onPress?.(event);
-        if (dismissible) onOpenChange(false);
-      }}
-    />
-  );
-}
-
-export function useAppSheetDismiss() {
-  const { onOpenChange, dismissible } = useAppSheetContext();
-  return useCallback(() => {
-    if (dismissible) onOpenChange(false);
-  }, [dismissible, onOpenChange]);
-}

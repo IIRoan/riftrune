@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useValueChangeFlag } from '@/hooks/useValueChangeFlag';
 import type { CardListItem } from '@riftbound/contracts';
 import {
   useCollection,
@@ -45,8 +46,13 @@ export function useCardDetail(
 ) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedVariant, setSelectedVariant] = useState(variantNumber);
+  const [pickedVariant, setPickedVariant] = useState<string | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
+  const routeChanged = useValueChangeFlag(variantNumber);
+  if (routeChanged && pickedVariant !== null) {
+    setPickedVariant(null);
+  }
+  const selectedVariant = pickedVariant ?? variantNumber;
   const { listItem: listItemOption } = options ?? {};
 
   const listItem = useMemo(() => {
@@ -80,12 +86,6 @@ export function useCardDetail(
     refetchOnMount: false,
     placeholderData: listPlaceholder,
   });
-
-  useEffect(() => {
-    if (variantNumber) {
-      setSelectedVariant(variantNumber);
-    }
-  }, [variantNumber]);
 
   const card = data?.data;
   const activeVariant =
@@ -162,9 +162,7 @@ export function useCardDetail(
 
   const finishPrintings = finishPrintingsForActive;
 
-  const needsPrintingPicker = useMemo(() => {
-    return finishPrintings.length > 1;
-  }, [finishPrintings]);
+  const needsPrintingPicker = finishPrintings.length > 1;
 
   const pickerOptions = useMemo(() => {
     return finishPrintings.map((printing) => {
@@ -212,7 +210,7 @@ export function useCardDetail(
       void hapticPress();
       // Optimistic cache updates in onMutate — never await the network here.
       addFromDetail.mutate({ card, variantNumber: targetVariantNumber, isFoil });
-      setSelectedVariant(targetVariantNumber);
+      setPickedVariant(targetVariantNumber);
     },
     [card, addFromDetail]
   );
@@ -281,7 +279,7 @@ export function useCardDetail(
   const onSelectPrinting = useCallback((id: string) => {
     void hapticPress();
     const parsed = parseCollectionFinishKey(id);
-    setSelectedVariant(parsed?.variantNumber ?? id);
+    setPickedVariant(parsed?.variantNumber ?? id);
   }, []);
 
   return {

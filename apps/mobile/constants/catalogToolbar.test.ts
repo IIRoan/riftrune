@@ -45,15 +45,15 @@ describe('catalogToolbarButtonClasses', () => {
     const classes = catalogToolbarButtonClasses(false, true);
     expect(classes).toContain(CATALOG_TOOLBAR_CONTROL_CLASS_MOBILE);
     expect(classes).toContain('border-border');
-    expect(classes).toContain('h-11');
-    expect(classes).toContain('w-full');
+    expect(classes).toContain('size-11');
+    expect(classes).toContain('shrink-0');
   });
 
   test('mobile active button uses ring border and panel fill', () => {
     const classes = catalogToolbarButtonClasses(true, true);
     expect(classes).toContain(CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS_MOBILE);
     expect(classes).toContain('border-ring/50');
-    expect(classes).not.toContain('size-11');
+    expect(classes).toContain('size-11');
   });
 
   test('labeled desktop button uses auto width shell without size-11', () => {
@@ -83,10 +83,10 @@ describe('catalogToolbarSegmentClasses', () => {
 });
 
 describe('CATALOG_TOOLBAR_MOBILE_ROW_CLASS', () => {
-  test('lays out four toolbar affordances in one full-width row', () => {
+  test('lays out leading prefs and trailing tools in one full-width row', () => {
     expect(CATALOG_TOOLBAR_MOBILE_ROW_CLASS).toContain('w-full');
     expect(CATALOG_TOOLBAR_MOBILE_ROW_CLASS).toContain('flex-row');
     expect(CATALOG_TOOLBAR_MOBILE_ROW_CLASS).toContain('gap-2');
-    expect(CATALOG_TOOLBAR_MOBILE_ROW_CLASS).not.toContain('justify-between');
+    expect(CATALOG_TOOLBAR_MOBILE_ROW_CLASS).toContain('justify-between');
   });
 });

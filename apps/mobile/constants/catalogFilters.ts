@@ -1,4 +1,5 @@
 import type { CardListItem, CardsListQuery } from '@riftbound/contracts';
+import { compactMap } from '@/lib/iteration';
 import { getCardPrintings, ownedQuantityForPrinting } from '@/utils/variants';
 
 /** Matches Piltover Archive card library stat chips. */
@@ -183,7 +184,10 @@ export function catalogFilterSegmentSummary(
 }
 
 function joinFilterValues(values: string[]): string | undefined {
-  const normalized = values.map((value) => value.trim()).filter(Boolean);
+  const normalized = compactMap(values, (value) => {
+    const trimmed = value.trim();
+    return trimmed || null;
+  });
   return normalized.length > 0 ? normalized.join(',') : undefined;
 }
 

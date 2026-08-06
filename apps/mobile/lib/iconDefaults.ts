@@ -1,6 +1,7 @@
 /** Global icon defaults — Phosphor regular reads thin/aliased on dark web UIs. */
 import type { IconWeight } from 'phosphor-react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
+import { compactMap } from '@/lib/iteration';
 
 /** Default stroke weight for chrome icons (tabs, steppers, toolbars). */
 export const APP_ICON_WEIGHT: IconWeight = 'bold';
@@ -41,9 +42,10 @@ export function iconSizeFromStyle(style: StyleNode): number | undefined {
 export function iconStyleWithoutBoxSize(style: StyleNode): StyleProp<ViewStyle> | undefined {
   if (style == null || style === false) return undefined;
   if (Array.isArray(style)) {
-    const next = style
-      .map((entry) => iconStyleWithoutBoxSize(entry as StyleNode))
-      .filter((entry) => entry != null && entry !== false);
+    const next = compactMap(style, (entry) => {
+      const normalized = iconStyleWithoutBoxSize(entry as StyleNode);
+      return normalized != null && normalized !== false ? normalized : null;
+    });
     return next.length > 0 ? next : undefined;
   }
   if (typeof style !== 'object') return style;

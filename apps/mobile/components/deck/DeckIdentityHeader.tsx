@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { DeckCardSlot, resolveSlotImage } from '@/components/deck/DeckCardSlot';
+import { DeckCardSlot } from '@/components/deck/DeckCardSlot';
+import { resolveSlotImage } from '@/components/deck/deckCardSlot.utils';
 import { DeckRunePanel } from '@/components/deck/DeckRunePanel';
 import { Text } from '@/components/ui/text';
 import { isCardTournamentIllegal } from '@/lib/card-legality';

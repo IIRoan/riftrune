@@ -11,6 +11,7 @@ import {
   battlefieldPerNameLimit,
   battlefieldsAtCapacity,
 } from '@/lib/deck-limits';
+import { compactMap } from '@/lib/iteration';
 
 export type CardEligibilityResult = {
   eligible: boolean;
@@ -29,7 +30,10 @@ export type DeckIdentity = {
 };
 
 function normalizeDomainNames(domains: string[]): string[] {
-  return domains.map((d) => d.trim()).filter(Boolean);
+  return compactMap(domains, (domain) => {
+    const trimmed = domain.trim();
+    return trimmed || null;
+  });
 }
 
 function domainIdentityMatch(cardDomains: string[], allowed: Set<string>): boolean {

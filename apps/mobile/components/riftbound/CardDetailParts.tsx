@@ -52,17 +52,6 @@ export function CardTag({ label }: { label: string }) {
   );
 }
 
-export function CardPriceRow({ finish, price }: { finish: string; price: string }) {
-  return (
-    <View className="flex-row items-center justify-between rounded-xl border border-border bg-card p-3">
-      <Text className="text-sm font-semibold text-foreground">{finish}</Text>
-      <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
-        {price}
-      </Text>
-    </View>
-  );
-}
-
 export function CardSectionLabel({ children }: { children: string }) {
   return <Text className="mb-2 text-sm font-semibold text-foreground">{children}</Text>;
 }

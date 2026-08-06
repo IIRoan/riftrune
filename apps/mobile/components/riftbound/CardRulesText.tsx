@@ -1,10 +1,12 @@
 import { Image } from 'expo-image';
 import type { ImageSourcePropType, StyleProp, ViewStyle } from 'react-native';
 import { Platform, Text as RNText, View } from 'react-native';
+import { splitReminderText } from '@/components/riftbound/cardRulesText.utils';
 import { KeywordBadge } from '@/components/riftbound/KeywordBadge';
 import { Text } from '@/components/ui/text';
 import { domainIconFor, mightIcon, runeIcon, tapIcon } from '@/constants/gameAssets';
 import {
+  cardRulesPartKey,
   groupParagraphSegments,
   KEYWORD_BANNER_COST_BASES,
   parseCardRules,
@@ -14,34 +16,10 @@ import {
   type ParagraphSegment,
 } from '@/lib/card-rules';
 import { cn } from '@/lib/utils';
-
-export type { CardRulesPart } from '@/lib/card-rules';
+import { keySlug } from '@/lib/react-list-keys';
 
 function iconSize(compact?: boolean) {
   return compact ? 14 : 16;
-}
-
-type ReminderChunk = { value: string; reminder?: boolean };
-
-export function splitReminderText(text: string): ReminderChunk[] {
-  const chunks: ReminderChunk[] = [];
-  const re = /\([^)]*\)/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = re.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      chunks.push({ value: text.slice(lastIndex, match.index) });
-    }
-    chunks.push({ value: match[0], reminder: true });
-    lastIndex = re.lastIndex;
-  }
-
-  if (lastIndex < text.length) {
-    chunks.push({ value: text.slice(lastIndex) });
-  }
-
-  return chunks.length > 0 ? chunks : [{ value: text }];
 }
 
 function InlineAssetIcon({
@@ -169,11 +147,18 @@ function ReminderText({
 
   return (
     <Text className={cn(textClass, 'shrink')}>
-      {chunks.map((chunk, index) => (
-        <RNText key={index} className={chunk.reminder ? reminderClass : undefined}>
-          {chunk.value}
-        </RNText>
-      ))}
+      {(() => {
+        let offset = 0;
+        return chunks.map((chunk) => {
+          const key = `${chunk.reminder ? 'reminder' : 'text'}@${offset}:${keySlug(chunk.value, 32)}`;
+          offset += chunk.value.length;
+          return (
+            <RNText key={key} className={chunk.reminder ? reminderClass : undefined}>
+              {chunk.value}
+            </RNText>
+          );
+        });
+      })()}
     </Text>
   );
 }
@@ -252,15 +237,18 @@ function KeywordBannerCluster({
   compact?: boolean;
 }) {
   const size = compact ? 12 : 14;
+  let costPath = `${label}-${keywordBase}`;
   const trailing =
     costs.length > 0
-      ? costs.map((cost, index) => {
+      ? costs.map((cost) => {
+          const key = `${costPath}/${cardRulesPartKey(cost)}`;
+          costPath = key;
           if (cost.type === 'energy') {
-            return <BannerBadgeEnergy key={index} value={cost.value} compact={compact} />;
+            return <BannerBadgeEnergy key={key} value={cost.value} compact={compact} />;
           }
           if (cost.type === 'rune') {
             return (
-              <KeywordBannerCostIcon key={index} source={runeIcon} size={size} label="Rune" />
+              <KeywordBannerCostIcon key={key} source={runeIcon} size={size} label="Rune" />
             );
           }
           if (cost.type === 'domain') {
@@ -268,7 +256,7 @@ function KeywordBannerCluster({
             if (!source) return null;
             return (
               <KeywordBannerCostIcon
-                key={index}
+                key={key}
                 source={source}
                 size={size}
                 label={cost.value}
@@ -302,15 +290,18 @@ function InlineSegmentRow({
 }) {
   const nodes = [];
   let index = 0;
+  let siblingPath = 'segment';
 
   while (index < parts.length) {
     const part = parts[index]!;
 
     if (part.type === 'keyword' && KEYWORD_BANNER_COST_BASES.has(part.keywordBase)) {
       const { costs, nextIndex } = takeKeywordBannerCosts(parts, index + 1);
+      const key = `${siblingPath}/${cardRulesPartKey(part)}`;
+      siblingPath = key;
       nodes.push(
         <KeywordBannerCluster
-          key={index}
+          key={key}
           label={part.display}
           keywordBase={part.keywordBase}
           costs={costs}
@@ -321,9 +312,11 @@ function InlineSegmentRow({
       continue;
     }
 
+    const key = `${siblingPath}/${cardRulesPartKey(part)}`;
+    siblingPath = key;
     nodes.push(
       <RulesPartView
-        key={index}
+        key={key}
         part={part}
         compact={compact}
         textClass={textClass}

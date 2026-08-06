@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Text } from '@/components/ui/text';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/toast.api';
 import {
   canExportDeckCode,
   resolveDeckSharePayload,

@@ -47,11 +47,9 @@ export type DeckAddSectionMeta = {
   infiniteScroll: boolean;
 };
 
-export const BATTLEFIELD_PAGE_SIZE = 80;
-export const MAIN_DECK_PAGE_SIZE = 80;
-export const BATCH_DETAILS_CHUNK_SIZE = 100;
-
-export const MAIN_DECK_CATALOG_TYPES = 'Unit,Gear,Spell';
+const BATTLEFIELD_PAGE_SIZE = 80;
+const MAIN_DECK_PAGE_SIZE = 80;
+const MAIN_DECK_CATALOG_TYPES = 'Unit,Gear,Spell';
 
 export function getDeckAddSectionMeta(
   section: DeckSectionKey,
@@ -158,12 +156,6 @@ export function effectiveDeckAddSearch(
   const trimmed = userQuery.trim();
   if (trimmed) return trimmed;
   return defaultDeckAddSearch(section, deck);
-}
-
-export function deckCatalogColorsParam(deck: DeckState): string | undefined {
-  const identity = getDeckIdentity(deck);
-  if (!identity.allowedDomains || identity.allowedDomains.size === 0) return undefined;
-  return [...identity.allowedDomains].sort().join(',');
 }
 
 /** Initial catalog filters when opening a deck add section. */
@@ -300,7 +292,7 @@ export function mergeHydratedLegend(deck: DeckState, detail: CardDetail): DeckSt
   };
 }
 
-export function pickPrimaryListItems(items: CardListItem[]): CardListItem[] {
+function pickPrimaryListItems(items: CardListItem[]): CardListItem[] {
   return groupCardListItems(normalizeCardListItems(items));
 }
 
@@ -316,10 +308,6 @@ export function uniqueCardListItems(items: CardListItem[]): CardListItem[] {
   return [...byCardId.values()];
 }
 
-export function primaryVariantNumbers(items: CardListItem[]): string[] {
-  return uniqueCardListItems(items).map((item) => item.variantNumber);
-}
-
 function detailMapFromBatch(details: CardDetail[]): Map<string, CardDetail> {
   const map = new Map<string, CardDetail>();
   for (const detail of details) {
@@ -331,7 +319,7 @@ function detailMapFromBatch(details: CardDetail[]): Map<string, CardDetail> {
   return map;
 }
 
-export function matchesDeckAddSectionType(
+function matchesDeckAddSectionType(
   card: DeckCard,
   section: DeckSectionKey
 ): boolean {
@@ -424,14 +412,6 @@ export function filterDeckAddDisplayCards(
   candidates: DeckCard[]
 ): DeckCard[] {
   return candidates;
-}
-
-export function sectionUsesEligibilityFilter(_section: DeckSectionKey): boolean {
-  return false;
-}
-
-export function sectionNeedsCardDetails(_section: DeckSectionKey): boolean {
-  return false;
 }
 
 export function describeDeckAddEmptyState(args: {

@@ -6,6 +6,7 @@ import {
   type DeckWithSideboard,
 } from '@piltoverarchive/riftbound-deck-codes';
 import { addCardToDeck, createEmptyDeck, sectionForCardType } from '@/lib/deck-card';
+import { mapPool } from '@/lib/asyncPool';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 
 export type VariantResolver = (
@@ -108,9 +109,22 @@ export async function deckFromCodePayload(
   const unresolved: string[] = [];
   const chosen = decoded.chosenChampion;
 
-  const place = async (cardCode: string, count: number, forceSideboard: boolean) => {
+  const entries = [
+    ...decoded.mainDeck.map((entry) => ({ ...entry, forceSideboard: false as const })),
+    ...decoded.sideboard.map((entry) => ({ ...entry, forceSideboard: true as const })),
+  ];
+
+  const uniqueCodes = [...new Set(entries.map((entry) => entry.cardCode))];
+  const resolvedCards = await mapPool(uniqueCodes, 6, async (cardCode) =>
+    Promise.resolve(resolveCard(cardCode))
+  );
+  const cardByCode = new Map(
+    uniqueCodes.map((cardCode, index) => [cardCode, resolvedCards[index] ?? null])
+  );
+
+  const place = (cardCode: string, count: number, forceSideboard: boolean) => {
     let remaining = count;
-    const card = await resolveCard(cardCode);
+    const card = cardByCode.get(cardCode) ?? null;
     if (!card) {
       unresolved.push(cardCode);
       return;
@@ -144,11 +158,9 @@ export async function deckFromCodePayload(
     deck = addCardToDeck(deck, card, { section, count: remaining });
   };
 
-  for (const entry of decoded.mainDeck) {
-    await place(entry.cardCode, entry.count, false);
-  }
-  for (const entry of decoded.sideboard) {
-    await place(entry.cardCode, entry.count, true);
+  // Placement stays sequential — deck state mutates per entry (legend/champion slots).
+  for (const entry of entries) {
+    place(entry.cardCode, entry.count, entry.forceSideboard);
   }
 
   return { deck, unresolved };

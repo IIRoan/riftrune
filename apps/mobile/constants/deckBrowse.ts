@@ -3,6 +3,7 @@ import type {
   DecksListQuery,
   FilterSnapshot,
 } from '@riftbound/contracts';
+import { mapFilter } from '@/lib/iteration';
 
 export type DeckBrowseSort = {
   sort: DeckSortField;
@@ -87,13 +88,15 @@ export type DeckBrowseSetOption = {
 export function deckBrowseSetOptionsFromFilters(
   sets: FilterSnapshot['sets'] | undefined
 ): DeckBrowseSetOption[] {
-  return (sets ?? [])
-    .filter((entry) => (entry.printCount ?? entry.count) > 0)
-    .map((entry) => ({
+  return mapFilter(
+    sets ?? [],
+    (entry) => (entry.printCount ?? entry.count) > 0,
+    (entry) => ({
       code: (entry.code ?? entry.id).toUpperCase(),
       name: entry.name,
       count: entry.printCount ?? entry.count,
-    }));
+    })
+  );
 }
 
 export function deckBrowseSetNameLookup(

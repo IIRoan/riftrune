@@ -1,15 +1,20 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { type VariantProps } from 'class-variance-authority';
 import {
   Children,
   cloneElement,
   createContext,
   useContext,
   useMemo,
-} from "react";
-import { Text, View } from "react-native";
-import { cn } from "@/lib/utils";
+} from 'react';
+import { Text, View } from 'react-native';
+import {
+  badgeIconVariants,
+  badgeTextVariants,
+  badgeVariants,
+} from '@/components/ui/badge.variants';
+import type { BadgeProps } from '@/components/ui/badge.types';
+import { cn } from '@/lib/utils';
 
-// Types
 type InternalBadgeContextType = VariantProps<typeof badgeVariants>;
 
 type BadgeChildProps = {
@@ -17,23 +22,16 @@ type BadgeChildProps = {
   className?: string;
 };
 
-export type BadgeProps = React.ComponentProps<typeof View> &
-  InternalBadgeContextType & {
-    children: React.ReactNode;
-  };
-
-// Context
 const BadgeContext = createContext<InternalBadgeContextType | null>(null);
 
 const useBadgeContext = () => {
   const context = useContext(BadgeContext);
   if (!context) {
-    throw new Error("useBadgeContext must be used within a Badge component");
+    throw new Error('useBadgeContext must be used within a Badge component');
   }
   return context;
 };
 
-// Components
 export const Badge = ({
   children,
   className,
@@ -50,7 +48,7 @@ export const Badge = ({
     <BadgeContext.Provider value={ctx}>
       <View className={cn(badgeVariants({ variant, className }))} {...props}>
         {Children.map(children, (child) => {
-          if (typeof child === "string") {
+          if (typeof child === 'string') {
             return <BadgeText>{child}</BadgeText>;
           }
 
@@ -76,62 +74,17 @@ export const BadgeIcon = ({ children, ...props }: BadgeChildProps) => {
 
   if (!child) {
     if (__DEV__) {
-      throw new Error("BadgeIcon expects a single React element as children");
+      throw new Error('BadgeIcon expects a single React element as children');
     }
     return null;
   }
 
-  return cloneElement(child as React.ReactElement<BadgeChildProps>, {
-    ...props,
-    className: cn(badgeIconVariants(ctx), props.className),
-  });
+  return (
+    <>
+      {cloneElement(child as React.ReactElement<BadgeChildProps>, {
+        ...props,
+        className: cn(badgeIconVariants(ctx), props.className),
+      })}
+    </>
+  );
 };
-
-// Styles
-const badgeVariants = cva(
-  "flex w-fit shrink-0 flex-row items-center justify-center gap-1.5 self-start overflow-hidden whitespace-nowrap rounded-md border border-border px-2 py-1 font-medium text-xs transition-[color,box-shadow] aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
-  {
-    variants: {
-      variant: {
-        default: "border-transparent bg-primary",
-        secondary: "border-transparent bg-secondary",
-        destructive: "border-transparent bg-destructive",
-        outline: "",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
-
-const badgeTextVariants = cva(
-  "whitespace-nowrap font-semibold text-sm leading-none",
-  {
-    variants: {
-      variant: {
-        default: "text-primary-foreground",
-        secondary: "text-secondary-foreground",
-        destructive: "text-white",
-        outline: "text-foreground",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
-
-const badgeIconVariants = cva("size-4", {
-  variants: {
-    variant: {
-      default: "text-primary-foreground",
-      secondary: "text-secondary-foreground",
-      destructive: "text-white",
-      outline: "text-foreground",
-    },
-  },
-  defaultVariants: {
-    variant: "default",
-  },
-});

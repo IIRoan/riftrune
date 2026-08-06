@@ -10,6 +10,7 @@ import {
   type CatalogFilterSegment,
   type CatalogFilters,
 } from '@/constants/catalogFilters';
+import { mapFilter } from '@/lib/iteration';
 
 interface CatalogDesktopFilterBarProps {
   filters: CatalogFilters;
@@ -24,7 +25,9 @@ export function CatalogDesktopFilterBar({
 
   const segments = useMemo(
     () =>
-      CATALOG_FILTER_SEGMENTS.filter((segment) => segment.id !== 'collection').map(
+      mapFilter(
+        CATALOG_FILTER_SEGMENTS,
+        (segment) => segment.id !== 'collection',
         (segment) => ({
           id: segment.id,
           label: segment.label,

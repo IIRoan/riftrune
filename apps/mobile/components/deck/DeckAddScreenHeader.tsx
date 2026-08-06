@@ -1,6 +1,6 @@
 import { ThemedIcon, ChevronLeftIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
-import { deckBuilderHeadlineStats } from '@/components/deck/DeckBuilderStatusStrip';
+import { deckBuilderHeadlineStats } from '@/components/deck/deckBuilderStatusStrip.utils';
 import { Text } from '@/components/ui/text';
 import { getSectionCount } from '@/lib/deck-card';
 import { deckSectionsForFormat, type DeckSectionKey, type DeckState } from '@/lib/deck-types';

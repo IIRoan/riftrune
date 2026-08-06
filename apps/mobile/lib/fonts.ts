@@ -75,4 +75,3 @@ export function textFontStyleForClassName(className?: string): TextStyle {
 }
 
 export const DEFAULT_SANS = FONT_SANS.normal;
-export const DEFAULT_MONO = FONT_MONO.normal;

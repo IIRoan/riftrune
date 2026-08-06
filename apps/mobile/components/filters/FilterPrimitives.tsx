@@ -90,52 +90,6 @@ export function FilterStatChip({
   );
 }
 
-export function FilterSegmentPill({
-  label,
-  active,
-  hasValue,
-  onPress,
-  open,
-}: {
-  label: string;
-  active?: boolean;
-  hasValue?: boolean;
-  onPress?: () => void;
-  open?: boolean;
-}) {
-  return (
-    <Pressable
-      className={cn(
-        'relative h-9 shrink-0 flex-row items-center gap-1.5 rounded-lg border px-3 active:opacity-90',
-        active || hasValue
-          ? 'border-ring/50 bg-card-panel'
-          : 'border-border bg-card'
-      )}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ expanded: open }}
-    >
-      <Text
-        className={cn(
-          'text-[13px] font-semibold leading-none',
-          active || hasValue ? 'text-foreground' : 'text-muted-foreground'
-        )}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-      <ThemedIcon
-        icon={open ? ChevronUpIcon : ChevronDownIcon}
-        size={12}
-        color={active || hasValue ? 'foreground' : 'muted-foreground'}
-      />
-      {hasValue && !active ? (
-        <View className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary" />
-      ) : null}
-    </Pressable>
-  );
-}
-
 type TriggerPosition = {
   pageX: number;
   pageY: number;
@@ -152,7 +106,7 @@ export type FilterPopoverBarItem<T extends string> = {
   maxHeight?: number;
 };
 
-export function FilterPopoverTrigger({
+function FilterPopoverTrigger({
   label,
   hasValue,
   open,

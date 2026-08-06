@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { BattlefieldCardArt } from '@/components/deck/BattlefieldCardArt';
 import { CardArtInfoPreviewButton } from '@/components/deck/CardArtInfoPreviewButton';
-import { resolveSlotImage } from '@/components/deck/DeckCardSlot';
+import { resolveSlotImage } from '@/components/deck/deckCardSlot.utils';
 import { DeckQtyControl } from '@/components/deck/DeckQtyControl';
 import { Text } from '@/components/ui/text';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
@@ -137,6 +137,8 @@ function BattlefieldSlot({
   );
 }
 
+const BATTLEFIELD_SLOT_IDS = ['bf-slot-1', 'bf-slot-2', 'bf-slot-3'] as const;
+
 export function DeckBattlefieldPanel({
   deck,
   readOnly = false,
@@ -182,21 +184,24 @@ export function DeckBattlefieldPanel({
       </View>
 
       <View className="flex-row gap-2">
-        {slots.map((slot, index) => (
-          <BattlefieldSlot
-            key={slot ? `${slot.card.name}-${index}` : `bf-empty-${index}`}
-            index={index}
-            slot={slot}
-            deck={deck}
-            readOnly={readOnly}
-            canAdd={canAdd}
-            imageByVariant={imageByVariant}
-            openSource={openSource}
-            onAdd={onAdd}
-            onRemove={onRemove}
-            onAdjust={onAdjust}
-          />
-        ))}
+        {BATTLEFIELD_SLOT_IDS.map((slotId, slotIndex) => {
+          const slot = slots[slotIndex] ?? null;
+          return (
+            <BattlefieldSlot
+              key={slot ? `${slotId}:${slot.card.name}` : slotId}
+              index={slotIndex}
+              slot={slot}
+              deck={deck}
+              readOnly={readOnly}
+              canAdd={canAdd}
+              imageByVariant={imageByVariant}
+              openSource={openSource}
+              onAdd={onAdd}
+              onRemove={onRemove}
+              onAdjust={onAdjust}
+            />
+          );
+        })}
       </View>
     </View>
   );

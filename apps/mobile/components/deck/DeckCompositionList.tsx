@@ -2,6 +2,7 @@ import { ThemedIcon, ImageIcon, MinusIcon, PlusIcon } from '@/components/icons';
 import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
+import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckBuilderStatusStrip } from '@/components/deck/DeckBuilderStatusStrip';
@@ -400,7 +401,7 @@ export function DeckCompositionList({
 
       <ScrollView
         className="min-h-0 flex-1"
-        contentContainerStyle={{ paddingBottom, paddingHorizontal: 12, paddingTop: 4 }}
+        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 4 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -446,6 +447,7 @@ export function DeckCompositionList({
             No sideboard cards
           </Text>
         )}
+        <ListBottomSpacer height={paddingBottom} />
       </ScrollView>
     </View>
   );

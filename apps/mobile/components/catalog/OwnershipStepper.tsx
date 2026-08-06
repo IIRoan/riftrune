@@ -1,8 +1,9 @@
 import { MinusIcon, PlusIcon, ThemedIcon } from '@/components/icons';
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import { useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
 import { Text } from '@/components/ui/text';
+import type { VariantPickerOption } from '@/components/ui/VariantPickerSheet';
 import {
   buildPrintingPickerOptions,
   getRemovePrintingPickerOptions,
@@ -32,6 +33,19 @@ interface OwnershipStepperProps {
   simpleAdd?: boolean;
   onAdd: (selectionId?: string) => void;
   onRemove: (selectionId?: string) => void;
+}
+
+function wrapWithPrintingPicker(
+  title: string,
+  options: VariantPickerOption[],
+  onSelect: (id: string) => void,
+  node: ReactElement<{ onPress?: () => void; disabled?: boolean }>
+) {
+  return (
+    <PrintingPickerMenu title={title} options={options} onSelect={onSelect}>
+      {node}
+    </PrintingPickerMenu>
+  );
 }
 
 export function OwnershipStepper({
@@ -76,17 +90,6 @@ export function OwnershipStepper({
   /** Shared footprint so Add ↔ owned doesn't jump in detail rows. */
   const controlWidth = compact && !gridSlot ? 'min-w-[5.75rem]' : undefined;
 
-  const wrapWithPicker = (
-    title: string,
-    options: typeof pickerOptions,
-    onSelect: (id: string) => void,
-    node: React.ReactElement<{ onPress?: () => void; disabled?: boolean }>
-  ) => (
-    <PrintingPickerMenu title={title} options={options} onSelect={onSelect}>
-      {node}
-    </PrintingPickerMenu>
-  );
-
   const addDefaultFinish = () => {
     if (pinnedSelectionId) {
       onAdd(pinnedSelectionId);
@@ -126,7 +129,9 @@ export function OwnershipStepper({
       </Pressable>
     );
 
-    return showAddPicker ? wrapWithPicker(title, pickerOptions, onAdd, button) : button;
+    return showAddPicker
+      ? wrapWithPrintingPicker(title, pickerOptions, onAdd, button)
+      : button;
   };
 
   const renderStepButton = (
@@ -159,7 +164,7 @@ export function OwnershipStepper({
     );
 
     return showPicker
-      ? wrapWithPicker(pickerTitle, pickerOptionsFiltered, onSelect, button)
+      ? wrapWithPrintingPicker(pickerTitle, pickerOptionsFiltered, onSelect, button)
       : button;
   };
 

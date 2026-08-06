@@ -1,5 +1,6 @@
 import type { CardListItem } from '@riftbound/contracts';
 import type { CatalogSort } from '@/constants/catalogSort';
+import { toMembershipSet } from '@/lib/iteration';
 import { getCardMaxMarketPrice, getCardPrintings } from '@/utils/variants';
 
 export function tokenizeSearchQuery(raw: string): string[] {
@@ -11,6 +12,7 @@ export function tokenizeSearchQuery(raw: string): string[] {
 }
 
 function buildSearchBlob(card: CardListItem): string {
+  const printings = getCardPrintings(card);
   const parts = [
     card.name,
     card.variantNumber,
@@ -18,10 +20,21 @@ function buildSearchBlob(card: CardListItem): string {
     card.setCode,
     card.rarity,
     ...card.colors,
-    ...getCardPrintings(card).map((printing) => printing.variantNumber),
-    ...getCardPrintings(card).map((printing) => printing.variantLabel),
   ];
+  for (const printing of printings) {
+    parts.push(printing.variantNumber, printing.variantLabel);
+  }
   return parts.join(' ').toLowerCase();
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function matchesAllTokens(blob: string, tokens: ReadonlySet<string>): boolean {
+  if (tokens.size === 0) return true;
+  const pattern = [...tokens].map((token) => `(?=.*${escapeRegExp(token)})`).join('');
+  return new RegExp(pattern).test(blob);
 }
 
 function relevanceScore(card: CardListItem, query: string): number {
@@ -36,12 +49,6 @@ function relevanceScore(card: CardListItem, query: string): number {
   if (name.includes(trimmed)) return 2;
   if (variantNumber.includes(trimmed)) return 3;
   return 4;
-}
-
-function matchesAllTokens(card: CardListItem, tokens: string[]): boolean {
-  if (tokens.length === 0) return true;
-  const blob = buildSearchBlob(card);
-  return tokens.every((token) => blob.includes(token));
 }
 
 function compareBySort(a: CardListItem, b: CardListItem, sort: CatalogSort): number {
@@ -82,8 +89,8 @@ export function searchCatalogItems(
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  const tokens = tokenizeSearchQuery(trimmed);
-  const matches = items.filter((card) => matchesAllTokens(card, tokens));
+  const tokens = toMembershipSet(tokenizeSearchQuery(trimmed));
+  const matches = items.filter((card) => matchesAllTokens(buildSearchBlob(card), tokens));
 
   const sorted = matches.slice().sort((a, b) => {
     if (sort.sortBy === 'price') {

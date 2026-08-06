@@ -2,6 +2,7 @@ import { ThemedIcon, LibraryIcon } from '@/components/icons';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { AppLoader } from '@/components/ui/app-loader';
+import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import {
@@ -26,6 +27,7 @@ import {
   defaultDeckAddCatalogFilters,
   defaultDeckAddSearch,
 } from '@/lib/deck-add-catalog';
+import { publishDeckBuilderMobileFilterChrome } from '@/lib/deckBuilderMobileFilterChrome';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import { addCardToDeck, changeDeckCardQty } from '@/lib/deck-card';
 import { isCardEligibleForSection } from '@/lib/deck-eligibility';
@@ -52,9 +54,6 @@ interface DeckBuilderCatalogPanelProps {
   section?: BuilderCatalogSection;
   onSectionChange?: (section: BuilderCatalogSection) => void;
   paddingBottom?: number;
-  onMobileFilterChromeChange?: (
-    chrome: { filters: CatalogFilters; onOpen: () => void } | null
-  ) => void;
 }
 
 const CatalogTile = memo(function CatalogTile({
@@ -99,32 +98,132 @@ const CatalogTile = memo(function CatalogTile({
   );
 });
 
+const CatalogGridRow = memo(function CatalogGridRow({
+  item,
+  deck,
+  section,
+  tileWidth,
+  gridCellStyle,
+  readOnly,
+  collectionByName,
+  onAddOne,
+  onRemoveOne,
+  onOpenCard,
+}: {
+  item: DeckCard;
+  deck: DeckState;
+  section: BuilderCatalogSection;
+  tileWidth: number;
+  gridCellStyle: { paddingHorizontal: number; marginBottom: number };
+  readOnly: boolean;
+  collectionByName?: ReadonlyMap<string, number>;
+  onAddOne: (candidate: DeckCard) => void;
+  onRemoveOne: (candidate: DeckCard) => void;
+  onOpenCard: (variantNumber: string) => void;
+}) {
+  const count = getDeckCandidateCount(deck, section, item);
+  const eligibility = isCardEligibleForSection({
+    deck,
+    section,
+    candidateCard: item,
+  });
+  const blocked = !readOnly && !eligibility.eligible && count === 0;
+  const blockedLabel = eligibility.reason?.includes('copy')
+    ? 'Max copies'
+    : 'Unavailable';
+  const illegal = isCardTournamentIllegal(item, deck);
+  const owned =
+    count > 0 && collectionByName
+      ? ownedCountForCardName(item.name, collectionByName)
+      : null;
+  const handleAdd = useCallback(() => onAddOne(item), [onAddOne, item]);
+  const handleRemove = useCallback(() => onRemoveOne(item), [onRemoveOne, item]);
+  const handleOpen = useCallback(
+    () => onOpenCard(item.variantNumber),
+    [onOpenCard, item.variantNumber]
+  );
+
+  return (
+    <View style={gridCellStyle} collapsable={false}>
+      <CatalogTile
+        tileWidth={tileWidth}
+        candidate={item}
+        count={count}
+        owned={owned}
+        blocked={blocked}
+        blockedLabel={blockedLabel}
+        illegal={illegal}
+        readOnly={readOnly}
+        onAdd={handleAdd}
+        onRemove={handleRemove}
+        onOpenCard={handleOpen}
+      />
+    </View>
+  );
+});
+
 export function DeckBuilderCatalogPanel({
   deck,
   readOnly = false,
   collectionByName,
   onPersist,
-  section: controlledSection,
+  section: controlledSection = 'mainDeck',
   onSectionChange: _onSectionChange,
   paddingBottom = 0,
-  onMobileFilterChromeChange,
 }: DeckBuilderCatalogPanelProps) {
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
+  const legendKey = deck.legend?.variantNumber ?? '';
+
+  const onLayout = useCallback((event: LayoutChangeEvent) => {
+    const next = Math.round(event.nativeEvent.layout.width);
+    if (next > 0) setMeasuredWidth((prev) => (prev === next ? prev : next));
+  }, []);
+
+  useEffect(() => () => publishDeckBuilderMobileFilterChrome(null), []);
+
+  return (
+    <View className="min-h-0 flex-1 gap-2" onLayout={onLayout}>
+      <DeckBuilderCatalogBrowse
+        key={`${controlledSection}-${legendKey}`}
+        deck={deck}
+        readOnly={readOnly}
+        collectionByName={collectionByName}
+        onPersist={onPersist}
+        section={controlledSection}
+        measuredWidth={measuredWidth}
+        paddingBottom={paddingBottom}
+      />
+    </View>
+  );
+}
+
+function DeckBuilderCatalogBrowse({
+  deck,
+  readOnly,
+  collectionByName,
+  onPersist,
+  section,
+  measuredWidth,
+  paddingBottom,
+}: {
+  deck: DeckState;
+  readOnly: boolean;
+  collectionByName?: ReadonlyMap<string, number>;
+  onPersist: (
+    deck: DeckState | ((previous: DeckState) => DeckState),
+    options?: { immediate?: boolean }
+  ) => void;
+  section: BuilderCatalogSection;
+  measuredWidth: number | null;
+  paddingBottom: number;
+}) {
   const router = useRouter();
   const isMobile = useMobileLayout();
-  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
   const { tileWidth, gap, numColumns } = useResponsiveColumns('grid', {
     measuredWidth,
     fillAvailable: true,
   });
 
-  const [internalSection, setInternalSection] = useState<BuilderCatalogSection>('mainDeck');
-  const section = controlledSection ?? internalSection;
-
-  useEffect(() => {
-    if (controlledSection != null) setInternalSection(controlledSection);
-  }, [controlledSection]);
-
-  const legendKey = deck.legend?.variantNumber ?? '';
   const [query, setQuery] = useState(() => defaultDeckAddSearch(section, deck));
   const debouncedQuery = useDebounce(query.trim(), 300);
   const [catalogFilters, setCatalogFilters] = useState<CatalogFilters>(() =>
@@ -136,36 +235,24 @@ export function DeckBuilderCatalogPanel({
     setCatalogFilters(sanitizeCatalogFilters(next));
   }, []);
 
-  useEffect(() => {
-    setCatalogFilters(defaultDeckAddCatalogFilters(section, deck));
-    setQuery(defaultDeckAddSearch(section, deck));
-  }, [section, legendKey]);
+  const openFilterSheet = useCallback(() => {
+    setFilterSheetOpen(true);
+  }, []);
+
+  const mobileFilterChrome = useMemo(
+    () =>
+      readOnly || !isMobile
+        ? null
+        : { filters: catalogFilters, onOpen: openFilterSheet },
+    [catalogFilters, isMobile, openFilterSheet, readOnly]
+  );
+  publishDeckBuilderMobileFilterChrome(mobileFilterChrome);
 
   const catalog = useDeckAddCatalog(deck, section, debouncedQuery, catalogFilters, {
     enabled: !readOnly,
   });
   const membershipRevision = deckMembershipRevision(deck);
   const filterActive = !readOnly && catalogFiltersActive(catalogFilters);
-
-  const openFilterSheet = useCallback(() => {
-    setFilterSheetOpen(true);
-  }, []);
-
-  useEffect(() => {
-    if (!onMobileFilterChromeChange) return;
-    if (readOnly || !isMobile) {
-      onMobileFilterChromeChange(null);
-      return;
-    }
-    onMobileFilterChromeChange({ filters: catalogFilters, onOpen: openFilterSheet });
-    return () => onMobileFilterChromeChange(null);
-  }, [
-    catalogFilters,
-    isMobile,
-    onMobileFilterChromeChange,
-    openFilterSheet,
-    readOnly,
-  ]);
 
   const browseCards = useMemo(() => {
     if (!readOnly) return [] as DeckCard[];
@@ -186,11 +273,6 @@ export function DeckBuilderCatalogPanel({
       : 'Search this deck'
     : catalog.sectionMeta.placeholder;
   const contextLine = readOnly ? null : catalog.sectionMeta.contextLine;
-
-  const onLayout = useCallback((event: LayoutChangeEvent) => {
-    const next = Math.round(event.nativeEvent.layout.width);
-    if (next > 0) setMeasuredWidth((prev) => (prev === next ? prev : next));
-  }, []);
 
   const handleAddOne = useCallback(
     (candidate: DeckCard) => {
@@ -218,8 +300,13 @@ export function DeckBuilderCatalogPanel({
     [deck, onPersist, readOnly, section]
   );
 
-  // FlashList v2 grids have no columnWrapperStyle — the gap lives inside the
-  // cell and the list frame is widened by one gap to keep tile edges flush.
+  const handleOpenCard = useCallback(
+    (variantNumber: string) => {
+      openCard(router, variantNumber, 'modal');
+    },
+    [router]
+  );
+
   const gridCellStyle = useMemo(
     () => ({ paddingHorizontal: gap / 2, marginBottom: gap }),
     [gap]
@@ -230,50 +317,28 @@ export function DeckBuilderCatalogPanel({
   );
 
   const renderItem = useCallback<ListRenderItem<DeckCard>>(
-    ({ item }) => {
-      const count = getDeckCandidateCount(deck, section, item);
-      const eligibility = isCardEligibleForSection({
-        deck,
-        section,
-        candidateCard: item,
-      });
-      const blocked = !readOnly && !eligibility.eligible && count === 0;
-      const blockedLabel = eligibility.reason?.includes('copy')
-        ? 'Max copies'
-        : 'Unavailable';
-      const illegal = isCardTournamentIllegal(item, deck);
-      const owned =
-        count > 0 && collectionByName
-          ? ownedCountForCardName(item.name, collectionByName)
-          : null;
-
-      return (
-        <View style={gridCellStyle} collapsable={false}>
-          <CatalogTile
-            tileWidth={tileWidth}
-            candidate={item}
-            count={count}
-            owned={owned}
-            blocked={blocked}
-            blockedLabel={blockedLabel}
-            illegal={illegal}
-            readOnly={readOnly}
-            onAdd={() => handleAddOne(item)}
-            onRemove={() => handleRemoveOne(item)}
-            onOpenCard={() => openCard(router, item.variantNumber, 'modal')}
-          />
-        </View>
-      );
-    },
+    ({ item }) => (
+      <CatalogGridRow
+        item={item}
+        deck={deck}
+        section={section}
+        tileWidth={tileWidth}
+        gridCellStyle={gridCellStyle}
+        readOnly={readOnly}
+        collectionByName={collectionByName}
+        onAddOne={handleAddOne}
+        onRemoveOne={handleRemoveOne}
+        onOpenCard={handleOpenCard}
+      />
+    ),
     [
       collectionByName,
       deck,
       gridCellStyle,
       handleAddOne,
+      handleOpenCard,
       handleRemoveOne,
-      membershipRevision,
       readOnly,
-      router,
       section,
       tileWidth,
     ]
@@ -310,7 +375,7 @@ export function DeckBuilderCatalogPanel({
   );
 
   return (
-    <View className="min-h-0 flex-1 gap-2" onLayout={onLayout}>
+    <>
       <View className="shrink-0 gap-1.5">
         <SearchInput
           value={query}
@@ -346,11 +411,14 @@ export function DeckBuilderCatalogPanel({
         extraData={membershipRevision}
         ListEmptyComponent={showBlockingLoader ? null : emptyState}
         ListFooterComponent={
-          !readOnly && catalog.isFetchingNextPage ? (
-            <View className="items-center py-4">
-              <AppLoader size="sm" />
-            </View>
-          ) : null
+          <>
+            {!readOnly && catalog.isFetchingNextPage ? (
+              <View className="items-center py-4">
+                <AppLoader size="sm" />
+              </View>
+            ) : null}
+            <ListBottomSpacer height={paddingBottom} />
+          </>
         }
         onEndReached={() => {
           if (readOnly) return;
@@ -361,7 +429,6 @@ export function DeckBuilderCatalogPanel({
         onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom,
           flexGrow: displayCards.length === 0 ? 1 : undefined,
         }}
         keyboardShouldPersistTaps="handled"
@@ -382,6 +449,6 @@ export function DeckBuilderCatalogPanel({
           onFiltersChange={applyCatalogFilters}
         />
       ) : null}
-    </View>
+    </>
   );
 }

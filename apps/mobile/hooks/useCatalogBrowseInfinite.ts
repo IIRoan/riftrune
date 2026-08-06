@@ -4,6 +4,7 @@ import { CATALOG_NETWORK_PAGE_SIZE } from '@/lib/catalog-page-size';
 import { api } from '@/src/api/client';
 import { cardQueryKeys, catalogQueryKeys } from '@/src/api/queryKeys';
 import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
+import { useValueChangeFlag } from '@/hooks/useValueChangeFlag';
 import {
   getInMemoryCatalogIndex,
   mergeCatalogIndexItems,
@@ -25,6 +26,15 @@ import { sortCatalogItems } from '@/utils/catalogSearch';
 
 const STALE_MS = 10 * 60 * 1000;
 
+function browseResetSignature(
+  indexReady: boolean,
+  pageSize: number,
+  filters: CatalogFilters,
+  sort: CatalogSort
+): string {
+  return `${indexReady}:${pageSize}:${sort.sortBy}:${sort.dir}:${JSON.stringify(filters)}`;
+}
+
 export function useCatalogBrowseInfinite(
   pageSize: number,
   filters: CatalogFilters = DEFAULT_CATALOG_FILTERS,
@@ -35,10 +45,20 @@ export function useCatalogBrowseInfinite(
   const catalogIndex = useCatalogIndex();
   const catalogItems = getCatalogIndexItems(catalogIndex.data);
   const indexReady = catalogItems.length > 0;
-  const [visibleCount, setVisibleCount] = useState(pageSize);
   const ownedOnly = filters.collection === 'owned';
   // Ownership map changes often while scrolling; only the owned filter needs it.
   const ownershipForFilter = ownedOnly ? collectionByVariant : EMPTY_OWNERSHIP;
+  const resetSignature = browseResetSignature(indexReady, pageSize, filters, sort);
+  const resetChanged = useValueChangeFlag(resetSignature);
+  const [visibleCount, setVisibleCount] = useState(pageSize);
+
+  if (resetChanged) {
+    if (visibleCount !== pageSize) {
+      setVisibleCount(pageSize);
+    }
+  } else if (pageSize > visibleCount) {
+    setVisibleCount(pageSize);
+  }
 
   const allBrowseItems = useMemo(() => {
     if (!indexReady) return null;
@@ -58,19 +78,8 @@ export function useCatalogBrowseInfinite(
     filters,
     ownedOnly,
     ownershipForFilter,
-    sort.sortBy,
-    sort.dir,
+    sort,
   ]);
-
-  useEffect(() => {
-    setVisibleCount((count) => Math.max(count, pageSize));
-  }, [pageSize]);
-
-  useEffect(() => {
-    if (!indexReady) return;
-    // Reset to a fresh page of the new order — keep at least one viewport loaded.
-    setVisibleCount(pageSize);
-  }, [indexReady, pageSize, filters, sort.sortBy, sort.dir]);
 
   // Background reconciliation only. UI stays on the local index so sort/filter
   // switches stay synchronous; network pages warm prices without blocking paint.

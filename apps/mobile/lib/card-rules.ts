@@ -15,6 +15,27 @@ export type CardRulesPart =
   | { type: 'tap'; value: string }
   | { type: 'rune'; value: string };
 
+export function cardRulesPartKey(part: CardRulesPart): string {
+  switch (part.type) {
+    case 'text':
+      return `text:${part.value}`;
+    case 'keyword':
+      return `kw:${part.keywordBase}:${part.display}`;
+    case 'stat':
+      return `stat:${part.value}`;
+    case 'domain':
+      return `domain:${part.value}`;
+    case 'energy':
+      return `energy:${part.value}`;
+    case 'might':
+      return 'might';
+    case 'tap':
+      return 'tap';
+    case 'rune':
+      return 'rune';
+  }
+}
+
 export type InlineTextRunPart =
   | { type: 'text'; value: string }
   | {
@@ -114,9 +135,6 @@ export function isKeywordBannerCostPart(
   return part.type === 'energy' || part.type === 'domain' || part.type === 'rune';
 }
 
-/** @deprecated Prefer isKeywordBannerCostPart */
-export const isRepeatCostPart = isKeywordBannerCostPart;
-
 /**
  * Collect energy / domain / rune costs that follow a banner keyword
  * (REPEAT, EQUIP) until reminder text or another token.
@@ -144,9 +162,6 @@ export function takeKeywordBannerCosts(
 
   return { costs, nextIndex: index };
 }
-
-/** @deprecated Prefer takeKeywordBannerCosts */
-export const takeRepeatCosts = takeKeywordBannerCosts;
 
 export function parseCardRules(text: string): CardRulesPart[] {
   const parts: CardRulesPart[] = [];

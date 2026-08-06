@@ -14,6 +14,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { CardDetail, VariantDetail } from '@riftbound/contracts';
 import { isCardBannedAt } from '@riftbound/contracts';
+import { getModalShellWidth } from '@/components/cards/cardModalLayout';
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { PrintingPreviewStrip } from '@/components/cards/PrintingPreviewStrip';
 import { CollectionAddButton, CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
@@ -58,7 +59,6 @@ import type { CardOpenSource } from '@/utils/cardNavigation';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const SHELL_MAX_WIDTH = 860;
 const CARD_WIDTH_DESKTOP = 300;
 const CARD_IMAGE_PAD = 20;
 const CARD_ASPECT = 3.5 / 2.5;
@@ -623,11 +623,4 @@ export function CardModalError({ onClose }: { onClose: () => void }) {
       </View>
     </CardModalOverlay>
   );
-}
-
-export function getModalShellWidth(windowWidth: number): number {
-  if (windowWidth < MODAL_BREAKPOINT) {
-    return Math.min(windowWidth - OVERLAY_PAD_X_NARROW, 420);
-  }
-  return Math.min(SHELL_MAX_WIDTH, windowWidth - OVERLAY_PAD_X_WIDE);
 }

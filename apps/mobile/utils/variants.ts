@@ -434,43 +434,6 @@ export function groupCardListItems(items: CardListItem[]): CardListItem[] {
   });
 }
 
-/** Merge all variant rows that belong to the same logical card. */
-export function groupCatalogListItems(items: CardListItem[]): CardListItem[] {
-  const groups = new Map<
-    string,
-    { printings: CardListPrinting[]; rows: CardListItem[] }
-  >();
-
-  for (const item of items) {
-    const existing = groups.get(item.cardId);
-    if (!existing) {
-      groups.set(item.cardId, {
-        printings: [...getCardPrintings(item)],
-        rows: [item],
-      });
-      continue;
-    }
-
-    existing.rows.push(item);
-    for (const row of getCardPrintings(item)) {
-      existing.printings.push(row);
-    }
-  }
-
-  return Array.from(groups.values()).map(({ printings, rows }) => {
-    const sorted = sortPrintings(dedupeFinishPrintings(printings));
-    const primary = sorted.find((p) => !p.isFoil) ?? sorted[0];
-    const base =
-      rows.find((r) => r.variantNumber === primary?.variantNumber) ?? rows[0];
-    return {
-      ...base,
-      variantNumber: primary?.variantNumber ?? base.variantNumber,
-      priceEur: primary?.priceEur ?? base.priceEur,
-      printings: sorted,
-    };
-  });
-}
-
 export type VariantPriceLike = {
   market: number | null;
   low: number | null;
@@ -630,16 +593,6 @@ export function formatMarketTrend(price: CardListItem['priceEur']): string {
   if (!price?.market || !price.avg7d) return 'Flat';
   const { changePercent, trend } = computeTrend(price.market, price.avg7d);
   return formatTrendLabel(changePercent, trend);
-}
-
-export function bestCardTrend(card: CardListItem): string {
-  const printings = getCardPrintings(card);
-  const trends = printings.map((p) => formatMarketTrend(p.priceEur));
-  const up = trends.filter((t) => t.startsWith('+'));
-  const down = trends.filter((t) => t.startsWith('-'));
-  if (up.length > 0) return up[0];
-  if (down.length > 0) return down[0];
-  return trends[0] ?? 'Flat';
 }
 
 export function totalOwnedForCard(

@@ -1,14 +1,14 @@
+import { Asset } from 'expo-asset';
 import { Image } from 'expo-image';
 import type { FilterSnapshot } from '@riftbound/contracts';
 import type { ImageSourcePropType } from 'react-native';
-import { Image as RNImage } from 'react-native';
 import { allFilterPanelIconSources } from '@/constants/gameAssets';
 import { markSessionImageLoaded } from '@/lib/imageSessionCache';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 
 function bundledAssetUri(source: ImageSourcePropType): string | null {
   if (typeof source === 'number') {
-    return RNImage.resolveAssetSource(source).uri;
+    return Asset.fromModule(source).uri;
   }
   if (typeof source === 'object' && source && 'uri' in source && typeof source.uri === 'string') {
     return source.uri;

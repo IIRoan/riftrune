@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useEffect } from 'react';
-import { Platform, useWindowDimensions, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,12 +9,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { Mode } from '@/components/auth/auth-types';
+import { AUTH_WALLPAPERS } from '@/components/auth/authBackdrop.constants';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
-
-export const AUTH_WALLPAPERS = {
-  'sign-in': require('@/assets/wallpapers/wallpaper2.jpg'),
-  'sign-up': require('@/assets/wallpapers/wallpaper.jpg'),
-} as const;
 
 const TRANSITION_MS = 320;
 
@@ -93,9 +89,4 @@ export function AuthBackdrop({ mode, variant = 'hero' }: AuthBackdropProps) {
       )}
     </View>
   );
-}
-
-export function useAuthWideLayout() {
-  const { width } = useWindowDimensions();
-  return Platform.OS === 'web' && width >= 768;
 }

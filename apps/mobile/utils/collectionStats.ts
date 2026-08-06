@@ -1,5 +1,6 @@
 import type { ImageSourcePropType } from 'react-native';
 import type { CollectionEntry } from '@/services/collectionService';
+import { mapFilter } from '@/lib/iteration';
 
 export type ApiSetRow = {
   code: string;
@@ -90,13 +91,15 @@ export function computeTypeBreakdown(
     namesByType.set(entry.type, names);
   }
 
-  return apiTypes
-    .filter((type) => type.name !== 'Card')
-    .map((type) => ({
+  return mapFilter(
+    apiTypes,
+    (type) => type.name !== 'Card',
+    (type) => ({
       name: type.name,
       owned: namesByType.get(type.name)?.size ?? 0,
       total: type.count,
-    }));
+    })
+  );
 }
 
 export function computeRarityBreakdown(
@@ -195,14 +198,4 @@ export function mergeSetStats(
   }
 
   return merged;
-}
-
-export function countUniqueFoilVariants(collection: CollectionEntry[]): number {
-  const foilVariants = new Set<string>();
-  for (const entry of collection) {
-    if (entry.quantity > 0 && entry.isFoil) {
-      foilVariants.add(entry.variantNumber);
-    }
-  }
-  return foilVariants.size;
 }

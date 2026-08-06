@@ -2,20 +2,26 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import { AppLoader } from '@/components/ui/app-loader';
-import { DomainIcon, RarityIcon, TypeIcon } from '@/components/riftbound/CardIcons';
+import { RarityIcon } from '@/components/riftbound/CardIcons';
 import {
   FilterChipGrid,
   FilterOptionChip,
 } from '@/components/filters/MobileFilterSheet';
-import {
-  FilterStatChip,
-  FilterToggleRow,
-} from '@/components/filters/FilterPrimitives';
+import { FilterToggleRow } from '@/components/filters/FilterPrimitives';
 import { Text } from '@/components/ui/text';
+import { CatalogFilterCollectionPanel } from '@/components/catalog/CatalogFilterCollectionPanel';
+import { CatalogFilterColorsPanel } from '@/components/catalog/CatalogFilterColorsPanel';
+import { CatalogFilterSetsPanel } from '@/components/catalog/CatalogFilterSetsPanel';
+import { CatalogFilterStatsPanel } from '@/components/catalog/CatalogFilterStatsPanel';
 import {
-  CATALOG_ENERGY_VALUES,
-  CATALOG_MIGHT_VALUES,
-  CATALOG_POWER_VALUES,
+  CatalogFilterNamedChipPanel,
+  CatalogFilterTypesPanel,
+} from '@/components/catalog/CatalogFilterTypesPanel';
+import {
+  toggleCatalogFilterValue,
+  type CatalogFilterPresentation,
+} from '@/components/catalog/catalogFilterPanels.shared';
+import {
   isCatalogBrowsableType,
   sanitizeCatalogFilters,
   type CatalogFilterSegment,
@@ -26,12 +32,7 @@ import {
   prefetchCatalogFilters,
   useFiltersData,
 } from '@/hooks/useFiltersData';
-
-function toggleValue(values: string[], value: string): string[] {
-  return values.includes(value) ? values.filter((entry) => entry !== value) : [...values, value];
-}
-
-export type CatalogFilterPresentation = 'list' | 'mobile';
+import { mapFilter, toMembershipSet } from '@/lib/iteration';
 
 export function useCatalogFilterOptions() {
   const queryClient = useQueryClient();
@@ -57,13 +58,15 @@ export function useCatalogFilterOptions() {
 
   const setOptions = useMemo(
     () =>
-      (snapshot?.sets ?? [])
-        .filter((entry) => (entry.printCount ?? entry.count) > 0)
-        .map((entry) => ({
+      mapFilter(
+        snapshot?.sets ?? [],
+        (entry) => (entry.printCount ?? entry.count) > 0,
+        (entry) => ({
           code: entry.code ?? entry.id.toUpperCase(),
           name: entry.name,
           count: entry.printCount ?? entry.count,
-        })),
+        })
+      ),
     [snapshot?.sets]
   );
 
@@ -112,11 +115,32 @@ export function CatalogFilterSegmentPanel({
     rarityOptions,
   } = useCatalogFilterOptions();
 
+  const selectedColors = useMemo(() => toMembershipSet(filters.colors), [filters.colors]);
+  const selectedSets = useMemo(() => toMembershipSet(filters.sets), [filters.sets]);
+  const selectedTypes = useMemo(() => toMembershipSet(filters.types), [filters.types]);
+  const selectedSupertypes = useMemo(
+    () => toMembershipSet(filters.supertypes),
+    [filters.supertypes]
+  );
+  const selectedVariants = useMemo(
+    () => toMembershipSet(filters.variants),
+    [filters.variants]
+  );
+  const selectedRarities = useMemo(
+    () => toMembershipSet(filters.rarities),
+    [filters.rarities]
+  );
+
   const update = (patch: Partial<CatalogFilters>) => {
     onFiltersChange(sanitizeCatalogFilters({ ...filters, ...patch }));
   };
 
-  const isMobile = presentation === 'mobile';
+  const commonProps = {
+    filters,
+    compact,
+    presentation,
+    onUpdate: update,
+  };
 
   if (isLoading) {
     return (
@@ -146,219 +170,72 @@ export function CatalogFilterSegmentPanel({
 
   switch (segment) {
     case 'collection':
-      return (
-        <View className="gap-0.5">
-          <FilterToggleRow
-            label="All cards"
-            subtitle="No collection filter"
-            active={filters.collection === 'all'}
-            onPress={() => update({ collection: 'all' })}
-            compact={compact}
-          />
-          <FilterToggleRow
-            label="Owned"
-            subtitle="Cards in your collection"
-            active={filters.collection === 'owned'}
-            onPress={() =>
-              update({
-                collection: filters.collection === 'owned' ? 'all' : 'owned',
-              })
-            }
-            compact={compact}
-          />
-        </View>
-      );
+      return <CatalogFilterCollectionPanel {...commonProps} />;
 
     case 'colors':
-      if (colorOptions.length === 0) {
-        return (
-          <Text className="py-6 text-center text-sm text-archive-subtle">
-            No color filters available.
-          </Text>
-        );
-      }
-      if (isMobile) {
-        return (
-          <FilterChipGrid>
-            {colorOptions.map((color) => (
-              <FilterOptionChip
-                key={color.id}
-                label={color.name}
-                active={filters.colors.includes(color.name)}
-                onPress={() => update({ colors: toggleValue(filters.colors, color.name) })}
-                leading={<DomainIcon name={color.name} imageUrl={color.imageUrl} size={18} />}
-              />
-            ))}
-          </FilterChipGrid>
-        );
-      }
       return (
-        <View className="gap-0.5">
-          {colorOptions.map((color) => (
-            <FilterToggleRow
-              key={color.id}
-              label={color.name}
-              subtitle={`${color.count.toLocaleString()} cards`}
-              active={filters.colors.includes(color.name)}
-              onPress={() => update({ colors: toggleValue(filters.colors, color.name) })}
-              leading={<DomainIcon name={color.name} imageUrl={color.imageUrl} size={20} />}
-              compact={compact}
-            />
-          ))}
-        </View>
+        <CatalogFilterColorsPanel
+          {...commonProps}
+          colorOptions={colorOptions}
+          selectedColors={selectedColors}
+        />
       );
 
     case 'sets':
-      if (setOptions.length === 0) {
-        return (
-          <Text className="py-6 text-center text-sm text-archive-subtle">
-            No set filters available.
-          </Text>
-        );
-      }
-      if (isMobile) {
-        return (
-          <FilterChipGrid>
-            {setOptions.map((set) => (
-              <FilterOptionChip
-                key={set.code}
-                label={set.code}
-                active={filters.sets.includes(set.code)}
-                onPress={() => update({ sets: toggleValue(filters.sets, set.code) })}
-                accessibilityLabel={`${set.name} (${set.code})`}
-              />
-            ))}
-          </FilterChipGrid>
-        );
-      }
       return (
-        <View className="gap-0.5">
-          {setOptions.map((set) => (
-            <FilterToggleRow
-              key={set.code}
-              label={set.name}
-              subtitle={`${set.code} · ${set.count.toLocaleString()} printings`}
-              active={filters.sets.includes(set.code)}
-              onPress={() => update({ sets: toggleValue(filters.sets, set.code) })}
-              compact={compact}
-            />
-          ))}
-        </View>
+        <CatalogFilterSetsPanel
+          {...commonProps}
+          setOptions={setOptions}
+          selectedSets={selectedSets}
+        />
       );
 
     case 'types':
-      if (isMobile) {
-        return (
-          <FilterChipGrid>
-            {typeOptions.map((type) => (
-              <FilterOptionChip
-                key={type.id}
-                label={type.name}
-                active={filters.types.includes(type.name)}
-                onPress={() => update({ types: toggleValue(filters.types, type.name) })}
-                leading={<TypeIcon type={type.name} size={16} tone="foreground" />}
-              />
-            ))}
-          </FilterChipGrid>
-        );
-      }
       return (
-        <View className="gap-0.5">
-          {typeOptions.map((type) => (
-            <FilterToggleRow
-              key={type.id}
-              label={type.name}
-              subtitle={`${type.count.toLocaleString()} cards`}
-              active={filters.types.includes(type.name)}
-              onPress={() => update({ types: toggleValue(filters.types, type.name) })}
-              leading={<TypeIcon type={type.name} size={20} tone="foreground" />}
-              compact={compact}
-            />
-          ))}
-        </View>
+        <CatalogFilterTypesPanel
+          {...commonProps}
+          typeOptions={typeOptions}
+          selectedTypes={selectedTypes}
+        />
       );
 
     case 'supertypes':
-      if (supertypeOptions.length === 0) {
-        return (
-          <Text className="py-6 text-center text-sm text-archive-subtle">
-            No supertype filters available.
-          </Text>
-        );
-      }
-      if (isMobile) {
-        return (
-          <FilterChipGrid>
-            {supertypeOptions.map((entry) => (
-              <FilterOptionChip
-                key={entry.id}
-                label={entry.name}
-                active={filters.supertypes.includes(entry.name)}
-                onPress={() =>
-                  update({ supertypes: toggleValue(filters.supertypes, entry.name) })
-                }
-              />
-            ))}
-          </FilterChipGrid>
-        );
-      }
       return (
-        <View className="gap-0.5">
-          {supertypeOptions.map((entry) => (
-            <FilterToggleRow
-              key={entry.id}
-              label={entry.name}
-              subtitle={`${entry.count.toLocaleString()} cards`}
-              active={filters.supertypes.includes(entry.name)}
-              onPress={() =>
-                update({ supertypes: toggleValue(filters.supertypes, entry.name) })
-              }
-              compact={compact}
-            />
-          ))}
-        </View>
+        <CatalogFilterNamedChipPanel
+          {...commonProps}
+          options={supertypeOptions}
+          selected={selectedSupertypes}
+          filterKey="supertypes"
+          emptyMessage="No supertype filters available."
+          listSubtitle={(count) => `${count.toLocaleString()} cards`}
+        />
       );
 
     case 'variants':
-      if (isMobile) {
-        return (
-          <FilterChipGrid>
-            {variantOptions.map((entry) => (
-              <FilterOptionChip
-                key={entry.id}
-                label={entry.name}
-                active={filters.variants.includes(entry.name)}
-                onPress={() => update({ variants: toggleValue(filters.variants, entry.name) })}
-              />
-            ))}
-          </FilterChipGrid>
-        );
-      }
       return (
-        <View className="gap-0.5">
-          {variantOptions.map((entry) => (
-            <FilterToggleRow
-              key={entry.id}
-              label={entry.name}
-              subtitle={`${entry.count.toLocaleString()} printings`}
-              active={filters.variants.includes(entry.name)}
-              onPress={() => update({ variants: toggleValue(filters.variants, entry.name) })}
-              compact={compact}
-            />
-          ))}
-        </View>
+        <CatalogFilterNamedChipPanel
+          {...commonProps}
+          options={variantOptions}
+          selected={selectedVariants}
+          filterKey="variants"
+          listSubtitle={(count) => `${count.toLocaleString()} printings`}
+        />
       );
 
     case 'rarities':
-      if (isMobile) {
+      if (presentation === 'mobile') {
         return (
           <FilterChipGrid>
             {rarityOptions.map((entry) => (
               <FilterOptionChip
                 key={entry.id}
                 label={entry.name}
-                active={filters.rarities.includes(entry.name)}
-                onPress={() => update({ rarities: toggleValue(filters.rarities, entry.name) })}
+                active={selectedRarities.has(entry.name)}
+                onPress={() =>
+                  update({
+                    rarities: toggleCatalogFilterValue(filters.rarities, entry.name),
+                  })
+                }
                 leading={<RarityIcon rarity={entry.name} size={16} />}
               />
             ))}
@@ -372,8 +249,12 @@ export function CatalogFilterSegmentPanel({
               key={entry.id}
               label={entry.name}
               subtitle={`${entry.count.toLocaleString()} printings`}
-              active={filters.rarities.includes(entry.name)}
-              onPress={() => update({ rarities: toggleValue(filters.rarities, entry.name) })}
+              active={selectedRarities.has(entry.name)}
+              onPress={() =>
+                update({
+                  rarities: toggleCatalogFilterValue(filters.rarities, entry.name),
+                })
+              }
               leading={<RarityIcon rarity={entry.name} size={18} />}
               compact={compact}
             />
@@ -382,115 +263,9 @@ export function CatalogFilterSegmentPanel({
       );
 
     case 'stats':
-      return (
-        <View className="gap-4">
-          <View>
-            <Text className="mb-2 text-sm font-semibold text-foreground">Energy</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {CATALOG_ENERGY_VALUES.map((value) => (
-                <FilterStatChip
-                  key={`energy-${value}`}
-                  label={String(value)}
-                  active={filters.energy === value}
-                  onPress={() => {
-                    if (filters.energy === value) {
-                      const next = { ...filters };
-                      delete next.energy;
-                      update(next);
-                      return;
-                    }
-                    update({ energy: value });
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-          <View>
-            <Text className="mb-2 text-sm font-semibold text-foreground">Power</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {CATALOG_POWER_VALUES.map((value) => (
-                <FilterStatChip
-                  key={`power-${value}`}
-                  label={String(value)}
-                  active={filters.power === value}
-                  onPress={() => {
-                    if (filters.power === value) {
-                      const next = { ...filters };
-                      delete next.power;
-                      update(next);
-                      return;
-                    }
-                    update({ power: value });
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-          <View>
-            <Text className="mb-2 text-sm font-semibold text-foreground">Might</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {CATALOG_MIGHT_VALUES.map((value) => (
-                <FilterStatChip
-                  key={`might-${value}`}
-                  label={String(value)}
-                  active={filters.might === value}
-                  onPress={() => {
-                    if (filters.might === value) {
-                      const next = { ...filters };
-                      delete next.might;
-                      update(next);
-                      return;
-                    }
-                    update({ might: value });
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-          {isMobile ? (
-            <FilterChipGrid>
-              <FilterOptionChip
-                label="Hide tokens"
-                active={filters.excludeTokens}
-                onPress={() => update({ excludeTokens: !filters.excludeTokens })}
-              />
-              <FilterOptionChip
-                label="Tokens only"
-                active={filters.tokensOnly}
-                onPress={() => update({ tokensOnly: !filters.tokensOnly })}
-              />
-            </FilterChipGrid>
-          ) : (
-            <>
-              <FilterToggleRow
-                label="Hide tokens"
-                subtitle="Remove token markers from results"
-                active={filters.excludeTokens}
-                onPress={() => update({ excludeTokens: !filters.excludeTokens })}
-                compact={compact}
-              />
-              <FilterToggleRow
-                label="Tokens only"
-                subtitle="Show only token markers (Buff, XP Tracker, etc.)"
-                active={filters.tokensOnly}
-                onPress={() => update({ tokensOnly: !filters.tokensOnly })}
-                compact={compact}
-              />
-            </>
-          )}
-        </View>
-      );
+      return <CatalogFilterStatsPanel {...commonProps} />;
 
     default:
       return null;
   }
-}
-
-export function CatalogFilterLoadingState() {
-  return (
-    <View className="items-center py-10">
-      <AppLoader size="md" />
-      <Text className="mt-3 text-sm text-archive-subtle">Loading filter options…</Text>
-    </View>
-  );
 }

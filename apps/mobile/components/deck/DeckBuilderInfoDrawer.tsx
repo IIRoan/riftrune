@@ -1,4 +1,5 @@
 import { ScrollView, View } from 'react-native';
+import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { DeckBattlefieldPanel } from '@/components/deck/DeckBattlefieldPanel';
 import {
   DeckBuilderMiddlePanelToggle,
@@ -114,12 +115,13 @@ export function DeckBuilderInfoDrawer({
   return (
     <ScrollView
       className="min-h-0 flex-1"
-      contentContainerStyle={{ paddingBottom, gap: 16 }}
+      contentContainerStyle={{ gap: 16 }}
       contentContainerClassName="px-3 py-3"
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       {body}
+      <ListBottomSpacer height={paddingBottom} />
     </ScrollView>
   );
 }

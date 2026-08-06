@@ -7,7 +7,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/toast.api';
 import type { DeckBrowseFilters, DeckBrowseSort } from '@/constants/deckBrowse';
 import {
   DEFAULT_DECK_BROWSE_FILTERS,
@@ -127,31 +127,6 @@ export function useOwnedDecks(query?: string) {
 
   return {
     ...ownedQuery,
-    data,
-  };
-}
-
-export function useImportedDecks(query?: string) {
-  const queryClient = useQueryClient();
-
-  const importedQuery = useQuery({
-    queryKey: deckQueryKeys.list('imported'),
-    queryFn: async () => {
-      const decks = await listDecks({ source: 'imported' });
-      seedDeckDetailCaches(queryClient, decks);
-      return decks;
-    },
-    staleTime: DECK_LIST_STALE_MS,
-    placeholderData: (previous) => previous,
-  });
-
-  const data = useMemo(
-    () => filterDecksByQuery(importedQuery.data ?? [], query ?? ''),
-    [importedQuery.data, query]
-  );
-
-  return {
-    ...importedQuery,
     data,
   };
 }

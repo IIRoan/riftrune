@@ -7,6 +7,8 @@ import {
   type ScrollViewProps,
   type ViewProps,
 } from 'react-native';
+import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
+import { ListTopSpacer } from '@/components/ui/list-top-spacer';
 import { Layout } from '@/constants/Layout';
 import { SIDE_RAIL_WIDTH, useShowSideRail } from '@/hooks/useBreakpoint';
 import { useScreenInsets } from '@/hooks/useScreenInsets';
@@ -74,11 +76,6 @@ export function useScreenLayout() {
   return context;
 }
 
-/** Measured width of the main column inside ScreenSplit, or null until layout. */
-export function useScreenSplitMainWidth(): number | null {
-  return useContext(SplitMainContext);
-}
-
 type ScreenLayoutProps = {
   mode?: 'scroll' | 'flex';
   children: React.ReactNode;
@@ -131,8 +128,8 @@ export function ScreenLayout({
           showRail ? 'px-2' : 'px-4 sm:px-6',
           className
         )}
-        style={{ paddingTop }}
       >
+        <ListTopSpacer height={paddingTop} />
         <View className="min-h-0 w-full flex-1">{inner}</View>
       </View>
     );
@@ -142,15 +139,13 @@ export function ScreenLayout({
     <ScrollView
       className={cn('flex-1 bg-background', className)}
       contentContainerClassName={showRail ? 'px-2' : 'px-4 sm:px-6'}
-      contentContainerStyle={{
-        paddingTop,
-        paddingBottom,
-        width: '100%',
-      }}
+      contentContainerStyle={{ width: '100%' }}
       showsVerticalScrollIndicator={false}
       {...scrollProps}
     >
+      <ListTopSpacer height={paddingTop} />
       {inner}
+      <ListBottomSpacer height={paddingBottom} />
     </ScrollView>
   );
 }
