@@ -5,15 +5,7 @@ import { createMemoryAsyncStorage } from '../test/memory-async-storage';
 const memoryStorage = createMemoryAsyncStorage();
 memoryStorage.install();
 
-const {
-  addSearchHistoryItem,
-  cacheSearchResults,
-  clearSearchHistory,
-  filterHistoryLocally,
-  getCachedSearchResults,
-  getSearchHistory,
-  removeSearchHistoryItem,
-} = await import('./searchHistoryService');
+const { cacheSearchResults, getCachedSearchResults } = await import('./searchCacheService');
 
 const sampleResponse = {
   data: [
@@ -55,30 +47,11 @@ const sampleResponse = {
   },
 } satisfies CardsListResponse;
 
-beforeEach(async () => {
+beforeEach(() => {
   memoryStorage.clear();
-  await clearSearchHistory();
 });
 
-describe('searchHistoryService', () => {
-  test('addSearchHistoryItem deduplicates case-insensitively', async () => {
-    await addSearchHistoryItem('Viktor');
-    await addSearchHistoryItem('viktor');
-
-    const history = await getSearchHistory();
-    expect(history).toHaveLength(1);
-    expect(history[0]?.query).toBe('viktor');
-  });
-
-  test('removeSearchHistoryItem removes one entry', async () => {
-    await addSearchHistoryItem('Viktor');
-    await addSearchHistoryItem('Jinx');
-    await removeSearchHistoryItem('Viktor');
-
-    const history = await getSearchHistory();
-    expect(history.map((item) => item.query)).toEqual(['Jinx']);
-  });
-
+describe('searchCacheService', () => {
   test('cacheSearchResults returns a hit for the same query', async () => {
     await cacheSearchResults('Viktor', sampleResponse);
 
@@ -98,26 +71,5 @@ describe('searchHistoryService', () => {
     );
 
     expect(await getCachedSearchResults('viktor')).toBeNull();
-  });
-
-  test('filterHistoryLocally matches partial queries', async () => {
-    await addSearchHistoryItem('Vi Destructive');
-    await addSearchHistoryItem('Jinx Rebel');
-    const history = await getSearchHistory();
-
-    expect(filterHistoryLocally(history, 'jin').map((item) => item.query)).toEqual([
-      'Jinx Rebel',
-    ]);
-  });
-
-  test('addSearchHistoryItem ignores queries shorter than min length', async () => {
-    await addSearchHistoryItem('ab');
-    expect(await getSearchHistory()).toEqual([]);
-  });
-
-  test('clearSearchHistory removes all entries', async () => {
-    await addSearchHistoryItem('Viktor');
-    await clearSearchHistory();
-    expect(await getSearchHistory()).toEqual([]);
   });
 });

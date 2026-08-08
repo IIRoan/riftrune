@@ -56,10 +56,12 @@ describe('catalogToolbarButtonClasses', () => {
     expect(classes).toContain('size-11');
   });
 
-  test('labeled desktop button uses auto width shell without size-11', () => {
+  test('labeled desktop button uses compact squared shell without size-11', () => {
     const classes = catalogToolbarButtonClasses(false, false, true);
     expect(classes).toContain(CATALOG_TOOLBAR_LABELED_CONTROL_CLASS);
     expect(classes).not.toContain('size-11');
+    expect(classes).toContain('h-10');
+    expect(classes).toContain('rounded-lg');
     expect(classes).toContain('px-3');
   });
 });

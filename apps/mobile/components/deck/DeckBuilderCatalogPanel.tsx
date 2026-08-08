@@ -404,6 +404,7 @@ function DeckBuilderCatalogBrowse({
 
         {filterActive ? (
           <CatalogActiveFilterChips
+            layout="inline"
             filters={catalogFilters}
             onFiltersChange={applyCatalogFilters}
           />

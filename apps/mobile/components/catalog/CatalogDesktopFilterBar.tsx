@@ -1,16 +1,15 @@
-import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { CatalogFilterSegmentPanel } from '@/components/catalog/CatalogFilterPanels';
 import { FilterClearButton, FilterPopoverBar } from '@/components/filters/FilterPrimitives';
 import {
-  CATALOG_FILTER_SEGMENTS,
-  catalogFilterSegmentActive,
   catalogFiltersActive,
   DEFAULT_CATALOG_FILTERS,
-  type CatalogFilterSegment,
   type CatalogFilters,
 } from '@/constants/catalogFilters';
-import { mapFilter } from '@/lib/iteration';
+import { CATALOG_TOOLBAR_DESKTOP_ROW_CLASS } from '@/constants/catalogToolbar';
+import {
+  useCatalogDesktopFilterPopoverState,
+  useCatalogDesktopFilterSegments,
+} from '@/hooks/useCatalogDesktopFilterSegments';
 
 interface CatalogDesktopFilterBarProps {
   filters: CatalogFilters;
@@ -21,34 +20,11 @@ export function CatalogDesktopFilterBar({
   filters,
   onFiltersChange,
 }: CatalogDesktopFilterBarProps) {
-  const [openSegment, setOpenSegment] = useState<CatalogFilterSegment | null>(null);
-
-  const segments = useMemo(
-    () =>
-      mapFilter(
-        CATALOG_FILTER_SEGMENTS,
-        (segment) => segment.id !== 'collection',
-        (segment) => ({
-          id: segment.id,
-          label: segment.label,
-          hasValue: catalogFilterSegmentActive(segment.id, filters),
-          contentClassName: segment.id === 'stats' ? 'w-[320px]' : undefined,
-          maxHeight: segment.id === 'stats' ? 480 : 420,
-          children: (
-            <CatalogFilterSegmentPanel
-              segment={segment.id}
-              filters={filters}
-              onFiltersChange={onFiltersChange}
-              compact
-            />
-          ),
-        })
-      ),
-    [filters, onFiltersChange]
-  );
+  const [openSegment, setOpenSegment] = useCatalogDesktopFilterPopoverState();
+  const segments = useCatalogDesktopFilterSegments(filters, onFiltersChange);
 
   return (
-    <View className="flex-row flex-wrap items-center gap-2">
+    <View className={CATALOG_TOOLBAR_DESKTOP_ROW_CLASS}>
       <FilterPopoverBar
         portalName="catalog-filter-bar"
         openId={openSegment}

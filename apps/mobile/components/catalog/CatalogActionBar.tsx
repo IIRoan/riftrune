@@ -1,18 +1,15 @@
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { CatalogCollectionPillNav } from '@/components/catalog/CatalogCollectionPillNav';
 import { CatalogFilterTrigger } from '@/components/catalog/FilterSheet';
 import { CatalogSimpleAddToggle } from '@/components/catalog/CatalogSimpleAddToggle';
 import { SortTrigger } from '@/components/catalog/SortSheet';
-import { ViewToggle } from '@/components/catalog/ViewToggle';
-import { Text } from '@/components/ui/text';
 import type { CatalogCollectionFilter, CatalogFilters } from '@/constants/catalogFilters';
 import type { CatalogSort } from '@/constants/catalogSort';
-import { useMobileLayout, useShowCatalogTitle } from '@/hooks/useBreakpoint';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
 
 interface CatalogActionBarProps {
-  view: 'list' | 'grid';
-  onViewChange: (view: 'list' | 'grid') => void;
   activeSort: CatalogSort;
   onSortPress: () => void;
   filters: CatalogFilters;
@@ -22,13 +19,14 @@ interface CatalogActionBarProps {
   simpleAdd: boolean;
   onSimpleAddChange: (simpleAdd: boolean) => void;
   showFilterTrigger?: boolean;
+  /** Desktop unified bar: render only the action cluster. */
+  inline?: boolean;
+  leading?: ReactNode;
   className?: string;
 }
 
-/** Catalog toolbar: optional title + collection/simple-add/view/sort/filter controls. */
+/** Catalog toolbar: collection/simple-add/sort/filter controls. */
 export function CatalogActionBar({
-  view,
-  onViewChange,
   activeSort,
   onSortPress,
   filters,
@@ -38,10 +36,11 @@ export function CatalogActionBar({
   simpleAdd,
   onSimpleAddChange,
   showFilterTrigger = true,
+  inline = false,
+  leading,
   className,
 }: CatalogActionBarProps) {
   const isMobile = useMobileLayout();
-  const showTitle = useShowCatalogTitle();
 
   const collectionControls = (
     <View className="shrink-0 flex-row items-center gap-1.5">
@@ -50,31 +49,31 @@ export function CatalogActionBar({
     </View>
   );
 
-  const outerClass = showTitle
-    ? isMobile
-      ? 'gap-2'
-      : 'mb-1 flex-row items-center justify-between'
-    : 'w-full flex-row items-center';
-
-  return (
-    <View className={cn(outerClass, className)}>
-      {showTitle ? (
-        <Text
-          className={cn(
-            'font-semibold tracking-tight text-foreground',
-            isMobile ? 'text-lg' : 'text-xl'
-          )}
-        >
-          Riftbound catalog
-        </Text>
+  const renderActionControls = (extraClassName?: string) => (
+    <View className={cn('shrink-0 flex-row items-center gap-1.5', extraClassName)}>
+      {collectionControls}
+      <SortTrigger activeSort={activeSort} onPress={onSortPress} mobile={isMobile} />
+      {showFilterTrigger ? (
+        <CatalogFilterTrigger
+          filters={filters}
+          onPress={onFilterPress}
+          compact
+          mobile={isMobile}
+        />
       ) : null}
+    </View>
+  );
 
-      {isMobile ? (
-        // Phone: leading prefs | trailing tools — natural widths, no stretched slots.
+  if (inline && !isMobile) {
+    return renderActionControls(className);
+  }
+
+  if (isMobile) {
+    return (
+      <View className={cn('w-full gap-2', className)}>
         <View className="w-full flex-row items-center justify-between gap-2">
           {collectionControls}
           <View className="shrink-0 flex-row items-center gap-1.5">
-            <ViewToggle view={view} onViewChange={onViewChange} mobile />
             <SortTrigger activeSort={activeSort} onPress={onSortPress} mobile />
             {showFilterTrigger ? (
               <CatalogFilterTrigger
@@ -86,26 +85,14 @@ export function CatalogActionBar({
             ) : null}
           </View>
         </View>
-      ) : (
-        <View
-          className={
-            showTitle
-              ? 'shrink-0 flex-row items-center gap-2'
-              : 'w-full flex-row items-center justify-between'
-          }
-        >
-          <View className="flex-row items-center gap-2">
-            {collectionControls}
-            <ViewToggle view={view} onViewChange={onViewChange} />
-          </View>
-          <View className="flex-row items-center gap-2">
-            <SortTrigger activeSort={activeSort} onPress={onSortPress} />
-            {showFilterTrigger ? (
-              <CatalogFilterTrigger filters={filters} onPress={onFilterPress} />
-            ) : null}
-          </View>
-        </View>
-      )}
+      </View>
+    );
+  }
+
+  return (
+    <View className={cn('w-full flex-row items-center justify-between gap-3', className)}>
+      <View className="min-w-0 flex-1">{leading ?? null}</View>
+      {renderActionControls()}
     </View>
   );
 }

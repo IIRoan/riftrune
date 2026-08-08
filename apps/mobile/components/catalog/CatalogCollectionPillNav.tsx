@@ -1,23 +1,22 @@
 import { CardholderIcon, CardsIcon } from '@/components/icons';
-import { PillNav, type PillNavItem } from '@/components/shell/FloatingPillNav';
+import { CatalogSegmentedControl } from '@/components/catalog/CatalogSegmentedControl';
 import type { CatalogCollectionFilter } from '@/constants/catalogFilters';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
-import { cn } from '@/lib/utils';
 
-const NAV_ITEMS: readonly PillNavItem<CatalogCollectionFilter>[] = [
+const NAV_ITEMS = [
   {
-    id: 'all',
+    id: 'all' as const,
     label: 'All',
     accessibilityLabel: 'All cards',
     icon: CardsIcon,
   },
   {
-    id: 'owned',
+    id: 'owned' as const,
     label: 'Owned',
     accessibilityLabel: 'Owned cards',
     icon: CardholderIcon,
   },
-];
+] as const;
 
 interface CatalogCollectionPillNavProps {
   value: CatalogCollectionFilter;
@@ -29,22 +28,18 @@ interface CatalogCollectionPillNavProps {
 export function CatalogCollectionPillNav({
   value,
   onChange,
-  className,
 }: CatalogCollectionPillNavProps) {
   const isMobile = useMobileLayout();
 
   return (
-    <PillNav
-      items={NAV_ITEMS}
+    <CatalogSegmentedControl
       value={value}
       onChange={onChange}
-      compact
+      options={NAV_ITEMS}
+      mobile={isMobile}
       iconOnly={isMobile}
-      className={cn(
-        'shrink-0 rounded-xl',
-        isMobile ? 'h-11' : 'h-9',
-        className
-      )}
+      accessibilityRole="tablist"
+      segmentAccessibilityRole="tab"
     />
   );
 }

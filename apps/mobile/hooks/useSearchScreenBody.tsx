@@ -65,17 +65,10 @@ import {
   shouldPrefetchCatalog,
   type CatalogScrollMetrics,
 } from '@/lib/catalog-page-size';
-import {
-  clearSearchHistory,
-  getSearchHistory,
-  removeSearchHistoryItem,
-  type SearchHistoryItem,
-} from '@/services/searchHistoryService';
-import { hapticPress } from '@/utils/haptics';
 import { isCatalogGridLoading } from '@/lib/catalog-loading';
 
 export function useSearchScreenBody(): React.ReactElement {
-  const { defaultLayout, setDefaultLayout } = useTheme();
+  const { defaultLayout: view } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
   const { contentWidth: layoutContentWidth, measuredWidth: layoutMeasuredWidth, paddingBottomInline, showRail } =
     useScreenLayout();
@@ -83,8 +76,6 @@ export function useSearchScreenBody(): React.ReactElement {
   const splitLayout = useCatalogSplitLayout();
   const isMobile = useMobileLayout();
   const [query, setQuery] = useState('');
-  const [history, setHistory] = useState<SearchHistoryItem[]>([]);
-  const [showHistory, setShowHistory] = useState(true);
   const [catalogFilters, setCatalogFilters] = useState<CatalogFilters>(
     DEFAULT_CATALOG_FILTERS
   );
@@ -99,9 +90,6 @@ export function useSearchScreenBody(): React.ReactElement {
   const queryClient = useQueryClient();
   const catalogListRef = useRef<FlashListRef<CardListItem>>(null);
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 40 }).current;
-
-  const view = defaultLayout;
-  const setView = setDefaultLayout;
 
   const catalogColumnWidth = splitLayout
     ? (splitMainWidth ??
@@ -454,10 +442,6 @@ export function useSearchScreenBody(): React.ReactElement {
       requestCatalogFetch,
     ]
   );
-  const hasCatalog =
-    displayItems.length > 0 ||
-    (hasSearchInput && (searchPending || isLoading || isFetching)) ||
-    (!hasSearchInput && (browseCatalog.isLoading || browseCatalog.isFetching));
   const catalogGridLoading = isCatalogGridLoading({
     isSearching: hasSearchInput,
     searchPending,
@@ -468,49 +452,19 @@ export function useSearchScreenBody(): React.ReactElement {
   });
   const filterActive = catalogFiltersActive(catalogFilters);
 
-  const loadHistory = useCallback(async () => {
-    setHistory(await getSearchHistory());
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      void loadHistory();
-      void prefetchCatalogFilters(queryClient);
-    }, [loadHistory, queryClient])
-  );
-
   const clearSearch = useCallback(() => {
     setQuery('');
-    setShowHistory(true);
   }, []);
-
-  const onHistoryPress = useCallback(
-    async (item: SearchHistoryItem) => {
-      Keyboard.dismiss();
-      await hapticPress();
-      setQuery(item.query);
-      setShowHistory(false);
-      searchNow(item.query);
-    },
-    [searchNow]
-  );
 
   const dismissKeyboard = useCallback(() => {
     Keyboard.dismiss();
   }, []);
 
-  const onHistoryDelete = useCallback(
-    async (item: SearchHistoryItem) => {
-      await removeSearchHistoryItem(item.query);
-      await loadHistory();
-    },
-    [loadHistory]
+  useFocusEffect(
+    useCallback(() => {
+      void prefetchCatalogFilters(queryClient);
+    }, [queryClient])
   );
-
-  const onClearAllHistory = useCallback(async () => {
-    await clearSearchHistory();
-    await loadHistory();
-  }, [loadHistory]);
 
   const listEmpty = useMemo(
     () => (
@@ -525,9 +479,6 @@ export function useSearchScreenBody(): React.ReactElement {
           isFetching,
         }}
         itemsLength={items.length}
-        showHistory={showHistory}
-        history={history}
-        hasCatalog={hasCatalog}
         browseCatalogLoading={browseCatalog.isLoading}
         featuredFilteredLength={featuredFiltered.length}
         filteredItemsLength={filteredItems.length}
@@ -539,9 +490,6 @@ export function useSearchScreenBody(): React.ReactElement {
         filterActive={filterActive}
         ownedFilterActive={ownedFilterActive}
         catalogFilters={catalogFilters}
-        onClearAllHistory={() => void onClearAllHistory()}
-        onHistoryPress={onHistoryPress}
-        onHistoryDelete={onHistoryDelete}
       />
     ),
     [
@@ -551,9 +499,6 @@ export function useSearchScreenBody(): React.ReactElement {
       isLoading,
       isError,
       isFetching,
-      showHistory,
-      history,
-      hasCatalog,
       browseCatalog.isLoading,
       featuredFiltered.length,
       items.length,
@@ -567,9 +512,6 @@ export function useSearchScreenBody(): React.ReactElement {
       filterActive,
       ownedFilterActive,
       catalogFilters,
-      onClearAllHistory,
-      onHistoryPress,
-      onHistoryDelete,
     ]
   );
 
@@ -579,14 +521,7 @@ export function useSearchScreenBody(): React.ReactElement {
     <SearchScreenToolbar
       pageMaxWidth={pageMaxWidth}
       query={query}
-      onQueryChange={(text) => {
-        setQuery(text);
-        if (text.trim().length === 0) {
-          setShowHistory(true);
-        } else {
-          setShowHistory(false);
-        }
-      }}
+      onQueryChange={setQuery}
       onClearSearch={clearSearch}
       searchLoading={hasSearchInput && (searchPending || isLoading || isFetching)}
       onSubmitSearch={() => {
@@ -596,8 +531,6 @@ export function useSearchScreenBody(): React.ReactElement {
       filterActive={filterActive}
       catalogFilters={catalogFilters}
       onFiltersChange={applyCatalogFilters}
-      view={view}
-      onViewChange={setView}
       catalogSort={catalogSort}
       onSortPress={() => {
         setSortSheetOpen(true);

@@ -10,7 +10,7 @@ import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilt
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppLoader, AppLoadingScreen } from '@/components/ui/app-loader';
 import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { FlashList, type ListRenderItem } from '@shopify/flash-list';
 import { SearchInput } from '@/components/ui/search-input';
@@ -253,7 +253,22 @@ function DeckAddScreenBody({
   );
 }
 
-function DeckAddCatalogWorkspace({
+function DeckAddCatalogWorkspace(
+  props: {
+    deck: DeckState;
+    activeSection: DeckSectionKey;
+    lockedSection: boolean;
+    onSectionChange: (section: DeckSectionKey) => void;
+    onPersist: (
+      deck: DeckState | ((previous: DeckState) => DeckState),
+      options?: { immediate?: boolean }
+    ) => void;
+  }
+) {
+  return <DeckAddCatalogBrowse key={props.activeSection} {...props} />;
+}
+
+function DeckAddCatalogBrowse({
   deck,
   activeSection,
   lockedSection,
@@ -301,22 +316,25 @@ function DeckAddCatalogWorkspace({
     setCatalogFilters(sanitizeCatalogFilters(next));
   }, []);
 
-  useEffect(() => {
+  const legendColorsKey = deck.legend?.colors
+    ? [...deck.legend.colors].sort().join('\0')
+    : '';
+  const filterDeckKey = `${deck.format}:${legendKey}:${legendColorsKey}`;
+  const [prevFilterDeckKey, setPrevFilterDeckKey] = useState(filterDeckKey);
+  if (filterDeckKey !== prevFilterDeckKey) {
+    setPrevFilterDeckKey(filterDeckKey);
     setCatalogFilters(defaultDeckAddCatalogFilters(activeSection, deck));
-  }, [activeSection, legendKey]);
+  }
 
-  useEffect(() => {
-    if (!legendKey || activeSection !== 'champion') return;
+  const [prevChampionLegendKey, setPrevChampionLegendKey] = useState(legendKey);
+  if (
+    activeSection === 'champion' &&
+    legendKey &&
+    legendKey !== prevChampionLegendKey
+  ) {
+    setPrevChampionLegendKey(legendKey);
     setQuery(defaultDeckAddSearch('champion', deck));
-  }, [legendKey]);
-
-  useEffect(() => {
-    if (activeSection === 'champion') {
-      setQuery((prev) => (prev.trim() ? prev : defaultDeckAddSearch('champion', deck)));
-    } else if (!lockedSection) {
-      setQuery('');
-    }
-  }, [activeSection, lockedSection]);
+  }
 
   const catalog = useDeckAddCatalog(
     deck,
@@ -465,6 +483,7 @@ function DeckAddCatalogWorkspace({
 
         {filterActive ? (
           <CatalogActiveFilterChips
+            layout="inline"
             filters={catalogFilters}
             onFiltersChange={applyCatalogFilters}
           />

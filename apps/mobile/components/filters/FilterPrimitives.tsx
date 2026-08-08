@@ -10,6 +10,12 @@ import {
   PopoverPortal,
 } from '@/components/ui/popover';
 import { Text } from '@/components/ui/text';
+import {
+  CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS,
+  CATALOG_TOOLBAR_EMBEDDED_TRIGGER_ACTIVE_CLASS,
+  CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS,
+  CATALOG_TOOLBAR_LABELED_CONTROL_CLASS,
+} from '@/constants/catalogToolbar';
 import { cn } from '@/lib/utils';
 
 export function FilterToggleRow({
@@ -112,19 +118,27 @@ function FilterPopoverTrigger({
   open,
   onPress,
   triggerRef,
+  embedded = false,
 }: {
   label: string;
   hasValue: boolean;
   open: boolean;
   onPress: () => void;
   triggerRef: (node: View | null) => void;
+  embedded?: boolean;
 }) {
+  const active = open || hasValue;
+
   return (
     <Pressable
       ref={triggerRef}
       className={cn(
-        'relative h-9 shrink-0 flex-row items-center gap-1.5 rounded-lg border px-3 active:opacity-90',
-        open || hasValue ? 'border-ring/50 bg-card-panel' : 'border-border bg-card'
+        embedded
+          ? CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS
+          : cn(CATALOG_TOOLBAR_LABELED_CONTROL_CLASS, 'relative active:opacity-90'),
+        embedded
+          ? active && CATALOG_TOOLBAR_EMBEDDED_TRIGGER_ACTIVE_CLASS
+          : active && CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS
       )}
       onPress={onPress}
       accessibilityRole="button"
@@ -157,11 +171,13 @@ export function FilterPopoverBar<T extends string>({
   openId,
   onOpenIdChange,
   segments,
+  embedded = false,
 }: {
   portalName: string;
   openId: T | null;
   onOpenIdChange: (id: T | null) => void;
   segments: FilterPopoverBarItem<T>[];
+  embedded?: boolean;
 }) {
   const triggerRefs = useRef<Partial<Record<T, View | null>>>({});
   const contentRef = useRef<ScrollViewType | null>(null);
@@ -232,6 +248,7 @@ export function FilterPopoverBar<T extends string>({
           triggerRef={(node) => {
             triggerRefs.current[segment.id] = node;
           }}
+          embedded={embedded}
         />
       ))}
 
@@ -276,10 +293,25 @@ export function FilterPopoverBar<T extends string>({
   );
 }
 
-export function FilterClearButton({ onPress, label = 'Clear all' }: { onPress: () => void; label?: string }) {
+export function FilterClearButton({
+  onPress,
+  label = 'Clear all',
+  embedded = false,
+}: {
+  onPress: () => void;
+  label?: string;
+  embedded?: boolean;
+}) {
   return (
     <Pressable
-      className="h-9 shrink-0 items-center justify-center rounded-lg px-2 active:opacity-80"
+      className={cn(
+        embedded
+          ? cn(
+              CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS,
+              'items-center justify-center px-2.5'
+            )
+          : 'h-10 shrink-0 items-center justify-center rounded-lg px-2 active:opacity-80'
+      )}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}

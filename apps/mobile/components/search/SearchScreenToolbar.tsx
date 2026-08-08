@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { CatalogActionBar } from '@/components/catalog/CatalogActionBar';
-import { CatalogDesktopFilterBar } from '@/components/catalog/CatalogDesktopFilterBar';
+import { CatalogDesktopToolbar } from '@/components/catalog/CatalogDesktopToolbar';
 import { CatalogActiveFilterChips } from '@/components/catalog/FilterSheet';
 import { SearchBar } from '@/components/search/SearchBar';
 import type { CatalogSort } from '@/constants/catalogSort';
@@ -17,8 +17,6 @@ interface SearchScreenToolbarProps {
   filterActive: boolean;
   catalogFilters: CatalogFilters;
   onFiltersChange: (filters: CatalogFilters) => void;
-  view: 'grid' | 'list';
-  onViewChange: (view: 'grid' | 'list') => void;
   catalogSort: CatalogSort;
   onSortPress: () => void;
   onFilterPress: () => void;
@@ -35,14 +33,12 @@ export function SearchScreenToolbar({
   filterActive,
   catalogFilters,
   onFiltersChange,
-  view,
-  onViewChange,
   catalogSort,
   onSortPress,
   onFilterPress,
 }: SearchScreenToolbarProps) {
   return (
-    <View className="w-full gap-1.5 pb-2 pt-2" style={{ maxWidth: pageMaxWidth }}>
+    <View className="w-full gap-1.5 pb-2" style={{ maxWidth: pageMaxWidth }}>
       <SearchBar
         value={query}
         onChangeText={onQueryChange}
@@ -52,35 +48,47 @@ export function SearchScreenToolbar({
         onSubmitEditing={onSubmitSearch}
       />
 
-      {isMobile && filterActive ? (
-        <CatalogActiveFilterChips filters={catalogFilters} onFiltersChange={onFiltersChange} />
-      ) : null}
-
-      {!isMobile ? (
-        <CatalogDesktopFilterBar filters={catalogFilters} onFiltersChange={onFiltersChange} />
-      ) : null}
-
-      {!isMobile && filterActive ? (
-        <CatalogActiveFilterChips filters={catalogFilters} onFiltersChange={onFiltersChange} />
-      ) : null}
-
-      <CatalogActionBar
-        view={view}
-        onViewChange={onViewChange}
-        activeSort={catalogSort}
-        onSortPress={onSortPress}
-        filters={catalogFilters}
-        onFilterPress={onFilterPress}
-        collection={catalogFilters.collection}
-        onCollectionChange={(collection) =>
-          onFiltersChange({ ...catalogFilters, collection })
-        }
-        simpleAdd={catalogFilters.simpleAdd}
-        onSimpleAddChange={(simpleAdd) =>
-          onFiltersChange({ ...catalogFilters, simpleAdd })
-        }
-        showFilterTrigger={isMobile}
-      />
+      {isMobile ? (
+        <>
+          <CatalogActionBar
+            activeSort={catalogSort}
+            onSortPress={onSortPress}
+            filters={catalogFilters}
+            onFilterPress={onFilterPress}
+            collection={catalogFilters.collection}
+            onCollectionChange={(collection) =>
+              onFiltersChange({ ...catalogFilters, collection })
+            }
+            simpleAdd={catalogFilters.simpleAdd}
+            onSimpleAddChange={(simpleAdd) =>
+              onFiltersChange({ ...catalogFilters, simpleAdd })
+            }
+          />
+          {filterActive ? (
+            <CatalogActiveFilterChips
+              layout="inline"
+              filters={catalogFilters}
+              onFiltersChange={onFiltersChange}
+            />
+          ) : null}
+        </>
+      ) : (
+        <CatalogDesktopToolbar
+          filters={catalogFilters}
+          onFiltersChange={onFiltersChange}
+          filterActive={filterActive}
+          activeSort={catalogSort}
+          onSortPress={onSortPress}
+          collection={catalogFilters.collection}
+          onCollectionChange={(collection) =>
+            onFiltersChange({ ...catalogFilters, collection })
+          }
+          simpleAdd={catalogFilters.simpleAdd}
+          onSimpleAddChange={(simpleAdd) =>
+            onFiltersChange({ ...catalogFilters, simpleAdd })
+          }
+        />
+      )}
     </View>
   );
 }

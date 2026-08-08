@@ -44,9 +44,12 @@ export function CatalogToolbarButton({
         onPress={onPress}
         accessibilityLabel={accessibilityLabel}
       >
-        <ThemedIcon icon={icon} size={16} color={catalogToolbarIconColor(tone)} />
+        <ThemedIcon icon={icon} size={mobile ? 18 : 16} color={catalogToolbarIconColor(tone)} />
         <Text
-          className="shrink text-sm font-semibold leading-none text-foreground"
+          className={cn(
+            'shrink text-[13px] font-semibold leading-none',
+            active ? 'text-foreground' : 'text-muted-foreground'
+          )}
           numberOfLines={1}
         >
           {label}

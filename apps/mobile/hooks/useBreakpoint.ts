@@ -29,11 +29,4 @@ export function useIsTabletWeb() {
   return Platform.OS === 'web' && width >= TABLET_WIDTH && width < DESKTOP_RAIL;
 }
 
-/** Catalog title: hidden on phones / narrow web, shown on tablet+ web. */
-export function useShowCatalogTitle() {
-  const showSideRail = useShowSideRail();
-  const isTabletWeb = useIsTabletWeb();
-  return showSideRail || isTabletWeb;
-}
-
 export const DETAIL_PANEL_WIDTH = 360;

@@ -3,10 +3,9 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
   MIN_SEARCH_LENGTH,
-  addSearchHistoryItem,
   cacheSearchResults,
   getCachedSearchResults,
-} from '@/services/searchHistoryService';
+} from '@/services/searchCacheService';
 import {
   getInMemoryCatalogIndex,
   mergeCatalogIndexItems,
@@ -98,7 +97,6 @@ export function useCardSearch(
       const normalized = normalizeCardsListResponse(response);
       if (pageParam === 1) {
         await cacheSearchResults(activeTerm, normalized);
-        await addSearchHistoryItem(activeTerm);
       }
       return normalized;
     },

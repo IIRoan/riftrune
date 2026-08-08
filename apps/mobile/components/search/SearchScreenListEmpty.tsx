@@ -11,12 +11,10 @@ import {
 import { SearchSkeleton } from '@/components/search/SearchSkeleton';
 import {
   SearchEmptyState,
-  SearchScreenHistory,
 } from '@/components/search/SearchScreenEmpty';
 import type { CatalogFilters } from '@/constants/catalogFilters';
 import { catalogFiltersActive } from '@/constants/catalogFilters';
 import { isCatalogGridLoading } from '@/lib/catalog-loading';
-import type { SearchHistoryItem } from '@/services/searchHistoryService';
 
 export interface SearchScreenFetchStatus {
   isSearching: boolean;
@@ -31,9 +29,6 @@ interface SearchScreenListEmptyProps {
   minLength: number;
   fetchStatus: SearchScreenFetchStatus;
   itemsLength: number;
-  showHistory: boolean;
-  history: SearchHistoryItem[];
-  hasCatalog: boolean;
   browseCatalogLoading: boolean;
   featuredFilteredLength: number;
   filteredItemsLength: number;
@@ -45,9 +40,6 @@ interface SearchScreenListEmptyProps {
   filterActive: boolean;
   ownedFilterActive: boolean;
   catalogFilters: CatalogFilters;
-  onClearAllHistory: () => void;
-  onHistoryPress: (item: SearchHistoryItem) => void;
-  onHistoryDelete: (item: SearchHistoryItem) => void;
 }
 
 export function SearchScreenListEmpty({
@@ -55,9 +47,6 @@ export function SearchScreenListEmpty({
   minLength,
   fetchStatus,
   itemsLength,
-  showHistory,
-  history,
-  hasCatalog,
   browseCatalogLoading,
   featuredFilteredLength,
   filteredItemsLength,
@@ -69,9 +58,6 @@ export function SearchScreenListEmpty({
   filterActive,
   ownedFilterActive,
   catalogFilters,
-  onClearAllHistory,
-  onHistoryPress,
-  onHistoryDelete,
 }: SearchScreenListEmptyProps) {
   const { isSearching, searchPending, isLoading, isError, isFetching } = fetchStatus;
   const trimmed = query.trim();
@@ -112,17 +98,6 @@ export function SearchScreenListEmpty({
           Type at least {minLength} characters to search
         </EmptyDescription>
       </Empty>
-    );
-  }
-
-  if (showHistory && trimmed.length === 0 && history.length > 0 && !hasCatalog) {
-    return (
-      <SearchScreenHistory
-        history={history}
-        onHistoryPress={onHistoryPress}
-        onHistoryDelete={onHistoryDelete}
-        onClearAllHistory={onClearAllHistory}
-      />
     );
   }
 

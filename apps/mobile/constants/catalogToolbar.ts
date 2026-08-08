@@ -3,22 +3,46 @@ import { cn } from '@/lib/utils';
 
 /** Icon-only toolbar control — matches Layout.minTouchTarget (44px). */
 export const CATALOG_TOOLBAR_CONTROL_CLASS =
-  'size-11 items-center justify-center rounded-xl border border-border bg-card active:bg-card-panel';
+  'size-11 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel';
 
-/** Labeled toolbar control (Sort, Filters) — auto width for text + badge. */
+/** Labeled toolbar control (Sort, Quick add, filter triggers). */
 export const CATALOG_TOOLBAR_LABELED_CONTROL_CLASS =
-  'h-11 flex-row items-center justify-center rounded-xl border border-border bg-card px-3 active:bg-card-panel';
+  'h-10 shrink-0 flex-row items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 active:bg-card-panel';
+
+/** Desktop catalog toolbar row — standalone filter bars (deck builder, etc.). */
+export const CATALOG_TOOLBAR_DESKTOP_ROW_CLASS = 'flex-row flex-wrap items-center gap-1.5';
+
+/** Unified desktop catalog shell — one card wrapping controls + optional chip tray. */
+export const CATALOG_TOOLBAR_DESKTOP_SHELL_CLASS =
+  'w-full overflow-hidden rounded-lg border border-border bg-card';
+
+/** Primary control row inside the unified shell. */
+export const CATALOG_TOOLBAR_DESKTOP_PRIMARY_ROW_CLASS =
+  'min-h-10 flex-row items-center gap-2 px-1.5 py-1';
+
+/** Vertical separator between filter and action zones. */
+export const CATALOG_TOOLBAR_DESKTOP_DIVIDER_CLASS = 'h-6 w-px shrink-0 bg-border/70';
+
+/** Embedded filter trigger — borderless inside the shell. */
+export const CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS =
+  'h-8 shrink-0 flex-row items-center gap-1 rounded-md px-2 active:opacity-90';
+
+export const CATALOG_TOOLBAR_EMBEDDED_TRIGGER_ACTIVE_CLASS = 'bg-card-panel';
 
 /** Active toolbar icon button (e.g. filter applied). */
 export const CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS = 'border-ring/50 bg-card-panel';
 
-/** Segmented control shell (view toggle). */
+/** Segmented control shell (view toggle, All/Owned). */
 export const CATALOG_TOOLBAR_GROUP_CLASS =
-  'flex-row items-center rounded-lg border border-border bg-card p-0.5';
+  'h-10 shrink-0 flex-row items-center rounded-lg border border-border bg-card p-0.5';
 
-/** Single segment inside the view toggle group. */
+/** Icon-only segment inside a segmented toolbar group. */
 export const CATALOG_TOOLBAR_SEGMENT_CLASS =
-  'size-10 items-center justify-center rounded-md';
+  'h-full aspect-square items-center justify-center rounded-md';
+
+/** Labeled segment inside a segmented toolbar group. */
+export const CATALOG_TOOLBAR_LABELED_SEGMENT_CLASS =
+  'h-full shrink-0 flex-row items-center gap-1.5 rounded-md px-2.5';
 
 export const CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS = 'bg-card-panel';
 export const CATALOG_TOOLBAR_SEGMENT_INACTIVE_CLASS = 'active:opacity-70';
@@ -39,6 +63,9 @@ export const CATALOG_TOOLBAR_GROUP_CLASS_MOBILE =
 
 export const CATALOG_TOOLBAR_SEGMENT_CLASS_MOBILE =
   'h-10 w-10 items-center justify-center rounded-lg';
+
+export const CATALOG_TOOLBAR_LABELED_SEGMENT_CLASS_MOBILE =
+  'h-10 shrink-0 flex-row items-center gap-1.5 rounded-lg px-2.5';
 
 export const CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS_MOBILE = 'bg-card-panel';
 
@@ -99,17 +126,21 @@ export function catalogToolbarButtonClasses(
   );
 }
 
-export function catalogToolbarSegmentClasses(active: boolean, mobile = false): string {
+export function catalogToolbarSegmentClasses(
+  active: boolean,
+  mobile = false,
+  labeled = false
+): string {
   if (mobile) {
     return cn(
-      CATALOG_TOOLBAR_SEGMENT_CLASS_MOBILE,
+      labeled ? CATALOG_TOOLBAR_LABELED_SEGMENT_CLASS_MOBILE : CATALOG_TOOLBAR_SEGMENT_CLASS_MOBILE,
       active
         ? CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS_MOBILE
         : CATALOG_TOOLBAR_SEGMENT_INACTIVE_CLASS
     );
   }
   return cn(
-    CATALOG_TOOLBAR_SEGMENT_CLASS,
+    labeled ? CATALOG_TOOLBAR_LABELED_SEGMENT_CLASS : CATALOG_TOOLBAR_SEGMENT_CLASS,
     active ? CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS : CATALOG_TOOLBAR_SEGMENT_INACTIVE_CLASS
   );
 }

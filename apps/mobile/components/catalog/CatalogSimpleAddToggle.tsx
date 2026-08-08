@@ -1,6 +1,10 @@
 import { LightningIcon, ThemedIcon } from '@/components/icons';
 import { Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
+import {
+  catalogToolbarButtonClasses,
+  catalogToolbarIconColor,
+} from '@/constants/catalogToolbar';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
@@ -21,6 +25,7 @@ export function CatalogSimpleAddToggle({
   className,
 }: CatalogSimpleAddToggleProps) {
   const isMobile = useMobileLayout();
+  const tone = active ? 'active' : 'inactive';
 
   return (
     <Pressable
@@ -33,22 +38,21 @@ export function CatalogSimpleAddToggle({
         onChange(!active);
       }}
       className={cn(
-        'shrink-0 flex-row items-center justify-center gap-1.5 rounded-xl border border-border active:opacity-80',
-        isMobile ? 'h-11 w-11 px-0' : 'h-9 px-2.5',
-        active ? 'border-ring/50 bg-card-panel' : 'bg-card',
+        catalogToolbarButtonClasses(active, isMobile, !isMobile),
+        isMobile && 'w-11 px-0',
         className
       )}
     >
       <ThemedIcon
         icon={LightningIcon}
-        size={isMobile ? 18 : 15}
-        color={active ? 'primary' : 'muted-foreground'}
+        size={isMobile ? 18 : 16}
+        color={catalogToolbarIconColor(tone)}
       />
       {isMobile ? null : (
         <Text
           className={cn(
-            'text-[11px] font-semibold leading-none',
-            active ? 'text-primary' : 'text-muted-foreground'
+            'text-[13px] font-semibold leading-none',
+            active ? 'text-foreground' : 'text-muted-foreground'
           )}
           numberOfLines={1}
         >
