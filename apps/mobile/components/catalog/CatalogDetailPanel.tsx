@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import { AppLoader } from '@/components/ui/app-loader';
-import { View } from 'react-native';
 import type { CardListItem } from '@riftbound/contracts';
 import { CatalogDetailPanelBody } from '@/components/catalog/CatalogDetailPanelBody';
+import { CatalogDetailPanelSkeleton } from '@/components/catalog/CatalogDetailPanelSkeleton';
 import { useCardDetail } from '@/hooks/useCardDetail';
 import {
   useCollection,
@@ -71,11 +70,7 @@ export function CatalogDetailPanel({
 
   if (!detail.card || !detail.activeVariant) {
     if (detail.isLoading) {
-      return (
-        <View className="items-center justify-center rounded-xl border border-border bg-card p-8">
-          <AppLoader size="lg" />
-        </View>
-      );
+      return <CatalogDetailPanelSkeleton />;
     }
     return null;
   }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Platform, useWindowDimensions } from 'react-native';
 import { Layout } from '@/constants/Layout';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
@@ -62,6 +62,23 @@ type ResponsiveColumnOptions = {
   measuredWidth?: number | null;
   /** Expand tiles to fill the measured column (split catalog + detail layout). */
   fillAvailable?: boolean;
+};
+
+export type ResponsiveColumnResult = ReturnType<typeof useResponsiveColumns>;
+
+type StableResponsiveColumnOptions = ResponsiveColumnOptions & {
+  /**
+   * When false, follow live layout measurements (e.g. before the catalog column
+   * has been measured). Once true, values are frozen until the window resizes
+   * or the layout mode changes.
+   */
+  measurementReady?: boolean;
+};
+
+type StableResponsiveColumnCache = {
+  windowWidth: number;
+  layout: 'grid' | 'list';
+  values: ResponsiveColumnResult;
 };
 
 export function useResponsiveColumns(
@@ -133,6 +150,40 @@ export function useResponsiveColumns(
       ...grid,
     };
   }, [layout, width, reservedWidth, measuredWidth, fillAvailable, isMobile]);
+}
+
+/**
+ * Like {@link useResponsiveColumns}, but freezes column math after the catalog
+ * column has been measured so search/filter transitions do not resize tiles.
+ * Recalculates when the window width changes or grid/list mode toggles.
+ */
+export function useStableResponsiveColumns(
+  layout: 'grid' | 'list',
+  options?: StableResponsiveColumnOptions
+) {
+  const { width: windowWidth } = useWindowDimensions();
+  const measurementReady = options?.measurementReady ?? true;
+  const live = useResponsiveColumns(layout, options);
+  const cacheRef = useRef<StableResponsiveColumnCache | null>(null);
+
+  if (!measurementReady) {
+    return live;
+  }
+
+  const cache = cacheRef.current;
+  const shouldRefresh =
+    cache == null || cache.windowWidth !== windowWidth || cache.layout !== layout;
+
+  if (shouldRefresh) {
+    cacheRef.current = {
+      windowWidth,
+      layout,
+      values: live,
+    };
+    return live;
+  }
+
+  return cache.values;
 }
 
 export function useIsDesktopLayout() {

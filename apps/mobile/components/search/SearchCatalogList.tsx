@@ -10,7 +10,10 @@ import type { CardListItem } from '@riftbound/contracts';
 import { CardTile } from '@/components/cards/CardTile';
 import { CatalogResultsTransition } from '@/components/catalog/CatalogResultsTransition';
 import { AppLoader } from '@/components/ui/app-loader';
-import { Layout } from '@/constants/Layout';
+import {
+  catalogGridCellStyle,
+  catalogGridListStyle,
+} from '@/lib/catalog-grid-layout';
 import { cardListItemMatchesVariant } from '@/utils/variants';
 import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
 import { cn } from '@/lib/utils';
@@ -18,7 +21,6 @@ import { cn } from '@/lib/utils';
 interface SearchCatalogListProps {
   catalogListRef: React.RefObject<FlashListRef<CardListItem> | null>;
   displayItems: CardListItem[];
-  hasSearchInput: boolean;
   view: 'grid' | 'list';
   numColumns: number;
   isList: boolean;
@@ -44,7 +46,6 @@ interface SearchCatalogListProps {
 export function SearchCatalogList({
   catalogListRef,
   displayItems,
-  hasSearchInput,
   view,
   numColumns,
   isList,
@@ -66,14 +67,10 @@ export function SearchCatalogList({
   fetchMoreCatalog,
   maybeFillCatalogViewport,
 }: SearchCatalogListProps) {
-  const gridCellStyle = useMemo(
-    () => ({ paddingHorizontal: Layout.gridGap / 2, marginBottom: Layout.gridGap }),
-    []
-  );
+  const gridCellStyle = useMemo(() => catalogGridCellStyle(), []);
 
   const listStyle = useMemo(
-    () =>
-      isList ? { flex: 1 } : { flex: 1, marginHorizontal: -Layout.gridGap / 2 },
+    () => (isList ? { flex: 1 } : catalogGridListStyle()),
     [isList]
   );
 
@@ -154,7 +151,7 @@ export function SearchCatalogList({
           <FlashList
             ref={catalogListRef}
             data={displayItems}
-            key={`${hasSearchInput ? 'search' : 'featured'}-${view}-${String(numColumns)}`}
+            key={`${view}-${String(numColumns)}`}
             numColumns={isList ? 1 : numColumns}
             keyExtractor={(item) => item.variantNumber}
             renderItem={renderItem}

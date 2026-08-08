@@ -15,6 +15,7 @@ import {
 } from '@/components/search/SearchScreenEmpty';
 import type { CatalogFilters } from '@/constants/catalogFilters';
 import { catalogFiltersActive } from '@/constants/catalogFilters';
+import { isCatalogGridLoading } from '@/lib/catalog-loading';
 import type { SearchHistoryItem } from '@/services/searchHistoryService';
 
 export interface SearchScreenFetchStatus {
@@ -74,19 +75,16 @@ export function SearchScreenListEmpty({
 }: SearchScreenListEmptyProps) {
   const { isSearching, searchPending, isLoading, isError, isFetching } = fetchStatus;
   const trimmed = query.trim();
+  const catalogGridLoading = isCatalogGridLoading({
+    isSearching,
+    searchPending,
+    isLoading,
+    isFetching,
+    searchItemsLength: itemsLength,
+    browseLoading: browseCatalogLoading,
+  });
 
-  if (isSearching && (searchPending || isLoading || (isFetching && itemsLength === 0))) {
-    return (
-      <SearchSkeleton
-        layout={view}
-        count={isList ? 8 : numColumns * 2}
-        tileWidth={tileWidth}
-        compact={compact}
-      />
-    );
-  }
-
-  if (!isSearching && browseCatalogLoading) {
+  if (catalogGridLoading) {
     return (
       <SearchSkeleton
         layout={view}

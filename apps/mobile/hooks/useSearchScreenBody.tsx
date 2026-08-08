@@ -13,6 +13,7 @@ import type { CardListItem } from '@riftbound/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { CardDetailDrawer } from '@/components/catalog/CardDetailDrawer';
 import { CatalogDetailPanel } from '@/components/catalog/CatalogDetailPanel';
+import { CatalogDetailPanelSkeleton } from '@/components/catalog/CatalogDetailPanelSkeleton';
 import { CatalogFilterSheet } from '@/components/catalog/FilterSheet';
 import { SortSheet } from '@/components/catalog/SortSheet';
 import { SearchCatalogList } from '@/components/search/SearchCatalogList';
@@ -53,7 +54,7 @@ import {
   useCatalogSplitLayout,
   useMobileLayout,
 } from '@/hooks/useBreakpoint';
-import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
+import { useStableResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { prefetchCardDetail, ensureCardDetail } from '@/lib/prefetchCardDetail';
 import {
   catalogLookaheadCount,
@@ -71,11 +72,12 @@ import {
   type SearchHistoryItem,
 } from '@/services/searchHistoryService';
 import { hapticPress } from '@/utils/haptics';
+import { isCatalogGridLoading } from '@/lib/catalog-loading';
 
 export function useSearchScreenBody(): React.ReactElement {
   const { defaultLayout, setDefaultLayout } = useTheme();
   const { height: windowHeight } = useWindowDimensions();
-  const { contentWidth: layoutContentWidth, paddingBottomInline, showRail } =
+  const { contentWidth: layoutContentWidth, measuredWidth: layoutMeasuredWidth, paddingBottomInline, showRail } =
     useScreenLayout();
   const [splitMainWidth, setSplitMainWidth] = useState<number | null>(null);
   const splitLayout = useCatalogSplitLayout();
@@ -106,6 +108,11 @@ export function useSearchScreenBody(): React.ReactElement {
       Math.max(280, layoutContentWidth - DETAIL_PANEL_WIDTH - CATALOG_DETAIL_GAP))
     : layoutContentWidth;
 
+  const gridMeasurementReady =
+    layoutMeasuredWidth != null &&
+    layoutMeasuredWidth > 0 &&
+    (!splitLayout || splitMainWidth != null);
+
   const catalogReservedWidth = useMemo(() => {
     let reserved = 0;
     if (showRail) reserved += SIDE_RAIL_WIDTH;
@@ -118,12 +125,13 @@ export function useSearchScreenBody(): React.ReactElement {
     return reserved;
   }, [showRail, splitLayout, selectedVariant]);
 
-  const { numColumns, contentWidth, tileWidth, compact } = useResponsiveColumns(
+  const { numColumns, contentWidth, tileWidth, compact } = useStableResponsiveColumns(
     view,
     {
       reservedWidth: splitLayout ? catalogReservedWidth : showRail ? SIDE_RAIL_WIDTH : 0,
       measuredWidth: splitLayout ? catalogColumnWidth : layoutContentWidth,
       fillAvailable: view === 'grid',
+      measurementReady: gridMeasurementReady,
     }
   );
 
@@ -450,6 +458,14 @@ export function useSearchScreenBody(): React.ReactElement {
     displayItems.length > 0 ||
     (hasSearchInput && (searchPending || isLoading || isFetching)) ||
     (!hasSearchInput && (browseCatalog.isLoading || browseCatalog.isFetching));
+  const catalogGridLoading = isCatalogGridLoading({
+    isSearching: hasSearchInput,
+    searchPending,
+    isLoading,
+    isFetching,
+    searchItemsLength: items.length,
+    browseLoading: browseCatalog.isLoading,
+  });
   const filterActive = catalogFiltersActive(catalogFilters);
 
   const loadHistory = useCallback(async () => {
@@ -646,7 +662,6 @@ export function useSearchScreenBody(): React.ReactElement {
     <SearchCatalogList
       catalogListRef={catalogListRef}
       displayItems={displayItems}
-      hasSearchInput={hasSearchInput}
       view={view}
       numColumns={numColumns}
       isList={isList}
@@ -677,9 +692,16 @@ export function useSearchScreenBody(): React.ReactElement {
           asideWidth={DETAIL_PANEL_WIDTH}
           onMainWidthChange={setSplitMainWidth}
           aside={
-            selectedVariant ? (
-              <CatalogDetailPanel variantNumber={selectedVariant} catalogListItem={selectedCard} />
-            ) : undefined
+            catalogGridLoading ? (
+              <CatalogDetailPanelSkeleton />
+            ) : selectedVariant ? (
+              <CatalogDetailPanel
+                variantNumber={selectedVariant}
+                catalogListItem={selectedCard}
+              />
+            ) : (
+              <View className="min-h-0 flex-1" />
+            )
           }
         >
           {searchPanel}

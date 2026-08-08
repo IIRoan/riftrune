@@ -305,7 +305,7 @@ export function CardTileSkeleton({
     return (
       <View
         className={cn(
-          'flex-row items-center opacity-40',
+          'flex-row items-center',
           listCompact ? 'gap-3 px-3 py-2' : 'gap-4 px-4 py-3.5'
         )}
       >
@@ -325,7 +325,7 @@ export function CardTileSkeleton({
   return (
     <View
       className={cn(
-        'overflow-hidden border border-border bg-card opacity-40',
+        'overflow-hidden border border-border bg-card',
         CARD_ART_RADIUS_CLASS
       )}
     >

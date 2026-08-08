@@ -1,12 +1,17 @@
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { CardTileSkeleton } from '@/components/cards/CardTile';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SkeletonGroup } from '@/components/ui/skeleton';
+import {
+  catalogGridListStyle,
+  catalogGridSkeletonCellStyle,
+  catalogGridTileStyle,
+} from '@/lib/catalog-grid-layout';
 
 interface SearchSkeletonProps {
   layout?: 'grid' | 'list';
   count?: number;
-  tileWidth?: number;
+  tileWidth: number;
   compact?: boolean;
 }
 
@@ -18,28 +23,32 @@ export function SearchSkeleton({
 }: SearchSkeletonProps) {
   const items = useMemo(() => Array.from({ length: count }, (_, i) => i), [count]);
 
-  if (layout === 'list') {
-    return (
-      <View className="gap-2">
-        {items.map((i) => (
-          <Skeleton key={i} className="w-full rounded-lg">
-            <CardTileSkeleton layout="list" compact={compact} />
-          </Skeleton>
-        ))}
-      </View>
-    );
-  }
+  const gridListStyle = useMemo(() => catalogGridListStyle(), []);
+  const gridCellStyle = useMemo(
+    () => catalogGridSkeletonCellStyle(tileWidth),
+    [tileWidth]
+  );
+  const gridTileStyle = useMemo(() => catalogGridTileStyle(tileWidth), [tileWidth]);
 
   return (
-    <View className="flex-row flex-wrap gap-4">
-      {items.map((i) => (
-        <View
-          key={i}
-          style={tileWidth != null ? { width: tileWidth, maxWidth: tileWidth } : undefined}
-        >
-          <CardTileSkeleton layout="grid" compact={compact} />
+    <SkeletonGroup>
+      {layout === 'list' ? (
+        <View className="gap-2">
+          {items.map((i) => (
+            <CardTileSkeleton key={i} layout="list" compact={compact} />
+          ))}
         </View>
-      ))}
-    </View>
+      ) : (
+        <View className="flex-row flex-wrap" style={gridListStyle}>
+          {items.map((i) => (
+            <View key={i} style={gridCellStyle}>
+              <View style={gridTileStyle}>
+                <CardTileSkeleton layout="grid" compact={compact} />
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+    </SkeletonGroup>
   );
 }
