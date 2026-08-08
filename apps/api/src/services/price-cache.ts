@@ -428,8 +428,17 @@ export class PriceCacheService {
           `[prices] Backfilled ${String(backfillResult.updated)} missing Cardmarket product ids (${String(backfillResult.skipped)} still unmapped)`
         );
       }
+      if (backfillResult.syntheticsCreated > 0) {
+        console.log(
+          `[prices] Materialized ${String(backfillResult.syntheticsCreated)} local Overnumbered Signed variants from unmatched Cardmarket SKUs`
+        );
+      }
 
-      return { ...result, cardmarketIdsBackfilled: backfillResult.updated };
+      return {
+        ...result,
+        cardmarketIdsBackfilled:
+          backfillResult.updated + backfillResult.syntheticsCreated,
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(

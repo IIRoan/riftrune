@@ -28,7 +28,8 @@ const BUDGET = {
   detail: readBudget('detail', 500),
   quantities: readBudget('quantities', 400),
   collectionList: readBudget('collection_list', 2500),
-  batch: readBudget('batch', 1200),
+  // Includes local-only sibling merge on detail loads; leave headroom for host variance.
+  batch: readBudget('batch', 1600),
   prices: readBudget('prices', 1500),
   priceStats: readBudget('price_stats', 2000),
   syncStatus: readBudget('sync_status', 200),

@@ -22,14 +22,6 @@ interface PrintingPickerMenuProps {
   children: React.ReactElement<{ onPress?: () => void; disabled?: boolean }>;
 }
 
-function FoilBadge() {
-  return (
-    <View className="rounded bg-primary/15 px-1 py-0.5">
-      <Text className="text-[10px] font-semibold text-primary">Foil</Text>
-    </View>
-  );
-}
-
 function PrintingMenuItems({
   options,
   onSelect,
@@ -42,9 +34,6 @@ function PrintingMenuItems({
   return (
     <View className="gap-0.5">
       {options.map((option) => {
-        const isFoil =
-          /foil/i.test(option.label) || /foil/i.test(option.id);
-        const labelHasFoil = option.label.toLowerCase().includes('foil');
         return (
           <PopoverClose key={option.id} asChild>
             <Pressable
@@ -61,7 +50,6 @@ function PrintingMenuItems({
               <Text className="text-[13px] font-medium text-foreground" numberOfLines={1}>
                 {option.label}
               </Text>
-              {isFoil && !labelHasFoil ? <FoilBadge /> : null}
             </View>
             {option.price ? (
               <Text className="font-mono text-xs text-muted-foreground">{option.price}</Text>

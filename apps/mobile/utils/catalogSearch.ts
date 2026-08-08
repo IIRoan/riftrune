@@ -16,6 +16,7 @@ function buildSearchBlob(card: CardListItem): string {
     card.name,
     card.variantNumber,
     card.type,
+    card.variantType,
     card.setCode,
     card.rarity,
     ...card.colors,
@@ -37,12 +38,16 @@ function relevanceScore(card: CardListItem, query: string): number {
 
   const name = card.name.toLowerCase();
   const variantNumber = card.variantNumber.toLowerCase();
+  const labels = getCardPrintings(card).map((printing) =>
+    printing.variantLabel.toLowerCase()
+  );
 
   if (name.startsWith(trimmed)) return 0;
   if (variantNumber.startsWith(trimmed)) return 1;
-  if (name.includes(trimmed)) return 2;
-  if (variantNumber.includes(trimmed)) return 3;
-  return 4;
+  if (labels.some((label) => label.includes(trimmed))) return 2;
+  if (name.includes(trimmed)) return 3;
+  if (variantNumber.includes(trimmed)) return 4;
+  return 5;
 }
 
 function compareBySort(a: CardListItem, b: CardListItem, sort: CatalogSort): number {

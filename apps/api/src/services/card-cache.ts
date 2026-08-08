@@ -7,7 +7,7 @@ import {
 } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { cardColors, cards, colors, sets, syncState, variants } from '../db/schema.js';
-import type { RiftruneClient } from '../upstream/riftrune-client.js';
+import { RiftruneApiError, type RiftruneClient } from '../upstream/riftrune-client.js';
 import {
   mapCardDetail,
   mapListItem,
@@ -129,8 +129,9 @@ export class CardCacheService {
   ): PaVariant {
     return {
       ...variant,
-      cardmarketId: dbVariant.cardmarketId ?? variant.cardmarketId ?? null,
-      tcgplayerId: dbVariant.tcgplayerId ?? variant.tcgplayerId ?? null,
+      // Prefer upstream ids when present — backfill can latch onto a Signed CM SKU.
+      cardmarketId: variant.cardmarketId ?? dbVariant.cardmarketId ?? null,
+      tcgplayerId: variant.tcgplayerId ?? dbVariant.tcgplayerId ?? null,
     };
   }
 
@@ -153,11 +154,31 @@ export class CardCacheService {
         if (!dbRow) return variant;
         return {
           ...variant,
-          cardmarketId: dbRow.cardmarketId ?? variant.cardmarketId ?? null,
-          tcgplayerId: dbRow.tcgplayerId ?? variant.tcgplayerId ?? null,
+          cardmarketId: variant.cardmarketId ?? dbRow.cardmarketId ?? null,
+          tcgplayerId: variant.tcgplayerId ?? dbRow.tcgplayerId ?? null,
         };
       }),
     };
+  }
+
+  /** Push non-null upstream marketplace ids even when the card content hash is unchanged. */
+  private async applyUpstreamMarketplaceIds(card: PaLogicalCard): Promise<void> {
+    const now = new Date();
+    for (const variant of card.variants) {
+      if (variant.cardmarketId == null && variant.tcgplayerId == null) continue;
+      const patch: {
+        cardmarketId?: number;
+        tcgplayerId?: number;
+        updatedAt: Date;
+      } = { updatedAt: now };
+      if (variant.cardmarketId != null) patch.cardmarketId = variant.cardmarketId;
+      if (variant.tcgplayerId != null) patch.tcgplayerId = variant.tcgplayerId;
+      // Match by variant_number — synthetic rows may keep a local id after PA catalogs them.
+      await this.db
+        .update(variants)
+        .set(patch)
+        .where(eq(variants.variantNumber, variant.variantNumber));
+    }
   }
 
   invalidateSearchCache(): void {
@@ -191,6 +212,7 @@ export class CardCacheService {
       where: eq(cards.id, card.id),
     });
     if (existing?.contentHash === hash) {
+      await this.applyUpstreamMarketplaceIds(card);
       return false;
     }
 
@@ -332,6 +354,44 @@ export class CardCacheService {
         },
       });
 
+    // Synthetic Signed rows use a random UUID. When PA later catalogs the same
+    // variant_number with a different id, inserting on id would violate the unique
+    // variant_number constraint. Keep the local primary key (collection FKs and
+    // delete+insert are unsafe) and overlay upstream fields onto the existing row.
+    const existingByNumber = await tx.query.variants.findFirst({
+      where: eq(variants.variantNumber, variant.variantNumber),
+      columns: { id: true, cardmarketId: true },
+    });
+    if (existingByNumber && existingByNumber.id !== variant.id) {
+      await tx
+        .update(variants)
+        .set({
+          cardId,
+          rarity: variant.rarity,
+          variantType: variant.variantType,
+          foilMode: variant.foilMode,
+          variantTypes: variant.variantTypes,
+          imageUrl: variant.imageUrl,
+          flavorText: variant.flavorText ?? null,
+          artist: variant.artist ?? null,
+          releaseDate: variant.releaseDate ?? null,
+          variantLabel: variant.variantLabel,
+          showInLibrary: variant.showInLibrary,
+          isCollectible: variant.isCollectible,
+          contentHash: vHash,
+          // Persist PA payload (including upstream id) while DB PK stays local.
+          upstreamRaw: variant,
+          cardmarketId: variant.cardmarketId ?? existingByNumber.cardmarketId ?? null,
+          tcgplayerId: variant.tcgplayerId ?? null,
+          parentVariantId: variant.parentVariantId ?? null,
+          setId: variant.set.id,
+          fetchedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(variants.id, existingByNumber.id));
+      return;
+    }
+
     await tx
       .insert(variants)
       .values({
@@ -404,16 +464,41 @@ export class CardCacheService {
       };
     }
 
-    const upstream = await this.riftrune.getCard(variantNumber);
-    const changed = await this.upsertFromUpstream(upstream);
-    const priceRows = await this.priceRowsForLogicalCard(upstream);
-    const detail = this.mapDetail(upstream, priceRows);
-
-    return {
-      detail,
-      source: cached ? (changed ? 'cache-refreshed' : 'cache') : 'upstream',
-      contentHash: paCardHash(upstream),
-    };
+    try {
+      const upstream = await this.riftrune.getCard(variantNumber);
+      const changed = await this.upsertFromUpstream(upstream);
+      if (changed || options?.refresh) {
+        this.invalidateSearchCache();
+      }
+      // Reload so local-only siblings (e.g. synthetic Overnumbered Signed) stay visible.
+      const reloaded = await this.loadCardDetailFromDb(variantNumber);
+      if (reloaded) {
+        return {
+          detail: reloaded.detail,
+          source: cached ? (changed ? 'cache-refreshed' : 'cache') : 'upstream',
+          contentHash: reloaded.contentHash,
+        };
+      }
+      const priceRows = await this.priceRowsForLogicalCard(upstream);
+      return {
+        detail: this.mapDetail(upstream, priceRows),
+        source: cached ? (changed ? 'cache-refreshed' : 'cache') : 'upstream',
+        contentHash: paCardHash(upstream),
+      };
+    } catch (err) {
+      // Local-only synthetics (e.g. VEN-189*) are absent from PA — serve cache on 404.
+      // Do not hide refresh/network failures for real upstream cards.
+      const notFound = err instanceof RiftruneApiError && err.status === 404;
+      const localOnlySynthetic = variantNumber.trim().endsWith('*');
+      if (cached && notFound && localOnlySynthetic) {
+        return {
+          detail: cached.detail,
+          source: 'cache',
+          contentHash: cached.contentHash,
+        };
+      }
+      throw err;
+    }
   }
 
   /**
@@ -607,18 +692,52 @@ export class CardCacheService {
         variantNumber: variants.variantNumber,
         cardmarketId: variants.cardmarketId,
         tcgplayerId: variants.tcgplayerId,
+        upstreamRaw: variants.upstreamRaw,
       })
       .from(variants)
       .where(eq(variants.cardId, variantRow.cardId));
 
-    const upstream = this.mergeVariantMarketplaceIds(
+    const withLocals = this.mergeLocalOnlyVariants(
       cardRow.upstreamRaw as PaLogicalCard,
       dbVariants
     );
+    const upstream = this.mergeVariantMarketplaceIds(withLocals, dbVariants);
     const priceRows = await this.priceRowsForLogicalCard(upstream);
     return {
       detail: this.mapDetail(upstream, priceRows),
       contentHash: cardRow.contentHash,
+    };
+  }
+
+  /** Keep DB-only printings (synthetic Signed Overnumbered) on the logical card. */
+  private mergeLocalOnlyVariants(
+    card: PaLogicalCard,
+    dbVariants: Array<{
+      variantNumber: string;
+      cardmarketId: number | null;
+      tcgplayerId: number | null;
+      upstreamRaw: unknown;
+    }>
+  ): PaLogicalCard {
+    const known = new Set(
+      card.variants.map((variant) => variant.variantNumber.toLowerCase())
+    );
+    const extras: PaVariant[] = [];
+    for (const row of dbVariants) {
+      if (known.has(row.variantNumber.toLowerCase())) continue;
+      const raw = row.upstreamRaw as PaVariant;
+      extras.push({
+        ...raw,
+        cardmarketId: row.cardmarketId ?? raw.cardmarketId ?? null,
+        tcgplayerId: row.tcgplayerId ?? raw.tcgplayerId ?? null,
+      });
+    }
+    if (extras.length === 0) return card;
+    return {
+      ...card,
+      variants: [...card.variants, ...extras].sort((a, b) =>
+        a.variantNumber.localeCompare(b.variantNumber)
+      ),
     };
   }
 

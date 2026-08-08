@@ -33,9 +33,9 @@ export function CatalogSimpleAddToggle({
         onChange(!active);
       }}
       className={cn(
-        'shrink-0 flex-row items-center justify-center gap-1.5 rounded-xl border active:opacity-80',
-        isMobile ? 'size-11 px-0' : 'h-9 px-2.5',
-        active ? 'border-ring/50 bg-card-panel' : 'border-border bg-card',
+        'shrink-0 flex-row items-center justify-center gap-1.5 rounded-xl border border-border active:opacity-80',
+        isMobile ? 'h-11 w-11 px-0' : 'h-9 px-2.5',
+        active ? 'border-ring/50 bg-card-panel' : 'bg-card',
         className
       )}
     >

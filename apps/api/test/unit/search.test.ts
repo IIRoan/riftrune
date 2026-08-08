@@ -3,7 +3,9 @@ import { PgDialect } from 'drizzle-orm/pg-core';
 import {
   buildCardSearchCondition,
   buildSearchRelevanceOrder,
+  escapeRegexLiteral,
   tokenizeSearchQuery,
+  wholeWordPattern,
 } from '../../src/lib/search.js';
 
 const dialect = new PgDialect();
@@ -50,6 +52,21 @@ describe('buildCardSearchCondition', () => {
     const compiled = compile(buildCardSearchCondition('soul spinner')!);
     expect(compiled.params).toContain('%soul%');
     expect(compiled.params).toContain('%spinner%');
+  });
+
+  test('searches variant labels and uses whole-word rules matching', () => {
+    const compiled = compile(buildCardSearchCondition('signed')!);
+    expect(compiled.sql.toLowerCase()).toContain('variant_label');
+    expect(compiled.sql).toContain('~*');
+    expect(compiled.params).toContain('%signed%');
+    expect(compiled.params).toContain(wholeWordPattern('signed'));
+  });
+});
+
+describe('wholeWordPattern', () => {
+  test('escapes regex metacharacters in the token', () => {
+    expect(escapeRegexLiteral('a+b')).toBe('a\\+b');
+    expect(wholeWordPattern('signed')).toBe('(^|[^[:alnum:]_])signed([^[:alnum:]_]|$)');
   });
 });
 

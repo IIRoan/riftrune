@@ -72,7 +72,7 @@ describe('per-user database isolation', () => {
         })
       ).json()
     );
-    expect(quantitiesB.data).toEqual([{ variantNumber, quantity: 0 }]);
+    expect(quantitiesB.data).toEqual([{ variantNumber, isFoil: false, quantity: 0 }]);
 
     const listB = CollectionListResponse.parse(
       await (await authFetch('/api/v1/collection', { cookie: cookieB })).json()

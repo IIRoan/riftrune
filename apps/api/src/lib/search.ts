@@ -10,13 +10,27 @@ export function tokenizeSearchQuery(raw: string): string[] {
     .filter((t) => t.length > 0);
 }
 
+/** Escape a literal for PostgreSQL POSIX regex. */
+export function escapeRegexLiteral(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /** Name with spaces stripped — matches the query regardless of word spacing. */
 function squashedName() {
   return sql`replace(lower(${cards.name}), ' ', '')`;
 }
 
 /**
- * Match card name, variant number, type, or tags for every token.
+ * Case-insensitive whole-word match on a text column.
+ * "signed" matches "Overnumbered Signed" but not "assigned".
+ */
+export function wholeWordPattern(token: string): string {
+  return `(^|[^[:alnum:]_])${escapeRegexLiteral(token)}([^[:alnum:]_]|$)`;
+}
+
+/**
+ * Match card name, variant number/label/type, type, tags, or rules text for every token.
+ * Rules/flavor text use whole-word matching so "signed" does not hit "assigned".
  * A space-insensitive whole-query clause also matches the name, so
  * "soulspinner" finds "Soul Spinner" and "soul spinner" finds "Soulspinner".
  */
@@ -26,18 +40,24 @@ export function buildCardSearchCondition(q: string): SQL | undefined {
 
   const perToken = tokens.map((token) => {
     const pattern = `%${token}%`;
+    const wordPattern = wholeWordPattern(token);
     return or(
+      // Identity / catalog fields — substring OK for partial discovery ("aka", "VEN-18")
       ilike(cards.name, pattern),
       ilike(variants.variantNumber, pattern),
       ilike(cards.type, pattern),
-      ilike(cards.description, pattern),
-      ilike(cards.effect, pattern),
-      ilike(cards.attachText, pattern),
+      ilike(variants.variantLabel, pattern),
+      ilike(variants.variantType, pattern),
+      sql`${variants.variantTypes}::text ILIKE ${pattern}`,
       ilike(variants.artist, pattern),
-      ilike(variants.flavorText, pattern),
       ilike(sets.name, pattern),
       ilike(sets.code, pattern),
-      sql`${cards.tags}::text ILIKE ${pattern}`
+      sql`${cards.tags}::text ILIKE ${pattern}`,
+      // Rules / flavor — whole words only ("signed" ≠ "assigned")
+      sql`${cards.description} ~* ${wordPattern}`,
+      sql`${cards.effect} ~* ${wordPattern}`,
+      sql`${cards.attachText} ~* ${wordPattern}`,
+      sql`${variants.flavorText} ~* ${wordPattern}`
     );
   });
 
@@ -57,11 +77,13 @@ export function buildSearchRelevanceOrder(q: string) {
     CASE
       WHEN ${cards.name} ILIKE ${prefix} THEN 0
       WHEN ${variants.variantNumber} ILIKE ${prefix} THEN 1
-      WHEN ${squashedName()} LIKE ${`${squashed}%`} THEN 2
-      WHEN ${cards.name} ILIKE ${contains} THEN 3
-      WHEN ${variants.variantNumber} ILIKE ${contains} THEN 4
-      WHEN ${squashedName()} LIKE ${`%${squashed}%`} THEN 5
-      ELSE 6
+      WHEN ${variants.variantLabel} ILIKE ${contains} THEN 2
+      WHEN ${variants.variantType} ILIKE ${contains} THEN 3
+      WHEN ${squashedName()} LIKE ${`${squashed}%`} THEN 4
+      WHEN ${cards.name} ILIKE ${contains} THEN 5
+      WHEN ${variants.variantNumber} ILIKE ${contains} THEN 6
+      WHEN ${squashedName()} LIKE ${`%${squashed}%`} THEN 7
+      ELSE 8
     END
   `;
 }

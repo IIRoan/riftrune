@@ -114,6 +114,32 @@ describe('catalogSearch', () => {
     );
   });
 
+  test('searchCatalogItems matches Overnumbered Signed labels', () => {
+    const signedAkali = {
+      ...vi,
+      cardId: '00000000-0000-0000-0000-000000000099',
+      variantNumber: 'VEN-189*',
+      name: 'Akali, Rogue Assassin',
+      variantType: 'Overnumbered',
+      printings: [
+        {
+          variantNumber: 'VEN-189*',
+          variantLabel: 'Overnumbered Signed',
+          isFoil: true,
+          priceEur: null,
+        },
+      ],
+    } satisfies CardListItem;
+
+    const results = searchCatalogItems(
+      [...catalog, signedAkali],
+      'signed',
+      DEFAULT_CATALOG_SORT,
+      10
+    );
+    expect(results.map((card) => card.variantNumber)).toEqual(['VEN-189*']);
+  });
+
   test('searchCatalogItems returns empty for blank query', () => {
     expect(searchCatalogItems(catalog, '   ', DEFAULT_CATALOG_SORT, 10)).toEqual([]);
   });

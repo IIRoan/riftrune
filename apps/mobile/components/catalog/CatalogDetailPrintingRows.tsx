@@ -30,8 +30,6 @@ export function CatalogDetailPrintingRows({
     <View className="bg-card-panel">
       {printings.map((printing, index) => {
         const qty = ownedQuantityForPrinting(collectionByVariant, printing);
-        const foilTag =
-          printing.isFoil && !printing.variantLabel.toLowerCase().includes('foil');
         return (
           <View key={collectionFinishKey(printing.variantNumber, printing.isFoil)}>
             {index > 0 ? <View className="h-hairline bg-border" /> : null}
@@ -44,13 +42,6 @@ export function CatalogDetailPrintingRows({
                   >
                     {printing.variantLabel}
                   </Text>
-                  {foilTag ? (
-                    <View className="rounded bg-primary/15 px-1.5 py-0.5">
-                      <Text className="text-[11px] font-semibold text-archive-accent-text">
-                        Foil
-                      </Text>
-                    </View>
-                  ) : null}
                 </View>
                 <Text
                   className="font-mono text-[11px] text-archive-subtle"

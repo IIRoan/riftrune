@@ -252,8 +252,8 @@ describe('shared collection invite flows', () => {
     );
     expect(quantities.data).toEqual(
       expect.arrayContaining([
-        { variantNumber: 'OGN-210', quantity: 5 },
-        { variantNumber: 'OGN-211', quantity: 1 },
+        { variantNumber: 'OGN-210', isFoil: false, quantity: 5 },
+        { variantNumber: 'OGN-211', isFoil: false, quantity: 1 },
       ])
     );
 

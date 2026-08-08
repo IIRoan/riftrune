@@ -2,7 +2,6 @@ import { ThemedIcon, CircleCheckIcon, MinusIcon, PlusIcon, TrashIcon } from '@/c
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Badge, BadgeIcon, BadgeText } from '@/components/ui/badge';
 import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
-import { Chip, ChipText } from '@/components/ui/chip';
 import { Separator } from '@/components/ui/separator';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
@@ -12,6 +11,7 @@ import { hapticPress } from '@/utils/haptics';
 
 interface Props {
   quantity: number;
+  /** Kept for call-site compatibility; finish is shown via the printing label. */
   isFoil?: boolean;
   compact?: boolean;
   loading?: boolean;
@@ -80,7 +80,7 @@ export function CollectionAddButton({
 
 export function CollectionQtyControls({
   quantity,
-  isFoil = false,
+  isFoil: _isFoil = false,
   compact = false,
   loading = false,
   onIncrement,
@@ -188,11 +188,6 @@ export function CollectionQtyControls({
             In collection
           </BadgeText>
         </Badge>
-        {isFoil ? (
-          <Chip variant="outline" className="pointer-events-none">
-            <ChipText className="text-[10px] uppercase tracking-wide">Foil</ChipText>
-          </Chip>
-        ) : null}
       </Stack>
 
       <View className="flex-row items-center justify-center gap-4 py-1">

@@ -239,9 +239,9 @@ describe('collection import/export', () => {
     const body = await res.json();
     expect(body.data).toEqual(
       expect.arrayContaining([
-        { variantNumber: 'OGN-001', quantity: expect.any(Number) },
-        { variantNumber: 'OGN-999', quantity: 0 },
-        { variantNumber: 'OGN-003', quantity: expect.any(Number) },
+        { variantNumber: 'OGN-001', isFoil: false, quantity: expect.any(Number) },
+        { variantNumber: 'OGN-999', isFoil: false, quantity: 0 },
+        { variantNumber: 'OGN-003', isFoil: false, quantity: expect.any(Number) },
       ])
     );
     expect(body.data).toHaveLength(3);

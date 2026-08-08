@@ -112,8 +112,8 @@ export function PillNav<T extends string>({
         'relative flex-row items-stretch overflow-hidden border border-border bg-card',
         compact
           ? iconOnly
-            ? 'h-9 rounded-lg p-0'
-            : 'h-9 rounded-lg p-1'
+            ? 'h-9 rounded-xl p-0'
+            : 'h-9 rounded-xl p-1'
           : 'rounded-2xl p-1',
         fill && 'w-full',
         className

@@ -1,4 +1,5 @@
 import type { CardmarketProduct } from '../upstream/cardmarket-products.js';
+import { isSignedOvernumbered } from './synthetic-signed-overnumbered.js';
 
 export interface VariantForCardmarketMatch {
   variantNumber: string;
@@ -20,6 +21,32 @@ function isPremiumVariant(variant: VariantForCardmarketMatch): boolean {
   return /alt art|showcase|overnumbered|promo|signed|textured|borderless/i.test(
     haystack
   );
+}
+
+/** Overnumbered Signed only — not alt-art/promo signed printings. */
+function isSignedVariant(variant: VariantForCardmarketMatch): boolean {
+  return isSignedOvernumbered(variant);
+}
+
+function productPriceRank(
+  product: CardmarketProduct,
+  priceRankByProduct?: ReadonlyMap<number, number>
+): number {
+  // Prefer foil-trend price; fall back to idProduct so missing price rows still
+  // order newer/premium SKUs above older ones (ids are typically monotonic).
+  return priceRankByProduct?.get(product.idProduct) ?? product.idProduct;
+}
+
+function sortProductsByPriceAsc(
+  products: CardmarketProduct[],
+  priceRankByProduct?: ReadonlyMap<number, number>
+): CardmarketProduct[] {
+  return [...products].sort((left, right) => {
+    const leftRank = productPriceRank(left, priceRankByProduct);
+    const rightRank = productPriceRank(right, priceRankByProduct);
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    return left.idProduct - right.idProduct;
+  });
 }
 
 /** Pair catalog printings with Cardmarket products that share a card name within one expansion. */
@@ -44,26 +71,35 @@ export function matchVariantsToProducts(
   }
 
   if (sortedProducts.length > sortedVariants.length) {
+    // Cardmarket often lists an extra Signed SKU before Piltover Archive catalogs it.
+    // Assign cheapest→standard, next→unsigned premium, and only give the top price
+    // tiers to Signed printings — leave unmatched expensive products unmapped.
     const standard = sortedVariants.filter((variant) => !isPremiumVariant(variant));
     const premium = sortedVariants.filter((variant) => isPremiumVariant(variant));
+    const signed = premium.filter((variant) => isSignedVariant(variant));
+    const unsignedPremium = premium.filter((variant) => !isSignedVariant(variant));
+    const byPriceAsc = sortProductsByPriceAsc(sortedProducts, priceRankByProduct);
     const used = new Set<number>();
 
-    for (const variant of standard) {
-      const product = sortedProducts.find((row) => !used.has(row.idProduct));
+    for (const variant of [...standard, ...unsignedPremium]) {
+      const product = byPriceAsc.find((row) => !used.has(row.idProduct));
       if (!product) continue;
       result.set(variant.variantNumber, product.idProduct);
       used.add(product.idProduct);
     }
 
-    const remaining = sortedProducts.filter((row) => !used.has(row.idProduct));
-    remaining.sort((left, right) => {
-      const leftRank = priceRankByProduct?.get(left.idProduct) ?? left.idProduct;
-      const rightRank = priceRankByProduct?.get(right.idProduct) ?? right.idProduct;
-      return rightRank - leftRank;
-    });
+    const remaining = byPriceAsc
+      .filter((row) => !used.has(row.idProduct))
+      .sort((left, right) => {
+        const rankDelta =
+          productPriceRank(right, priceRankByProduct) -
+          productPriceRank(left, priceRankByProduct);
+        if (rankDelta !== 0) return rankDelta;
+        return right.idProduct - left.idProduct;
+      });
 
-    for (let index = 0; index < premium.length && index < remaining.length; index += 1) {
-      const variant = premium[index]!;
+    for (let index = 0; index < signed.length && index < remaining.length; index += 1) {
+      const variant = signed[index]!;
       const product = remaining[index]!;
       result.set(variant.variantNumber, product.idProduct);
     }

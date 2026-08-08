@@ -79,10 +79,10 @@ describe('collection database workflows', () => {
 
     expect(quantities.data).toEqual(
       expect.arrayContaining([
-        { variantNumber: 'OGN-001', quantity: 1 },
-        { variantNumber: 'OGN-002', quantity: 2 },
-        { variantNumber: 'OGN-003', quantity: 3 },
-        { variantNumber: 'OGN-999', quantity: 0 },
+        { variantNumber: 'OGN-001', isFoil: false, quantity: 1 },
+        { variantNumber: 'OGN-002', isFoil: false, quantity: 2 },
+        { variantNumber: 'OGN-003', isFoil: false, quantity: 3 },
+        { variantNumber: 'OGN-999', isFoil: false, quantity: 0 },
       ])
     );
 
@@ -126,7 +126,7 @@ describe('collection database workflows', () => {
       body: JSON.stringify({ variantNumbers: [variantNumber] }),
     });
     const quantities = CollectionQuantitiesResponse.parse(await quantitiesRes.json());
-    expect(quantities.data).toEqual([{ variantNumber, quantity: 0 }]);
+    expect(quantities.data).toEqual([{ variantNumber, isFoil: false, quantity: 0 }]);
 
     const { db } = getContext();
     const rows = await db
