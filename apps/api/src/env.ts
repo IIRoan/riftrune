@@ -51,10 +51,6 @@ const EnvSchema = z.object({
    * (e.g. https://rift.solace.onl → /invite/:token linking page).
    */
   PUBLIC_APP_URL: z.string().url().optional(),
-  SWAGGER_ENABLED: z
-    .string()
-    .optional()
-    .transform((value) => parseBooleanFlag(value, false)),
   CATALOG_WARMUP_ON_START: z
     .string()
     .optional()
@@ -90,8 +86,6 @@ export function loadEnv(): Env {
       (env.NODE_ENV === 'production'
         ? 'https://rift.solace.onl'
         : 'http://localhost:7001'),
-    SWAGGER_ENABLED:
-      env.SWAGGER_ENABLED || env.NODE_ENV === 'development',
     CATALOG_WARMUP_ON_START:
       env.CATALOG_WARMUP_ON_START || env.NODE_ENV === 'development',
   };

@@ -15,7 +15,6 @@ function baseEnv(overrides: Partial<Env> = {}): Env {
     BETTER_AUTH_URL: 'https://api.riftrune.com',
     TRUSTED_ORIGINS: ['https://riftrune.com'],
     PUBLIC_APP_URL: 'https://riftrune.com',
-    SWAGGER_ENABLED: false,
     CATALOG_WARMUP_ON_START: false,
     CARDMARKET_GAME_ID: 22,
     DB_POOL_MAX: 5,

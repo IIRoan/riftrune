@@ -145,275 +145,231 @@ export function createCollectionRoutes(
   liveHub: CollectionLiveHub = collectionLiveHub
 ) {
   return new Elysia({ prefix: '/api/v1/collection' })
-    .get(
-      '/',
-      async ({ request, set }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const result = await collection.listForCollection(collectionId);
-        return parseCollectionList('collection.list', result);
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .get(
-      '/events',
-      async ({ request, set }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        return streamCollectionLiveEvents(request, collectionId, liveHub);
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .post(
-      '/quantities',
-      async ({ request, set, body }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const { variantNumbers } = CollectionQuantitiesRequest.parse(body);
-        const rows = await collection.quantitiesForVariants(
-          collectionId,
-          variantNumbers
-        );
-        return CollectionQuantitiesResponse.parse({ data: rows });
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .put(
-      '/:variantNumber',
-      async ({ request, set, params, body }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const parsed = CollectionUpsertRequest.parse({
-          ...(body as z.infer<typeof _UpsertBody>),
-          variantNumber: params.variantNumber,
-        });
-        const item = await collection.upsert(collectionId, {
-          variantNumber: parsed.variantNumber,
-          quantity: parsed.quantity,
-          condition: parsed.condition,
-          language: parsed.language,
-          ...(parsed.isFoil === undefined ? {} : { isFoil: parsed.isFoil }),
-          notes: parsed.notes ?? null,
-          isGraded: parsed.isGraded ?? false,
-          gradeCompany: parsed.gradeCompany ?? null,
-          gradeScore: parsed.gradeScore ?? null,
-          acquiredAt: parsed.acquiredAt ?? null,
-          acquiredPriceCents: parsed.acquiredPriceCents ?? null,
-        });
-        notifyLive(liveHub, collectionId, 'upsert', user.id);
-        if (!item) {
-          return { data: null };
-        }
-        return collectionItemResponse('collection.upsert', item, {
-          variantNumber: parsed.variantNumber,
-        });
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .post(
-      '/:variantNumber/add',
-      async ({ request, set, params, body }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const parsed = AdjustBody.safeParse(body);
-        const delta = parsed.success && parsed.data.delta ? parsed.data.delta : 1;
-        const condition = parsed.success
-          ? (parsed.data.condition ?? 'near_mint')
-          : 'near_mint';
-        const language = parsed.success ? (parsed.data.language ?? 'en') : 'en';
-
-        const item = await collection.adjustQuantity(
-          collectionId,
-          params.variantNumber,
-          delta,
-          {
-            condition,
-            language,
-            ...(parsed.success && parsed.data.isFoil !== undefined
-              ? { isFoil: parsed.data.isFoil }
-              : {}),
-          }
-        );
-        notifyLive(liveHub, collectionId, 'add', user.id);
-        if (!item) return { data: null };
-        return collectionItemResponse('collection.add', item, {
-          variantNumber: params.variantNumber,
-          delta,
-        });
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .post(
-      '/:variantNumber/remove',
-      async ({ request, set, params, body }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const parsed = AdjustBody.safeParse(body);
-        const delta = parsed.success && parsed.data.delta ? parsed.data.delta : 1;
-        const condition = parsed.success
-          ? (parsed.data.condition ?? 'near_mint')
-          : 'near_mint';
-        const language = parsed.success ? (parsed.data.language ?? 'en') : 'en';
-
-        const item = await collection.adjustQuantity(
-          collectionId,
-          params.variantNumber,
-          -delta,
-          {
-            condition,
-            language,
-            ...(parsed.success && parsed.data.isFoil !== undefined
-              ? { isFoil: parsed.data.isFoil }
-              : {}),
-          }
-        );
-        notifyLive(liveHub, collectionId, 'remove', user.id);
-        if (!item) return { data: null };
-        return collectionItemResponse('collection.remove', item, {
-          variantNumber: params.variantNumber,
-          delta,
-        });
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .delete(
-      '/:variantNumber',
-      async ({ request, set, params, query }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const condition = CardCondition.safeParse(query.condition).success
-          ? CardCondition.parse(query.condition)
-          : 'near_mint';
-        const isFoilQuery =
-          query.isFoil === 'true' ? true : query.isFoil === 'false' ? false : undefined;
-        await collection.remove(
-          collectionId,
-          params.variantNumber,
+    .get('/', { detail: { tags: ['collection'] } }, async ({ request, set }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const result = await collection.listForCollection(collectionId);
+      return parseCollectionList('collection.list', result);
+    })
+    .get('/events', { detail: { tags: ['collection'] } }, async ({ request, set }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      return streamCollectionLiveEvents(request, collectionId, liveHub);
+    })
+    .post('/quantities', { detail: { tags: ['collection'] } }, async ({ request, set, body }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const { variantNumbers } = CollectionQuantitiesRequest.parse(body);
+      const rows = await collection.quantitiesForVariants(
+        collectionId,
+        variantNumbers
+      );
+      return CollectionQuantitiesResponse.parse({ data: rows });
+    })
+    .put('/:variantNumber', { detail: { tags: ['collection'] } }, async ({ request, set, params, body }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const parsed = CollectionUpsertRequest.parse({
+        ...(body as z.infer<typeof _UpsertBody>),
+        variantNumber: params.variantNumber,
+      });
+      const item = await collection.upsert(collectionId, {
+        variantNumber: parsed.variantNumber,
+        quantity: parsed.quantity,
+        condition: parsed.condition,
+        language: parsed.language,
+        ...(parsed.isFoil === undefined ? {} : { isFoil: parsed.isFoil }),
+        notes: parsed.notes ?? null,
+        isGraded: parsed.isGraded ?? false,
+        gradeCompany: parsed.gradeCompany ?? null,
+        gradeScore: parsed.gradeScore ?? null,
+        acquiredAt: parsed.acquiredAt ?? null,
+        acquiredPriceCents: parsed.acquiredPriceCents ?? null,
+      });
+      notifyLive(liveHub, collectionId, 'upsert', user.id);
+      if (!item) {
+        return { data: null };
+      }
+      return collectionItemResponse('collection.upsert', item, {
+        variantNumber: parsed.variantNumber,
+      });
+    })
+    .post('/:variantNumber/add', { detail: { tags: ['collection'] } }, async ({ request, set, params, body }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const parsed = AdjustBody.safeParse(body);
+      const delta = parsed.success && parsed.data.delta ? parsed.data.delta : 1;
+      const condition = parsed.success
+        ? (parsed.data.condition ?? 'near_mint')
+        : 'near_mint';
+      const language = parsed.success ? (parsed.data.language ?? 'en') : 'en';
+    
+      const item = await collection.adjustQuantity(
+        collectionId,
+        params.variantNumber,
+        delta,
+        {
           condition,
-          query.language ?? 'en',
-          isFoilQuery
+          language,
+          ...(parsed.success && parsed.data.isFoil !== undefined
+            ? { isFoil: parsed.data.isFoil }
+            : {}),
+        }
+      );
+      notifyLive(liveHub, collectionId, 'add', user.id);
+      if (!item) return { data: null };
+      return collectionItemResponse('collection.add', item, {
+        variantNumber: params.variantNumber,
+        delta,
+      });
+    })
+    .post('/:variantNumber/remove', { detail: { tags: ['collection'] } }, async ({ request, set, params, body }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const parsed = AdjustBody.safeParse(body);
+      const delta = parsed.success && parsed.data.delta ? parsed.data.delta : 1;
+      const condition = parsed.success
+        ? (parsed.data.condition ?? 'near_mint')
+        : 'near_mint';
+      const language = parsed.success ? (parsed.data.language ?? 'en') : 'en';
+    
+      const item = await collection.adjustQuantity(
+        collectionId,
+        params.variantNumber,
+        -delta,
+        {
+          condition,
+          language,
+          ...(parsed.success && parsed.data.isFoil !== undefined
+            ? { isFoil: parsed.data.isFoil }
+            : {}),
+        }
+      );
+      notifyLive(liveHub, collectionId, 'remove', user.id);
+      if (!item) return { data: null };
+      return collectionItemResponse('collection.remove', item, {
+        variantNumber: params.variantNumber,
+        delta,
+      });
+    })
+    .delete('/:variantNumber', { detail: { tags: ['collection'] } }, async ({ request, set, params, query }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const condition = CardCondition.safeParse(query.condition).success
+        ? CardCondition.parse(query.condition)
+        : 'near_mint';
+      const isFoilQuery =
+        query.isFoil === 'true' ? true : query.isFoil === 'false' ? false : undefined;
+      await collection.remove(
+        collectionId,
+        params.variantNumber,
+        condition,
+        query.language ?? 'en',
+        isFoilQuery
+      );
+      notifyLive(liveHub, collectionId, 'delete', user.id);
+      return { data: { ok: true } };
+    })
+    .delete('/all', { detail: { tags: ['collection'] } }, async ({ request, set }) => {
+      if (process.env.NODE_ENV === 'production') {
+        set.status = 404;
+        return { error: 'Not found' };
+      }
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const result = await collection.clearAll(collectionId);
+      notifyLive(liveHub, collectionId, 'clear', user.id);
+      return { data: result };
+    })
+    .post('/batch', { detail: { tags: ['collection'] } }, async ({ request, set, body }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const { items } = CollectionBatchSyncRequest.parse(body);
+      const result = await collection.batchSync(collectionId, items);
+      notifyLive(liveHub, collectionId, 'batch', user.id);
+      return { data: result };
+    })
+    .get('/export', { detail: { tags: ['collection'] } }, async ({ request, set }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const csv = await collection.exportForCollection(collectionId);
+      set.headers['content-type'] = 'text/csv; charset=utf-8';
+      set.headers['content-disposition'] =
+        'attachment; filename="piltover-collection-export.csv"';
+      return csv;
+    })
+    .post('/import', { detail: { tags: ['collection'] } }, async ({ request, set, body }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const { collectionId } = await ensureCollectionMembership(db, user.id);
+      const parsed = CollectionImportRequest.parse(body);
+      if (parsed.items && parsed.items.length > 0) {
+        const result = await collection.importItems(
+          collectionId,
+          parsed.items.map((item) => ({
+            variantNumber: item.variantNumber,
+            quantity: item.quantity,
+            condition: item.condition,
+            language: item.language,
+            ...(item.isFoil === undefined ? {} : { isFoil: item.isFoil }),
+            notes: item.notes ?? null,
+            isGraded: item.isGraded ?? false,
+            gradeCompany: item.gradeCompany ?? null,
+            gradeScore: item.gradeScore ?? null,
+          }))
         );
-        notifyLive(liveHub, collectionId, 'delete', user.id);
-        return { data: { ok: true } };
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .delete(
-      '/all',
-      async ({ request, set }) => {
-        if (process.env.NODE_ENV === 'production') {
-          set.status = 404;
-          return { error: 'Not found' };
-        }
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const result = await collection.clearAll(collectionId);
-        notifyLive(liveHub, collectionId, 'clear', user.id);
-        return { data: result };
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .post(
-      '/batch',
-      async ({ request, set, body }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const { items } = CollectionBatchSyncRequest.parse(body);
-        const result = await collection.batchSync(collectionId, items);
-        notifyLive(liveHub, collectionId, 'batch', user.id);
-        return { data: result };
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .get(
-      '/export',
-      async ({ request, set }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const csv = await collection.exportForCollection(collectionId);
-        set.headers['content-type'] = 'text/csv; charset=utf-8';
-        set.headers['content-disposition'] =
-          'attachment; filename="piltover-collection-export.csv"';
-        return csv;
-      },
-      { detail: { tags: ['collection'] } }
-    )
-    .post(
-      '/import',
-      async ({ request, set, body }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const { collectionId } = await ensureCollectionMembership(db, user.id);
-        const parsed = CollectionImportRequest.parse(body);
-        if (parsed.items && parsed.items.length > 0) {
-          const result = await collection.importItems(
-            collectionId,
-            parsed.items.map((item) => ({
-              variantNumber: item.variantNumber,
-              quantity: item.quantity,
-              condition: item.condition,
-              language: item.language,
-              ...(item.isFoil === undefined ? {} : { isFoil: item.isFoil }),
-              notes: item.notes ?? null,
-              isGraded: item.isGraded ?? false,
-              gradeCompany: item.gradeCompany ?? null,
-              gradeScore: item.gradeScore ?? null,
-            }))
-          );
-          notifyLive(liveHub, collectionId, 'import', user.id);
-          return CollectionImportResponse.parse({ data: result });
-        }
-        if (!parsed.csv) {
-          set.status = 400;
-          return { error: 'Provide csv or items' };
-        }
-        const result = await collection.importCsv(collectionId, parsed.csv);
         notifyLive(liveHub, collectionId, 'import', user.id);
         return CollectionImportResponse.parse({ data: result });
-      },
-      { detail: { tags: ['collection'] } }
-    );
+      }
+      if (!parsed.csv) {
+        set.status = 400;
+        return { error: 'Provide csv or items' };
+      }
+      const result = await collection.importCsv(collectionId, parsed.csv);
+      notifyLive(liveHub, collectionId, 'import', user.id);
+      return CollectionImportResponse.parse({ data: result });
+    });
 }

@@ -28,62 +28,50 @@ function wishlistItemResponse(
 
 export function createWishlistRoutes(wishlist: WishlistService, auth: Auth) {
   return new Elysia({ prefix: '/api/v1/wishlist' })
-    .get(
-      '/',
-      async ({ request, set }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const result = await wishlist.listForUser(user.id);
-        const parsed = WishlistListResponse.safeParse({
-          data: result.items,
-          meta: { total: result.total },
-        });
-        if (!parsed.success) {
-          logActionFailure('wishlist.list', parsed.error, { total: result.total });
-          throw new Error('Wishlist list response validation failed');
-        }
-        return parsed.data;
-      },
-      { detail: { tags: ['wishlist'] } }
-    )
-    .put(
-      '/:variantNumber',
-      async ({ request, set, params, body }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        const parsed = WishlistUpsertRequest.parse({
-          ...(body as z.infer<typeof _UpsertBody>),
-          variantNumber: params.variantNumber,
-        });
-        const item = await wishlist.upsert(user.id, {
-          variantNumber: parsed.variantNumber,
-          priority: parsed.priority,
-          targetPriceCents: parsed.targetPriceCents ?? null,
-          notes: parsed.notes ?? null,
-        });
-        return wishlistItemResponse('wishlist.upsert', item, {
-          variantNumber: parsed.variantNumber,
-        });
-      },
-      { detail: { tags: ['wishlist'] } }
-    )
-    .delete(
-      '/:variantNumber',
-      async ({ request, set, params }) => {
-        const user = await getSessionUser(auth, request.headers);
-        if (!user) {
-          set.status = 401;
-          return unauthorized();
-        }
-        await wishlist.remove(user.id, params.variantNumber);
-        return { data: { ok: true } };
-      },
-      { detail: { tags: ['wishlist'] } }
-    );
+    .get('/', { detail: { tags: ['wishlist'] } }, async ({ request, set }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const result = await wishlist.listForUser(user.id);
+      const parsed = WishlistListResponse.safeParse({
+        data: result.items,
+        meta: { total: result.total },
+      });
+      if (!parsed.success) {
+        logActionFailure('wishlist.list', parsed.error, { total: result.total });
+        throw new Error('Wishlist list response validation failed');
+      }
+      return parsed.data;
+    })
+    .put('/:variantNumber', { detail: { tags: ['wishlist'] } }, async ({ request, set, params, body }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      const parsed = WishlistUpsertRequest.parse({
+        ...(body as z.infer<typeof _UpsertBody>),
+        variantNumber: params.variantNumber,
+      });
+      const item = await wishlist.upsert(user.id, {
+        variantNumber: parsed.variantNumber,
+        priority: parsed.priority,
+        targetPriceCents: parsed.targetPriceCents ?? null,
+        notes: parsed.notes ?? null,
+      });
+      return wishlistItemResponse('wishlist.upsert', item, {
+        variantNumber: parsed.variantNumber,
+      });
+    })
+    .delete('/:variantNumber', { detail: { tags: ['wishlist'] } }, async ({ request, set, params }) => {
+      const user = await getSessionUser(auth, request.headers);
+      if (!user) {
+        set.status = 401;
+        return unauthorized();
+      }
+      await wishlist.remove(user.id, params.variantNumber);
+      return { data: { ok: true } };
+    });
 }

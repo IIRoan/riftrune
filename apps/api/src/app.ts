@@ -1,5 +1,4 @@
-import { cors } from '@elysiajs/cors';
-import { swagger } from '@elysiajs/swagger';
+import { cors } from '@elysia/cors';
 import { Elysia } from 'elysia';
 import type postgres from 'postgres';
 import { createAuth, type Auth } from './auth.js';
@@ -77,23 +76,7 @@ function buildApp(env: Env): AppContext {
         credentials: true,
         allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
       })
-    );
-
-  if (env.SWAGGER_ENABLED) {
-    app.use(
-      swagger({
-        documentation: {
-          info: {
-            title: 'Riftbound API',
-            version: '1.0.0',
-            description: 'Cached riftrune.com card catalog + Cardmarket daily price guide',
-          },
-        },
-      })
-    );
-  }
-
-  app
+    )
     .use(errorPlugin)
     .use(authPlugin)
     .use(createHealthRoutes(db, syncEngine))
@@ -110,7 +93,6 @@ function buildApp(env: Env): AppContext {
     .use(createSyncRoutes(syncEngine, priceCache, cardCache, env))
     .get('/', () => ({
       name: 'riftrune-api',
-      docs: '/swagger',
       health: '/api/v1/health',
       auth: '/api/auth',
     }));

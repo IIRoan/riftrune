@@ -47,107 +47,95 @@ async function resolveCardmarketId(
 
 export function createPricesRoutes(prices: PriceCacheService, db: Database) {
   return new Elysia({ prefix: '/api/v1/prices' })
-    .get(
-      '/',
-      async ({ query }) => {
-        const parsed = PricesListQuery.parse(query);
-        const cardmarketId = await resolveCardmarketId(
-          db,
-          parsed.variantNumber,
-          parsed.cardmarketId
-        );
-
-        const listQuery: { cardmarketId?: number; isFoil?: boolean } = {};
-        if (cardmarketId !== undefined) listQuery.cardmarketId = cardmarketId;
-        if (parsed.isFoil !== undefined) listQuery.isFoil = parsed.isFoil;
-
-        const result = await prices.list(listQuery);
-
-        return {
-          data: result.rows,
-          meta: {
-            pricesCatalogHash: result.catalogHash,
-            lastSyncedAt: result.lastSyncedAt,
-            rowCount: result.rows.length,
-          },
-        };
-      },
-      { detail: { tags: ['prices'] } }
-    )
-    .get(
-      '/history',
-      async ({ query }) => {
-        const parsed = PriceHistoryQuery.parse(query);
-        const cardmarketId = await resolveCardmarketId(
-          db,
-          parsed.variantNumber,
-          parsed.cardmarketId
-        );
-
-        if (cardmarketId === undefined) {
-          return PriceHistoryResponse.parse({
-            data: [],
-            meta: {
-              cardmarketId: null,
-              isFoil: parsed.isFoil ?? null,
-              days: parsed.days,
-              rowCount: 0,
-            },
-          });
-        }
-
-        const historyQuery: {
-          cardmarketId: number;
-          isFoil?: boolean;
-          days: number;
-        } = {
-          cardmarketId,
-          days: parsed.days,
-        };
-        if (parsed.isFoil !== undefined) historyQuery.isFoil = parsed.isFoil;
-
-        const result = await prices.dailyHistory(historyQuery);
-
+    .get('/', { detail: { tags: ['prices'] } }, async ({ query }) => {
+      const parsed = PricesListQuery.parse(query);
+      const cardmarketId = await resolveCardmarketId(
+        db,
+        parsed.variantNumber,
+        parsed.cardmarketId
+      );
+    
+      const listQuery: { cardmarketId?: number; isFoil?: boolean } = {};
+      if (cardmarketId !== undefined) listQuery.cardmarketId = cardmarketId;
+      if (parsed.isFoil !== undefined) listQuery.isFoil = parsed.isFoil;
+    
+      const result = await prices.list(listQuery);
+    
+      return {
+        data: result.rows,
+        meta: {
+          pricesCatalogHash: result.catalogHash,
+          lastSyncedAt: result.lastSyncedAt,
+          rowCount: result.rows.length,
+        },
+      };
+    })
+    .get('/history', { detail: { tags: ['prices'] } }, async ({ query }) => {
+      const parsed = PriceHistoryQuery.parse(query);
+      const cardmarketId = await resolveCardmarketId(
+        db,
+        parsed.variantNumber,
+        parsed.cardmarketId
+      );
+    
+      if (cardmarketId === undefined) {
         return PriceHistoryResponse.parse({
-          data: result.rows,
+          data: [],
           meta: {
-            cardmarketId,
+            cardmarketId: null,
             isFoil: parsed.isFoil ?? null,
             days: parsed.days,
-            rowCount: result.rows.length,
+            rowCount: 0,
           },
         });
-      },
-      { detail: { tags: ['prices'] } }
-    )
-    .post(
-      '/stats/batch',
-      async ({ body }) => {
-        const parsed = PriceStatsBatchRequest.parse(body);
-        const stats = await prices.statsBatch(
-          parsed.items.map((item) => {
-            const row: {
-              variantNumber: string;
-              isFoil?: boolean;
-              targetPriceCents?: number | null;
-            } = { variantNumber: item.variantNumber };
-            if (item.isFoil !== undefined) row.isFoil = item.isFoil;
-            if (item.targetPriceCents !== undefined) {
-              row.targetPriceCents = item.targetPriceCents;
-            }
-            return row;
-          }),
-          parsed.days
-        );
-
-        return PriceStatsBatchResponse.parse({
-          data: stats,
-          meta: {
-            days: parsed.days,
-            rowCount: stats.length,
-          },
-        });
-      },
-      { detail: { tags: ['prices'] } }
-    );
+      }
+    
+      const historyQuery: {
+        cardmarketId: number;
+        isFoil?: boolean;
+        days: number;
+      } = {
+        cardmarketId,
+        days: parsed.days,
+      };
+      if (parsed.isFoil !== undefined) historyQuery.isFoil = parsed.isFoil;
+    
+      const result = await prices.dailyHistory(historyQuery);
+    
+      return PriceHistoryResponse.parse({
+        data: result.rows,
+        meta: {
+          cardmarketId,
+          isFoil: parsed.isFoil ?? null,
+          days: parsed.days,
+          rowCount: result.rows.length,
+        },
+      });
+    })
+    .post('/stats/batch', { detail: { tags: ['prices'] } }, async ({ body }) => {
+      const parsed = PriceStatsBatchRequest.parse(body);
+      const stats = await prices.statsBatch(
+        parsed.items.map((item) => {
+          const row: {
+            variantNumber: string;
+            isFoil?: boolean;
+            targetPriceCents?: number | null;
+          } = { variantNumber: item.variantNumber };
+          if (item.isFoil !== undefined) row.isFoil = item.isFoil;
+          if (item.targetPriceCents !== undefined) {
+            row.targetPriceCents = item.targetPriceCents;
+          }
+          return row;
+        }),
+        parsed.days
+      );
+    
+      return PriceStatsBatchResponse.parse({
+        data: stats,
+        meta: {
+          days: parsed.days,
+          rowCount: stats.length,
+        },
+      });
+    });
 }

@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { errorPlugin } from '../../src/plugins/error-handler.js';
+import { createErrorPlugin } from '../../src/plugins/error-handler.js';
 
 function createApp() {
-  return errorPlugin
+  return createErrorPlugin()
     .get('/unauthorized', () => {
       throw new Error('Unauthorized');
     })

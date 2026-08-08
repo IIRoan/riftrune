@@ -20,7 +20,6 @@ const s3Env: Env = {
   BETTER_AUTH_URL: 'http://localhost:7000',
   TRUSTED_ORIGINS: [],
   PUBLIC_APP_URL: 'http://localhost:7001',
-  SWAGGER_ENABLED: false,
   CATALOG_WARMUP_ON_START: false,
   DB_POOL_MAX: 5,
   S3_ENDPOINT: 'https://account.eu.r2.cloudflarestorage.com',
