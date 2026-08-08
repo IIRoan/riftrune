@@ -7,6 +7,7 @@ import {
   isFoilVariant,
   mapCardDetail,
   mapListItem,
+  mapListItemFromDbRow,
   mapPriceRows,
   paCardHash,
   paVariantHash,
@@ -143,6 +144,39 @@ describe('mapCardDetail', () => {
     expect(foil?.cardmarketId).toBe(866723);
     expect(foil?.prices).toHaveLength(2);
     expect(foil?.prices.find((p) => p.isFoil)?.market).toBe(0.22);
+  });
+});
+
+describe('mapListItemFromDbRow', () => {
+  test('matches mapListItem for the same variant row', () => {
+    const primary = logical.variants[0]!;
+    const fromLogical = mapListItem(logical, primary, priceRows);
+    const fromDb = mapListItemFromDbRow(
+      {
+        cardId: CARD_ID,
+        name: logical.name,
+        type: logical.type,
+        super: logical.super ?? null,
+        energy: logical.energy,
+        might: logical.might,
+        power: logical.power,
+        banEffectiveDate: null,
+        variantId: primary.id,
+        variantNumber: primary.variantNumber,
+        rarity: primary.rarity,
+        variantType: primary.variantType,
+        foilMode: primary.foilMode,
+        variantLabel: primary.variantLabel,
+        imageUrl: primary.imageUrl,
+        cardmarketId: primary.cardmarketId ?? null,
+        tcgplayerId: null,
+        setCode: primary.set.prefix,
+      },
+      ['Body'],
+      priceRows,
+      (url) => url
+    );
+    expect(fromDb).toEqual(fromLogical);
   });
 });
 

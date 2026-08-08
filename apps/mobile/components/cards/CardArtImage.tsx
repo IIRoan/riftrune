@@ -1,6 +1,6 @@
 import { ThemedIcon, ImageIcon } from '@/components/icons';
 import { Image } from 'expo-image';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -18,6 +18,7 @@ import {
   markSessionImageLoaded,
 } from '@/lib/imageSessionCache';
 import { cn } from '@/lib/utils';
+import { resolveImageUrl } from '@/utils/resolveImageUrl';
 
 const FADE_MS = 220;
 const SHIMMER_MS = 1300;
@@ -32,6 +33,10 @@ type CardArtImageProps = {
   priority?: 'low' | 'normal' | 'high';
   /** Skip fade/shimmer — for catalog list cells that recycle while scrolling. */
   instant?: boolean;
+  /** Load API ?w= derivative for list tiles; omit for detail/fullscreen art. */
+  thumbWidth?: number;
+  /** When true with thumbWidth, show thumb first then fade to full resolution. */
+  progressive?: boolean;
   className?: string;
   imageClassName?: string;
   style?: StyleProp<ViewStyle>;
@@ -39,7 +44,6 @@ type CardArtImageProps = {
 
 function initialImageStatus(uri: string | null | undefined): 'loading' | 'loaded' | 'error' {
   if (!uri) return 'error';
-  // Prefetched (memory) or previously decoded this session — no shimmer frame.
   return isSessionImageLoaded(uri) ? 'loaded' : 'loading';
 }
 
@@ -93,25 +97,45 @@ function CardArtImageInner({
   transition = FADE_MS,
   priority = 'normal',
   instant = false,
+  thumbWidth,
+  progressive = false,
   className,
   imageClassName,
   style,
 }: CardArtImageProps) {
   const { actualTheme } = useTheme();
-  const sessionCached = Boolean(uri && isSessionImageLoaded(uri));
+  const { displayUri, placeholderUri } = useMemo(() => {
+    if (!uri) return { displayUri: null, placeholderUri: undefined };
+
+    const fullUri = resolveImageUrl(uri);
+    const thumbUri =
+      thumbWidth != null ? resolveImageUrl(uri, { width: thumbWidth }) : null;
+    const useProgressive = progressive && thumbUri != null && thumbUri !== fullUri;
+
+    if (useProgressive) {
+      return { displayUri: fullUri, placeholderUri: thumbUri ?? undefined };
+    }
+
+    return {
+      displayUri: thumbUri ?? fullUri,
+      placeholderUri: undefined,
+    };
+  }, [progressive, thumbWidth, uri]);
+
+  const sessionCached = Boolean(displayUri && isSessionImageLoaded(displayUri));
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(() =>
-    initialImageStatus(uri)
+    initialImageStatus(displayUri)
   );
   const [showShimmer, setShowShimmer] = useState(false);
-  const [loaderSuppressed, setLoaderSuppressed] = useState(() =>
-    instant || (uri ? isSessionImageLoaded(uri) : true)
+  const [loaderSuppressed, setLoaderSuppressed] = useState(
+    () => instant || (displayUri ? isSessionImageLoaded(displayUri) : true)
   );
   const overlayOpacity = useSharedValue(0);
   const skipLoaderRef = useRef(loaderSuppressed);
   const loadingRef = useRef(false);
   const showShimmerRef = useRef(false);
   const shimmerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const uriRef = useRef(uri);
+  const displayUriRef = useRef(displayUri);
 
   const clearShimmerTimer = () => {
     if (shimmerTimerRef.current) {
@@ -142,22 +166,25 @@ function CardArtImageInner({
   };
 
   useEffect(() => {
-    if (uriRef.current === uri) return;
-    uriRef.current = uri;
+    if (displayUriRef.current === displayUri) return;
+    displayUriRef.current = displayUri;
 
     clearShimmerTimer();
     loadingRef.current = false;
     setShowShimmer(false);
     overlayOpacity.value = 0;
 
-    if (!uri) {
+    if (!displayUri) {
       skipLoaderRef.current = true;
       setLoaderSuppressed(true);
       setStatus('error');
       return;
     }
 
-    const cached = instant || isSessionImageLoaded(uri);
+    const cached =
+      instant ||
+      isSessionImageLoaded(displayUri) ||
+      (placeholderUri != null && isSessionImageLoaded(placeholderUri));
     skipLoaderRef.current = cached;
     setLoaderSuppressed(cached);
     setStatus(cached ? 'loaded' : 'loading');
@@ -165,7 +192,7 @@ function CardArtImageInner({
     if (cached) return;
 
     let cancelled = false;
-    void isDiskImageCached(uri).then((diskCached) => {
+    void isDiskImageCached(displayUri).then((diskCached) => {
       if (cancelled || !diskCached) return;
       skipLoaderRef.current = true;
       setLoaderSuppressed(true);
@@ -177,13 +204,15 @@ function CardArtImageInner({
       cancelled = true;
       clearShimmerTimer();
     };
-  }, [hideShimmer, instant, overlayOpacity, uri]);
+  }, [displayUri, hideShimmer, instant, overlayOpacity, placeholderUri]);
 
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayOpacity.value,
   }));
 
   const showPlaceholderBg = !loaderSuppressed && status !== 'loaded' && !sessionCached;
+  const imageTransition =
+    instant || loaderSuppressed ? 0 : progressive && placeholderUri ? transition : transition;
 
   return (
     <View
@@ -205,15 +234,17 @@ function CardArtImageInner({
         </Animated.View>
       ) : null}
 
-      {uri && status !== 'error' ? (
+      {displayUri && status !== 'error' ? (
         <Image
-          source={{ uri, cacheKey: uri }}
+          source={{ uri: displayUri, cacheKey: displayUri }}
+          placeholder={placeholderUri ? { uri: placeholderUri } : undefined}
+          placeholderContentFit={contentFit}
           recyclingKey={recyclingKey}
           style={{ width: '100%', height: '100%' }}
           className={cn('absolute inset-0', imageClassName)}
           contentFit={contentFit}
           contentPosition={contentPosition}
-          transition={instant || loaderSuppressed ? 0 : transition}
+          transition={imageTransition}
           cachePolicy="memory-disk"
           priority={priority}
           onLoadStart={() => {
@@ -225,8 +256,11 @@ function CardArtImageInner({
           onLoad={() => {
             loadingRef.current = false;
             clearShimmerTimer();
-            if (uri) {
-              markSessionImageLoaded(uri);
+            if (displayUri) {
+              markSessionImageLoaded(displayUri);
+            }
+            if (placeholderUri) {
+              markSessionImageLoaded(placeholderUri);
             }
             skipLoaderRef.current = true;
             setLoaderSuppressed(true);
@@ -259,6 +293,8 @@ export const CardArtImage = memo(
     prev.contentFit === next.contentFit &&
     prev.contentPosition === next.contentPosition &&
     prev.instant === next.instant &&
+    prev.thumbWidth === next.thumbWidth &&
+    prev.progressive === next.progressive &&
     prev.className === next.className &&
     prev.imageClassName === next.imageClassName
 );

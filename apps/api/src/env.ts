@@ -16,6 +16,8 @@ function parseBooleanFlag(value: string | undefined, fallback: boolean): boolean
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(7000),
+  /** Bind address for the HTTP server (default listens on all interfaces). */
+  HOST: z.string().min(1).default('::'),
   DATABASE_URL: z.string().min(1),
   DB_POOL_MAX: z.coerce.number().int().positive().max(50).optional(),
   RIFTRUNE_API_KEY: z.string().startsWith('ak_'),
@@ -78,10 +80,11 @@ export function loadEnv(): Env {
   }
 
   const env = parsed.data;
+
   return {
     ...env,
     DB_POOL_MAX:
-      env.DB_POOL_MAX ?? (env.NODE_ENV === 'production' ? 5 : 20),
+      env.DB_POOL_MAX ?? (env.NODE_ENV === 'production' ? 10 : 20),
     PUBLIC_APP_URL:
       env.PUBLIC_APP_URL ??
       (env.NODE_ENV === 'production'

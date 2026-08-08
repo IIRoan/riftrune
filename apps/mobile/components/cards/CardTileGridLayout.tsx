@@ -3,7 +3,7 @@ import type { CardListItem } from '@riftbound/contracts';
 import { CardArtImage } from '@/components/cards/CardArtImage';
 import { CardBannedOverlay } from '@/components/riftbound/CardBannedOverlay';
 import { Text } from '@/components/ui/text';
-import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
+import { CARD_ART_RADIUS_CLASS, CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
 import { cn } from '@/lib/utils';
 
 export interface CardTileGridLayoutProps {
@@ -59,6 +59,8 @@ export function CardTileGridLayout({
             contentFit="cover"
             contentPosition="top"
             instant={artInstant || isMobile}
+            thumbWidth={CATALOG_ART_THUMB_WIDTH}
+            progressive
           />
           {banned ? <CardBannedOverlay /> : null}
         </View>

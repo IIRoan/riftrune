@@ -218,7 +218,8 @@ export function useSearchScreenBody(): React.ReactElement {
     pageSize,
     catalogFilters,
     filterOwnership,
-    catalogSort
+    catalogSort,
+    !hasSearchInput
   );
 
   const filteredItems = useMemo(

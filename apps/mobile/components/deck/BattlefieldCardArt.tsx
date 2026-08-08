@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { CardArtImage } from '@/components/cards/CardArtImage';
+import { CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
 
 type BattlefieldCardArtProps = {
   uri: string;
@@ -39,6 +40,7 @@ export function BattlefieldCardArt({ uri, variantNumber }: BattlefieldCardArtPro
             contentPosition="center"
             transition={0}
             priority="high"
+            thumbWidth={CATALOG_ART_THUMB_WIDTH}
           />
         </View>
       ) : null}

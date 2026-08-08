@@ -1,6 +1,12 @@
 import type { PaLogicalCard } from '@riftbound/contracts';
 import type { S3Client } from 'bun';
 import type { Env } from '../env.js';
+import { resizeImageToWebp } from '../lib/image-resize-buffer.js';
+import {
+  canResizeKey,
+  thumbStorageKey,
+  type AllowedThumbWidth,
+} from '../lib/image-resize.js';
 import { TtlCache } from '../lib/ttl-cache.js';
 import {
   cdnImageUrl,
@@ -27,6 +33,10 @@ export type ServeImageResult =
       etag: string;
     }
   | { kind: 'redirect'; url: string };
+
+export type ServeImageOptions = {
+  width?: AllowedThumbWidth;
+};
 
 const MEMORY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const S3_MISS_CACHE_TTL_MS = 60 * 1000;
@@ -66,25 +76,75 @@ export class ImageStoreService {
     return rewriteCardImageUrls(this.env, card);
   }
 
-  async serveImage(key: string): Promise<ServeImageResult | null> {
+  async serveImage(key: string, options?: ServeImageOptions): Promise<ServeImageResult | null> {
     const normalizedKey = key.replace(/^\//, '');
-    if (!isSafeImageKey(normalizedKey)) return null;
+    if (!isSafeImageKey(normalizedKey) || normalizedKey.startsWith('thumbs/')) return null;
 
-    const cached = this.memoryCache.get(normalizedKey);
-    if (cached) {
-      return {
-        kind: 'body',
-        body: cached.body,
-        contentType: cached.contentType,
-        source: 'memory',
-        etag: cached.etag,
-      };
+    const width = options?.width;
+    if (width != null && canResizeKey(normalizedKey)) {
+      return this.serveResizedImage(normalizedKey, width);
     }
+
+    return this.serveOriginalImage(normalizedKey);
+  }
+
+  private async serveResizedImage(
+    sourceKey: string,
+    width: AllowedThumbWidth
+  ): Promise<ServeImageResult | null> {
+    const derivativeKey = thumbStorageKey(sourceKey, width);
+    const cached = this.readMemoryCache(derivativeKey);
+    if (cached) return cached;
+
+    const inflightKey = `thumb:${derivativeKey}`;
+    const inflight = this.serveInflight.get(inflightKey);
+    if (inflight) return inflight;
+
+    const promise = this.buildResizedImage(sourceKey, width, derivativeKey);
+    this.serveInflight.set(inflightKey, promise);
+    try {
+      return await promise;
+    } finally {
+      this.serveInflight.delete(inflightKey);
+    }
+  }
+
+  private async buildResizedImage(
+    sourceKey: string,
+    width: AllowedThumbWidth,
+    derivativeKey: string
+  ): Promise<ServeImageResult | null> {
+    const stored = await this.loadStoredBody(derivativeKey);
+    if (stored) {
+      return this.storeInMemoryCache(derivativeKey, stored.body, stored.contentType, 's3');
+    }
+
+    const original = await this.loadOriginalBody(sourceKey);
+    if (!original) return null;
+
+    const resized = await resizeImageToWebp(original.body, width);
+    const contentType = 'image/webp';
+
+    if (this.client) {
+      try {
+        await this.client.write(derivativeKey, resized, { type: contentType });
+        this.s3MissCache.delete(derivativeKey);
+      } catch (err) {
+        console.warn(`[s3] Thumb write failed for ${derivativeKey}:`, err);
+      }
+    }
+
+    return this.storeInMemoryCache(derivativeKey, resized, contentType, 'memory');
+  }
+
+  private async serveOriginalImage(normalizedKey: string): Promise<ServeImageResult | null> {
+    const cached = this.readMemoryCache(normalizedKey);
+    if (cached) return cached;
 
     const inflight = this.serveInflight.get(normalizedKey);
     if (inflight) return inflight;
 
-    const promise = this.resolveImage(normalizedKey);
+    const promise = this.resolveOriginalImage(normalizedKey);
     this.serveInflight.set(normalizedKey, promise);
     try {
       return await promise;
@@ -93,24 +153,33 @@ export class ImageStoreService {
     }
   }
 
-  private async resolveImage(key: string): Promise<ServeImageResult | null> {
-    if (this.client && !this.s3MissCache.has(key)) {
-      try {
-        const file = this.client.file(key);
-        const body = await file.arrayBuffer();
-        if (body.byteLength > 0) {
-          const stat = await this.client.stat(key);
-          const contentType =
-            typeof stat.type === 'string' && stat.type.length > 0
-              ? stat.type
-              : contentTypeForKey(key);
-          const etag = imageEtag(key, body.byteLength);
-          this.memoryCache.set(key, { body, contentType, etag });
-          return { kind: 'body', body, contentType, source: 's3', etag };
-        }
-      } catch {
-        this.s3MissCache.set(key, true);
-      }
+  private readMemoryCache(key: string): ServeImageResult | null {
+    const cached = this.memoryCache.get(key);
+    if (!cached) return null;
+    return {
+      kind: 'body',
+      body: cached.body,
+      contentType: cached.contentType,
+      source: 'memory',
+      etag: cached.etag,
+    };
+  }
+
+  private storeInMemoryCache(
+    key: string,
+    body: ArrayBuffer,
+    contentType: string,
+    source: 's3' | 'memory'
+  ): ServeImageResult {
+    const etag = imageEtag(key, body.byteLength);
+    this.memoryCache.set(key, { body, contentType, etag });
+    return { kind: 'body', body, contentType, source, etag };
+  }
+
+  private async resolveOriginalImage(key: string): Promise<ServeImageResult | null> {
+    const stored = await this.loadStoredBody(key);
+    if (stored) {
+      return this.storeInMemoryCache(key, stored.body, stored.contentType, 's3');
     }
 
     const cdnUrl = cdnImageUrl(key);
@@ -126,9 +195,7 @@ export class ImageStoreService {
           const contentType =
             res.headers.get('content-type')?.split(';')[0]?.trim() ??
             contentTypeForKey(key);
-          const etag = imageEtag(key, body.byteLength);
-          this.memoryCache.set(key, { body, contentType, etag });
-          return { kind: 'body', body, contentType, source: 'memory', etag };
+          return this.storeInMemoryCache(key, body, contentType, 'memory');
         }
       }
     } catch {
@@ -136,6 +203,49 @@ export class ImageStoreService {
     }
 
     return { kind: 'redirect', url: cdnUrl };
+  }
+
+  private async loadOriginalBody(key: string): Promise<{ body: ArrayBuffer; contentType: string } | null> {
+    const stored = await this.loadStoredBody(key);
+    if (stored) return stored;
+
+    const cdnUrl = cdnImageUrl(key);
+    try {
+      const res = await fetch(cdnUrl, { signal: AbortSignal.timeout(15_000) });
+      if (!res.ok) return null;
+      const body = await res.arrayBuffer();
+      if (body.byteLength === 0) return null;
+      const contentType =
+        res.headers.get('content-type')?.split(';')[0]?.trim() ?? contentTypeForKey(key);
+      if (this.client) {
+        this.scheduleBackgroundStore(key, cdnUrl);
+      }
+      return { body, contentType };
+    } catch {
+      return null;
+    }
+  }
+
+  private async loadStoredBody(
+    key: string
+  ): Promise<{ body: ArrayBuffer; contentType: string } | null> {
+    if (this.client && !this.s3MissCache.has(key)) {
+      try {
+        const file = this.client.file(key);
+        const body = await file.arrayBuffer();
+        if (body.byteLength > 0) {
+          const stat = await this.client.stat(key);
+          const contentType =
+            typeof stat.type === 'string' && stat.type.length > 0
+              ? stat.type
+              : contentTypeForKey(key);
+          return { body, contentType };
+        }
+      } catch {
+        this.s3MissCache.set(key, true);
+      }
+    }
+    return null;
   }
 
   private scheduleBackgroundStore(key: string, cdnUrl: string): void {
@@ -180,8 +290,7 @@ export class ImageStoreService {
       type: contentType,
     });
 
-    const etag = imageEtag(key, body.byteLength);
-    this.memoryCache.set(key, { body, contentType, etag });
+    this.storeInMemoryCache(key, body, contentType, 'memory');
     this.s3MissCache.delete(key);
 
     console.log(

@@ -14,5 +14,6 @@ export * from './collection-live.js';
 export * from './champion-tags.js';
 export * from './deck-rules.js';
 export * from './decks.js';
+export * from './search.js';
 export * from './variant-utils.js';
 export * from './foil.js';

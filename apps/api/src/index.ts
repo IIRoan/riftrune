@@ -4,14 +4,14 @@ import { loadEnv } from './env.js';
 
 async function main() {
   const env = loadEnv();
-
   await runStartupMigrations(env);
 
   const ctx = createApp(env);
-  ctx.app.listen({ port: env.PORT, hostname: '::' });
+  const app = ctx.app;
+  const port = env.PORT;
+  const host = env.HOST;
 
-  const host = ctx.app.server?.hostname ?? 'localhost';
-  const port = ctx.app.server?.port ?? env.PORT;
+  app.listen({ port, hostname: host });
   console.log(`Riftbound API running at http://${host}:${String(port)}`);
 
   startCatalogMetadataWarmup(ctx, env);
@@ -19,7 +19,10 @@ async function main() {
 
   const shutdown = () => {
     // Avoid calling client.end() during bun --watch reloads: a closing pool rejects
-    // every new query with CONNECTION_ENDED while the process may still be alive.
+    // in-flight queries and can crash the replacement process on hot reload.
+    if (process.env.BUN_WATCH !== 'true') {
+      void ctx.client.end({ timeout: 5 });
+    }
     process.exit(0);
   };
 

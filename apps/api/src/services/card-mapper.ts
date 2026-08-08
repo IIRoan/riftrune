@@ -226,6 +226,78 @@ function mapVariantDetail(variant: PaVariant, priceRows: PaPriceRow[]): VariantD
   };
 }
 
+export type ListItemDbRow = {
+  cardId: string;
+  name: string;
+  type: string;
+  super: string | null;
+  energy: number;
+  might: number;
+  power: number;
+  banEffectiveDate: Date | null;
+  variantId: string;
+  variantNumber: string;
+  rarity: string;
+  variantType: string;
+  foilMode: string;
+  variantLabel: string;
+  imageUrl: string;
+  cardmarketId: number | null;
+  tcgplayerId: number | null;
+  setCode: string;
+};
+
+export function mapListItemFromDbRow(
+  row: ListItemDbRow,
+  colorNames: string[],
+  priceRows: PaPriceRow[],
+  rewriteImageUrl: (url: string) => string
+): CardListItem {
+  const stubVariant: PaVariant = {
+    id: row.variantId,
+    variantNumber: row.variantNumber,
+    rarity: row.rarity,
+    variantType: row.variantType,
+    variantLabel: row.variantLabel,
+    foilMode: row.foilMode,
+    variantTypes: [row.variantType],
+    imageUrl: rewriteImageUrl(row.imageUrl),
+    showInLibrary: true,
+    isCollectible: true,
+    cardmarketId: row.cardmarketId,
+    tcgplayerId: row.tcgplayerId,
+    flavorText: null,
+    artist: null,
+    releaseDate: null,
+    parentVariantId: null,
+    set: {
+      id: row.setCode,
+      prefix: row.setCode,
+      name: row.setCode,
+    },
+  };
+
+  const stubCard: PaLogicalCard = {
+    id: row.cardId,
+    name: row.name,
+    type: row.type,
+    super: row.super,
+    description: '',
+    energy: row.energy,
+    might: row.might,
+    power: row.power,
+    tags: [],
+    colors: colorNames.map((name) => ({
+      id: row.cardId,
+      name,
+    })),
+    banEffectiveDate: row.banEffectiveDate?.toISOString() ?? null,
+    variants: [stubVariant],
+  };
+
+  return mapListItem(stubCard, stubVariant, priceRows);
+}
+
 export function mapListItem(
   card: PaLogicalCard,
   primaryVariant: PaVariant,

@@ -7,7 +7,7 @@ import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import { Text } from '@/components/ui/text';
 import { rarityIconFor } from '@/constants/gameAssets';
-import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
+import { CARD_ART_RADIUS_CLASS, CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
 import { formatPrintingPrice, formatMarketTrend } from '@/utils/variants';
 import { cn } from '@/lib/utils';
 
@@ -80,6 +80,8 @@ export function CardTileListLayout({
           contentFit="cover"
           contentPosition="top"
           instant={artInstant}
+          thumbWidth={CATALOG_ART_THUMB_WIDTH}
+          progressive
         />
         {banned ? <CardBannedOverlay className="left-0.5 top-0.5" /> : null}
       </View>

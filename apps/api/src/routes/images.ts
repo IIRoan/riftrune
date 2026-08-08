@@ -1,4 +1,5 @@
 import { Elysia } from 'elysia';
+import { parseThumbWidth } from '../lib/image-resize.js';
 import type { ImageStoreService } from '../services/image-store.js';
 
 const BODY_CACHE_CONTROL = 'public, max-age=604800, immutable';
@@ -7,14 +8,15 @@ const REDIRECT_CACHE_CONTROL = 'public, max-age=300';
 export function createImagesRoutes(images: ImageStoreService) {
   return new Elysia({ prefix: '/api/v1/images' }).get(
     '/*',
-    async ({ params, request, set }) => {
+    async ({ params, query, request, set }) => {
       const key = params['*'];
       if (!key) {
         set.status = 404;
         return { error: 'NOT_FOUND', message: 'Image not found' };
       }
 
-      const result = await images.serveImage(key);
+      const width = parseThumbWidth(typeof query.w === 'string' ? query.w : undefined);
+      const result = await images.serveImage(key, width != null ? { width } : undefined);
       if (!result) {
         set.status = 404;
         return { error: 'NOT_FOUND', message: 'Image not found' };

@@ -5,6 +5,11 @@ const LOCAL_API_DEFAULT = 'http://localhost:7000';
 const API_IMAGES_PREFIX = '/api/v1/images/';
 const CDN_HOST = 'cdn.piltoverarchive.com';
 
+export type ResolveImageUrlOptions = {
+  /** Request a cached derivative from GET /api/v1/images/*?w=… */
+  width?: number;
+};
+
 function isSafeImageKey(key: string): boolean {
   if (!key || key.includes('..')) return false;
   return key.startsWith('cards/') || key.startsWith('colors/');
@@ -21,8 +26,19 @@ function keyFromCdnPath(pathname: string): string | null {
   return isSafeImageKey(key) ? key : null;
 }
 
-function apiImageUrl(key: string): string {
-  return `${API_URL}${API_IMAGES_PREFIX}${key}`;
+function apiImageUrl(key: string, options?: ResolveImageUrlOptions): string {
+  const base = `${API_URL}${API_IMAGES_PREFIX}${key}`;
+  const width = options?.width;
+  if (width != null && key.startsWith('cards/')) {
+    return `${base}?w=${String(width)}`;
+  }
+  return base;
+}
+
+function appendWidthParam(url: string, width: number): string {
+  if (!url.includes('cards/')) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}w=${String(width)}`;
 }
 
 /**
@@ -30,12 +46,15 @@ function apiImageUrl(key: string): string {
  * Rewrites API proxy and CDN paths to EXPO_PUBLIC_API_URL so images always load
  * from the API the app is configured to use (which serves bytes directly).
  */
-export function resolveImageUrl(url: string | null | undefined): string {
+export function resolveImageUrl(
+  url: string | null | undefined,
+  options?: ResolveImageUrlOptions
+): string {
   if (!url) return '';
 
   if (url.startsWith(API_IMAGES_PREFIX)) {
     const key = keyFromApiPath(url);
-    return key ? apiImageUrl(key) : `${API_URL}${url}`;
+    return key ? apiImageUrl(key, options) : `${API_URL}${url}`;
   }
 
   try {
@@ -43,18 +62,26 @@ export function resolveImageUrl(url: string | null | undefined): string {
     const apiKey = keyFromApiPath(parsed.pathname);
     if (apiKey) {
       if (API_URL === LOCAL_API_DEFAULT && parsed.hostname !== 'localhost') {
-        return url;
+        return options?.width != null ? appendWidthParam(url, options.width) : url;
       }
-      return apiImageUrl(apiKey);
+      return apiImageUrl(apiKey, options);
     }
 
     if (parsed.hostname === CDN_HOST) {
       const cdnKey = keyFromCdnPath(parsed.pathname);
-      if (cdnKey) return apiImageUrl(cdnKey);
+      if (cdnKey) return apiImageUrl(cdnKey, options);
     }
   } catch {
     // Fall through for non-URL strings.
   }
 
   return url;
+}
+
+/** Cached list-tile derivative — pair with full `resolveImageUrl` for progressive art. */
+export function resolveThumbImageUrl(
+  url: string | null | undefined,
+  width: number
+): string {
+  return resolveImageUrl(url, { width });
 }

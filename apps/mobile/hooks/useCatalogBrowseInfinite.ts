@@ -39,14 +39,14 @@ export function useCatalogBrowseInfinite(
   pageSize: number,
   filters: CatalogFilters = DEFAULT_CATALOG_FILTERS,
   collectionByVariant: ReadonlyMap<string, { quantity: number }> = new Map(),
-  sort: CatalogSort = DEFAULT_CATALOG_SORT
+  sort: CatalogSort = DEFAULT_CATALOG_SORT,
+  enabled = true
 ) {
   const queryClient = useQueryClient();
   const catalogIndex = useCatalogIndex();
   const catalogItems = getCatalogIndexItems(catalogIndex.data);
   const indexReady = catalogItems.length > 0;
   const ownedOnly = filters.collection === 'owned';
-  // Ownership map changes often while scrolling; only the owned filter needs it.
   const ownershipForFilter = ownedOnly ? collectionByVariant : EMPTY_OWNERSHIP;
   const resetSignature = browseResetSignature(indexReady, pageSize, filters, sort);
   const resetChanged = useValueChangeFlag(resetSignature);
@@ -72,17 +72,10 @@ export function useCatalogBrowseInfinite(
     );
 
     return sortCatalogItems(filtered, sort);
-  }, [
-    indexReady,
-    catalogItems,
-    filters,
-    ownedOnly,
-    ownershipForFilter,
-    sort,
-  ]);
+  }, [indexReady, catalogItems, filters, ownedOnly, ownershipForFilter, sort]);
 
-  // Background reconciliation only. UI stays on the local index so sort/filter
-  // switches stay synchronous; network pages warm prices without blocking paint.
+  // Background reconciliation. Owned browse must filter the full local index —
+  // paginated API pages would drop unowned rows and look empty.
   const listQuery = useInfiniteQuery({
     queryKey: cardQueryKeys.browse(filters, sort.sortBy, sort.dir),
     queryFn: async ({ pageParam }) => {
@@ -107,6 +100,7 @@ export function useCatalogBrowseInfinite(
       const pagination = lastPage.meta.pagination;
       return pagination.hasNext ? pagination.page + 1 : undefined;
     },
+    enabled,
     staleTime: STALE_MS,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: false,
@@ -141,29 +135,36 @@ export function useCatalogBrowseInfinite(
     [allBrowseItems, visibleCount]
   );
 
-  const items = indexReady
+  const useLocalBrowse = indexReady;
+  const items = useLocalBrowse
     ? localItems
     : sortCatalogItems(apiItems, sort).slice(0, Math.max(visibleCount, pageSize));
 
   const totalLocal = allBrowseItems?.length ?? 0;
-  const hasNextPage = indexReady
+  const hasNextPage = useLocalBrowse
     ? localItems.length < totalLocal
-    : (listQuery.hasNextPage ?? false);
+    : items.length < apiItems.length || (listQuery.hasNextPage ?? false);
 
   const fetchNextPage = useCallback(() => {
-    if (indexReady) {
+    if (useLocalBrowse) {
       if (localItems.length < totalLocal) {
         setVisibleCount((count) => Math.min(totalLocal, count + pageSize));
       }
+      return;
+    }
+    if (items.length < apiItems.length) {
+      setVisibleCount((count) => count + pageSize);
       return;
     }
     if (listQuery.hasNextPage && !listQuery.isFetchingNextPage) {
       void listQuery.fetchNextPage();
     }
   }, [
-    indexReady,
+    useLocalBrowse,
     localItems.length,
     totalLocal,
+    items.length,
+    apiItems.length,
     pageSize,
     listQuery.hasNextPage,
     listQuery.isFetchingNextPage,
@@ -173,16 +174,16 @@ export function useCatalogBrowseInfinite(
   return {
     items,
     isLoading:
-      !indexReady &&
+      !useLocalBrowse &&
       listQuery.isPending &&
       localItems.length === 0 &&
       apiItems.length === 0,
     isFetching:
-      !indexReady &&
+      !useLocalBrowse &&
       listQuery.isFetching &&
       localItems.length === 0 &&
       apiItems.length === 0,
-    isFetchingNextPage: indexReady ? false : listQuery.isFetchingNextPage,
+    isFetchingNextPage: useLocalBrowse ? false : listQuery.isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
     refetch: async () => {

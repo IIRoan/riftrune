@@ -325,6 +325,8 @@ bun run db:generate    # generate migration from schema changes
 bun run db:studio      # Drizzle Studio
 ```
 
+**Agents must never run destructive database commands** — not on local Postgres, test DB, or production/Railway. Forbidden: `db:reset`, `db:reset:full`, `scripts/reset-db.ts`, `DROP`/`TRUNCATE`/unscoped `DELETE`, `drizzle-kit drop`, or any command that wipes tables or databases. Use forward-only `db:migrate` and scoped test helpers (e.g. `cleanupTestUsers`) instead. Ask the user before any operation that could delete production data.
+
 - Schema: `apps/api/src/db/schema.ts`
 - Migrations: `apps/api/drizzle/`
 - Test DB: `postgres://riftbound:riftbound@localhost:5433/riftbound_test` (auto-created by `scripts/test.mjs`)
@@ -427,6 +429,7 @@ flowchart LR
 | Edit `dist/` or `drizzle/` generated output by hand | Regenerate from source |
 | Force-push `main` or amend pushed commits | New commits unless user requests |
 | Large unrelated formatting diffs | Keep PRs focused |
+| Destructive DB commands (`db:reset`, `DROP`, `TRUNCATE`, unscoped `DELETE`, `drizzle-kit drop`) | Forward migrations (`db:migrate`), scoped test cleanup only; ask user before prod-impacting ops |
 
 ---
 

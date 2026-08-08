@@ -18,6 +18,7 @@ import { createHealthRoutes, createSyncRoutes } from './routes/sync.js';
 import { createWishlistRoutes } from './routes/wishlist.js';
 import { createDeckRulesRoutes } from './routes/deck-rules.js';
 import { createDecksRoutes } from './routes/decks.js';
+import { createSearchRoutes } from './routes/search.js';
 import { CardCacheService } from './services/card-cache.js';
 import { ImageStoreService } from './services/image-store.js';
 import { CatalogMetadataService } from './services/catalog-metadata.js';
@@ -98,6 +99,7 @@ function buildApp(env: Env): AppContext {
     .use(createHealthRoutes(db, syncEngine))
     .use(createImagesRoutes(imageStore))
     .use(createCardsRoutes(cardCache, env))
+    .use(createSearchRoutes(cardCache))
     .use(createPricesRoutes(priceCache, db))
     .use(createFiltersRoutes(catalogMetadata))
     .use(createCollectionShareRoutes(collectionShareService, auth))

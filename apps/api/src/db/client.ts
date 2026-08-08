@@ -25,7 +25,7 @@ export function createPostgresOptions(env: Env): Options<Record<string, never>> 
   const ssl = resolveSsl(env.DATABASE_URL);
 
   return {
-    max: env.DB_POOL_MAX ?? (isProduction ? 5 : 10),
+    max: env.DB_POOL_MAX ?? (isProduction ? 10 : 20),
     idle_timeout: 20,
     max_lifetime: isProduction ? 60 * 30 : 60 * 5,
     connect_timeout: 30,

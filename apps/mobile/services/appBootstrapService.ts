@@ -19,6 +19,7 @@ import { hydrateWishlistCache, prefetchWishlist } from '@/hooks/useWishlist';
 import { prefetchWishlistPrices } from '@/hooks/useWishlistPrices';
 import { prefetchCardDetail, flushCardDetailPrefetch } from '@/lib/prefetchCardDetail';
 import { prefetchImageUris } from '@/lib/imagePrefetch';
+import { CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
 import {
   preloadCollectionDashboardAssets,
   preloadCriticalLocalAssets,
@@ -71,7 +72,7 @@ async function warmCatalogImages(queryClient: QueryClient): Promise<void> {
   const items = getCatalogIndexItems(index);
   await prefetchImageUris(
     items.slice(0, CATALOG_IMAGE_WARM_COUNT).map((item) => item.imageUrl),
-    { limit: CATALOG_IMAGE_WARM_COUNT }
+    { limit: CATALOG_IMAGE_WARM_COUNT, width: CATALOG_ART_THUMB_WIDTH }
   );
 }
 

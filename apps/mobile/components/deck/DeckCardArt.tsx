@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { View } from 'react-native';
 import { CardArtImage } from '@/components/cards/CardArtImage';
+import { CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
 
 type DeckCardArtProps = {
   uri: string;
@@ -19,6 +20,7 @@ function DeckCardArtInner({ uri, variantNumber }: DeckCardArtProps) {
         contentPosition="center"
         transition={0}
         priority="high"
+        thumbWidth={CATALOG_ART_THUMB_WIDTH}
       />
     </View>
   );

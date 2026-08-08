@@ -44,7 +44,9 @@ export function cdnImageUrl(key: string): string {
 export function isSafeImageKey(key: string): boolean {
   const normalized = key.replace(/^\//, '');
   if (!normalized || normalized.includes('..')) return false;
-  return normalized.startsWith('cards/') || normalized.startsWith('colors/');
+  if (normalized.startsWith('cards/') || normalized.startsWith('colors/')) return true;
+  // Cached resize derivatives written by ImageStoreService.
+  return /^thumbs\/w(96|160|240|320)\/(cards|colors)\//.test(normalized);
 }
 
 /** Extract the S3 object key from a CDN or upstream image URL. */

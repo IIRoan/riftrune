@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   contentTypeForKey,
+  isSafeImageKey,
   objectKeyFromUrl,
   rewriteImageUrl,
 } from '../../src/lib/s3.js';
@@ -9,6 +10,7 @@ import type { Env } from '../../src/env.js';
 const s3Env: Env = {
   NODE_ENV: 'test',
   PORT: 7000,
+  HOST: '::',
   DATABASE_URL: 'postgres://localhost/db',
   RIFTRUNE_API_KEY: 'ak_test',
   RIFTRUNE_BASE_URL: 'https://piltoverarchive.com/api/external',
@@ -39,6 +41,11 @@ describe('s3 helpers', () => {
     expect(
       rewriteImageUrl(s3Env, 'https://cdn.piltoverarchive.com/cards/SFD-198.webp')
     ).toBe('http://localhost:7000/api/v1/images/cards/SFD-198.webp');
+  });
+
+  test('isSafeImageKey allows cached thumb derivatives', () => {
+    expect(isSafeImageKey('thumbs/w160/cards/UNL-099.webp')).toBe(true);
+    expect(isSafeImageKey('thumbs/w999/cards/UNL-099.webp')).toBe(false);
   });
 
   test('contentTypeForKey maps webp extension', () => {

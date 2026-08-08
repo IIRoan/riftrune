@@ -1,5 +1,11 @@
 import { and, asc, count, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import type { CardsListQuery, CardDetail, CardListItem } from '@riftbound/contracts';
+import type {
+  CardsListQuery,
+  CardDetail,
+  CardListItem,
+  GlobalSearchQuery,
+  GlobalSearchResponse,
+} from '@riftbound/contracts';
 import {
   PaCardsListResponse,
   type PaLogicalCard,
@@ -11,6 +17,8 @@ import { RiftruneApiError, type RiftruneClient } from '../upstream/riftrune-clie
 import {
   mapCardDetail,
   mapListItem,
+  mapListItemFromDbRow,
+  type ListItemDbRow,
   groupCardListItems,
   paCardHash,
   paVariantHash,
@@ -18,6 +26,17 @@ import {
 import type { PriceCacheService } from './price-cache.js';
 import type { ImageStoreService } from './image-store.js';
 import { buildCardSearchCondition, buildSearchRelevanceOrder } from '../lib/search.js';
+import {
+  logSearchCacheHit,
+  logSearchComplete,
+  logSearchGlobal,
+  logSearchPipeline,
+  logSearchPostgresQuery,
+  logSearchReconcile,
+  summarizeCardsListQuery,
+  summarizeGlobalSearchQuery,
+  summarizeHydrationTimings,
+} from '../lib/search-metrics.js';
 import {
   buildCardColorsContainsAllCondition,
   buildCardColorsWithinCondition,
@@ -105,6 +124,8 @@ export class CardCacheService {
     VARIANT_ID_RESOLVE_TTL_MS,
     1000
   );
+  private catalogHashMemo: string | null = null;
+  private pricesCatalogHashMemo: string | null = null;
 
   constructor(
     private readonly db: Database,
@@ -164,8 +185,10 @@ export class CardCacheService {
   /** Push non-null upstream marketplace ids even when the card content hash is unchanged. */
   private async applyUpstreamMarketplaceIds(card: PaLogicalCard): Promise<void> {
     const now = new Date();
+    let pricesFingerprintDirty = false;
     for (const variant of card.variants) {
       if (variant.cardmarketId == null && variant.tcgplayerId == null) continue;
+      pricesFingerprintDirty = true;
       const patch: {
         cardmarketId?: number;
         tcgplayerId?: number;
@@ -179,20 +202,35 @@ export class CardCacheService {
         .set(patch)
         .where(eq(variants.variantNumber, variant.variantNumber));
     }
+    if (pricesFingerprintDirty) {
+      this.invalidatePricesSearchCache();
+    }
   }
 
   invalidateSearchCache(): void {
     this.searchCache.clear();
+    this.catalogHashMemo = null;
+    this.pricesCatalogHashMemo = null;
+  }
+
+  /** Search cache keys include the prices fingerprint — refresh after marketplace id patches. */
+  private invalidatePricesSearchCache(): void {
+    this.pricesCatalogHashMemo = null;
+    this.searchCache.clear();
   }
 
   async getCatalogHash(): Promise<string> {
+    if (this.catalogHashMemo != null) return this.catalogHashMemo;
     const row = await this.db.query.syncState.findFirst({
       where: eq(syncState.key, 'catalog'),
     });
-    return row?.contentHash ?? '';
+    const hash = row?.contentHash ?? '';
+    this.catalogHashMemo = hash;
+    return hash;
   }
 
   async getPricesCatalogHash(): Promise<string> {
+    if (this.pricesCatalogHashMemo != null) return this.pricesCatalogHashMemo;
     const [pricesRow, mappedCountRow] = await Promise.all([
       this.db.query.syncState.findFirst({
         where: eq(syncState.key, 'prices'),
@@ -203,7 +241,9 @@ export class CardCacheService {
         .where(isNotNull(variants.cardmarketId)),
     ]);
     const mappedCount = mappedCountRow[0]?.value ?? 0;
-    return `${pricesRow?.contentHash ?? ''}:${String(mappedCount)}`;
+    const hash = `${pricesRow?.contentHash ?? ''}:${String(mappedCount)}`;
+    this.pricesCatalogHashMemo = hash;
+    return hash;
   }
 
   async upsertFromUpstream(card: PaLogicalCard): Promise<boolean> {
@@ -778,10 +818,13 @@ export class CardCacheService {
   }
 
   async search(query: CardsListQuery): Promise<SearchResult> {
+    const pipelineStart = performance.now();
+    const hashStart = performance.now();
     const [catalogHash, pricesCatalogHash] = await Promise.all([
       this.getCatalogHash(),
       this.getPricesCatalogHash(),
     ]);
+    const hashMs = performance.now() - hashStart;
     const cacheKey = searchCacheKey(query, catalogHash, pricesCatalogHash);
     const hasSearchQuery = Boolean(query.q?.trim() && query.q.trim().length >= 2);
 
@@ -789,11 +832,23 @@ export class CardCacheService {
       const cached = this.searchCache.get(cacheKey);
       // Never serve a cached miss — a newly added upstream card must be
       // discoverable on the next search. Positive hits may still re-reconcile below.
-      if (cached && cached.total > 0 && !hasSearchQuery) return cached;
+      if (cached && cached.total > 0 && !hasSearchQuery) {
+        logSearchCacheHit({
+          path: 'cards_list',
+          ...summarizeCardsListQuery(query),
+          itemsReturned: cached.items.length,
+          total: cached.total,
+          source: cached.source,
+          totalMs: Math.round((performance.now() - pipelineStart) * 100) / 100,
+        });
+        return cached;
+      }
     }
 
     let source: 'cache' | 'upstream' | 'mixed' = 'cache';
-    let result = await this.searchLocal(query);
+    const localStart = performance.now();
+    let result = await this.searchLocal(query, catalogHash);
+    const localMs = performance.now() - localStart;
 
     const reconcileMode = resolveUpstreamReconcileMode(
       query,
@@ -801,10 +856,13 @@ export class CardCacheService {
       this.upstreamCheckCache.has(upstreamCheckKey(query)) && !query.refresh
     );
 
+    let reconcileMs = 0;
     if (reconcileMode === 'sync') {
+      const reconcileStart = performance.now();
       const reconciled = await this.reconcileSearchWithUpstream(query, result);
       result = reconciled.result;
       source = reconciled.source;
+      reconcileMs = performance.now() - reconcileStart;
     }
 
     const response: SearchResult = { ...result, source };
@@ -814,12 +872,47 @@ export class CardCacheService {
     } else {
       this.searchCache.delete(cacheKey);
     }
+
+    logSearchPipeline({
+      path: 'cards_list',
+      ...summarizeCardsListQuery(query),
+      engine: 'postgres',
+      cacheHit: false,
+      hashMs: Math.round(hashMs * 100) / 100,
+      localMs: Math.round(localMs * 100) / 100,
+      reconcileMs: Math.round(reconcileMs * 100) / 100,
+      reconciled: reconcileMode === 'sync',
+      source: response.source,
+      itemsReturned: response.items.length,
+      total: response.total,
+      totalMs: Math.round((performance.now() - pipelineStart) * 100) / 100,
+    });
+
     return response;
+  }
+
+  private async resolveReconcileResult(
+    query: CardsListQuery,
+    localResult: { items: CardListItem[]; total: number; catalogHash?: string } | undefined,
+    upserted: number
+  ): Promise<{ items: CardListItem[]; total: number; catalogHash: string }> {
+    if (upserted > 0 || !localResult) {
+      // Reuse the hash from the pipeline start so cacheKey and result stay aligned.
+      const catalogHash = localResult?.catalogHash ?? (await this.getCatalogHash());
+      return this.searchLocal(query, catalogHash);
+    }
+
+    const catalogHash = localResult.catalogHash ?? (await this.getCatalogHash());
+    return {
+      items: localResult.items,
+      total: localResult.total,
+      catalogHash,
+    };
   }
 
   private async reconcileSearchWithUpstream(
     query: CardsListQuery,
-    localResult?: { items: CardListItem[]; total: number }
+    localResult?: { items: CardListItem[]; total: number; catalogHash?: string }
   ): Promise<{
     result: { items: CardListItem[]; total: number; catalogHash: string };
     source: 'cache' | 'upstream' | 'mixed';
@@ -830,11 +923,16 @@ export class CardCacheService {
 
     // Prior successful checks may skip only when we already have local hits.
     // Empty local results always re-query upstream.
-    if (this.upstreamCheckCache.has(checkKey) && !query.refresh && !localEmpty) {
-      return { result: await this.searchLocal(query), source: 'cache' };
+    if (this.upstreamCheckCache.has(checkKey) && !query.refresh && !localEmpty && localResult) {
+      const catalogHash = localResult.catalogHash ?? (await this.getCatalogHash());
+      return {
+        result: { items: localResult.items, total: localResult.total, catalogHash },
+        source: 'cache',
+      };
     }
 
     try {
+      const reconcileStart = performance.now();
       let upserted = 0;
       let page = query.page;
       let upstreamTotal = 0;
@@ -874,6 +972,35 @@ export class CardCacheService {
         else consecutiveCleanPages = 0;
 
         const localTotal = (localResult?.total ?? 0) + upserted;
+
+        // Local already covers upstream — skip remaining pages and avoid a second PG search.
+        if (
+          !localEmpty &&
+          localResult &&
+          upserted === 0 &&
+          missing.length === 0 &&
+          !colorsOmittedForWithin &&
+          localTotal >= upstreamTotal
+        ) {
+          this.upstreamCheckCache.set(checkKey, true);
+          const catalogHash = localResult.catalogHash ?? (await this.getCatalogHash());
+          const tookMs = Math.round((performance.now() - reconcileStart) * 100) / 100;
+          logSearchReconcile({
+            ...summarizeCardsListQuery(query),
+            pagesScanned,
+            upserted,
+            upstreamTotal,
+            localTotal,
+            tookMs,
+            source: 'cache',
+            sufficient: true,
+          });
+          return {
+            result: { items: localResult.items, total: localResult.total, catalogHash },
+            source: 'cache',
+          };
+        }
+
         const stillBehind = upstreamTotal > localTotal;
         const hasNext =
           Boolean(upstream.pagination?.hasNext) &&
@@ -893,15 +1020,25 @@ export class CardCacheService {
         this.invalidateSearchCache();
       }
 
-      const result = await this.searchLocal(query);
+      const result = await this.resolveReconcileResult(query, localResult, upserted);
+      const reconcileFields = {
+        ...summarizeCardsListQuery(query),
+        pagesScanned,
+        upserted,
+        upstreamTotal,
+        localTotal: result.total,
+        tookMs: Math.round((performance.now() - reconcileStart) * 100) / 100,
+      };
 
       if (upserted > 0) {
         this.upstreamCheckCache.set(checkKey, true);
+        logSearchReconcile({ ...reconcileFields, source: 'mixed' });
         return { result, source: 'mixed' };
       }
 
       if (localEmpty && upstreamTotal === 0) {
         this.upstreamCheckCache.set(checkKey, true);
+        logSearchReconcile({ ...reconcileFields, source: 'upstream' });
         return { result, source: 'upstream' };
       }
 
@@ -913,10 +1050,17 @@ export class CardCacheService {
         this.upstreamCheckCache.set(checkKey, true);
       }
 
+      if (pagesScanned > 0) {
+        logSearchReconcile({ ...reconcileFields, source: 'cache' });
+      }
+
       return { result, source: 'cache' };
     } catch (err) {
       console.warn('Upstream search unavailable, using local cache only:', err);
-      return { result: await this.searchLocal(query), source: 'cache' };
+      return {
+        result: await this.resolveReconcileResult(query, localResult, 0),
+        source: 'cache',
+      };
     }
   }
 
@@ -936,11 +1080,159 @@ export class CardCacheService {
     return new Set(rows.map((row) => row.variantNumber.toLowerCase()));
   }
 
-  private async searchLocal(query: CardsListQuery): Promise<{
+  async globalSearch(query: GlobalSearchQuery): Promise<GlobalSearchResponse> {
+    const start = performance.now();
+    const catalogHash = await this.getCatalogHash();
+    const requestedTypes = (query.types ?? 'cards')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+    const includeCards = requestedTypes.length === 0 || requestedTypes.includes('cards');
+    const includeDecks = requestedTypes.includes('decks');
+
+    const data: GlobalSearchResponse['data'] = {};
+    let cardHits = 0;
+    let cardTotal = 0;
+    let searchMs = 0;
+
+    if (includeCards) {
+      const searchStart = performance.now();
+      const result = await this.search({
+        q: query.q,
+        page: query.page,
+        limit: query.limit,
+        sortBy: 'name',
+        dir: 'asc',
+        colorMode: 'all',
+      });
+      searchMs = performance.now() - searchStart;
+      cardHits = result.items.length;
+      cardTotal = result.total;
+      data.cards = {
+        hits: result.items.map((item) => ({
+          kind: 'card' as const,
+          variantNumber: item.variantNumber,
+          name: item.name,
+          imageUrl: item.imageUrl,
+          setCode: item.setCode,
+          type: item.type,
+          rarity: item.rarity,
+        })),
+        total: result.total,
+      };
+    }
+
+    if (includeDecks) {
+      data.decks = { hits: [], total: 0 };
+    }
+
+    const tookMs = Math.round(performance.now() - start);
+    logSearchGlobal({
+      path: 'global_search',
+      ...summarizeGlobalSearchQuery(query),
+      includeCards,
+      includeDecks,
+      hitsReturned: cardHits,
+      total: cardTotal,
+      searchMs: Math.round(searchMs * 100) / 100,
+      tookMs,
+    });
+
+    return {
+      data,
+      meta: {
+        tookMs,
+        catalogHash,
+      },
+    };
+  }
+
+  private async searchLocal(
+    query: CardsListQuery,
+    catalogHash?: string
+  ): Promise<{
     items: CardListItem[];
     total: number;
     catalogHash: string;
   }> {
+    return this.searchLocalPostgres(query, catalogHash);
+  }
+
+  private async loadColorNamesByCardIds(cardIds: string[]): Promise<Map<string, string[]>> {
+    if (cardIds.length === 0) return new Map();
+
+    const colorRows = await this.db
+      .select({
+        cardId: cardColors.cardId,
+        colorName: colors.name,
+      })
+      .from(cardColors)
+      .innerJoin(colors, eq(cardColors.colorId, colors.id))
+      .where(inArray(cardColors.cardId, cardIds));
+
+    const colorsByCard = new Map<string, string[]>();
+    for (const row of colorRows) {
+      const list = colorsByCard.get(row.cardId) ?? [];
+      list.push(row.colorName);
+      colorsByCard.set(row.cardId, list);
+    }
+    return colorsByCard;
+  }
+
+  private async hydrateSlimRows(rows: ListItemDbRow[]): Promise<{
+    items: CardListItem[];
+    colorsMs: number;
+    pricesMs: number;
+    mapMs: number;
+  }> {
+    if (rows.length === 0) {
+      return { items: [], colorsMs: 0, pricesMs: 0, mapMs: 0 };
+    }
+
+    const cardIds = [...new Set(rows.map((row) => row.cardId))];
+    const cardmarketIds = rows
+      .map((row) => row.cardmarketId)
+      .filter((id): id is number => id != null);
+
+    let colorsMs = 0;
+    let pricesMs = 0;
+    const colorsPromise = (async () => {
+      const start = performance.now();
+      const result = await this.loadColorNamesByCardIds(cardIds);
+      colorsMs = performance.now() - start;
+      return result;
+    })();
+    const pricesPromise = (async () => {
+      const start = performance.now();
+      const result = await this.prices.getRowsForCardmarketIds(cardmarketIds);
+      pricesMs = performance.now() - start;
+      return result;
+    })();
+    const [colorsByCard, priceRows] = await Promise.all([colorsPromise, pricesPromise]);
+
+    const mapStart = performance.now();
+    const items = rows.map((row) =>
+      mapListItemFromDbRow(
+        row,
+        colorsByCard.get(row.cardId) ?? [],
+        priceRows,
+        (url) => this.images.rewriteImageUrl(url)
+      )
+    );
+    const mapMs = performance.now() - mapStart;
+
+    return { items, colorsMs, pricesMs, mapMs };
+  }
+
+  private async searchLocalPostgres(
+    query: CardsListQuery,
+    catalogHash?: string
+  ): Promise<{
+    items: CardListItem[];
+    total: number;
+    catalogHash: string;
+  }> {
+    const totalStart = performance.now();
     const conditions = [];
 
     if (query.q) {
@@ -1065,8 +1357,23 @@ export class CardCacheService {
 
     const baseQuery = this.db
       .select({
-        card: cards,
-        variant: variants,
+        cardId: cards.id,
+        name: cards.name,
+        type: cards.type,
+        super: cards.super,
+        energy: cards.energy,
+        might: cards.might,
+        power: cards.power,
+        banEffectiveDate: cards.banEffectiveDate,
+        variantId: variants.id,
+        variantNumber: variants.variantNumber,
+        rarity: variants.rarity,
+        variantType: variants.variantType,
+        foilMode: variants.foilMode,
+        variantLabel: variants.variantLabel,
+        imageUrl: variants.imageUrl,
+        cardmarketId: variants.cardmarketId,
+        tcgplayerId: variants.tcgplayerId,
         setCode: sets.code,
       })
       .from(variants)
@@ -1075,51 +1382,79 @@ export class CardCacheService {
       .where(where)
       .orderBy(...orderBy);
 
+    const dbStart = performance.now();
     const rows = materializeThenPage
       ? await baseQuery.limit(fetchCap)
       : await baseQuery.limit(query.limit).offset(offset);
+    const dbMs = performance.now() - dbStart;
 
-    const priceRows = await this.prices.getRowsForCardmarketIds(
-      rows
-        .map((row) => row.variant.cardmarketId)
-        .filter((id): id is number => id != null)
-    );
-
-    const rawItems = rows.map((row) => {
-      const logical = row.card.upstreamRaw as PaLogicalCard;
-      const variant = this.overlayVariantMarketplaceIds(
-        row.variant.upstreamRaw as PaVariant,
-        row.variant
-      );
-      return this.mapItem(logical, variant, priceRows);
+    logSearchPostgresQuery({
+      path: 'cards_list',
+      ...summarizeCardsListQuery(query),
+      engine: 'postgres',
+      materializeThenPage,
+      fetchCap,
+      variantsSelected: rows.length,
+      dbMs: Math.round(dbMs * 100) / 100,
     });
 
+    const { items: rawItems, colorsMs, pricesMs, mapMs } = await this.hydrateSlimRows(rows);
+    const hydration = summarizeHydrationTimings({ colorsMs, pricesMs, mapMs });
+    const resolvedCatalogHash = catalogHash ?? (await this.getCatalogHash());
+
     if (materializeThenPage) {
+      const groupStart = performance.now();
       let grouped = groupCardListItems(rawItems);
       if (query.sortBy === 'price') {
         grouped = sortCardListItemsByPrice(grouped, query.dir);
       }
+      const groupMs = performance.now() - groupStart;
       let total = grouped.length;
+      let countMs = 0;
 
       if (rows.length >= fetchCap) {
+        const countStart = performance.now();
         const [countRow] = await this.db
           .select({ value: count() })
           .from(variants)
           .innerJoin(cards, eq(variants.cardId, cards.id))
           .innerJoin(sets, eq(variants.setId, sets.id))
           .where(where);
+        countMs = performance.now() - countStart;
         total = countRow?.value ?? grouped.length;
       }
 
-      return {
-        items: grouped.slice(offset, offset + query.limit),
+      const items = grouped.slice(offset, offset + query.limit);
+      logSearchComplete({
+        path: 'cards_list',
+        engine: 'postgres',
+        ...summarizeCardsListQuery(query),
+        materializeThenPage,
+        fetchCap,
+        variantsSelected: rows.length,
+        variantsHydrated: rawItems.length,
+        groupedCount: grouped.length,
+        itemsReturned: items.length,
         total,
-        catalogHash: await this.getCatalogHash(),
+        dbMs: Math.round(dbMs * 100) / 100,
+        ...hydration,
+        groupMs: Math.round(groupMs * 100) / 100,
+        countMs: Math.round(countMs * 100) / 100,
+        totalMs: Math.round((performance.now() - totalStart) * 100) / 100,
+      });
+
+      return {
+        items,
+        total,
+        catalogHash: resolvedCatalogHash,
       };
     }
 
+    const groupStart = performance.now();
     const grouped = groupCardListItems(rawItems);
+    const groupMs = performance.now() - groupStart;
 
+    const countStart = performance.now();
     const [totalRow] = await this.db
       .select({
         value: count(),
@@ -1128,11 +1463,31 @@ export class CardCacheService {
       .innerJoin(cards, eq(variants.cardId, cards.id))
       .innerJoin(sets, eq(variants.setId, sets.id))
       .where(where);
+    const countMs = performance.now() - countStart;
+    const total = totalRow?.value ?? 0;
+
+    logSearchComplete({
+      path: 'cards_list',
+      engine: 'postgres',
+      ...summarizeCardsListQuery(query),
+      materializeThenPage,
+      fetchCap,
+      variantsSelected: rows.length,
+      variantsHydrated: rawItems.length,
+      groupedCount: grouped.length,
+      itemsReturned: grouped.length,
+      total,
+      dbMs: Math.round(dbMs * 100) / 100,
+      ...hydration,
+      groupMs: Math.round(groupMs * 100) / 100,
+      countMs: Math.round(countMs * 100) / 100,
+      totalMs: Math.round((performance.now() - totalStart) * 100) / 100,
+    });
 
     return {
       items: grouped,
-      total: totalRow?.value ?? 0,
-      catalogHash: await this.getCatalogHash(),
+      total,
+      catalogHash: resolvedCatalogHash,
     };
   }
 

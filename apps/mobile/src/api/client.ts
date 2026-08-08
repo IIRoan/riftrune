@@ -1,4 +1,4 @@
-import type { CardDetail, CardsListQuery, PriceStatsBatchRequest } from '@riftbound/contracts';
+import type { CardDetail, CardsListQuery, GlobalSearchQuery, PriceStatsBatchRequest } from '@riftbound/contracts';
 import {
   CardDetailResponse,
   CardsBatchResponse,
@@ -6,6 +6,7 @@ import {
   CatalogIndexResponse,
   DeckRulesResponse,
   FiltersResponse,
+  GlobalSearchResponse,
   HealthResponse,
   PriceHistoryResponse,
   PriceStatsBatchResponse,
@@ -67,6 +68,19 @@ export const api = {
   },
 
   getCatalogIndex: () => apiFetch('/api/v1/cards/index', CatalogIndexResponse),
+
+  globalSearch: (query: Partial<GlobalSearchQuery>) => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(query) as [
+      keyof GlobalSearchQuery,
+      GlobalSearchQuery[keyof GlobalSearchQuery],
+    ][]) {
+      if (v === undefined || v === null || v === '') continue;
+      params.set(k, String(v));
+    }
+    const qs = params.toString();
+    return apiFetch(`/api/v1/search${qs ? `?${qs}` : ''}`, GlobalSearchResponse);
+  },
 
   getCard: (variantNumber: string) =>
     apiFetch(`/api/v1/cards/${encodeURIComponent(variantNumber)}`, CardDetailResponse),

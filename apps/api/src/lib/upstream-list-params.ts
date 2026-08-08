@@ -81,11 +81,12 @@ export function resolveUpstreamReconcileMode(
 
   if (alreadyChecked) return 'skip';
 
-  // Text search awaits upstream so we never return a stale hit set.
+  // Text search with local hits still reconciles once so upstream-only cards can
+  // backfill; reconcile short-circuits when localTotal >= upstreamTotal.
   if (hasSearchQuery) return 'sync';
 
-  // First page of browse / deck-builder filters must also reconcile — otherwise
-  // a partial catalog stays incomplete forever when local already has some hits.
+  // First page of browse / deck-builder filters reconciles once when local has
+  // hits so we can compare totals; reconcile short-circuits when local is ahead.
   if (query.page === 1) return 'sync';
 
   return 'skip';

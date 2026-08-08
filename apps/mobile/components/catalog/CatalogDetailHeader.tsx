@@ -6,7 +6,7 @@ import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { CardTag } from '@/components/riftbound/CardDetailParts';
 import { DomainIcon, RarityIcon, TypeIcon } from '@/components/riftbound/CardIcons';
 import { Text } from '@/components/ui/text';
-import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
+import { CARD_ART_RADIUS_CLASS, CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
 import { cn } from '@/lib/utils';
 
 interface CatalogDetailHeaderProps {
@@ -84,6 +84,8 @@ export function CatalogDetailHeader({
               contentFit="contain"
               contentPosition="center"
               transition={isDrawer ? 0 : 200}
+              thumbWidth={CATALOG_ART_THUMB_WIDTH}
+              progressive
             />
             {isBanned ? <CardBannedOverlay /> : null}
           </View>

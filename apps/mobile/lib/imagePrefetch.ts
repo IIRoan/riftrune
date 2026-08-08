@@ -1,12 +1,16 @@
 import { Image } from 'expo-image';
 import { markSessionImageLoaded } from '@/lib/imageSessionCache';
+import { CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 
 const DEFAULT_BATCH = 48;
 
-function normalizePrefetchUri(raw: string | null | undefined): string | null {
+function normalizePrefetchUri(
+  raw: string | null | undefined,
+  width?: number
+): string | null {
   if (!raw) return null;
-  const resolved = resolveImageUrl(raw);
+  const resolved = resolveImageUrl(raw, width != null ? { width } : undefined);
   if (resolved) return resolved;
   if (raw.startsWith('http') || raw.startsWith('file:') || raw.startsWith('asset:')) {
     return raw;
@@ -20,14 +24,15 @@ function normalizePrefetchUri(raw: string | null | undefined): string | null {
  */
 export async function prefetchImageUris(
   uris: Array<string | null | undefined>,
-  options?: { limit?: number }
+  options?: { limit?: number; width?: number }
 ): Promise<void> {
   const limit = options?.limit ?? DEFAULT_BATCH;
+  const width = options?.width;
   const unique: string[] = [];
   const seen = new Set<string>();
 
   for (const raw of uris) {
-    const uri = normalizePrefetchUri(raw);
+    const uri = normalizePrefetchUri(raw, width);
     if (!uri || seen.has(uri)) continue;
     seen.add(uri);
     unique.push(uri);
