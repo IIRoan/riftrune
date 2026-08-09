@@ -1,48 +1,116 @@
 import type { ThemedIconColor } from '@/lib/themeIconTokens';
 import { cn } from '@/lib/utils';
+import {
+  FACTORY_RADIUS_CONTROL_CLASS,
+} from '@/constants/factoryShape';
+
+/** Factory control radius — buttons/nav = 3px (DESIGN.md). */
+const CONTROL_RADIUS = FACTORY_RADIUS_CONTROL_CLASS;
+const SEGMENT_RADIUS = FACTORY_RADIUS_CONTROL_CLASS;
 
 /** Icon-only toolbar control — matches Layout.minTouchTarget (44px). */
-export const CATALOG_TOOLBAR_CONTROL_CLASS =
-  'size-11 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel';
+export const CATALOG_TOOLBAR_CONTROL_CLASS = cn(
+  'size-11 items-center justify-center border border-border bg-card active:bg-card-panel',
+  CONTROL_RADIUS
+);
 
 /** Labeled toolbar control (Sort, Quick add, filter triggers). */
-export const CATALOG_TOOLBAR_LABELED_CONTROL_CLASS =
-  'h-10 shrink-0 flex-row items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 active:bg-card-panel';
+export const CATALOG_TOOLBAR_LABELED_CONTROL_CLASS = cn(
+  'h-10 shrink-0 flex-row items-center justify-center gap-1.5 border border-border bg-card px-3 active:bg-card-panel',
+  CONTROL_RADIUS
+);
 
 /** Desktop catalog toolbar row — standalone filter bars (deck builder, etc.). */
 export const CATALOG_TOOLBAR_DESKTOP_ROW_CLASS = 'flex-row flex-wrap items-center gap-1.5';
 
-/** Unified desktop catalog shell — one card wrapping controls + optional chip tray. */
-export const CATALOG_TOOLBAR_DESKTOP_SHELL_CLASS =
-  'w-full overflow-hidden rounded-lg border border-border bg-card';
+/** Unified desktop catalog shell — instrument chrome (3px), matches side rail. */
+export const CATALOG_TOOLBAR_DESKTOP_SHELL_CLASS = cn(
+  'w-full overflow-hidden border border-border bg-card',
+  CONTROL_RADIUS
+);
 
-/** Primary control row inside the unified shell. */
+/** Primary control row inside the unified shell — fixed single-line height. */
 export const CATALOG_TOOLBAR_DESKTOP_PRIMARY_ROW_CLASS =
   'min-h-10 flex-row items-center gap-2 px-1.5 py-1';
+
+/**
+ * Active-filter tray — sibling under the bordered shell (shell height stays fixed).
+ * Same gap rhythm as the toolbar stack (`gap-1.5` parent) / instrument row.
+ */
+export const CATALOG_TOOLBAR_DESKTOP_CHIP_TRAY_CLASS =
+  'w-full flex-row flex-wrap items-center gap-2';
 
 /** Vertical separator between filter and action zones. */
 export const CATALOG_TOOLBAR_DESKTOP_DIVIDER_CLASS = 'h-6 w-px shrink-0 bg-border/70';
 
+// ── Active filter chips (Factory instrument chips — match toolbar chrome) ──
+
+/** Outer chip shell — fixed height so color / set / text chips align. */
+export const FILTER_CHIP_SHELL_CLASS = cn(
+  'h-8 flex-row items-stretch overflow-hidden border border-border bg-card',
+  CONTROL_RADIUS
+);
+
+export const FILTER_CHIP_CATEGORY_CLASS = 'justify-center border-r border-border px-2.5';
+
+export const FILTER_CHIP_CATEGORY_LABEL_CLASS =
+  'font-mono text-[11px] font-normal uppercase leading-none tracking-[-0.24px] text-muted-foreground';
+
+export const FILTER_CHIP_VALUE_CLASS = 'min-w-0 flex-row items-center px-2';
+
+export const FILTER_CHIP_VALUE_TEXT_CLASS = 'text-[12px] font-normal leading-none text-foreground';
+
+/** Nested value token inside a multi-value chip (e.g. color names) — fits inside h-8. */
+export const FILTER_CHIP_VALUE_PILL_CLASS = cn(
+  'h-5 flex-row items-center border border-border bg-card-panel pl-1.5 pr-0.5',
+  CONTROL_RADIUS
+);
+
+export const FILTER_CHIP_DISMISS_CLASS =
+  'h-full w-8 shrink-0 items-center justify-center active:bg-card-panel';
+
+export const FILTER_CHIP_DISMISS_COMPACT_CLASS = cn(
+  'size-5 shrink-0 items-center justify-center active:opacity-70',
+  CONTROL_RADIUS
+);
+
+/** Popover / sheet option chips — chalk invert when selected. */
+export const FILTER_OPTION_CHIP_CLASS = cn(
+  'min-h-10 flex-row items-center gap-1.5 border px-3 py-2 active:opacity-90',
+  CONTROL_RADIUS
+);
+
+export const FILTER_OPTION_CHIP_ACTIVE_CLASS = 'border-foreground bg-foreground';
+export const FILTER_OPTION_CHIP_IDLE_CLASS = 'border-border bg-transparent';
+
 /** Embedded filter trigger — borderless inside the shell. */
-export const CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS =
-  'h-8 shrink-0 flex-row items-center gap-1 rounded-md px-2 active:opacity-90';
+export const CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS = cn(
+  'h-8 shrink-0 flex-row items-center gap-1 px-2 active:opacity-90',
+  SEGMENT_RADIUS
+);
 
 export const CATALOG_TOOLBAR_EMBEDDED_TRIGGER_ACTIVE_CLASS = 'bg-card-panel';
 
-/** Active toolbar icon button (e.g. filter applied). */
-export const CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS = 'border-ring/50 bg-card-panel';
+/** Active toolbar icon button — carbon lift, ash stroke (no ring/gold). */
+export const CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS = 'border-border bg-card-panel';
 
 /** Segmented control shell (view toggle, All/Owned). */
-export const CATALOG_TOOLBAR_GROUP_CLASS =
-  'h-10 shrink-0 flex-row items-center rounded-lg border border-border bg-card p-0.5';
+export const CATALOG_TOOLBAR_GROUP_CLASS = cn(
+  'h-10 shrink-0 flex-row items-center border border-border bg-card p-0.5',
+  CONTROL_RADIUS
+);
 
 /** Icon-only segment inside a segmented toolbar group. */
-export const CATALOG_TOOLBAR_SEGMENT_CLASS =
-  'h-full aspect-square items-center justify-center rounded-md';
+export const CATALOG_TOOLBAR_SEGMENT_CLASS = cn(
+  'h-full aspect-square items-center justify-center',
+  SEGMENT_RADIUS
+);
 
 /** Labeled segment inside a segmented toolbar group. */
-export const CATALOG_TOOLBAR_LABELED_SEGMENT_CLASS =
-  'h-full shrink-0 flex-row items-center gap-1.5 rounded-md px-2.5';
+export const CATALOG_TOOLBAR_LABELED_SEGMENT_CLASS = cn(
+  'h-full shrink-0 flex-row items-center gap-1.5 px-2.5',
+  SEGMENT_RADIUS
+);
 
 export const CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS = 'bg-card-panel';
 export const CATALOG_TOOLBAR_SEGMENT_INACTIVE_CLASS = 'active:opacity-70';
@@ -52,40 +120,54 @@ export const CATALOG_TOOLBAR_MOBILE_ROW_CLASS =
   'w-full flex-row items-center justify-between gap-2';
 
 /** Mobile icon control — 44×44 touch target. */
-export const CATALOG_TOOLBAR_CONTROL_CLASS_MOBILE =
-  'size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card active:bg-card-panel';
+export const CATALOG_TOOLBAR_CONTROL_CLASS_MOBILE = cn(
+  'size-11 shrink-0 items-center justify-center border border-border bg-card active:bg-card-panel',
+  CONTROL_RADIUS
+);
 
-export const CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS_MOBILE = 'border-ring/50 bg-card-panel';
+export const CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS_MOBILE = 'border-border bg-card-panel';
 
 /** Segmented control shell on phone — natural width, matches 44pt row. */
-export const CATALOG_TOOLBAR_GROUP_CLASS_MOBILE =
-  'h-11 shrink-0 flex-row items-center rounded-xl border border-border bg-card p-0.5';
+export const CATALOG_TOOLBAR_GROUP_CLASS_MOBILE = cn(
+  'h-11 shrink-0 flex-row items-center border border-border bg-card p-0.5',
+  CONTROL_RADIUS
+);
 
-export const CATALOG_TOOLBAR_SEGMENT_CLASS_MOBILE =
-  'h-10 w-10 items-center justify-center rounded-lg';
+export const CATALOG_TOOLBAR_SEGMENT_CLASS_MOBILE = cn(
+  'h-10 w-10 items-center justify-center',
+  SEGMENT_RADIUS
+);
 
-export const CATALOG_TOOLBAR_LABELED_SEGMENT_CLASS_MOBILE =
-  'h-10 shrink-0 flex-row items-center gap-1.5 rounded-lg px-2.5';
+export const CATALOG_TOOLBAR_LABELED_SEGMENT_CLASS_MOBILE = cn(
+  'h-10 shrink-0 flex-row items-center gap-1.5 px-2.5',
+  SEGMENT_RADIUS
+);
 
 export const CATALOG_TOOLBAR_SEGMENT_ACTIVE_CLASS_MOBILE = 'bg-card-panel';
 
 /** Shared bordered input shell — matches catalog toolbar controls. */
-export const INPUT_SHELL_CLASS =
-  'h-11 min-h-11 rounded-lg border border-border bg-card px-3 py-0 active:bg-card-panel dark:active:bg-card';
+export const INPUT_SHELL_CLASS = cn(
+  'h-11 min-h-11 border border-border bg-card px-3 py-0 active:bg-card-panel dark:active:bg-card',
+  CONTROL_RADIUS
+);
 
 /** Search inputs with a leading icon addon. */
-export const INPUT_SEARCH_SHELL_CLASS =
-  'h-11 min-h-11 rounded-lg border border-border bg-card py-0 pl-0 pr-1 active:bg-card-panel dark:active:bg-card';
+export const INPUT_SEARCH_SHELL_CLASS = cn(
+  'h-11 min-h-11 border border-border bg-card py-0 pl-0 pr-1 active:bg-card-panel dark:active:bg-card',
+  CONTROL_RADIUS
+);
 
-/** Multiline input shell. */
-export const INPUT_TEXTAREA_SHELL_CLASS =
-  'min-h-28 rounded-lg border border-border bg-card px-3 py-2 items-start active:bg-card-panel dark:active:bg-card';
+/** Multiline input shell — Factory control radius (instrument field, not soft card). */
+export const INPUT_TEXTAREA_SHELL_CLASS = cn(
+  'min-h-28 items-start border border-border bg-card px-3 py-2 active:bg-card-panel dark:active:bg-card',
+  CONTROL_RADIUS
+);
 
 export type ToolbarIconTone = 'active' | 'inactive' | 'primary';
 
 /** Icon color for toolbar controls — foreground when active, muted when idle. */
 export function catalogToolbarIconColor(tone: ToolbarIconTone): ThemedIconColor {
-  if (tone === 'primary') return 'primary';
+  if (tone === 'primary') return 'foreground';
   return tone === 'active' ? 'foreground' : 'muted-foreground';
 }
 
@@ -94,8 +176,10 @@ export function catalogToolbarGroupClass(mobile = false): string {
 }
 
 /** Mobile labeled control — compact text + icon (rarely used; prefer icons). */
-export const CATALOG_TOOLBAR_LABELED_CONTROL_CLASS_MOBILE =
-  'h-11 shrink-0 flex-row items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2.5 active:bg-card-panel';
+export const CATALOG_TOOLBAR_LABELED_CONTROL_CLASS_MOBILE = cn(
+  'h-11 shrink-0 flex-row items-center justify-center gap-1.5 border border-border bg-card px-2.5 active:bg-card-panel',
+  CONTROL_RADIUS
+);
 
 export function catalogToolbarButtonClasses(
   active = false,

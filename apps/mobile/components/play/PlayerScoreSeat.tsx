@@ -353,7 +353,7 @@ export function PlayerScoreSeat({
       className={cn(
         'relative min-h-0 min-w-0 flex-1 overflow-hidden',
         surface,
-        isWinner && 'bg-primary/15'
+        isWinner && 'bg-card-panel'
       )}
     >
       {legendUri && seat.legend ? (

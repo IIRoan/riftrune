@@ -45,8 +45,8 @@ import {
 export const BOOTSTRAP_PHASES = ['local', 'catalog', 'user', 'deferred'] as const;
 export type BootstrapPhase = (typeof BOOTSTRAP_PHASES)[number];
 
-/** First viewport of Cards tab art / details. */
-const CATALOG_IMAGE_WARM_COUNT = 40;
+/** First viewports of Cards tab art / details. */
+const CATALOG_IMAGE_WARM_COUNT = 80;
 /** Deck / wishlist thumbnails outside the collection dashboard. */
 const USER_IMAGE_WARM_COUNT = 48;
 /** Collection list rows to warm (recent-first). */

@@ -3,7 +3,7 @@
 > **Riftrune** is our product: a fast Riftbound companion app for managing your collection and building decks.
 > [**Piltover Archive**](https://piltoverarchive.com) is the upstream source of truth for card data, prices, and community decks — we are a separate product that sits on top of it, not a reskin of their site.
 >
-> Read this file first. For mobile UI work, also read [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md).
+> Read this file first. For mobile UI work, also read [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md), [`apps/mobile/PRODUCT.md`](apps/mobile/PRODUCT.md), and [`apps/mobile/DESIGN.md`](apps/mobile/DESIGN.md) (Factory visual world).
 
 ---
 

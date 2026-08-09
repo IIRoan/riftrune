@@ -10,6 +10,7 @@ import {
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Text } from '@/components/ui/text';
+import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { cn } from '@/lib/utils';
 import { authClient } from '@/src/lib/auth-client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -106,21 +107,29 @@ export function SideRail() {
 
   return (
     <View
-      className="shrink-0 self-stretch items-end py-3 pl-2 pr-0"
+      className="shrink-0 self-stretch items-end py-3 pl-4 pr-0"
       style={{ paddingTop: insets.top + 12 }}
     >
-      <View className="h-full w-12 items-center gap-1 overflow-visible rounded-xl border border-border bg-card py-3 shadow-sm shadow-black/20">
+      <View
+        className={cn(
+          'h-full w-12 items-center gap-1 overflow-visible border border-border bg-card py-3',
+          FACTORY_RADIUS_CONTROL_CLASS
+        )}
+      >
         <HoverTooltip label="Home" description="Open the card catalog" side="right">
           <PressableScale
             accessibilityLabel="riftrune home"
-            className="mb-2 size-8 items-center justify-center rounded-md bg-primary"
+            className={cn(
+              'mb-2 size-8 items-center justify-center bg-foreground',
+              FACTORY_RADIUS_CONTROL_CLASS
+            )}
             contentClassName="items-center justify-center"
             onPress={() => {
               void hapticPress();
               router.push('/(tabs)/search');
             }}
           >
-            <Text className="font-mono text-sm font-bold text-primary-foreground">
+            <Text className="font-mono text-sm font-medium text-background">
               r
             </Text>
           </PressableScale>
@@ -147,7 +156,8 @@ export function SideRail() {
                     router.push(href as '/(tabs)/search');
                   }}
                   className={cn(
-                    'size-9 items-center justify-center rounded-md',
+                    'size-9 items-center justify-center',
+                    FACTORY_RADIUS_CONTROL_CLASS,
                     isActive && 'bg-accent'
                   )}
                   contentClassName="items-center justify-center"
@@ -176,7 +186,8 @@ export function SideRail() {
             <PressableScale
               accessibilityLabel={`Account: ${userName}. Open settings`}
               className={cn(
-                'size-9 items-center justify-center rounded-md',
+                'size-9 items-center justify-center',
+                FACTORY_RADIUS_CONTROL_CLASS,
                 active === 'settings' && 'bg-accent'
               )}
               contentClassName="items-center justify-center"
@@ -187,7 +198,7 @@ export function SideRail() {
             >
               <Text
                 className={cn(
-                  'font-mono text-xs font-semibold',
+                  'font-mono text-xs font-normal',
                   active === 'settings'
                     ? 'text-accent-foreground'
                     : 'text-muted-foreground'
@@ -204,7 +215,10 @@ export function SideRail() {
           >
             <PressableScale
               accessibilityLabel="Sign out"
-              className="size-9 items-center justify-center rounded-md"
+              className={cn(
+                'size-9 items-center justify-center',
+                FACTORY_RADIUS_CONTROL_CLASS
+              )}
               contentClassName="items-center justify-center"
               onPress={() => {
                 void hapticPress();

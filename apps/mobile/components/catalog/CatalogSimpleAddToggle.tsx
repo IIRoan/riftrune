@@ -51,7 +51,7 @@ export function CatalogSimpleAddToggle({
       {isMobile ? null : (
         <Text
           className={cn(
-            'text-[13px] font-semibold leading-none',
+            'text-[13px] font-normal leading-none',
             active ? 'text-foreground' : 'text-muted-foreground'
           )}
           numberOfLines={1}

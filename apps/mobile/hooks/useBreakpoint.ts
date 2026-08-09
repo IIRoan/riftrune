@@ -1,13 +1,14 @@
 import { Platform, useWindowDimensions } from 'react-native';
+import { Layout } from '@/constants/Layout';
 
 const DESKTOP_RAIL = 1024;
 const TABLET_WIDTH = 768;
 
-/** SideRail column width (`w-12` card + left gutter; flush to content) */
-export const SIDE_RAIL_WIDTH = 56;
+/** SideRail column width (`pl` gutter + `w-12` card; flush to content) */
+export const SIDE_RAIL_WIDTH = Layout.screenPaddingHorizontalRail + 48;
 
-/** Gap between catalog column and detail panel (`gap-4`) */
-export const CATALOG_DETAIL_GAP = 16;
+/** Gap between catalog column and detail panel — same as rail shell gutter. */
+export const CATALOG_DETAIL_GAP = Layout.screenPaddingHorizontalRail;
 
 export function useShowSideRail() {
   const { width } = useWindowDimensions();

@@ -55,7 +55,7 @@ export function buildCatalogDetailCollectionSections({
   const statsRow = (
     <View className="flex-row">
       <CatalogDetailStat label="Cost">
-        <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
+        <Text className="font-mono text-sm font-normal tabular-nums text-foreground">
           {formatStat(energy ?? 0)}
         </Text>
       </CatalogDetailStat>
@@ -63,14 +63,14 @@ export function buildCatalogDetailCollectionSections({
       <CatalogDetailStat label="Might">
         <View className="flex-row items-center gap-1">
           <MightIcon size={14} />
-          <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
+          <Text className="font-mono text-sm font-normal tabular-nums text-foreground">
             {formatStat(might ?? 0)}
           </Text>
         </View>
       </CatalogDetailStat>
       <View className="w-hairline bg-border" />
       <CatalogDetailStat label="Power">
-        <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
+        <Text className="font-mono text-sm font-normal tabular-nums text-foreground">
           {formatStat(power ?? 0)}
         </Text>
       </CatalogDetailStat>
@@ -80,7 +80,7 @@ export function buildCatalogDetailCollectionSections({
   const metaAttributes = (
     <View className="flex-row flex-wrap gap-x-4 gap-y-3">
       <CatalogDetailMetaPill label="Type">
-        <Text className="text-sm font-semibold text-foreground">{cardType}</Text>
+        <Text className="text-sm font-normal text-foreground">{cardType}</Text>
       </CatalogDetailMetaPill>
       <CatalogDetailMetaPill label="Domain">
         {colors.length > 0 ? (
@@ -88,18 +88,18 @@ export function buildCatalogDetailCollectionSections({
             {colors.map((color) => (
               <View key={color.id} className="flex-row items-center gap-1">
                 <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
-                <Text className="text-sm font-semibold text-foreground">{color.name}</Text>
+                <Text className="text-sm font-normal text-foreground">{color.name}</Text>
               </View>
             ))}
           </View>
         ) : (
-          <Text className="text-sm font-semibold text-foreground">—</Text>
+          <Text className="text-sm font-normal text-foreground">—</Text>
         )}
       </CatalogDetailMetaPill>
       <CatalogDetailMetaPill label="Rarity">
         <View className="flex-row items-center gap-1">
           <RarityIcon rarity={activeRarity} size={16} />
-          <Text className="text-sm font-semibold text-foreground">{activeRarity}</Text>
+          <Text className="text-sm font-normal text-foreground">{activeRarity}</Text>
         </View>
       </CatalogDetailMetaPill>
       <CatalogDetailMetaPill label="Tags">
@@ -110,7 +110,7 @@ export function buildCatalogDetailCollectionSections({
             ))}
           </View>
         ) : (
-          <Text className="text-sm font-semibold text-foreground">—</Text>
+          <Text className="text-sm font-normal text-foreground">—</Text>
         )}
       </CatalogDetailMetaPill>
     </View>

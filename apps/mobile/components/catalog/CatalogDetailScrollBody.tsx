@@ -29,7 +29,6 @@ interface CatalogDetailScrollBodyProps {
     panelItem: PriceHistoryPanelItem | null;
     isLoading: boolean;
   };
-  isDrawer: boolean;
 }
 
 function SectionDivider() {
@@ -52,7 +51,6 @@ export function CatalogDetailScrollBody({
   activeVariantNumber,
   activeCardmarketId,
   priceHistory,
-  isDrawer,
 }: CatalogDetailScrollBodyProps) {
   return (
     <View>
@@ -84,23 +82,20 @@ export function CatalogDetailScrollBody({
             onWatchPress();
           }}
           className={cn(
-            'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-lg web:cursor-pointer',
-            isWatchingActive
-              ? 'bg-primary/18 active:bg-primary/24'
-              : 'bg-primary/12 active:bg-primary/18',
+            'h-8 w-full flex-row items-center justify-center gap-1.5 rounded-[3px] bg-foreground px-3.5 web:cursor-pointer active:opacity-80',
             watchBusy && 'opacity-60'
           )}
         >
           {watchBusy ? (
-            <ActivityIndicator size="small" className="accent-primary" />
+            <ActivityIndicator size="small" className="accent-background" />
           ) : (
             <>
               <BookmarkIcon
-                className="size-4 text-archive-accent-text"
+                className="size-3.5 text-background"
                 weight={isWatchingActive ? 'fill' : 'bold'}
               />
-              <Text className="text-sm font-semibold text-archive-accent-text">
-                {isWatchingActive ? 'Wishlisted' : 'Add to wishlist'}
+              <Text className="text-[13px] font-medium tracking-tight text-background">
+                {isWatchingActive ? 'Wishlisted' : 'Wishlist'}
               </Text>
             </>
           )}
@@ -163,7 +158,6 @@ export function CatalogDetailScrollBody({
         </>
       ) : null}
 
-      {isDrawer ? <View style={{ height: 72 }} /> : null}
     </View>
   );
 }

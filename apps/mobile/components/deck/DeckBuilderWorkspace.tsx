@@ -5,6 +5,7 @@ import {
   type DeckBuilderMiddlePanel,
 } from '@/components/deck/DeckBuilderMiddlePanelToggle';
 import { DECK_COMPOSITION_LIST_WIDTH } from '@/components/deck/DeckCompositionList';
+import { Layout } from '@/constants/Layout';
 import { cn } from '@/lib/utils';
 
 interface DeckBuilderWorkspaceProps {
@@ -38,12 +39,12 @@ export function DeckBuilderWorkspace({
     }
 
     return (
-      <View className="min-h-0 flex-1 flex-row gap-3">
-        <View className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-border bg-card px-3 py-3">
+      <View className="min-h-0 flex-1 flex-row" style={{ gap: Layout.gridGap }}>
+        <View className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-[10px] border border-border bg-card px-3 py-3">
           {showcasePanel}
         </View>
         <View
-          className="min-h-0 overflow-hidden rounded-xl border border-border bg-card"
+          className="min-h-0 overflow-hidden rounded-[10px] border border-border bg-card"
           style={{ width: DECK_COMPOSITION_LIST_WIDTH }}
         >
           {compositionList}
@@ -62,10 +63,10 @@ export function DeckBuilderWorkspace({
   }
 
   return (
-    <View className="min-h-0 flex-1 flex-row gap-3">
+    <View className="min-h-0 flex-1 flex-row" style={{ gap: Layout.gridGap }}>
       <View
         className={cn(
-          'min-h-0 overflow-hidden rounded-xl border border-border bg-card',
+          'min-h-0 overflow-hidden rounded-[10px] border border-border bg-card',
           !infoDrawerOpen && 'border-0'
         )}
         style={{
@@ -82,7 +83,7 @@ export function DeckBuilderWorkspace({
       </View>
 
       <View
-        className="min-h-0 overflow-hidden rounded-xl border border-border bg-card"
+        className="min-h-0 overflow-hidden rounded-[10px] border border-border bg-card"
         style={{ width: DECK_COMPOSITION_LIST_WIDTH }}
       >
         {compositionList}

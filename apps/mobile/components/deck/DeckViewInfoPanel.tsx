@@ -86,7 +86,7 @@ export function DeckViewInfoPanel({ deck }: DeckViewInfoPanelProps) {
         className="self-start active:opacity-80"
         onPress={() => void openExternalUrl(archiveUrl)}
       >
-        <Text className="text-[12px] font-medium text-primary">
+        <Text className="text-[12px] font-medium text-foreground">
           Open on Piltover Archive
         </Text>
       </Pressable>

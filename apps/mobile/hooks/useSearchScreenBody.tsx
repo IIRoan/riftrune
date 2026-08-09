@@ -57,15 +57,19 @@ import {
 import { useStableResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { prefetchCardDetail, ensureCardDetail } from '@/lib/prefetchCardDetail';
 import {
+  CATALOG_END_REACHED_THRESHOLD,
+  catalogDrawDistance,
   catalogLookaheadCount,
   catalogViewportTargetHeight,
   estimateCatalogPageSize,
+  estimateCatalogRowHeight,
   isFastCatalogScroll,
   measureCatalogScrollVelocity,
   shouldPrefetchCatalog,
   type CatalogScrollMetrics,
 } from '@/lib/catalog-page-size';
-import { isCatalogGridLoading } from '@/lib/catalog-loading';
+import { prefetchCatalogArt } from '@/lib/imagePrefetch';
+import { isCatalogGridLoading, resolveCatalogDisplayItems } from '@/lib/catalog-loading';
 
 export function useSearchScreenBody(): React.ReactElement {
   const { defaultLayout: view } = useTheme();
@@ -89,7 +93,8 @@ export function useSearchScreenBody(): React.ReactElement {
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const catalogListRef = useRef<FlashListRef<CardListItem>>(null);
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 40 }).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 20 }).current;
+  const lastArtWarmIndexRef = useRef(-1);
 
   const catalogColumnWidth = splitLayout
     ? (splitMainWidth ??
@@ -225,7 +230,15 @@ export function useSearchScreenBody(): React.ReactElement {
   );
 
   const featuredFiltered = browseCatalog.items;
-  const displayItems = hasSearchInput ? filteredItems : featuredFiltered;
+  const displayItems = resolveCatalogDisplayItems({
+    hasSearchInput,
+    searchItems: filteredItems,
+    browseItems: featuredFiltered,
+    searchPending,
+    isLoading,
+    isFetching,
+    searchItemsLength: items.length,
+  });
   const displayItemsRef = useLatestRef(displayItems);
   const scrollMetricsRef = useRef<CatalogScrollMetrics>({
     distanceFromEnd: Number.POSITIVE_INFINITY,
@@ -273,6 +286,11 @@ export function useSearchScreenBody(): React.ReactElement {
     for (const card of displayItems.slice(prefetchFrom)) {
       prefetchCardDetail(queryClient, card);
     }
+    lastArtWarmIndexRef.current = -1;
+    prefetchCatalogArt(displayItems.slice(0, pageSize), {
+      limit: pageSize,
+      includeFull: true,
+    });
   }, [displayItems, pageSize, queryClient]);
 
   useEffect(() => {
@@ -393,6 +411,11 @@ export function useSearchScreenBody(): React.ReactElement {
     [catalogViewportHeight, view, tileWidth, compact]
   );
 
+  const catalogListDrawDistance = useMemo(
+    () => catalogDrawDistance(catalogViewportHeight),
+    [catalogViewportHeight]
+  );
+
   const handleCatalogScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
@@ -413,8 +436,27 @@ export function useSearchScreenBody(): React.ReactElement {
 
       if (velocityY <= 0) return;
       maybePrefetchCatalog();
+
+      const layout = isList ? 'list' : 'grid';
+      const rowHeight = estimateCatalogRowHeight(layout, tileWidth, compact);
+      const firstRow = Math.max(0, Math.floor(contentOffset.y / Math.max(1, rowHeight)));
+      const firstIndex = layout === 'list' ? firstRow : firstRow * numColumns;
+      const visibleRows = Math.max(
+        1,
+        Math.ceil(layoutMeasurement.height / Math.max(1, rowHeight))
+      );
+      const visibleCount = layout === 'list' ? visibleRows : visibleRows * numColumns;
+      const lookahead = catalogLookaheadCount(layout, numColumns, velocityY);
+      const warmStart = firstIndex + visibleCount;
+
+      if (Math.abs(warmStart - lastArtWarmIndexRef.current) < Math.max(1, numColumns)) {
+        return;
+      }
+      lastArtWarmIndexRef.current = warmStart;
+      const upcoming = displayItemsRef.current.slice(warmStart, warmStart + lookahead);
+      prefetchCatalogArt(upcoming, { limit: lookahead, includeFull: true });
     },
-    [maybePrefetchCatalog]
+    [compact, displayItemsRef, isList, maybePrefetchCatalog, numColumns, tileWidth]
   );
 
   const maybeFillCatalogViewport = useCallback(
@@ -523,7 +565,9 @@ export function useSearchScreenBody(): React.ReactElement {
       query={query}
       onQueryChange={setQuery}
       onClearSearch={clearSearch}
-      searchLoading={hasSearchInput && (searchPending || isLoading || isFetching)}
+      // Only network fetch — debounce `searchPending` used to flip this on the
+      // 3rd character and remount SearchBar end-addons, stealing input focus.
+      searchLoading={hasSearchInput && (isLoading || isFetching)}
       onSubmitSearch={() => {
         searchNow();
       }}
@@ -615,6 +659,8 @@ export function useSearchScreenBody(): React.ReactElement {
       handleCatalogScroll={handleCatalogScroll}
       fetchMoreCatalog={fetchMoreCatalog}
       maybeFillCatalogViewport={maybeFillCatalogViewport}
+      drawDistance={catalogListDrawDistance}
+      onEndReachedThreshold={CATALOG_END_REACHED_THRESHOLD}
     />
   );
 
@@ -623,9 +669,10 @@ export function useSearchScreenBody(): React.ReactElement {
       {splitLayout ? (
         <ScreenSplit
           asideWidth={DETAIL_PANEL_WIDTH}
+          gap={CATALOG_DETAIL_GAP}
           onMainWidthChange={setSplitMainWidth}
           aside={
-            catalogGridLoading ? (
+            catalogGridLoading && displayItems.length === 0 ? (
               <CatalogDetailPanelSkeleton />
             ) : selectedVariant ? (
               <CatalogDetailPanel
@@ -633,7 +680,7 @@ export function useSearchScreenBody(): React.ReactElement {
                 catalogListItem={selectedCard}
               />
             ) : (
-              <View className="min-h-0 flex-1" />
+              <View className="w-full" />
             )
           }
         >

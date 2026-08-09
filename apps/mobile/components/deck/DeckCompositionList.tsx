@@ -8,7 +8,7 @@ import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckBuilderStatusStrip } from '@/components/deck/DeckBuilderStatusStrip';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
-import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
+import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import { getSectionCount, resolveDeckCardImageUrl } from '@/lib/deck-card';
 import { deckSectionProgress } from '@/lib/deck-display';
@@ -93,7 +93,7 @@ function SectionHeader({
   return (
     <View className="mb-1.5 mt-3 flex-row items-center justify-between gap-2 first:mt-0">
       <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
-        <Text className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <Text className="text-[11px] font-normal uppercase tracking-wide text-muted-foreground">
           {title}
         </Text>
         <Text className="font-mono text-[10px] tabular-nums text-muted-foreground">
@@ -104,13 +104,13 @@ function SectionHeader({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Add to ${title}`}
-          className="size-7 items-center justify-center rounded-md border border-border bg-card-panel active:opacity-90"
+          className="size-7 items-center justify-center rounded-[3px] bg-foreground active:opacity-80"
           onPress={() => {
             hapticPress();
             onAdd();
           }}
         >
-          <ThemedIcon icon={PlusIcon} size={14} color="primary" />
+          <PlusIcon className="size-3.5 text-background" weight="bold" />
         </Pressable>
       ) : null}
     </View>
@@ -146,8 +146,8 @@ function CompositionRowView({
   const thumb = (
     <View
       className={cn(
-        'overflow-hidden border border-white/10 bg-background',
-        CARD_ART_RADIUS_CLASS
+        'overflow-hidden border border-border bg-background',
+        FACTORY_RADIUS_CONTROL_CLASS
       )}
       style={{ width: THUMB_WIDTH, height: THUMB_HEIGHT }}
     >
@@ -164,7 +164,7 @@ function CompositionRowView({
   return (
     <View
       className={cn(
-        'mb-1 flex-row items-center gap-2 rounded-lg border px-1.5 py-1.5',
+        'mb-1 flex-row items-center gap-2 rounded-[3px] border px-1.5 py-1.5',
         illegal
           ? 'border-destructive/50 bg-destructive/5'
           : shortfall
@@ -204,7 +204,7 @@ function CompositionRowView({
       >
         <Text
           className={cn(
-            'text-[12px] font-semibold',
+            'text-[12px] font-normal',
             illegal ? 'text-destructive' : 'text-foreground'
           )}
           numberOfLines={1}
@@ -212,7 +212,7 @@ function CompositionRowView({
           {row.name}
         </Text>
         <View className="mt-0.5 flex-row flex-wrap items-center gap-1.5">
-          <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
+          <Text className="font-mono text-[10px] font-normal tabular-nums text-foreground">
             ×{row.count}
           </Text>
           {owned != null ? (
@@ -230,14 +230,14 @@ function CompositionRowView({
       </Pressable>
 
       {!readOnly ? (
-        <View className="shrink-0 flex-row items-center gap-0.5">
+        <View className="h-7 shrink-0 flex-row items-center rounded-[3px] border border-border bg-card-panel">
           {canStep ||
           row.single ||
           row.section === 'legend' ||
           row.section === 'champion' ? (
             <Pressable
               accessibilityLabel={`Decrease ${row.name}`}
-              className="size-7 items-center justify-center rounded-full active:bg-primary/14"
+              className="size-7 items-center justify-center active:bg-foreground/10"
               onPress={() => {
                 hapticPress();
                 if (
@@ -252,19 +252,19 @@ function CompositionRowView({
                 onMinus?.();
               }}
             >
-              <ThemedIcon icon={MinusIcon} size={12} color="archive-accent-text" />
+              <ThemedIcon icon={MinusIcon} size={12} color="foreground" />
             </Pressable>
           ) : null}
           {canStep ? (
             <Pressable
               accessibilityLabel={`Increase ${row.name}`}
-              className="size-7 items-center justify-center rounded-full active:bg-primary/14"
+              className="size-7 items-center justify-center active:bg-foreground/10"
               onPress={() => {
                 hapticPress();
                 onPlus?.();
               }}
             >
-              <ThemedIcon icon={PlusIcon} size={12} color="archive-accent-text" />
+              <ThemedIcon icon={PlusIcon} size={12} color="foreground" />
             </Pressable>
           ) : null}
         </View>
@@ -390,7 +390,7 @@ export function DeckCompositionList({
       )}
     >
       <View className="gap-3 border-b border-border px-3 py-3">
-        <Text className="text-sm font-semibold text-foreground">Deck list</Text>
+        <Text className="text-sm font-normal text-foreground">Deck list</Text>
         <DeckBuilderStatusStrip
           deck={deck}
           readOnly={readOnly}

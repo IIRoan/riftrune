@@ -144,7 +144,7 @@ export const InputPressable = ({
       {...props}
       accessibilityState={{ disabled }}
       className={cn(
-        'flex min-h-12 w-full flex-row items-center gap-2 rounded-lg bg-background px-3 py-2 active:bg-accent/90 disabled:opacity-50 dark:active:bg-accent/50',
+        'flex min-h-12 w-full flex-row items-center gap-2 rounded-[3px] bg-background px-3 py-2 active:bg-card-panel disabled:opacity-50',
         bordered && 'border',
         className,
         bordered && !invalid && !focused && 'border-border',

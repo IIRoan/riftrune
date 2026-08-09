@@ -29,12 +29,12 @@ function ArchiveProgressBar({
   return (
     <View
       className={cn(
-        'overflow-hidden rounded-full bg-card-panel',
+        'overflow-hidden rounded-[3px] bg-card-panel',
         thin ? 'h-1' : 'h-1.5',
         className
       )}
     >
-      <View className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+      <View className="h-full rounded-[3px] bg-foreground" style={{ width: `${pct}%` }} />
     </View>
   );
 }
@@ -64,9 +64,9 @@ export function DashboardStat({
   progress?: number;
 }) {
   return (
-    <View className="w-full rounded-xl border border-border bg-card p-4">
+    <View className="w-full rounded-[10px] border border-border bg-card p-4">
       <Text className="text-xs font-medium text-muted-foreground">{label}</Text>
-      <Text className="mt-2 font-mono text-2xl font-bold tabular-nums text-foreground">
+      <Text className="mt-2 font-mono text-2xl font-normal tabular-nums text-foreground">
         {value}
       </Text>
       <Text className="mt-1 text-xs text-archive-subtle">{sub}</Text>
@@ -87,8 +87,8 @@ export function BreakdownSection({
   iconFor?: (name: string) => ReturnType<typeof typeIconFor>;
 }) {
   return (
-    <View className="rounded-xl border border-border bg-card p-4">
-      <Text className="mb-3 text-sm font-semibold text-foreground">{title}</Text>
+    <View className="rounded-[10px] border border-border bg-card p-4">
+      <Text className="mb-3 text-sm font-normal text-foreground">{title}</Text>
       <View className="gap-3">
         {stats.map((stat) => {
           const pct = stat.total > 0 ? (stat.owned / stat.total) * 100 : 0;
@@ -108,7 +108,7 @@ export function BreakdownSection({
                   ) : null}
                   <Text className="text-[13px] font-medium text-foreground">{stat.name}</Text>
                 </View>
-                <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                <Text className="font-mono text-[13px] font-normal tabular-nums text-foreground">
                   {stat.owned} / {stat.total}
                 </Text>
               </View>
@@ -130,7 +130,7 @@ function SetCard({ set }: { set: MergedSetStat }) {
   const foilCompletion = set.foilTotal > 0 ? (set.foilOwned / set.foilTotal) * 100 : 0;
 
   return (
-    <View className="overflow-hidden rounded-xl border border-border bg-card">
+    <View className="overflow-hidden rounded-[10px] border border-border bg-card">
       {set.art ? (
         <View
           className="relative w-full overflow-hidden bg-card-panel"
@@ -155,27 +155,27 @@ function SetCard({ set }: { set: MergedSetStat }) {
           )}
           <View className="absolute bottom-2 left-3 flex-row items-center gap-2">
             {set.logo ? <SetLogoImage source={set.logo} /> : null}
-            <Text className="font-mono text-xs font-semibold text-foreground">{set.code}</Text>
+            <Text className="font-mono text-xs font-normal text-foreground">{set.code}</Text>
           </View>
         </View>
       ) : set.logo ? (
         <View className="flex-row items-center justify-between bg-card-panel px-4 py-3">
           <View className="min-w-0 flex-1 flex-row items-center gap-2">
             <SetLogoImage source={set.logo} />
-            <Text className="font-mono text-xs font-semibold text-foreground">{set.code}</Text>
+            <Text className="font-mono text-xs font-normal text-foreground">{set.code}</Text>
           </View>
           <Text className="shrink-0 font-mono text-xs text-archive-subtle">{set.total} cards</Text>
         </View>
       ) : (
         <View className="flex-row items-center justify-between bg-card-panel px-4 py-3">
-          <Text className="font-mono text-xs font-semibold text-foreground">{set.code}</Text>
+          <Text className="font-mono text-xs font-normal text-foreground">{set.code}</Text>
           <Text className="font-mono text-xs text-archive-subtle">{set.total} cards</Text>
         </View>
       )}
 
       <View className="p-4">
         <View className="flex-row items-baseline justify-between gap-3">
-          <Text className="min-w-0 flex-1 text-sm font-semibold text-foreground">{set.name}</Text>
+          <Text className="min-w-0 flex-1 text-sm font-normal text-foreground">{set.name}</Text>
           {set.released ? (
             <Text className="shrink-0 font-mono text-xs text-archive-subtle">{set.released}</Text>
           ) : null}
@@ -197,7 +197,7 @@ function SetCard({ set }: { set: MergedSetStat }) {
         </View>
         <View className="mt-3 flex-row items-center justify-between border-t border-archive-soft-line pt-3">
           <Text className="text-[13px] text-muted-foreground">Completion</Text>
-          <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+          <Text className="font-mono text-[13px] font-normal tabular-nums text-foreground">
             {completion.toFixed(2)}%
           </Text>
         </View>
@@ -219,7 +219,7 @@ function ProgressRow({
     <View>
       <View className="flex-row items-center justify-between gap-4">
         <Text className="text-[13px] font-medium text-muted-foreground">{label}</Text>
-        <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+        <Text className="font-mono text-[13px] font-normal tabular-nums text-foreground">
           {value}
         </Text>
       </View>

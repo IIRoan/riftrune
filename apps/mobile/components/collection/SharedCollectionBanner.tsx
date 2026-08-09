@@ -11,7 +11,7 @@ export function SharedCollectionBanner() {
   }
 
   return (
-    <View className="mb-4 rounded-xl border border-border bg-card px-4 py-3">
+    <View className="mb-4 rounded-[10px] border border-border bg-card px-4 py-3">
       <Text className="text-sm font-medium text-foreground">
         Shared with {partner.name}
       </Text>

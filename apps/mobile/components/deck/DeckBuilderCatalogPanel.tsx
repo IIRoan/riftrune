@@ -26,9 +26,11 @@ import {
   type CatalogFilters,
 } from '@/constants/catalogFilters';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
+import { useCatalogArtLookahead } from '@/hooks/useCatalogArtLookahead';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useDeckAddCatalog } from '@/hooks/useDeckAddCatalog';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
+import { CATALOG_END_REACHED_THRESHOLD } from '@/lib/catalog-page-size';
 import {
   defaultDeckAddCatalogFilters,
   defaultDeckAddSearch,
@@ -283,6 +285,25 @@ function DeckBuilderCatalogBrowse({
     : catalog.sectionMeta.placeholder;
   const contextLine = readOnly ? null : catalog.sectionMeta.contextLine;
 
+  const {
+    drawDistance,
+    viewabilityConfig,
+    handleViewableItemsChanged,
+    handleScroll,
+  } = useCatalogArtLookahead({
+    items: displayCards,
+    numColumns,
+    layout: 'grid',
+    tileWidth,
+  });
+
+  const requestNextPage = useCallback(() => {
+    if (readOnly) return;
+    if (catalog.hasNextPage && !catalog.isFetchingNextPage) {
+      catalog.fetchNextPage();
+    }
+  }, [catalog, readOnly]);
+
   const handleAddOne = useCallback(
     (candidate: DeckCard) => {
       if (readOnly) return;
@@ -404,7 +425,6 @@ function DeckBuilderCatalogBrowse({
 
         {filterActive ? (
           <CatalogActiveFilterChips
-            layout="inline"
             filters={catalogFilters}
             onFiltersChange={applyCatalogFilters}
           />
@@ -433,13 +453,13 @@ function DeckBuilderCatalogBrowse({
             <ListBottomSpacer height={paddingBottom} />
           </>
         }
-        onEndReached={() => {
-          if (readOnly) return;
-          if (catalog.hasNextPage && !catalog.isFetchingNextPage) {
-            catalog.fetchNextPage();
-          }
-        }}
-        onEndReachedThreshold={0.5}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onEndReached={requestNextPage}
+        onEndReachedThreshold={CATALOG_END_REACHED_THRESHOLD}
+        drawDistance={drawDistance}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           flexGrow: displayCards.length === 0 ? 1 : undefined,

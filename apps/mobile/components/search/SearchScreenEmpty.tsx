@@ -20,7 +20,7 @@ export function SearchEmptyState({
     <Empty className="mt-14 border-0">
       <EmptyHeader>
         <EmptyMedia variant="icon" className="mb-1 size-16">
-          <ThemedIcon icon={icon} size={32} color="ring" />
+          <ThemedIcon icon={icon} size={32} color="muted-foreground" />
         </EmptyMedia>
         <EmptyTitle className="text-lg">{title}</EmptyTitle>
         {description ? <EmptyDescription>{description}</EmptyDescription> : null}

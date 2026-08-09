@@ -1,7 +1,8 @@
 import { cva } from 'class-variance-authority';
 
+/** Factory control chrome — 3px radius, chalk commit, ash ghost (DESIGN.md). */
 export const buttonVariants = cva(
-  'flex w-full shrink-0 flex-row items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium text-sm',
+  'flex w-full shrink-0 flex-row items-center justify-center gap-2 whitespace-nowrap rounded-[3px] font-medium text-sm',
   {
     variants: {
       size: {
@@ -13,12 +14,12 @@ export const buttonVariants = cva(
         'icon-lg': 'size-14',
       },
       variant: {
-        default: 'bg-primary active:bg-primary/80',
+        default: 'bg-foreground active:opacity-80',
         destructive: 'bg-destructive active:bg-destructive/80 dark:bg-destructive/60',
         outline:
-          'border border-border bg-background active:bg-accent/90 dark:border-input dark:bg-input/30 dark:active:bg-input/50',
-        secondary: 'bg-secondary active:bg-secondary/50',
-        ghost: 'bg-background active:bg-accent/90 dark:active:bg-accent/50',
+          'border border-border bg-transparent active:bg-card-panel dark:border-border',
+        secondary: 'bg-card-panel active:opacity-80',
+        ghost: 'bg-transparent active:bg-card-panel',
         link: 'h-auto w-auto p-0 active:opacity-50',
       },
     },
@@ -29,15 +30,15 @@ export const buttonVariants = cva(
   }
 );
 
-export const buttonTextVariants = cva('whitespace-nowrap font-semibold text-sm', {
+export const buttonTextVariants = cva('whitespace-nowrap font-medium text-sm', {
   variants: {
     variant: {
-      default: 'text-primary-foreground',
+      default: 'text-background',
       destructive: 'text-white',
-      outline: 'text-foreground dark:text-accent-foreground',
-      secondary: 'text-secondary-foreground',
-      ghost: 'text-accent-foreground',
-      link: 'text-primary',
+      outline: 'text-foreground',
+      secondary: 'text-foreground',
+      ghost: 'text-foreground',
+      link: 'text-foreground',
     },
     size: {
       default: 'text-lg',
@@ -57,12 +58,12 @@ export const buttonTextVariants = cva('whitespace-nowrap font-semibold text-sm',
 export const buttonIconVariants = cva('', {
   variants: {
     variant: {
-      default: 'text-primary-foreground',
+      default: 'text-background',
       destructive: 'text-white',
-      outline: 'text-foreground dark:text-accent-foreground',
-      secondary: 'text-secondary-foreground',
-      ghost: 'text-accent-foreground',
-      link: 'text-primary',
+      outline: 'text-foreground',
+      secondary: 'text-foreground',
+      ghost: 'text-foreground',
+      link: 'text-foreground',
     },
     size: {
       default: 'size-6',
@@ -82,12 +83,12 @@ export const buttonIconVariants = cva('', {
 export const buttonSpinnerVariants = cva('', {
   variants: {
     variant: {
-      default: 'accent-primary-foreground',
+      default: 'accent-background',
       destructive: 'accent-white',
-      outline: 'accent-foreground dark:accent-accent-foreground',
-      secondary: 'accent-secondary-foreground',
-      ghost: 'accent-accent-foreground',
-      link: 'accent-primary',
+      outline: 'accent-foreground',
+      secondary: 'accent-foreground',
+      ghost: 'accent-foreground',
+      link: 'accent-foreground',
     },
   },
   defaultVariants: {

@@ -4,6 +4,16 @@ import { XIcon } from '@/components/icons';
 import { DomainIcon } from '@/components/riftbound/CardIcons';
 import { Text } from '@/components/ui/text';
 import type { CatalogFilterChip } from '@/constants/catalogFilters';
+import {
+  FILTER_CHIP_CATEGORY_CLASS,
+  FILTER_CHIP_CATEGORY_LABEL_CLASS,
+  FILTER_CHIP_DISMISS_CLASS,
+  FILTER_CHIP_DISMISS_COMPACT_CLASS,
+  FILTER_CHIP_SHELL_CLASS,
+  FILTER_CHIP_VALUE_CLASS,
+  FILTER_CHIP_VALUE_PILL_CLASS,
+  FILTER_CHIP_VALUE_TEXT_CLASS,
+} from '@/constants/catalogToolbar';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
@@ -51,12 +61,11 @@ function FilterChipDismissButton({
       }}
       hitSlop={compact ? 6 : 4}
       className={cn(
-        'shrink-0 items-center justify-center rounded-md active:bg-accent/80',
-        compact ? 'size-8' : 'size-7',
+        compact ? FILTER_CHIP_DISMISS_COMPACT_CLASS : FILTER_CHIP_DISMISS_CLASS,
         className
       )}
     >
-      <XIcon className={cn('text-muted-foreground', compact ? 'size-4' : 'size-3.5')} />
+      <XIcon className="size-3.5 text-muted-foreground" />
     </Pressable>
   );
 }
@@ -65,27 +74,19 @@ function FilterChipValuePill({
   children,
   onRemove,
   removeLabel,
-  compact = false,
 }: {
   children: ReactNode;
   onRemove?: () => void;
   removeLabel?: string;
-  compact?: boolean;
 }) {
   return (
-    <View
-      className={cn(
-        'flex-row items-center rounded-md bg-background/80',
-        compact ? 'px-1 py-0.5' : 'px-1.5 py-0.5'
-      )}
-    >
+    <View className={FILTER_CHIP_VALUE_PILL_CLASS}>
       {children}
       {onRemove ? (
         <FilterChipDismissButton
           label={removeLabel ?? 'Remove'}
           onPress={onRemove}
-          compact={compact}
-          className={compact ? 'size-6' : 'size-5'}
+          compact
         />
       ) : null}
     </View>
@@ -97,27 +98,23 @@ interface CatalogActiveFilterChipProps {
   colorImageByName?: Map<string, { imageUrl?: string } | undefined>;
   onClear: () => void;
   onRemoveColor?: (name: string) => void;
-  /** Tighter sizing for phone horizontal scroll rows. */
-  compact?: boolean;
 }
 
-/** Shared active-filter chip — category, value, dismiss. Used on phone and desktop. */
+/** Shared active-filter chip — Factory instrument chrome (matches toolbar). */
 export function CatalogActiveFilterChip({
   chip,
   colorImageByName,
   onClear,
   onRemoveColor,
-  compact = false,
 }: CatalogActiveFilterChipProps) {
   const { category, value } = parseCatalogFilterChipDisplay(chip);
 
   const valueContent =
     chip.colorNames && chip.colorNames.length > 0 ? (
-      <View className="flex-row flex-wrap items-center gap-1">
+      <View className="flex-row items-center gap-1">
         {chip.colorNames.map((name) => (
           <FilterChipValuePill
             key={name}
-            compact={compact}
             removeLabel={`Remove ${name} color filter`}
             onRemove={
               onRemoveColor
@@ -131,64 +128,31 @@ export function CatalogActiveFilterChip({
               <DomainIcon
                 name={name}
                 imageUrl={colorImageByName?.get(name)?.imageUrl}
-                size={compact ? 13 : 14}
+                size={14}
               />
-              <Text
-                className={cn(
-                  'font-medium text-foreground',
-                  compact ? 'text-[11px]' : 'text-[12px]'
-                )}
-              >
-                {name}
-              </Text>
+              <Text className={FILTER_CHIP_VALUE_TEXT_CLASS}>{name}</Text>
             </View>
           </FilterChipValuePill>
         ))}
       </View>
     ) : value ? (
-      <Text
-        className={cn('font-medium text-foreground', compact ? 'text-[11px]' : 'text-[12px]')}
-        numberOfLines={compact ? 1 : 2}
-      >
+      <Text className={FILTER_CHIP_VALUE_TEXT_CLASS} numberOfLines={1}>
         {value}
       </Text>
     ) : null;
 
   return (
-    <View
-      className={cn(
-        'flex-row items-stretch overflow-hidden rounded-md border border-border',
-        compact ? 'bg-card' : 'bg-card-panel/50'
-      )}
-    >
-      <View
-        className={cn(
-          'justify-center border-r border-border/60',
-          compact ? 'px-2 py-1' : 'px-2.5 py-1.5'
-        )}
-      >
-        <Text
-          className={cn(
-            'font-semibold leading-none text-muted-foreground',
-            compact ? 'text-[10px]' : 'text-[11px]'
-          )}
-        >
-          {category}
-        </Text>
+    <View className={FILTER_CHIP_SHELL_CLASS}>
+      <View className={FILTER_CHIP_CATEGORY_CLASS}>
+        <Text className={FILTER_CHIP_CATEGORY_LABEL_CLASS}>{category}</Text>
       </View>
 
       {valueContent ? (
-        <View className={cn('min-w-0 justify-center', compact ? 'px-1.5 py-0.5' : 'px-2 py-1')}>
-          {valueContent}
-        </View>
+        <View className={FILTER_CHIP_VALUE_CLASS}>{valueContent}</View>
       ) : null}
 
-      <View className="justify-center border-l border-border/60">
-        <FilterChipDismissButton
-          label={`Clear ${category} filter`}
-          onPress={onClear}
-          compact={compact}
-        />
+      <View className="justify-center border-l border-border">
+        <FilterChipDismissButton label={`Clear ${category} filter`} onPress={onClear} />
       </View>
     </View>
   );

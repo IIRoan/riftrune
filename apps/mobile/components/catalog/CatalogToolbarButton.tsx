@@ -47,7 +47,7 @@ export function CatalogToolbarButton({
         <ThemedIcon icon={icon} size={mobile ? 18 : 16} color={catalogToolbarIconColor(tone)} />
         <Text
           className={cn(
-            'shrink text-[13px] font-semibold leading-none',
+            'shrink text-[13px] font-normal leading-none',
             active ? 'text-foreground' : 'text-muted-foreground'
           )}
           numberOfLines={1}
@@ -75,7 +75,7 @@ export function CatalogToolbarButton({
   );
 }
 
-/** Primary-colored dot shown when a filter is active. */
+/** Status pulse when a filter is active — bone on dark (Factory). */
 export function CatalogToolbarBadgeDot() {
-  return <View className="absolute right-2 top-2 size-2 rounded-full bg-primary" />;
+  return <View className="absolute right-2 top-2 size-1.5 rounded-full bg-foreground" />;
 }

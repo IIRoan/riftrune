@@ -103,7 +103,7 @@ export function DeckBrowseCard({
         hapticPress();
         onPress();
       }}
-      className="overflow-hidden rounded-xl border border-border bg-card active:border-ring active:bg-card-panel"
+      className="overflow-hidden rounded-[10px] border border-border bg-card active:border-foreground active:bg-card-panel"
     >
       <View className="min-h-[148px] flex-row items-stretch">
         <View
@@ -130,14 +130,14 @@ export function DeckBrowseCard({
           <View className="gap-1">
             <View className="flex-row items-start gap-2">
               <Text
-                className="min-w-0 flex-1 text-[14px] font-semibold leading-[18px] text-foreground"
+                className="min-w-0 flex-1 text-[14px] font-normal leading-[18px] text-foreground"
                 numberOfLines={2}
               >
                 {deck.name}
               </Text>
               {totalCards > 0 ? (
-                <View className="rounded-md border border-border bg-card-panel px-1.5 py-0.5">
-                  <Text className="font-mono text-[10px] font-bold tabular-nums text-foreground">
+                <View className="rounded-[3px] border border-border bg-card-panel px-1.5 py-0.5">
+                  <Text className="font-mono text-[10px] font-normal tabular-nums text-foreground">
                     {totalCards}
                   </Text>
                 </View>
@@ -153,7 +153,7 @@ export function DeckBrowseCard({
           {mainDeckEntries.length > 0 ? (
             <View className="gap-1">
               <View className="flex-row items-center justify-between gap-2">
-                <Text className="text-[10px] font-semibold text-muted-foreground">Main deck</Text>
+                <Text className="text-[10px] font-normal text-muted-foreground">Main deck</Text>
                 {hiddenCount > 0 ? (
                   <Text className="font-mono text-[9px] text-muted-foreground">
                     +{hiddenCount} more
@@ -205,13 +205,13 @@ export function DeckBrowseCard({
               <Pressable
                 accessibilityLabel={`Import ${deck.name}`}
                 disabled={importBusy}
-                className="shrink-0 rounded-md border border-border bg-card-panel px-2.5 py-1 active:bg-accent"
+                className="shrink-0 rounded-[3px] border border-border bg-card-panel px-2.5 py-1 active:bg-card-panel"
                 onPress={(event) => {
                   event.stopPropagation?.();
                   onImport();
                 }}
               >
-                <Text className="text-[11px] font-semibold text-primary">
+                <Text className="text-[11px] font-normal text-foreground">
                   {importBusy ? 'Importing…' : 'Import'}
                 </Text>
               </Pressable>

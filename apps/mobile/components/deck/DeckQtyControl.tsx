@@ -1,12 +1,15 @@
 import { ThemedIcon, MinusIcon, PlusIcon, XIcon } from '@/components/icons';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
 const CONTROL_HEIGHT = 'h-8';
-const STEP_BTN =
-  'h-full flex-1 items-center justify-center rounded-full active:bg-primary/14';
+const STEP_BTN = cn(
+  'h-full flex-1 items-center justify-center active:bg-foreground/10',
+  FACTORY_RADIUS_CONTROL_CLASS
+);
 
 interface DeckQtyControlProps {
   count: number;
@@ -18,6 +21,7 @@ interface DeckQtyControlProps {
   onRemove: () => void;
 }
 
+/** Deck row quantity control — Factory 3px chrome (no soft tint / pills). */
 export function DeckQtyControl({
   count,
   name,
@@ -52,17 +56,18 @@ export function DeckQtyControl({
         accessibilityLabel={`Remove ${name}`}
         className={cn(
           CONTROL_HEIGHT,
-          'w-full flex-row items-center justify-center gap-1 rounded-md bg-primary/12 active:bg-destructive/10'
+          'w-full flex-row items-center justify-center gap-1 border border-border bg-card-panel active:opacity-80',
+          FACTORY_RADIUS_CONTROL_CLASS
         )}
         onPress={handleRemove}
         disabled={busy}
       >
         {busy ? (
-          <ActivityIndicator size="small" className="accent-muted-foreground" />
+          <ActivityIndicator size="small" className="accent-foreground" />
         ) : (
           <>
             <XIcon className="size-3.5 text-destructive" />
-            <Text className="text-[11px] font-medium text-destructive">Remove</Text>
+            <Text className="text-[11px] font-normal text-destructive">Remove</Text>
           </>
         )}
       </Pressable>
@@ -73,7 +78,8 @@ export function DeckQtyControl({
     <View
       className={cn(
         CONTROL_HEIGHT,
-        'w-full flex-row items-center justify-between',
+        'w-full flex-row items-center justify-between border border-border bg-card-panel px-0.5',
+        FACTORY_RADIUS_CONTROL_CLASS,
         busy && 'opacity-60'
       )}
     >
@@ -84,12 +90,12 @@ export function DeckQtyControl({
         disabled={busy}
       >
         {busy ? (
-          <ActivityIndicator size="small" className="accent-primary" />
+          <ActivityIndicator size="small" className="accent-foreground" />
         ) : (
-          <ThemedIcon icon={MinusIcon} size={14} color="archive-accent-text" />
+          <ThemedIcon icon={MinusIcon} size={14} color="foreground" />
         )}
       </Pressable>
-      <Text className="min-w-7 text-center font-mono text-xs font-semibold tabular-nums text-foreground">
+      <Text className="min-w-7 text-center font-mono text-xs font-normal tabular-nums text-foreground">
         {count}
       </Text>
       <Pressable
@@ -99,9 +105,9 @@ export function DeckQtyControl({
         disabled={busy}
       >
         {busy ? (
-          <ActivityIndicator size="small" className="accent-primary" />
+          <ActivityIndicator size="small" className="accent-foreground" />
         ) : (
-          <ThemedIcon icon={PlusIcon} size={14} color="archive-accent-text" />
+          <ThemedIcon icon={PlusIcon} size={14} color="foreground" />
         )}
       </Pressable>
     </View>

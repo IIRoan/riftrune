@@ -1,4 +1,4 @@
-import { ThemedIcon, PlusIcon } from '@/components/icons';
+import { PlusIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,7 @@ export function DeckSectionHeader({
   if (readOnly) {
     return (
       <View className={cn('flex-row items-baseline gap-2', className)}>
-        <Text className="text-sm font-semibold text-foreground">{title}</Text>
+        <Text className="text-sm font-normal text-foreground">{title}</Text>
         <Text className="font-mono text-[11px] tabular-nums text-muted-foreground">
           {current}/{target}
         </Text>
@@ -43,13 +43,13 @@ export function DeckSectionHeader({
         <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
           <Text
             className={cn(
-              'font-mono text-xl font-bold tabular-nums leading-none',
-              complete ? 'text-success' : 'text-primary'
+              'font-mono text-xl font-normal tabular-nums leading-none',
+              complete ? 'text-success' : 'text-foreground'
             )}
           >
             {current}
           </Text>
-          <Text className="text-sm font-semibold text-foreground">{title}</Text>
+          <Text className="text-sm font-normal text-foreground">{title}</Text>
         </View>
         <View className="shrink-0 flex-row items-center gap-2">
           <Text className="font-mono text-[11px] text-muted-foreground">
@@ -59,19 +59,19 @@ export function DeckSectionHeader({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Add cards to ${title}`}
-              className="h-8 flex-row items-center gap-1 rounded-lg border border-border bg-card-panel px-2.5 active:opacity-90"
+              className="h-8 flex-row items-center gap-1 rounded-[3px] bg-foreground px-2.5 active:opacity-80"
               onPress={onAdd}
             >
-              <ThemedIcon icon={PlusIcon} size={14} color="primary" />
-              <Text className="text-[12px] font-semibold text-primary">Add</Text>
+              <PlusIcon className="size-3.5 text-background" weight="bold" />
+              <Text className="text-[12px] font-medium tracking-tight text-background">Add</Text>
             </Pressable>
           ) : null}
         </View>
       </View>
 
-      <View className="h-1 overflow-hidden rounded-full bg-border/80">
+      <View className="h-1 overflow-hidden rounded-none bg-border/80">
         <View
-          className={cn('h-full rounded-full', complete ? 'bg-success' : 'bg-primary')}
+          className={cn('h-full rounded-none', complete ? 'bg-success' : 'bg-foreground')}
           style={{ width: `${Math.max(ratio * 100, current > 0 ? 4 : 0)}%` }}
         />
       </View>

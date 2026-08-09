@@ -87,7 +87,7 @@ function MiniSparkline({ points }: { points: WishlistPriceItem['points'] }) {
             key={point.priceDate}
             className={cn(
               'min-w-0 flex-1 rounded-t-[1px]',
-              isLatest ? 'bg-primary' : 'bg-muted-foreground/25'
+              isLatest ? 'bg-foreground' : 'bg-muted-foreground/25'
             )}
             style={{ height }}
           />
@@ -189,7 +189,7 @@ const WishlistRow = memo(function WishlistRow({
         ) : null}
 
         <View className="min-w-[72px] items-end">
-          <Text className="font-mono text-[15px] font-semibold tabular-nums text-foreground">
+          <Text className="font-mono text-[15px] font-normal tabular-nums text-foreground">
             {formatPrice(item.currentPrice)}
           </Text>
           <TrendTag trend={item.trend} className="mt-0.5" />
@@ -217,13 +217,13 @@ const WishlistRow = memo(function WishlistRow({
                 size={EXPANDED_THUMB}
               />
               <View className="min-w-0 flex-1 gap-1">
-                <Text className="text-[15px] font-semibold text-foreground" numberOfLines={2}>
+                <Text className="text-[15px] font-normal text-foreground" numberOfLines={2}>
                   {item.name}
                 </Text>
                 <Text className="font-mono text-[11px] text-muted-foreground">
                   {item.variantNumber}
                 </Text>
-                <Text className="font-mono text-[15px] font-semibold tabular-nums text-foreground">
+                <Text className="font-mono text-[15px] font-normal tabular-nums text-foreground">
                   {formatPrice(item.currentPrice)}
                 </Text>
                 <TrendTag trend={item.trend} className="self-start" />
@@ -246,7 +246,7 @@ function WishlistLoadingSkeleton({ compact }: { compact: boolean }) {
       <View className="gap-0">
         {Array.from({ length: 8 }).map((_, index) => (
           <View key={index} className="flex-row items-center gap-3 border-b border-border py-3">
-            <Skeleton className="h-14 w-10 shrink-0 rounded-md" />
+            <Skeleton className="h-14 w-10 shrink-0 rounded-[3px]" />
             <View className="min-w-0 flex-1 gap-2">
               <Skeleton className="h-4 w-2/3 rounded" />
               <Skeleton className="h-3 w-1/3 rounded" />
@@ -312,7 +312,7 @@ function WishlistScreenBody() {
   const listHeader = (
     <View className="gap-4 pb-2">
       <View>
-        <Text className="text-xl font-semibold tracking-tight text-foreground">Wishlist</Text>
+        <Text className="text-xl font-normal tracking-tight text-foreground">Wishlist</Text>
         <Text className="mt-1 text-sm text-muted-foreground">
           {items.length === 0
             ? 'Track cards you want and watch Cardmarket trend prices.'
@@ -327,7 +327,7 @@ function WishlistScreenBody() {
         onChangeText={setQuery}
         placeholder="Search by name or variant"
         accessibilityLabel="Search wishlist"
-        className="min-h-12 rounded-xl border-border bg-card"
+        className="min-h-12 rounded-[10px] border-border bg-card"
       />
 
       <View className="flex-row flex-wrap items-center justify-between gap-3">
@@ -348,7 +348,7 @@ function WishlistScreenBody() {
                   setSort(option.value);
                 }}
                 className={cn(
-                  'min-h-9 rounded-md px-2.5 py-1.5',
+                  'min-h-9 rounded-[3px] px-2.5 py-1.5',
                   active ? 'bg-secondary' : 'active:opacity-70'
                 )}
                 accessibilityRole="tab"
@@ -357,7 +357,7 @@ function WishlistScreenBody() {
                 <Text
                   className={cn(
                     'text-[12px]',
-                    active ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                    active ? 'font-normal text-foreground' : 'text-muted-foreground'
                   )}
                 >
                   {option.label}
@@ -400,7 +400,7 @@ function WishlistScreenBody() {
         <View className="py-10">
           {items.length === 0 ? (
             <View className="gap-3">
-              <Text className="text-base font-semibold text-foreground">
+              <Text className="text-base font-normal text-foreground">
                 No wishlist cards yet
               </Text>
               <Text className="max-w-md text-sm leading-6 text-muted-foreground">

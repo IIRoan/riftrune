@@ -15,6 +15,23 @@ export const MOTION = {
   bouncy: { stiffness: 500, damping: 18, mass: 1 },
 } as const;
 
+/**
+ * Layout / accordion springs — slightly lighter mass so height expands feel
+ * mechanical (Factory) while still settling like a physical instrument panel.
+ */
+export const LAYOUT_SPRING = {
+  damping: 28,
+  stiffness: 340,
+  mass: 0.55,
+} as const;
+
+/** Chip / tray entry — snappy arrival with tiny settle. */
+export const TRAY_SPRING = {
+  damping: 30,
+  stiffness: 380,
+  mass: 0.5,
+} as const;
+
 /** Functional press depth (no spring overshoot while held). */
 export const PRESS = {
   depth: 0.97,

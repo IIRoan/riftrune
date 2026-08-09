@@ -40,7 +40,7 @@ export function CardTileGridLayout({
       className={cn(
         'overflow-hidden border bg-card',
         CARD_ART_RADIUS_CLASS,
-        banned ? 'border-destructive/70' : selected ? 'border-ring' : 'border-border'
+        banned ? 'border-destructive/70' : selected ? 'border-foreground' : 'border-border'
       )}
       style={style}
     >
@@ -68,8 +68,9 @@ export function CardTileGridLayout({
 
       <View className="gap-1.5 border-t border-border bg-card-panel px-2 py-2">
         <Pressable onPress={onOpenCard} accessibilityRole="button">
+          {/* Fixed title + meta heights keep grid CTAs aligned across the row. */}
           <Text
-            className="text-[12px] font-semibold leading-4 text-foreground"
+            className="h-4 text-[12px] font-medium leading-4 text-foreground"
             numberOfLines={1}
           >
             {card.name}
@@ -77,7 +78,7 @@ export function CardTileGridLayout({
           <View className="mt-0.5 h-4 flex-row items-center gap-1">
             {showPrice ? (
               <Text
-                className="min-w-0 flex-1 font-mono text-[11px] font-semibold tabular-nums text-foreground"
+                className="min-w-0 flex-1 font-mono text-[11px] font-medium tabular-nums text-foreground"
                 numberOfLines={1}
               >
                 {priceLabel ?? '—'}
@@ -86,7 +87,7 @@ export function CardTileGridLayout({
               <View className="min-w-0 flex-1" />
             )}
             <Text
-              className="shrink-0 font-mono text-[10px] text-muted-foreground"
+              className="shrink-0 font-mono text-[10px] font-medium text-muted-foreground"
               numberOfLines={1}
             >
               {primaryPrinting?.variantNumber}

@@ -147,7 +147,7 @@ export function DeckImportExportSheet({
               </Text>
 
               <View className="gap-2">
-                <Text className="text-sm font-semibold text-foreground">Format</Text>
+                <Text className="text-sm font-normal text-foreground">Format</Text>
                 <DeckFormatSegmentedControl
                   value={format}
                   onChange={setFormat}
@@ -157,7 +157,7 @@ export function DeckImportExportSheet({
 
               <View className="gap-2">
                 <View className="flex-row items-baseline justify-between gap-3">
-                  <Text className="text-sm font-semibold text-foreground">Deck list</Text>
+                  <Text className="text-sm font-normal text-foreground">Deck list</Text>
                   {lineCount > 0 ? (
                     <Text className="font-mono text-[11px] tabular-nums text-muted-foreground">
                       {lineCount} line{lineCount === 1 ? '' : 's'}
@@ -179,11 +179,11 @@ export function DeckImportExportSheet({
                   accessibilityRole="button"
                   accessibilityLabel="Choose text file"
                   disabled={busy}
-                  className="self-start flex-row items-center gap-1.5 rounded-md px-1 py-1 active:opacity-70"
+                  className="self-start flex-row items-center gap-1.5 rounded-[3px] px-1 py-1 active:opacity-70"
                   onPress={() => void handlePickFile()}
                 >
-                  <ThemedIcon icon={UploadIcon} size={15} color="primary" />
-                  <Text className="text-[13px] font-medium text-primary">Choose text file</Text>
+                  <ThemedIcon icon={UploadIcon} size={15} color="foreground" />
+                  <Text className="text-[13px] font-medium text-foreground">Choose text file</Text>
                 </Pressable>
               </View>
 

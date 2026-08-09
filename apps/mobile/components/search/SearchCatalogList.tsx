@@ -17,6 +17,7 @@ import {
 import { cardListItemMatchesVariant } from '@/utils/variants';
 import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
 import { cn } from '@/lib/utils';
+import { FACTORY_RADIUS_CARD_CLASS } from '@/constants/factoryShape';
 
 interface SearchCatalogListProps {
   catalogListRef: React.RefObject<FlashListRef<CardListItem> | null>;
@@ -41,6 +42,8 @@ interface SearchCatalogListProps {
   handleCatalogScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   fetchMoreCatalog: () => void;
   maybeFillCatalogViewport: (height: number) => void;
+  drawDistance: number;
+  onEndReachedThreshold?: number;
 }
 
 export function SearchCatalogList({
@@ -66,6 +69,8 @@ export function SearchCatalogList({
   handleCatalogScroll,
   fetchMoreCatalog,
   maybeFillCatalogViewport,
+  drawDistance,
+  onEndReachedThreshold = 1.75,
 }: SearchCatalogListProps) {
   const gridCellStyle = useMemo(() => catalogGridCellStyle(), []);
 
@@ -145,7 +150,10 @@ export function SearchCatalogList({
             isList &&
               displayItems.length > 0 &&
               !sortPending &&
-              'overflow-hidden rounded-xl border border-border bg-card'
+              cn(
+                'overflow-hidden border border-border bg-card',
+                FACTORY_RADIUS_CARD_CLASS
+              )
           )}
         >
           <FlashList
@@ -168,7 +176,8 @@ export function SearchCatalogList({
             onScroll={handleCatalogScroll}
             scrollEventThrottle={16}
             onEndReached={fetchMoreCatalog}
-            onEndReachedThreshold={1.75}
+            onEndReachedThreshold={onEndReachedThreshold}
+            drawDistance={drawDistance}
             onContentSizeChange={(_, height) => {
               maybeFillCatalogViewport(height);
             }}

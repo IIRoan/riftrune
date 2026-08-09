@@ -105,7 +105,7 @@ function ModalIconButton({
     <Button
       size="icon-sm"
       variant="ghost"
-      className={cn('size-8 shrink-0 rounded-full p-0 active:bg-secondary', className)}
+      className={cn('size-8 shrink-0 rounded-[3px] p-0 active:bg-card-panel', className)}
       onPress={onPress}
       accessibilityLabel={accessibilityLabel}
     >
@@ -190,9 +190,9 @@ function ModalHeader({
         )}
       >
         {wishlistContext ? (
-          <View className="flex-row items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1.5">
+          <View className="flex-row items-center gap-1.5 rounded-[3px] border border-border bg-card-panel px-2.5 py-1.5">
             <BookmarkIcon className="size-[14px] text-primary" />
-            <Text className="text-xs font-semibold text-primary">
+            <Text className="text-xs font-normal text-foreground">
               {wishlistItem ? 'Wishlisted' : 'Wishlist'}
             </Text>
           </View>
@@ -331,7 +331,7 @@ function ModalInfoPanel({
   const abilityBlock = card.description ? (
     <View
       className={cn(
-        'min-w-0 rounded-xl border border-border bg-secondary',
+        'min-w-0 rounded-[10px] border border-border bg-card-panel',
         isWide ? 'px-4 py-3.5' : 'px-3.5 py-3'
       )}
     >
@@ -350,7 +350,7 @@ function ModalInfoPanel({
         }}
       />
     ) : priceHistory.isLoading ? (
-      <View className="rounded-xl border border-border bg-card p-3">
+      <View className="rounded-[10px] border border-border bg-card p-3">
         <Text className="text-xs leading-5 text-muted-foreground">
           Loading daily trend history…
         </Text>
@@ -462,7 +462,7 @@ export function CardModal(props: Props) {
   return (
     <View
       className={cn(
-        'min-h-0 w-full overflow-hidden rounded-2xl border border-border/50 bg-background shadow-2xl',
+        'min-h-0 w-full overflow-hidden rounded-[10px] border border-border bg-background',
         isWide ? 'flex-row' : 'flex-col'
       )}
       style={{
@@ -480,7 +480,7 @@ export function CardModal(props: Props) {
             : { width: cardColumnWidth, height: narrowCardBlockHeight }
         }
       >
-        <View className="flex-1 overflow-hidden rounded-lg">
+        <View className="flex-1 overflow-hidden rounded-[3px]">
           <CardPreview
             key={activeVariant.variantNumber}
             imageUrl={activeVariant.imageUrl}
@@ -589,7 +589,7 @@ export function CardModalLoading({ onClose }: { onClose: () => void }) {
   return (
     <CardModalOverlay onClose={onClose}>
       <View
-        className="w-full items-center justify-center overflow-hidden rounded-2xl border border-border/50 bg-background"
+        className="w-full items-center justify-center overflow-hidden rounded-[10px] border border-border bg-background"
         style={{ width: shellWidth, maxWidth: '100%', height: shellHeight }}
       >
         <AppLoader size="lg" />
@@ -605,7 +605,7 @@ export function CardModalError({ onClose }: { onClose: () => void }) {
   return (
     <CardModalOverlay onClose={onClose}>
       <View
-        className="w-full items-center justify-center rounded-2xl border border-border/50 bg-background p-6"
+        className="w-full items-center justify-center rounded-[10px] border border-border bg-background p-6"
         style={{ width: shellWidth, maxWidth: '100%', height: 200 }}
       >
         <Empty className="border-0 p-0">

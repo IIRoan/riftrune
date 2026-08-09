@@ -158,7 +158,7 @@ export function CatalogFilterSegmentPanel({
           Could not load filter options.
         </Text>
         <Text
-          className="text-sm font-semibold text-primary"
+          className="text-sm font-normal text-foreground"
           accessibilityRole="button"
           onPress={() => void refetch()}
         >

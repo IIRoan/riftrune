@@ -21,7 +21,7 @@ export function DeckFormatSegmentedControl({
     <View className="gap-1.5">
       <View
         accessibilityRole="radiogroup"
-        className="flex-row gap-1 rounded-lg border border-border bg-card-panel p-1"
+        className="flex-row gap-1 rounded-[3px] border border-border bg-card-panel p-1"
       >
         {DECK_FORMAT_OPTIONS.map((option) => {
           const selected = value === option.value;
@@ -32,8 +32,8 @@ export function DeckFormatSegmentedControl({
               accessibilityState={{ selected, disabled }}
               disabled={disabled}
               className={cn(
-                'min-h-9 flex-1 items-center justify-center rounded-md px-2 py-1.5',
-                selected ? 'border border-border bg-card' : 'active:bg-accent/60',
+                'min-h-9 flex-1 items-center justify-center rounded-[3px] px-2 py-1.5',
+                selected ? 'border border-border bg-card' : 'active:bg-card-panel/60',
                 disabled && 'opacity-50'
               )}
               onPress={() => {
@@ -44,7 +44,7 @@ export function DeckFormatSegmentedControl({
             >
               <Text
                 className={cn(
-                  'text-[13px] font-semibold',
+                  'text-[13px] font-normal',
                   selected ? 'text-foreground' : 'text-muted-foreground'
                 )}
               >

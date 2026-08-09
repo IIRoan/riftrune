@@ -35,7 +35,7 @@ export function VariantFamilySwitcher({
         disabled={!canPrevious}
         onPress={onPrevious}
         className={cn(
-          'items-center justify-center rounded-md border border-border active:bg-accent',
+          'items-center justify-center rounded-[3px] border border-border active:bg-card-panel',
           prominent ? 'size-11' : 'size-7',
           !canPrevious && 'opacity-30'
         )}
@@ -45,7 +45,7 @@ export function VariantFamilySwitcher({
       </Pressable>
 
       <View className="min-w-0 flex-1 items-center px-1">
-        <Text className="text-center text-sm font-semibold text-foreground" numberOfLines={2}>
+        <Text className="text-center text-sm font-normal text-foreground" numberOfLines={2}>
           {label}
         </Text>
         {total > 1 ? (
@@ -61,7 +61,7 @@ export function VariantFamilySwitcher({
         disabled={!canNext}
         onPress={onNext}
         className={cn(
-          'items-center justify-center rounded-md border border-border active:bg-accent',
+          'items-center justify-center rounded-[3px] border border-border active:bg-card-panel',
           prominent ? 'size-11' : 'size-7',
           !canNext && 'opacity-30'
         )}

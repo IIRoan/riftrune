@@ -22,8 +22,10 @@ import {
   DEFAULT_CATALOG_FILTERS,
   type CatalogFilters,
 } from '@/constants/catalogFilters';
+import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { prefetchCatalogFilters } from '@/hooks/useFiltersData';
 import { mapFilter } from '@/lib/iteration';
+import { cn } from '@/lib/utils';
 
 export { CatalogActiveFilterChips } from '@/components/catalog/CatalogActiveFilterChips';
 
@@ -125,8 +127,13 @@ export function CatalogFilterTrigger({
           activeCount === 1 ? (
             <CatalogToolbarBadgeDot />
           ) : (
-            <View className="size-5 items-center justify-center rounded-full bg-primary">
-              <Text className="font-mono text-[11px] font-semibold text-primary-foreground">
+            <View
+              className={cn(
+                'size-5 items-center justify-center bg-foreground',
+                FACTORY_RADIUS_CONTROL_CLASS
+              )}
+            >
+              <Text className="font-mono text-[11px] font-normal text-background">
                 {activeCount}
               </Text>
             </View>

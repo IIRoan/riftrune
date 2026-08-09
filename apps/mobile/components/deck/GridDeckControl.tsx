@@ -1,6 +1,7 @@
 import { ThemedIcon, MinusIcon, PlusIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +21,7 @@ interface GridDeckControlProps {
   onRemove: () => void;
 }
 
-/** Deck control for tray tiles — mirrors `GridCollectionControl`. */
+/** Deck control for tray tiles — Factory chalk Add / carbon −n+ (matches collection). */
 export function GridDeckControl({
   count,
   name,
@@ -46,7 +47,7 @@ export function GridDeckControl({
     if (count === 0) return null;
     return (
       <View className={`${CONTROL_HEIGHT} w-full flex-row items-center justify-center`}>
-        <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+        <Text className="font-mono text-[13px] font-normal tabular-nums text-foreground">
           ×{count}
         </Text>
       </View>
@@ -57,10 +58,14 @@ export function GridDeckControl({
     if (blocked) {
       return (
         <View
-          className={`${CONTROL_HEIGHT} w-full items-center justify-center rounded-full border border-border/70 bg-card px-2`}
+          className={cn(
+            CONTROL_HEIGHT,
+            'w-full items-center justify-center border border-border bg-card-panel px-2',
+            FACTORY_RADIUS_CONTROL_CLASS
+          )}
         >
           <Text
-            className="text-center text-[11px] font-medium text-muted-foreground"
+            className="text-center text-[11px] font-normal text-muted-foreground"
             numberOfLines={1}
           >
             {blockedLabel}
@@ -76,14 +81,15 @@ export function GridDeckControl({
         accessibilityState={{ disabled: !canAdd }}
         className={cn(
           CONTROL_HEIGHT,
-          'w-full flex-row items-center justify-center gap-1.5 rounded-full border border-border bg-card active:opacity-80',
+          'w-full flex-row items-center justify-center gap-1.5 bg-foreground active:opacity-80',
+          FACTORY_RADIUS_CONTROL_CLASS,
           !canAdd && 'opacity-45'
         )}
         disabled={!canAdd}
         onPress={handleAdd}
       >
-        <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="foreground" />
-        <Text className="text-[13px] font-semibold text-foreground">Add</Text>
+        <PlusIcon className="size-3.5 text-background" weight="bold" />
+        <Text className="text-[13px] font-medium tracking-tight text-background">Add</Text>
       </Pressable>
     );
   }
@@ -92,7 +98,8 @@ export function GridDeckControl({
     <View
       className={cn(
         CONTROL_HEIGHT,
-        'w-full flex-row items-center justify-between rounded-full bg-background/80 px-0.5'
+        'w-full flex-row items-center justify-between border border-border bg-card-panel px-0.5',
+        FACTORY_RADIUS_CONTROL_CLASS
       )}
     >
       <Pressable
@@ -100,7 +107,8 @@ export function GridDeckControl({
         accessibilityLabel={`Remove one ${name}`}
         hitSlop={6}
         className={cn(
-          'size-8 items-center justify-center rounded-full active:bg-foreground/8',
+          'size-8 items-center justify-center active:bg-foreground/10',
+          FACTORY_RADIUS_CONTROL_CLASS,
           !canRemove && 'opacity-40'
         )}
         disabled={!canRemove}
@@ -108,7 +116,7 @@ export function GridDeckControl({
       >
         <ThemedIcon icon={MinusIcon} size={ICON_SIZE} color="foreground" />
       </Pressable>
-      <Text className="min-w-6 text-center font-mono text-[13px] font-semibold tabular-nums text-foreground">
+      <Text className="min-w-6 text-center font-mono text-[13px] font-normal tabular-nums text-foreground">
         {count}
       </Text>
       <Pressable
@@ -116,7 +124,8 @@ export function GridDeckControl({
         accessibilityLabel={`Add one ${name}`}
         hitSlop={6}
         className={cn(
-          'size-8 items-center justify-center rounded-full active:bg-foreground/8',
+          'size-8 items-center justify-center active:bg-foreground/10',
+          FACTORY_RADIUS_CONTROL_CLASS,
           !canAdd && 'opacity-40'
         )}
         disabled={!canAdd}

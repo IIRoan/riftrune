@@ -42,8 +42,8 @@ export function DeckManageMenu({
             accessibilityState={{ expanded: open, disabled: duplicateBusy }}
             disabled={duplicateBusy}
             className={cn(
-              'size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel',
-              open && 'border-primary/40',
+              'size-9 shrink-0 items-center justify-center rounded-[3px] border border-border bg-card active:bg-card-panel',
+              open && 'border-foreground',
               duplicateBusy && 'opacity-50',
               triggerClassName
             )}
@@ -61,7 +61,7 @@ export function DeckManageMenu({
             side="bottom"
             align="end"
             sideOffset={4}
-            className="z-50 min-w-[11.5rem] overflow-hidden rounded-md border border-border bg-popover p-1 shadow-md"
+            className="z-50 min-w-[11.5rem] overflow-hidden rounded-[3px] border border-border bg-popover p-1 shadow-none"
           >
             <Text className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Manage</Text>
 
@@ -72,7 +72,7 @@ export function DeckManageMenu({
                   accessibilityLabel="Duplicate deck"
                   accessibilityState={{ disabled: duplicateBusy, busy: duplicateBusy }}
                   disabled={duplicateBusy}
-                  className="flex-row items-center gap-2 rounded-sm px-2 py-1.5 active:bg-accent"
+                  className="flex-row items-center gap-2 rounded-[3px] px-2 py-1.5 active:bg-card-panel"
                   onPress={() => {
                     hapticPress();
                     onDuplicate();
@@ -91,7 +91,7 @@ export function DeckManageMenu({
                 <Pressable
                   accessibilityRole="menuitem"
                   accessibilityLabel="Delete deck"
-                  className="flex-row items-center gap-2 rounded-sm px-2 py-1.5 active:bg-destructive/10"
+                  className="flex-row items-center gap-2 rounded-[3px] px-2 py-1.5 active:bg-destructive/10"
                   onPress={() => {
                     hapticPress();
                     onDelete();

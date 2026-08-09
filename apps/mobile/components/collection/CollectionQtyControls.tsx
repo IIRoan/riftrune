@@ -42,7 +42,7 @@ export function CollectionAddButton({
       <Pressable
         accessibilityLabel="Add to collection"
         className={cn(
-          'h-10 flex-row items-center justify-center gap-1.5 rounded-lg bg-primary/12 px-3.5 active:bg-primary/18',
+          'h-10 flex-row items-center justify-center gap-1.5 rounded-[3px] bg-foreground px-3.5 active:opacity-80',
           className
         )}
         onPress={() => {
@@ -52,11 +52,11 @@ export function CollectionAddButton({
         disabled={disabled || loading}
       >
         {loading ? (
-          <ActivityIndicator size="small" className="accent-primary" />
+          <ActivityIndicator size="small" className="accent-background" />
         ) : (
           <>
-            <ThemedIcon icon={PlusIcon} size={12} color="archive-accent-text" />
-            <Text className="text-[13px] font-semibold text-archive-accent-text">Add</Text>
+            <PlusIcon className="size-3.5 text-background" weight="bold" />
+            <Text className="text-[13px] font-medium tracking-tight text-background">Add</Text>
           </>
         )}
       </Pressable>
@@ -73,7 +73,7 @@ export function CollectionAddButton({
       busy={loading}
       accessibilityLabel="Add to collection"
     >
-      <ButtonText className="text-[13px] font-semibold text-foreground">Add</ButtonText>
+      <ButtonText className="text-[13px] font-normal text-foreground">Add</ButtonText>
     </Button>
   );
 }
@@ -108,10 +108,10 @@ export function CollectionQtyControls({
   if (compact) {
     if (touchFriendly) {
       return (
-        <View className="flex-row items-center overflow-hidden rounded-md bg-popover">
+        <View className="flex-row items-center overflow-hidden rounded-[3px] bg-popover">
           <Pressable
             accessibilityLabel="Decrease quantity"
-            className="size-11 items-center justify-center active:bg-accent"
+            className="size-11 items-center justify-center active:bg-card-panel"
             onPress={handleDecrement}
             disabled={loading}
           >
@@ -122,13 +122,13 @@ export function CollectionQtyControls({
             )}
           </Pressable>
           <CompactStepDivider />
-          <Text className="min-w-9 px-1.5 text-center font-mono text-sm font-semibold tabular-nums text-foreground">
+          <Text className="min-w-9 px-1.5 text-center font-mono text-sm font-normal tabular-nums text-foreground">
             {displayQuantity}
           </Text>
           <CompactStepDivider />
           <Pressable
             accessibilityLabel="Increase quantity"
-            className="size-11 items-center justify-center active:bg-accent"
+            className="size-11 items-center justify-center active:bg-card-panel"
             onPress={() => {
               void hapticPress();
               onIncrement();
@@ -146,7 +146,7 @@ export function CollectionQtyControls({
         <Button
           variant="outline"
           size="icon-sm"
-          className="rounded-md border-border bg-popover dark:border-border dark:bg-popover"
+          className="rounded-[3px] border-border bg-popover dark:border-border dark:bg-popover"
           onPress={handleDecrement}
           disabled={loading}
           accessibilityLabel="Decrease quantity"
@@ -155,13 +155,13 @@ export function CollectionQtyControls({
             <ThemedIcon icon={MinusIcon} size={14} color="foreground" />
           </ButtonIcon>
         </Button>
-        <Text className="min-w-6 text-center text-[13px] font-bold tabular-nums text-foreground">
+        <Text className="min-w-6 text-center text-[13px] font-normal tabular-nums text-foreground">
           {displayQuantity}
         </Text>
         <Button
           variant="outline"
           size="icon-sm"
-          className="rounded-md border-border bg-popover dark:border-border dark:bg-popover"
+          className="rounded-[3px] border-border bg-popover dark:border-border dark:bg-popover"
           onPress={() => {
             void hapticPress();
             onIncrement();
@@ -180,11 +180,11 @@ export function CollectionQtyControls({
   return (
     <Stack className="gap-3.5 pt-1">
       <Stack direction="row" className="items-center justify-center gap-2.5">
-        <Badge variant="outline" className="border-ring/30 bg-primary/5">
+        <Badge variant="outline" className="border-foreground/30 bg-foreground/5">
           <BadgeIcon>
             <ThemedIcon icon={CircleCheckIcon} size={14} color="ring" />
           </BadgeIcon>
-          <BadgeText className="text-[11px] font-bold uppercase tracking-widest text-ring">
+          <BadgeText className="text-[11px] font-normal uppercase tracking-widest text-ring">
             In collection
           </BadgeText>
         </Badge>
@@ -194,7 +194,7 @@ export function CollectionQtyControls({
         <Button
           size="icon"
           variant="outline"
-          className="size-11 rounded-md"
+          className="size-11 rounded-[3px]"
           onPress={handleDecrement}
           disabled={loading}
         >
@@ -211,7 +211,7 @@ export function CollectionQtyControls({
           <Text className="text-[28px] font-extrabold tabular-nums text-foreground">
             {displayQuantity}
           </Text>
-          <Text className="mt-0.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <Text className="mt-0.5 text-[9px] font-normal uppercase tracking-widest text-muted-foreground">
             owned
           </Text>
         </Stack>
@@ -219,7 +219,7 @@ export function CollectionQtyControls({
         <Button
           size="icon"
           variant="outline"
-          className="size-11 rounded-md"
+          className="size-11 rounded-[3px]"
           onPress={() => {
             void hapticPress();
             onIncrement();

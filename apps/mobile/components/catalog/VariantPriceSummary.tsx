@@ -23,11 +23,11 @@ export function VariantPriceSummary({
     <View className={`mt-2 flex-row flex-wrap items-center gap-x-2 gap-y-1 ${className ?? ''}`}>
       {showLabel ? (
         <>
-          <Text className="text-sm font-semibold text-foreground">{label}</Text>
+          <Text className="text-sm font-normal text-foreground">{label}</Text>
           <Text className="text-sm text-muted-foreground">·</Text>
         </>
       ) : null}
-      <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
+      <Text className="font-mono text-sm font-normal tabular-nums text-foreground">
         {price}
       </Text>
       <TrendTag trend={trend} />

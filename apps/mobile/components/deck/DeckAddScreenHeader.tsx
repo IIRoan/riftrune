@@ -27,13 +27,13 @@ export function DeckAddScreenHeader({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back to deck"
-          className="size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
+          className="size-10 shrink-0 items-center justify-center rounded-[3px] border border-border bg-card active:bg-card-panel"
           onPress={onBack}
         >
           <ThemedIcon icon={ChevronLeftIcon} size={22} color="foreground" />
         </Pressable>
         <View className="min-w-0 flex-1 gap-0.5">
-          <Text className="text-base font-semibold text-foreground">
+          <Text className="text-base font-normal text-foreground">
             Add to {meta?.title ?? section}
           </Text>
           <Text className="font-mono text-[11px] text-muted-foreground">
@@ -43,13 +43,13 @@ export function DeckAddScreenHeader({
         {meta ? (
           <View
             className={cn(
-              'shrink-0 rounded-lg border px-2.5 py-1.5',
+              'shrink-0 rounded-[3px] border px-2.5 py-1.5',
               complete ? 'border-success/30 bg-success/5' : 'border-border bg-card-panel'
             )}
           >
             <Text
               className={cn(
-                'font-mono text-sm font-bold tabular-nums',
+                'font-mono text-sm font-normal tabular-nums',
                 complete ? 'text-success' : 'text-foreground'
               )}
             >

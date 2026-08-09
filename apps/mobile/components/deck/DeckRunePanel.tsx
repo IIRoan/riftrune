@@ -43,8 +43,8 @@ function RuneDomainRow({
   return (
     <View
       className={cn(
-        'min-w-0 flex-row items-center rounded-lg border border-archive-soft-line bg-card-panel',
-        dense ? 'gap-2 px-2 py-2' : 'gap-3 px-3 py-3'
+        'min-w-0 flex-row items-center rounded-[3px] border border-border bg-card-panel',
+        dense ? 'gap-2 px-2 py-1.5' : 'gap-3 px-3 py-3'
       )}
     >
       {icon ? (
@@ -57,7 +57,7 @@ function RuneDomainRow({
       ) : (
         <View
           className={cn(
-            'shrink-0 items-center justify-center rounded-full bg-background',
+            'shrink-0 items-center justify-center rounded-[3px] bg-background',
             dense ? 'size-5.5' : 'size-7'
           )}
           style={dense ? { width: 22, height: 22 } : undefined}
@@ -71,7 +71,7 @@ function RuneDomainRow({
       )}
 
       <View className="min-w-0 flex-1">
-        <Text className="text-[13px] font-semibold text-foreground" numberOfLines={1}>
+        <Text className="text-[13px] font-normal text-foreground" numberOfLines={1}>
           {domain}
         </Text>
         {!dense ? (
@@ -83,12 +83,13 @@ function RuneDomainRow({
 
       <View
         className={cn(
-          'shrink-0 flex-row items-center justify-between',
-          !readOnly && (dense ? 'min-w-[4.75rem]' : 'min-w-[5.75rem]')
+          'shrink-0 flex-row items-center border border-border bg-background',
+          dense ? 'h-7' : 'h-8',
+          'rounded-[3px]'
         )}
       >
         {readOnly ? (
-          <Text className="px-2 py-1 text-center font-mono text-sm font-semibold tabular-nums text-foreground">
+          <Text className="px-2.5 text-center font-mono text-sm font-normal tabular-nums text-foreground">
             {count}
           </Text>
         ) : (
@@ -96,7 +97,7 @@ function RuneDomainRow({
             <Pressable
               accessibilityLabel={`Remove ${domain} rune`}
               className={cn(
-                'items-center justify-center rounded-full active:bg-primary/14',
+                'items-center justify-center active:bg-foreground/10',
                 dense ? 'size-7' : 'size-8'
               )}
               onPress={() => {
@@ -107,16 +108,16 @@ function RuneDomainRow({
               <ThemedIcon
                 icon={MinusIcon}
                 size={dense ? 12 : 14}
-                color="archive-accent-text"
+                color="foreground"
               />
             </Pressable>
-            <Text className="min-w-5 text-center font-mono text-[13px] font-semibold tabular-nums text-foreground">
+            <Text className="min-w-5 text-center font-mono text-[13px] font-normal tabular-nums text-foreground">
               {count}
             </Text>
             <Pressable
               accessibilityLabel={`Add ${domain} rune`}
               className={cn(
-                'items-center justify-center rounded-full active:bg-primary/14',
+                'items-center justify-center active:bg-foreground/10',
                 dense ? 'size-7' : 'size-8'
               )}
               onPress={() => {
@@ -127,7 +128,7 @@ function RuneDomainRow({
               <ThemedIcon
                 icon={PlusIcon}
                 size={dense ? 12 : 14}
-                color="archive-accent-text"
+                color="foreground"
               />
             </Pressable>
           </>
@@ -168,17 +169,17 @@ export function DeckRunePanel({
   const runeCatalogReady = runeCardsByDomain.size > 0;
 
   return (
-    <View className={cn('min-w-0 gap-2', compact ? 'flex-1' : undefined)}>
-      <View className="min-w-0 flex-row items-center justify-between gap-2">
+    <View className={cn('w-full min-w-0 gap-2', compact ? 'flex-1' : undefined)}>
+      <View className="w-full min-w-0 flex-row items-center justify-between gap-2">
         <Text
-          className="min-w-0 flex-1 text-[13px] font-semibold text-foreground"
+          className="min-w-0 flex-1 shrink text-[13px] font-normal text-foreground"
           numberOfLines={1}
         >
           Rune deck
         </Text>
         <Text
           className={cn(
-            'shrink-0 font-mono text-[12px] font-bold tabular-nums',
+            'shrink-0 font-mono text-[12px] font-normal tabular-nums',
             complete ? 'text-success' : 'text-warning'
           )}
         >

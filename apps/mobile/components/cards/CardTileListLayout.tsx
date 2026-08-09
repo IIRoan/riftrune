@@ -74,8 +74,8 @@ export function CardTileListLayout({
             banned
               ? 'border-2 border-destructive/70'
               : selected
-                ? 'border-2 border-ring'
-                : 'border border-white/10'
+                ? 'border-2 border-foreground'
+                : 'border border-border'
           )}
           contentFit="cover"
           contentPosition="top"
@@ -90,7 +90,7 @@ export function CardTileListLayout({
         <View className="flex-row items-baseline gap-2">
           <Text
             className={cn(
-              'flex-1 font-semibold text-foreground',
+              'flex-1 font-medium text-foreground',
               listCompact ? 'text-[14px]' : 'text-[15px]'
             )}
             numberOfLines={1}
@@ -122,7 +122,7 @@ export function CardTileListLayout({
           >
             <Text
               className={cn(
-                PREMIUM_RARITIES.includes(card.rarity) && 'font-semibold text-foreground'
+                PREMIUM_RARITIES.includes(card.rarity) && 'font-medium text-foreground'
               )}
             >
               {card.rarity}
@@ -139,7 +139,7 @@ export function CardTileListLayout({
               <View className="size-1.5 rounded-full bg-success" />
               <Text
                 className={cn(
-                  'font-medium text-success',
+                  'font-normal text-success',
                   listCompact ? 'text-[11px]' : 'text-xs'
                 )}
               >
@@ -161,7 +161,7 @@ export function CardTileListLayout({
               <View className="size-1.5 rounded-full border border-muted-foreground" />
               <Text
                 className={cn(
-                  'font-medium text-muted-foreground',
+                  'font-normal text-muted-foreground',
                   listCompact ? 'text-[11px]' : 'text-xs'
                 )}
               >
@@ -194,7 +194,7 @@ export function CardTileListLayout({
                 ) : null}
                 <Text
                   className={cn(
-                    'font-mono font-semibold tabular-nums text-foreground',
+                    'font-mono font-medium tabular-nums text-foreground',
                     listCompact ? 'text-[13px]' : 'text-sm'
                   )}
                 >

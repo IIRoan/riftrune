@@ -77,14 +77,14 @@ export function CardDetailPage({
         <Button
           size="icon-sm"
           variant="secondary"
-          className="mb-3 size-9 rounded-full"
+          className="mb-3 size-9 rounded-[3px]"
           onPress={onClose}
         >
           <ButtonIcon>
             <ChevronLeftIcon className="size-[22px] text-foreground" />
           </ButtonIcon>
         </Button>
-        <Text className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <Text className="mb-2 text-[11px] font-normal uppercase tracking-[0.18em] text-muted-foreground">
           {setCode} · {activeVariant.variantNumber}
         </Text>
         <Heading level="2" className="font-black leading-[1.1] tracking-tight">
@@ -100,7 +100,7 @@ export function CardDetailPage({
         ) : null}
       </View>
 
-      <View className="mx-8 mb-4 flex-row overflow-hidden rounded-xl bg-card">
+      <View className="mx-8 mb-4 flex-row overflow-hidden rounded-[10px] bg-card">
         <CardStat label="Cost">
           <EnergyPip value={card.energy} size={32} />
         </CardStat>
@@ -142,7 +142,7 @@ export function CardDetailPage({
       </View>
 
       {card.description ? (
-        <View className="mx-8 my-2 rounded-xl border border-border bg-secondary p-4">
+        <View className="mx-8 my-2 rounded-[10px] border border-border bg-secondary p-4">
           <CardSectionLabel>Ability</CardSectionLabel>
           <CardRulesText text={card.description} />
         </View>

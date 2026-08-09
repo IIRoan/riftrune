@@ -5,8 +5,8 @@
 
 /*
  * Global render polish (web + RNW):
- * - Antialiased Inter on dark surfaces
- * - No faux-bold (Expo registers each weight as its own family)
+ * - Unified Geist family tokens (Medium Operate baseline)
+ * - No faux-bold (font-synthesis off; web uses real weight files)
  * - Geometric SVG edges so Phosphor icons stay clean in Firefox
  */
 @layer base {
@@ -15,6 +15,8 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-synthesis: none;
+    font-synthesis-weight: none;
+    font-synthesis-style: none;
   }
 
   body {
@@ -22,17 +24,44 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     font-synthesis: none;
+    font-synthesis-weight: none;
+    font-synthesis-style: none;
   }
 
   /* RNW Text / inputs inherit; keep synthesis off for every node. */
   * {
     font-synthesis: none;
+    font-synthesis-weight: none;
   }
 
   svg {
     shape-rendering: geometricPrecision;
     text-rendering: geometricPrecision;
     overflow: visible;
+  }
+
+  /*
+   * Firefox-only: Expo/RNW registers each weight as its own family without a
+   * font-weight descriptor. Gecko is stricter about family+weight matching than
+   * Blink — disable synthesis and avoid grayscale AA thinning light-on-dark text.
+   * (@supports -moz-appearance is the standard Firefox gate; do not use smoothing
+   * as a substitute for real weight files — see MDN font-synthesis / @font-face.)
+   */
+  @supports (-moz-appearance: none) {
+    html,
+    body {
+      -moz-osx-font-smoothing: auto;
+      -webkit-font-smoothing: auto;
+      font-synthesis: none;
+      font-synthesis-weight: none;
+      font-synthesis-style: none;
+      text-rendering: auto;
+    }
+
+    strong,
+    b {
+      font-weight: 700;
+    }
   }
 }
 
@@ -152,8 +181,9 @@
 }
 
 @theme inline {
-  --font-sans: Inter-Regular, ui-sans-serif, system-ui, sans-serif;
-  --font-mono: GeistMono-Regular, ui-monospace, monospace;
+  /* Operate baseline — Medium face via unified web family (see web-font-faces.ts) */
+  --font-sans: Geist, Geist-Medium, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", GeistMono-Medium, ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

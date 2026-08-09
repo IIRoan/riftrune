@@ -106,7 +106,7 @@ export function OwnershipStepper({
         accessibilityRole="button"
         accessibilityLabel={`Add ${name} to collection`}
         className={cn(
-          'flex-row items-center justify-center gap-1 rounded-md bg-primary/12 px-2.5 active:bg-primary/18',
+          'flex-row items-center justify-center gap-1 rounded-[3px] bg-foreground px-2.5 active:opacity-80',
           gridSlot ? 'w-full' : 'w-auto shrink-0',
           controlWidth,
           controlHeight,
@@ -117,13 +117,14 @@ export function OwnershipStepper({
         disabled={busy}
       >
         {busy && !showAddPicker ? (
-          <ActivityIndicator size="small" className="accent-primary" />
+          <ActivityIndicator size="small" className="accent-background" />
         ) : (
           <>
-            <ThemedIcon icon={PlusIcon} size={iconSize} color="archive-accent-text" />
-            <Text className="text-[11px] font-semibold text-archive-accent-text">
-              Add
-            </Text>
+            <PlusIcon
+              className={cn('text-background', relaxed ? 'size-3.5' : 'size-3')}
+              weight="bold"
+            />
+            <Text className="text-[11px] font-medium tracking-tight text-background">Add</Text>
           </>
         )}
       </Pressable>
@@ -149,16 +150,16 @@ export function OwnershipStepper({
       <Pressable
         accessibilityLabel={label}
         className={cn(
-          'items-center justify-center rounded-full active:bg-primary/14',
+          'items-center justify-center rounded-[3px] active:bg-foreground/10',
           gridSlot ? 'h-full flex-1' : stepSize
         )}
         onPress={showPicker ? undefined : onPress}
         disabled={busy}
       >
         {busy && !showPicker ? (
-          <ActivityIndicator size="small" className="accent-primary" />
+          <ActivityIndicator size="small" className="accent-foreground" />
         ) : (
-          <ThemedIcon icon={icon} size={iconSize} color="archive-accent-text" />
+          <ThemedIcon icon={icon} size={iconSize} color="foreground" />
         )}
       </Pressable>
     );
@@ -172,7 +173,7 @@ export function OwnershipStepper({
     return (
       <View
         className={cn(
-          'flex-row items-center',
+          'flex-row items-center rounded-[3px] border border-border bg-card-panel',
           gridSlot
             ? 'w-full justify-between'
             : cn('justify-between gap-0.5', controlWidth),
@@ -194,7 +195,7 @@ export function OwnershipStepper({
         )}
         <Text
           className={cn(
-            'shrink-0 text-center font-mono font-semibold tabular-nums text-foreground',
+            'shrink-0 text-center font-mono font-normal tabular-nums text-foreground',
             gridSlot
               ? 'min-w-7 text-xs'
               : compact

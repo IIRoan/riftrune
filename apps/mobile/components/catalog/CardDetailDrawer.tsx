@@ -21,7 +21,6 @@ export function CardDetailDrawer({ open, onClose, children }: CardDetailDrawerPr
   // Open expanded so daily trend + bottom wishlist CTA fit without fighting the mid snap.
   const snapPoints = reduceMotion ? ['92%'] : ['58%', '92%'];
   const defaultSnapIndex = snapPoints.length - 1;
-  // Padding alone is unreliable with Gorhom; CatalogDetailPanel also adds a spacer View.
   const paddingBottom = Math.max(insets.bottom, 24) + 48;
 
   return (

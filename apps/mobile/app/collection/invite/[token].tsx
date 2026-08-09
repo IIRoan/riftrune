@@ -91,7 +91,7 @@ function InviteAcceptBody({ token }: { token: string }) {
       ) : null}
 
       {preview && isOwnInvite ? (
-        <View className="mt-4 gap-3 rounded-xl border border-border bg-card px-4 py-4">
+        <View className="mt-4 gap-3 rounded-[10px] border border-border bg-card px-4 py-4">
           <Text className="text-base font-medium text-foreground">This is your invite</Text>
           <Text className="text-sm text-muted-foreground">
             You can’t join your own shared collection. Send the link to your partner instead.
@@ -114,7 +114,7 @@ function InviteAcceptBody({ token }: { token: string }) {
           </Text>
           <Text className="text-sm text-muted-foreground">{preview.inviter.email}</Text>
 
-          <View className="gap-1 rounded-xl border border-border bg-card px-4 py-3">
+          <View className="gap-1 rounded-[10px] border border-border bg-card px-4 py-3">
             <Text className="text-sm font-medium text-foreground">Their collection</Text>
             <Text className="text-sm text-muted-foreground">
               {preview.theirItemCount.toLocaleString()} stacks ·{' '}
@@ -122,7 +122,7 @@ function InviteAcceptBody({ token }: { token: string }) {
             </Text>
           </View>
 
-          <View className="gap-1 rounded-xl border border-border bg-card px-4 py-3">
+          <View className="gap-1 rounded-[10px] border border-border bg-card px-4 py-3">
             <Text className="text-sm font-medium text-foreground">Your collection</Text>
             <Text className="text-sm text-muted-foreground">
               {preview.yourItemCount.toLocaleString()} stacks ·{' '}

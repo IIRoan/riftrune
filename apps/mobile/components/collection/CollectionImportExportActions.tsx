@@ -85,7 +85,7 @@ function ToolbarIconButton({
         hitSlop={2}
         onPress={onPress}
         className={cn(
-          'items-center justify-center rounded-md active:bg-background/70',
+          'items-center justify-center rounded-[3px] active:bg-background/70',
           (disabled || busy) && 'opacity-45'
         )}
         style={{ width: toolbarButtonSize, height: toolbarButtonSize }}
@@ -116,7 +116,7 @@ export function CollectionImportExportToolbar({ disabled = false }: { disabled?:
   } = useImportExportUi(disabled);
 
   return (
-    <View className="shrink-0 flex-row items-center rounded-lg bg-card-panel p-0.5">
+    <View className="shrink-0 flex-row items-center rounded-[3px] bg-card-panel p-0.5">
       <ToolbarIconButton
         icon={CloudUploadIcon}
         label="Import CSV"
@@ -170,9 +170,9 @@ export function CollectionImportExportStatus({ disabled = false }: { disabled?: 
             {importProgress.message}
           </Text>
           {importProgress.phase === 'importing' && importProgress.total > 1 ? (
-            <View className="h-1 overflow-hidden rounded-full bg-card-panel">
+            <View className="h-1 overflow-hidden rounded-[3px] bg-card-panel">
               <View
-                className="h-full rounded-full bg-primary"
+                className="h-full rounded-[3px] bg-foreground"
                 style={{ width: `${progressPercent}%` as DimensionValue }}
               />
             </View>

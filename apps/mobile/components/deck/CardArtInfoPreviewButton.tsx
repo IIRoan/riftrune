@@ -30,7 +30,7 @@ export function CardArtInfoPreviewButton({
       >
         <Pressable
           accessibilityLabel={`Preview ${name}`}
-          className="size-7 items-center justify-center rounded-md border border-white/10 bg-background/92"
+          className="size-7 items-center justify-center rounded-[3px] border border-white/10 bg-background/92"
           onPress={(event) => {
             event.stopPropagation?.();
           }}

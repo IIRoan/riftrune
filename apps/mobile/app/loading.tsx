@@ -29,7 +29,7 @@ export default function LoadingPreviewScreen() {
       <ScreenHeader title="Preview" subtitle="Rune fills with color — no status copy" />
 
       <View
-        className="mt-4 items-center justify-center rounded-2xl border border-border bg-card py-14"
+        className="mt-4 items-center justify-center rounded-[10px] border border-border bg-card py-14"
         style={{ minHeight: 220 }}
       >
         <AppLoader size={selectedSize} />
@@ -42,9 +42,9 @@ export default function LoadingPreviewScreen() {
             key={size}
             onPress={() => setSelectedSize(size)}
             className={cn(
-              'rounded-lg border px-3 py-2',
+              'rounded-[3px] border px-3 py-2',
               selectedSize === size
-                ? 'border-primary bg-primary/15'
+                ? 'border-foreground bg-card-panel'
                 : 'border-border bg-card'
             )}
           >
@@ -61,7 +61,7 @@ export default function LoadingPreviewScreen() {
       </View>
 
       <SectionLabel className="mt-8">Scale strip</SectionLabel>
-      <View className="flex-row items-end justify-between rounded-2xl border border-border bg-card px-6 py-8">
+      <View className="flex-row items-end justify-between rounded-[10px] border border-border bg-card px-6 py-8">
         {SIZES.map((size) => (
           <View key={size} className="items-center gap-2">
             <RuneChargeLoader size={size} />

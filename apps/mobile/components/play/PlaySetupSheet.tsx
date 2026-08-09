@@ -120,7 +120,7 @@ export function PlaySetupSheet({
                           <ThemedIcon
                             icon={CheckIcon}
                             size={18}
-                            color="archive-accent-text"
+                            color="foreground"
                           />
                         </InlineListItemAddon>
                       ) : null}
@@ -132,7 +132,7 @@ export function PlaySetupSheet({
               {canAdvance ? (
                 <Button
                   variant="outline"
-                  className="border-primary/40 bg-primary/5"
+                  className="border-border bg-card-panel"
                   onPress={() => {
                     void hapticPress();
                     onAdvanceMatch();

@@ -374,7 +374,7 @@ export function AuthPanel({
     ) : (
       <View
         className={cn(
-          'rounded-xl border border-border bg-card px-4 py-5',
+          'rounded-[10px] border border-border bg-card px-4 py-5',
           className
         )}
       >
@@ -388,15 +388,15 @@ export function AuthPanel({
     return isScreen ? null : (
       <View
         className={cn(
-          'relative overflow-hidden rounded-xl border border-border bg-card',
+          'relative overflow-hidden rounded-[10px] border border-border bg-card',
           className
         )}
       >
         <AuthSlabCorners />
         <View className="min-h-0 flex-1 flex-row items-stretch">
           <View className="w-[76px] items-center justify-center border-r border-border bg-background py-6">
-            <View className="size-12 items-center justify-center rounded-lg bg-primary">
-              <Text className="font-mono text-xl font-bold text-primary-foreground">{initial}</Text>
+            <View className="size-12 items-center justify-center rounded-[3px] bg-foreground">
+              <Text className="font-mono text-xl font-normal text-background">{initial}</Text>
             </View>
           </View>
           <View className="min-w-0 flex-1 justify-between gap-4 px-4 py-4">
@@ -418,10 +418,10 @@ export function AuthPanel({
               onPress={() => {
                 void handleSignOut();
               }}
-              className="self-start flex-row items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 active:bg-primary/20"
+              className="self-start flex-row items-center gap-1.5 rounded-[3px] border border-border bg-card-panel px-3 py-2 active:opacity-80"
             >
-              <LogOutIcon className="size-3.5 text-archive-accent-text" weight="bold" />
-              <Text className="text-sm font-semibold text-archive-accent-text">Sign out</Text>
+              <LogOutIcon className="size-3.5 text-foreground" weight="bold" />
+              <Text className="text-sm font-normal text-foreground">Sign out</Text>
             </Pressable>
           </View>
         </View>
@@ -457,7 +457,7 @@ export function AuthPanel({
         />
 
         {error ? (
-          <View className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5">
+          <View className="rounded-[3px] border border-destructive/30 bg-destructive/10 px-3 py-2.5">
             <Text
               className="text-sm text-destructive"
               accessibilityLiveRegion="polite"
@@ -490,7 +490,7 @@ export function AuthPanel({
   return (
     <View
       className={cn(
-        'relative overflow-hidden rounded-xl border border-border bg-card px-4 py-4',
+        'relative overflow-hidden rounded-[10px] border border-border bg-card px-4 py-4',
         className
       )}
     >

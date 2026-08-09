@@ -1,12 +1,18 @@
 import { View } from 'react-native';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { CARD_ART_RADIUS_CLASS } from '@/constants/CardArt';
+import { FACTORY_RADIUS_CONTROL_CLASS, FACTORY_RADIUS_PANEL_CLASS } from '@/constants/factoryShape';
 import { cn } from '@/lib/utils';
 
 export function CatalogDetailPanelSkeleton() {
   return (
-    <SkeletonGroup>
-      <View className="overflow-hidden rounded-xl border border-border bg-card">
+    <View
+      className={cn(
+        'overflow-hidden border border-border bg-card',
+        FACTORY_RADIUS_PANEL_CLASS
+      )}
+    >
+      <SkeletonGroup>
         <View className="flex-row gap-3 p-3">
           <Skeleton
             className={cn('aspect-[5/7] w-[128px] shrink-0', CARD_ART_RADIUS_CLASS)}
@@ -26,7 +32,7 @@ export function CatalogDetailPanelSkeleton() {
             <Skeleton className="h-3 w-20 rounded" />
             <Skeleton className="h-3 w-14 rounded" />
           </View>
-          <Skeleton className="h-8 w-16 rounded-md" />
+          <Skeleton className={cn('h-8 w-[4.5rem]', FACTORY_RADIUS_CONTROL_CLASS)} />
         </View>
 
         <View className="h-hairline bg-border/60" />
@@ -69,18 +75,18 @@ export function CatalogDetailPanelSkeleton() {
         <View className="gap-3 px-3 py-3">
           <Skeleton className="h-3 w-full rounded" />
           <Skeleton className="h-3 w-[85%] rounded" />
-          <Skeleton className="h-10 w-full rounded-lg" />
+          <Skeleton className={cn('h-10 w-full', FACTORY_RADIUS_CONTROL_CLASS)} />
         </View>
 
         <View className="h-hairline bg-border/60" />
         <View className="gap-3 px-3 py-3">
           <View className="flex-row items-center justify-between">
             <Skeleton className="h-5 w-24 rounded" />
-            <Skeleton className="h-9 w-9 rounded-md" />
+            <Skeleton className={cn('h-9 w-9', FACTORY_RADIUS_CONTROL_CLASS)} />
           </View>
-          <Skeleton className="h-[120px] w-full rounded-lg" />
+          <Skeleton className={cn('h-[120px] w-full', FACTORY_RADIUS_PANEL_CLASS)} />
         </View>
-      </View>
-    </SkeletonGroup>
+      </SkeletonGroup>
+    </View>
   );
 }

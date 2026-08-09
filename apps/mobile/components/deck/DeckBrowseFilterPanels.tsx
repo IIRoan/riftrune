@@ -88,7 +88,7 @@ export function DeckBrowseFilterSegmentPanel({
             onChangeText={setLegendQuery}
             placeholder="Search legends"
             accessibilityLabel="Search legends"
-            className="min-h-11 rounded-xl border-border bg-card"
+            className="min-h-11 rounded-[3px] border-border bg-card"
           />
           {filters.legend ? (
             isMobile ? (

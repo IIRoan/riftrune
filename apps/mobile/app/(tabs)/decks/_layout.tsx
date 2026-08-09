@@ -18,8 +18,9 @@ export default function DecksLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="browse" />
       <Stack.Screen name="create" />
-      <Stack.Screen name="[id]" />
-      <Stack.Screen name="[id]/add" />
+      {/* Edge-swipe only — full-screen back fights vertical deck scrolling. */}
+      <Stack.Screen name="[id]" options={{ fullScreenGestureEnabled: false }} />
+      <Stack.Screen name="[id]/add" options={{ fullScreenGestureEnabled: false }} />
     </Stack>
   );
 }

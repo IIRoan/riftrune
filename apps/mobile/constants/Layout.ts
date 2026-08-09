@@ -5,8 +5,11 @@
 
 export const Layout = {
   screenPaddingHorizontal: 16,
-  /** Horizontal inset when desktop SideRail is visible (px). */
-  screenPaddingHorizontalRail: 8,
+  /**
+   * Desktop shell gutter with SideRail: rail→content, content→detail, and
+   * content→screen edge must stay identical (px).
+   */
+  screenPaddingHorizontalRail: 16,
   gridGap: 16,
   /** Floating tab bar height (px). */
   tabBarHeight: 56,

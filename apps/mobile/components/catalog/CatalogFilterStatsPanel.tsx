@@ -21,7 +21,9 @@ export function CatalogFilterStatsPanel({
   return (
     <View className="gap-4">
       <View>
-        <Text className="mb-2 text-sm font-semibold text-foreground">Energy</Text>
+        <Text className="mb-2 font-mono text-[12px] font-normal uppercase tracking-[-0.24px] text-muted-foreground">
+          Energy
+        </Text>
         <View className="flex-row flex-wrap gap-2">
           {CATALOG_ENERGY_VALUES.map((value) => (
             <FilterStatChip
@@ -42,7 +44,9 @@ export function CatalogFilterStatsPanel({
         </View>
       </View>
       <View>
-        <Text className="mb-2 text-sm font-semibold text-foreground">Power</Text>
+        <Text className="mb-2 font-mono text-[12px] font-normal uppercase tracking-[-0.24px] text-muted-foreground">
+          Power
+        </Text>
         <View className="flex-row flex-wrap gap-2">
           {CATALOG_POWER_VALUES.map((value) => (
             <FilterStatChip
@@ -63,7 +67,9 @@ export function CatalogFilterStatsPanel({
         </View>
       </View>
       <View>
-        <Text className="mb-2 text-sm font-semibold text-foreground">Might</Text>
+        <Text className="mb-2 font-mono text-[12px] font-normal uppercase tracking-[-0.24px] text-muted-foreground">
+          Might
+        </Text>
         <View className="flex-row flex-wrap gap-2">
           {CATALOG_MIGHT_VALUES.map((value) => (
             <FilterStatChip

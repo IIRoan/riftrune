@@ -38,7 +38,7 @@ export function CatalogDetailPrintingRows({
             <View className="flex-row items-center justify-between gap-3 px-3 py-3">
               <View className="min-w-0 shrink flex-1" style={{ flexBasis: 0 }}>
                 <Text
-                  className="shrink text-sm font-semibold text-foreground"
+                  className="shrink text-sm font-normal text-foreground"
                   numberOfLines={2}
                 >
                   {printing.variantLabel}
@@ -50,7 +50,7 @@ export function CatalogDetailPrintingRows({
                   {printing.variantNumber}
                 </Text>
                 <View className="mt-0.5 flex-row flex-wrap items-center gap-2">
-                  <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                  <Text className="font-mono text-[13px] font-normal tabular-nums text-foreground">
                     {formatPrintingPrice(printing.priceEur) ?? '—'}
                   </Text>
                   <TrendTag trend={formatMarketTrend(printing.priceEur)} />

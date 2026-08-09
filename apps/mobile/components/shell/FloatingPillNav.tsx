@@ -112,9 +112,9 @@ export function PillNav<T extends string>({
         'relative flex-row items-stretch overflow-hidden border border-border bg-card',
         compact
           ? iconOnly
-            ? 'h-9 rounded-xl p-0'
-            : 'h-9 rounded-xl p-1'
-          : 'rounded-2xl p-1',
+            ? 'h-9 rounded-[3px] p-0'
+            : 'h-9 rounded-[3px] p-1'
+          : 'rounded-[3px] p-1',
         fill && 'w-full',
         className
       )}
@@ -126,14 +126,14 @@ export function PillNav<T extends string>({
           compact
             ? iconOnly
               ? 'top-0 bottom-0 rounded-none'
-              : 'top-1 bottom-1 rounded-md'
-            : 'top-1 bottom-1 rounded-xl'
+              : 'top-1 bottom-1 rounded-[3px]'
+            : 'top-1 bottom-1 rounded-[3px]'
         )}
         style={indicatorStyle}
       />
       {items.map((item) => {
         const active = value === item.id;
-        const iconColor = active ? 'primary' : 'muted-foreground';
+        const iconColor = active ? 'foreground' : 'muted-foreground';
         return (
           <Pressable
             key={item.id}
@@ -146,10 +146,10 @@ export function PillNav<T extends string>({
                 ? iconOnly
                   ? cn('h-full aspect-square', fill ? 'min-w-0 flex-1' : 'shrink-0')
                   : cn(
-                      'h-full min-w-0 flex-row items-center gap-1.5 rounded-md px-3',
+                      'h-full min-w-0 flex-row items-center gap-1.5 rounded-[3px] px-3',
                       fill ? 'flex-1' : 'shrink-0'
                     )
-                : cn('gap-0.5 rounded-xl px-4 py-2', fill ? 'min-w-0 flex-1' : 'min-w-[5.5rem]')
+                : cn('gap-0.5 rounded-[3px] px-4 py-2', fill ? 'min-w-0 flex-1' : 'min-w-[5.5rem]')
             )}
             onPress={() => {
               if (active) return;
@@ -164,8 +164,8 @@ export function PillNav<T extends string>({
                 <ThemedIcon icon={item.icon} size={compactIconSize} color={iconColor} />
                 <Text
                   className={cn(
-                    'text-[11px] font-semibold leading-none',
-                    active ? 'text-primary' : 'text-muted-foreground'
+                    'text-[11px] font-normal leading-none',
+                    active ? 'text-foreground' : 'text-muted-foreground'
                   )}
                   numberOfLines={1}
                 >
@@ -174,8 +174,8 @@ export function PillNav<T extends string>({
                 {item.badge ? (
                   <Text
                     className={cn(
-                      'font-mono text-[10px] font-semibold leading-none tabular-nums',
-                      active ? 'text-primary/80' : 'text-muted-foreground'
+                      'font-mono text-[10px] font-normal leading-none tabular-nums',
+                      active ? 'text-muted-foreground' : 'text-muted-foreground'
                     )}
                     numberOfLines={1}
                   >
@@ -188,8 +188,8 @@ export function PillNav<T extends string>({
                 <ThemedIcon icon={item.icon} size={18} color={iconColor} />
                 <Text
                   className={cn(
-                    'text-[10px] font-semibold leading-none',
-                    active ? 'text-primary' : 'text-muted-foreground'
+                    'text-[10px] font-normal leading-none',
+                    active ? 'text-foreground' : 'text-muted-foreground'
                   )}
                   numberOfLines={1}
                 >
@@ -198,8 +198,8 @@ export function PillNav<T extends string>({
                 {item.badge ? (
                   <Text
                     className={cn(
-                      'font-mono text-[9px] font-semibold leading-none tabular-nums',
-                      active ? 'text-primary/80' : 'text-muted-foreground'
+                      'font-mono text-[9px] font-normal leading-none tabular-nums',
+                      active ? 'text-muted-foreground' : 'text-muted-foreground'
                     )}
                     numberOfLines={1}
                   >

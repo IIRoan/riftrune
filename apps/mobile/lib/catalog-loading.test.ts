@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { isCatalogGridLoading } from '@/lib/catalog-loading';
+import {
+  isCatalogGridLoading,
+  resolveCatalogDisplayItems,
+} from '@/lib/catalog-loading';
 
 describe('isCatalogGridLoading', () => {
   test('returns true while search is pending', () => {
@@ -39,5 +42,66 @@ describe('isCatalogGridLoading', () => {
         browseLoading: false,
       })
     ).toBe(false);
+  });
+});
+
+describe('resolveCatalogDisplayItems', () => {
+  const browse = ['browse-a', 'browse-b'];
+  const search = ['soraka'];
+
+  test('returns browse items when not searching', () => {
+    expect(
+      resolveCatalogDisplayItems({
+        hasSearchInput: false,
+        searchItems: search,
+        browseItems: browse,
+        searchPending: false,
+        isLoading: false,
+        isFetching: false,
+        searchItemsLength: 1,
+      })
+    ).toEqual(browse);
+  });
+
+  test('holds browse tiles while the first search page is in flight', () => {
+    expect(
+      resolveCatalogDisplayItems({
+        hasSearchInput: true,
+        searchItems: [],
+        browseItems: browse,
+        searchPending: true,
+        isLoading: false,
+        isFetching: false,
+        searchItemsLength: 0,
+      })
+    ).toEqual(browse);
+  });
+
+  test('switches to search hits once they arrive', () => {
+    expect(
+      resolveCatalogDisplayItems({
+        hasSearchInput: true,
+        searchItems: search,
+        browseItems: browse,
+        searchPending: false,
+        isLoading: false,
+        isFetching: false,
+        searchItemsLength: 1,
+      })
+    ).toEqual(search);
+  });
+
+  test('shows an empty search result after the query settles', () => {
+    expect(
+      resolveCatalogDisplayItems({
+        hasSearchInput: true,
+        searchItems: [],
+        browseItems: browse,
+        searchPending: false,
+        isLoading: false,
+        isFetching: false,
+        searchItemsLength: 0,
+      })
+    ).toEqual([]);
   });
 });

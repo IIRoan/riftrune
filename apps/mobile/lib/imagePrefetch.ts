@@ -57,3 +57,19 @@ export async function prefetchImageUris(
     // Prefetch is best-effort; screens still load images on demand.
   }
 }
+
+/**
+ * Prefetch catalog tile art the way CardArtImage paints it: ?w=thumb first,
+ * then optional full URI so progressive upgrade is already warm.
+ */
+export function prefetchCatalogArt(
+  items: Array<{ imageUrl?: string | null }>,
+  options?: { limit?: number; includeFull?: boolean }
+): void {
+  const limit = options?.limit ?? DEFAULT_BATCH;
+  const uris = items.map((item) => item.imageUrl);
+  void prefetchImageUris(uris, { limit, width: CATALOG_ART_THUMB_WIDTH });
+  if (options?.includeFull) {
+    void prefetchImageUris(uris, { limit });
+  }
+}

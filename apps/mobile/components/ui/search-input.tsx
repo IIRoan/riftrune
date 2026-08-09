@@ -20,15 +20,15 @@ export type SearchInputProps = InputProps & {
   shortcutHint?: string;
 };
 
-/** Quiet accent key hint — soft fill, no chrome keycap border. */
+/** Instrument key hint — carbon well, mono caption (Factory). */
 function ShortcutHint({ label }: { label: string }) {
   return (
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      className="mr-1.5 h-5 min-w-5 items-center justify-center rounded-md bg-primary/12 px-1.5"
+      className="mr-1.5 h-5 min-w-5 items-center justify-center rounded-[3px] border border-border bg-card-panel px-1.5"
     >
-      <Text className="font-mono text-[11px] font-semibold leading-none text-archive-accent-text">
+      <Text className="font-mono text-[11px] font-normal uppercase leading-none tracking-[-0.24px] text-muted-foreground">
         {label}
       </Text>
     </View>

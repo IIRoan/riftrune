@@ -1,11 +1,9 @@
-import { Image } from 'expo-image';
 import type { QueryClient } from '@tanstack/react-query';
 import type { CardDetail, CardListItem } from '@riftbound/contracts';
 import { chunkArray } from '@riftbound/contracts';
-import { markSessionImageLoaded } from '@/lib/imageSessionCache';
+import { prefetchCatalogArt } from '@/lib/imagePrefetch';
 import { api } from '@/src/api/client';
 import { cardQueryKeys, catalogQueryKeys } from '@/src/api/queryKeys';
-import { resolveImageUrl } from '@/utils/resolveImageUrl';
 
 const DETAIL_STALE_MS = 5 * 60 * 1000;
 /** Coalesce bursts from list mount + viewability into one batch POST. */
@@ -30,11 +28,8 @@ let pending: PendingPrefetch | null = null;
 let flushChain: Promise<void> = Promise.resolve();
 
 function prefetchCardImage(item: CardListItem): void {
-  const imageUri = resolveImageUrl(item.imageUrl);
-  if (!imageUri) return;
-  void Image.prefetch(imageUri, { cachePolicy: 'memory-disk' }).then((ok) => {
-    if (ok) markSessionImageLoaded(imageUri);
-  });
+  // Tiles paint ?w=160 first — warm that URI or cells still shimmer while full loads.
+  prefetchCatalogArt([item], { limit: 1, includeFull: true });
 }
 
 const LIST_PLACEHOLDER_HASH = 'list-placeholder';

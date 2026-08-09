@@ -14,6 +14,11 @@ interface DeckIdentityHeaderProps {
   deck: DeckState;
   readOnly?: boolean;
   legendTileWidth: number;
+  /**
+   * Stretch slots to fill equal columns (narrow builder drawer).
+   * Showcase / view-deck must leave this false so tileWidth caps apply.
+   */
+  stretchSlots?: boolean;
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
   runeCardsByDomain: ReadonlyMap<string, DeckCard>;
@@ -39,7 +44,7 @@ function IdentitySlotBlock({
 }) {
   return (
     <View className={cn('min-w-0 gap-2', className)}>
-      <Text className="text-[13px] font-semibold leading-4 text-foreground" numberOfLines={1}>
+      <Text className="text-[13px] font-normal leading-4 text-foreground" numberOfLines={1}>
         {title}
       </Text>
       {children}
@@ -51,6 +56,7 @@ export function DeckIdentityHeader({
   deck,
   readOnly = false,
   legendTileWidth,
+  stretchSlots = false,
   imageByVariant,
   collectionByName,
   runeCardsByDomain,
@@ -71,11 +77,13 @@ export function DeckIdentityHeader({
   const legendPlaceholder = isPreRift ? 'Add Legend (optional)' : 'Choose Legend';
   const championTitle = isPreRift ? 'Champion (optional)' : 'Champion';
   const championPlaceholder = isPreRift ? 'Add Champion (optional)' : 'Add Champion';
+  const columnClass = stretchSlots ? 'min-w-0 flex-1' : undefined;
 
   const legendSlot = legend ? (
     <DeckCardSlot
       variant="card"
       tileWidth={tileWidth}
+      stretch={stretchSlots}
       card={legend}
       imageUri={resolveSlotImage(legend, imageByVariant)}
       owned={ownedCountForCardName(legend.name, collectionByName)}
@@ -89,6 +97,7 @@ export function DeckIdentityHeader({
     <DeckCardSlot
       variant="identity"
       tileWidth={tileWidth}
+      stretch={stretchSlots}
       label={legendPlaceholder}
       onAdd={readOnly ? undefined : onChangeLegend}
     />
@@ -100,6 +109,7 @@ export function DeckIdentityHeader({
       <DeckCardSlot
         variant="card"
         tileWidth={tileWidth}
+        stretch={stretchSlots}
         card={deck.champion}
         imageUri={resolveSlotImage(deck.champion, imageByVariant)}
         owned={ownedCountForCardName(deck.champion.name, collectionByName)}
@@ -113,6 +123,7 @@ export function DeckIdentityHeader({
       <DeckCardSlot
         variant="identity"
         tileWidth={tileWidth}
+        stretch={stretchSlots}
         label={championPlaceholder}
         onAdd={readOnly ? undefined : onAddChampion}
       />
@@ -136,33 +147,35 @@ export function DeckIdentityHeader({
     // Two columns: legend+champion pair on the left, rune summary on the right.
     // Align to the bottom of the card art so the rune block sits next to the tiles.
     return (
-      <View className="flex-row items-end gap-4">
-        <View className="flex-row gap-3">
+      <View className="w-full min-w-0 flex-row items-end gap-4">
+        <View className="min-w-0 flex-row gap-3">
           <IdentitySlotBlock title={legendTitle}>{legendSlot}</IdentitySlotBlock>
           {championSlot ? (
             <IdentitySlotBlock title={championTitle}>{championSlot}</IdentitySlotBlock>
           ) : null}
         </View>
-        <View className="min-w-[11rem] max-w-[15rem] flex-1 pb-1">{runePanel}</View>
+        <View className="min-w-0 max-w-[15rem] flex-1 pb-1">{runePanel}</View>
       </View>
     );
   }
 
   return (
-    <View className="gap-3">
-      <View className="flex-row items-stretch gap-2">
-        <IdentitySlotBlock title={legendTitle} className="flex-1">
+    <View className="w-full min-w-0 gap-4">
+      <View className="w-full min-w-0 flex-row flex-wrap items-start gap-2">
+        <IdentitySlotBlock title={legendTitle} className={columnClass}>
           {legendSlot}
         </IdentitySlotBlock>
 
         {championSlot ? (
-          <IdentitySlotBlock title={championTitle} className="flex-1">
+          <IdentitySlotBlock title={championTitle} className={columnClass}>
             {championSlot}
           </IdentitySlotBlock>
         ) : null}
       </View>
 
-      {runePanel}
+      {runePanel ? (
+        <View className="w-full min-w-0 border-t border-border pt-4">{runePanel}</View>
+      ) : null}
     </View>
   );
 }
