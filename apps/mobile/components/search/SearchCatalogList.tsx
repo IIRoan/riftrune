@@ -83,8 +83,13 @@ export function SearchCatalogList({
     () =>
       ({ item, index }) => {
         const tileSelected = cardListItemMatchesVariant(item, selectedVariant);
+        // Phone drawer: no tile selection chrome — it lingered as a “stuck”
+        // cue after close. Desktop split panel still highlights the active card.
+        const showSelected = splitLayout && tileSelected;
         const familyContextVariantNumber =
-          splitLayout && tileSelected ? selectedVariant : item.variantNumber;
+          showSelected && selectedVariant != null
+            ? selectedVariant
+            : item.variantNumber;
 
         if (isList) {
           const isLast = index === displayItems.length - 1;
@@ -97,7 +102,7 @@ export function SearchCatalogList({
                 compact={compact}
                 enableQuickAdd
                 simpleAdd={catalogFiltersSimpleAdd}
-                selected={tileSelected}
+                selected={showSelected}
                 collectionByVariant={collectionByVariant}
                 familyContextVariantNumber={familyContextVariantNumber}
                 onSelectVariant={handleSelectCard}
@@ -115,7 +120,7 @@ export function SearchCatalogList({
               compact={compact}
               enableQuickAdd
               simpleAdd={catalogFiltersSimpleAdd}
-              selected={tileSelected}
+              selected={showSelected}
               collectionByVariant={collectionByVariant}
               familyContextVariantNumber={familyContextVariantNumber}
               onSelectVariant={handleSelectCard}

@@ -131,7 +131,7 @@ export default function CardDetailScreen() {
           }
           pointerEvents="box-none"
         >
-          <CardDetailDrawer open onClose={detail.handleClose}>
+          <CardDetailDrawer onClose={detail.handleClose}>
             {drawerContent}
           </CardDetailDrawer>
         </View>

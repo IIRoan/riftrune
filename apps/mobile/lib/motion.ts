@@ -62,8 +62,11 @@ export const OVERLAY = {
   backdropDark: 0.75,
   /** Card modal uses a denser scrim. */
   backdropCard: 0.85,
-  /** Keep portal mounted until close settle finishes. */
-  unmountMs: 520,
+  /**
+   * Dialog presence settle only — bottom sheets must unmount immediately on
+   * close (a delayed portal host blocks catalog taps / quick reopen).
+   */
+  unmountMs: 280,
   closeMs: 220,
   closeEasing: Easing.out(Easing.cubic),
 } as const;

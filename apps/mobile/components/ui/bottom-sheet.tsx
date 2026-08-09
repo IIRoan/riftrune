@@ -43,7 +43,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Uniwind } from "uniwind";
 import { useReduceMotion } from "@/hooks/useReduceMotion";
-import { OVERLAY, SHEET_REDUCED, SHEET_SPRING } from "@/lib/motion";
+import { SHEET_REDUCED, SHEET_SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Button, ButtonIcon } from "./button";
 import { XIcon } from "@/components/icons";
@@ -459,11 +459,11 @@ export const BottomSheet = ({
       return;
     }
 
+    // Unmount immediately when closed. A delayed portal left an invisible
+    // full-screen host that ate catalog taps while the selected tile border
+    // could still look “active”, causing selected-but-no-drawer glitches.
     bottomSheetRef.current?.close();
-    const timer = setTimeout(() => {
-      setMounted(false);
-    }, OVERLAY.unmountMs);
-    return () => clearTimeout(timer);
+    setMounted(false);
   }, [open]);
 
   useEffect(() => {
@@ -523,10 +523,23 @@ export const BottomSheetPortal = ({
     return null;
   }
 
+  // When parent clears `open` at dismiss-start, stop hit-testing immediately so
+  // catalog taps aren’t blocked while Gorhom finishes sliding off-screen.
   return (
     <Portal name={name} {...portalProps}>
       <BottomSheetContext.Provider value={ctx}>
-        <PortalOverlay>{children}</PortalOverlay>
+        <PortalOverlay>
+          <View
+            pointerEvents={ctx.open ? "box-none" : "none"}
+            style={StyleSheet.absoluteFillObject}
+            // Web: absolute overlay can still capture clicks after open=false.
+            {...(Platform.OS === "web" && !ctx.open
+              ? ({ tabIndex: -1, "aria-hidden": true } as const)
+              : null)}
+          >
+            {children}
+          </View>
+        </PortalOverlay>
       </BottomSheetContext.Provider>
     </Portal>
   );
@@ -538,10 +551,10 @@ export const BottomSheetOverlay = ({
   maxOpacity: maxOpacityProp,
 }: BottomSheetOverlayProps) => {
   const {
+    open,
     onOpenChange,
     animatedIndex,
     contentConfig,
-    bottomSheetRef,
     keyboardVisible,
   } = useBottomSheetContext();
 
@@ -565,14 +578,15 @@ export const BottomSheetOverlay = ({
       return;
     }
 
-    bottomSheetRef.current?.close();
+    // Parent `open=false` unmounts the portal immediately — don't wait on close().
     onOpenChange(false);
-  }, [bottomSheetRef, keyboardVisible, onOpenChange]);
+  }, [keyboardVisible, onOpenChange]);
 
   return (
     <AnimatedPressable
       className={cn("absolute inset-0 bg-black", className)}
-      disabled={!closeOnPress}
+      disabled={!closeOnPress || !open}
+      pointerEvents={open ? "auto" : "none"}
       onPress={handlePress}
       style={animatedStyle}
     />
