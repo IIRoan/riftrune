@@ -3,8 +3,7 @@ import { Pressable as GesturePressable } from 'react-native-gesture-handler';
 import { CardArtImage } from '@/components/cards/CardArtImage';
 import { CardBannedOverlay } from '@/components/riftbound/CardBannedOverlay';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
-import { CardTag } from '@/components/riftbound/CardDetailParts';
-import { DomainIcon, RarityIcon, TypeIcon } from '@/components/riftbound/CardIcons';
+import { RarityIcon } from '@/components/riftbound/CardIcons';
 import { Text } from '@/components/ui/text';
 import { CARD_ART_RADIUS_CLASS, CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
 import { cn } from '@/lib/utils';
@@ -13,14 +12,10 @@ interface CatalogDetailHeaderProps {
   cardName: string;
   isBanned: boolean;
   setCode: string;
-  isMobile: boolean;
   isDrawer: boolean;
   detailImageUri: string | null;
   activeVariantNumber: string;
   activeRarity: string;
-  cardType: string;
-  colors: { id: string; name: string; imageUrl?: string }[];
-  tags: string[];
   watchedElsewhereCount: number;
   variantFamilySwitcher: React.ReactNode;
   onOpenFullscreen: () => void;
@@ -30,37 +25,14 @@ export function CatalogDetailHeader({
   cardName,
   isBanned,
   setCode,
-  isMobile,
   isDrawer,
   detailImageUri,
   activeVariantNumber,
   activeRarity,
-  cardType,
-  colors,
-  tags,
   watchedElsewhereCount,
   variantFamilySwitcher,
   onOpenFullscreen,
 }: CatalogDetailHeaderProps) {
-  const identityMeta = (
-    <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-1">
-      <TypeIcon type={cardType} size={14} />
-      <Text className="text-xs font-medium text-muted-foreground">{cardType}</Text>
-      {colors.length > 0
-        ? colors.map((color) => (
-            <View key={color.id} className="flex-row items-center gap-x-1">
-              <Text className="text-xs text-muted-foreground">·</Text>
-              <DomainIcon name={color.name} imageUrl={color.imageUrl} size={14} />
-              <Text className="text-xs font-medium text-muted-foreground">{color.name}</Text>
-            </View>
-          ))
-        : null}
-      <Text className="text-xs text-muted-foreground">·</Text>
-      <RarityIcon rarity={activeRarity} size={14} />
-      <Text className="text-xs font-medium text-muted-foreground">{activeRarity}</Text>
-    </View>
-  );
-
   return (
     <>
       <View className={cn('flex-row gap-3 p-3', !isDrawer && 'bg-card-panel')}>
@@ -89,9 +61,6 @@ export function CatalogDetailHeader({
             />
             {isBanned ? <CardBannedOverlay /> : null}
           </View>
-          <Text className="mt-1 text-center font-mono text-[10px] text-archive-subtle">
-            {activeVariantNumber}
-          </Text>
         </GesturePressable>
 
         <View className="min-w-0 flex-1 justify-center gap-1.5">
@@ -107,26 +76,17 @@ export function CatalogDetailHeader({
           {isBanned ? (
             <Text className="text-xs text-destructive">Banned in tournament play.</Text>
           ) : null}
-          {isMobile ? (
-            <>
-              <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
-              {identityMeta}
-              {tags.length > 0 ? (
-                <View className="flex-row flex-wrap gap-1">
-                  {tags.map((tag) => (
-                    <CardTag key={tag} label={tag} />
-                  ))}
-                </View>
-              ) : null}
-            </>
-          ) : (
-            <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-0.5">
-              <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
-              <Text className="text-xs text-muted-foreground">·</Text>
-              <RarityIcon rarity={activeRarity} size={14} />
-              <Text className="text-xs font-medium text-muted-foreground">{activeRarity}</Text>
-            </View>
-          )}
+          <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            {setCode ? (
+              <>
+                <Text className="font-mono text-xs text-muted-foreground">{setCode}</Text>
+                <Text className="text-xs text-muted-foreground">·</Text>
+              </>
+            ) : null}
+            <RarityIcon rarity={activeRarity} size={14} />
+            <Text className="text-xs font-medium text-muted-foreground">{activeRarity}</Text>
+          </View>
+          <Text className="font-mono text-xs text-archive-subtle">{activeVariantNumber}</Text>
           {watchedElsewhereCount > 0 ? (
             <Text className="text-xs font-medium text-primary">
               Also on wishlist: {watchedElsewhereCount} other printing
@@ -138,7 +98,9 @@ export function CatalogDetailHeader({
       </View>
 
       {isDrawer && variantFamilySwitcher ? (
-        <View className="gap-2 px-3 pb-1 pt-0">{variantFamilySwitcher}</View>
+        <View className="gap-2 border-t border-border/40 px-3 pb-1 pt-2">
+          {variantFamilySwitcher}
+        </View>
       ) : null}
     </>
   );

@@ -11,14 +11,16 @@ test.describe('wishlist', () => {
     await searchForCard(page, FOIL_CARD.query, FOIL_CARD.name);
     await cardTile(page, FOIL_CARD.name, FOIL_CARD.standardId).click();
 
-    const wishlistBtn = page.getByRole('button', { name: 'Wishlist card' });
+    const wishlistBtn = page.getByRole('button', { name: 'Add to wishlist' });
     await expect(wishlistBtn).toBeVisible({ timeout: 30_000 });
     await wishlistBtn.click();
 
     await expect(page.getByText('Add which printing?')).toBeVisible({ timeout: 10_000 });
     await page.locator('[data-slot="inline-list-item-title"]', { hasText: 'Standard' }).click();
 
-    await expect(page.getByRole('button', { name: /Wishlisted/ })).toBeVisible({
+    await expect(
+      page.getByRole('button', { name: /Remove from wishlist|Wishlisted/ })
+    ).toBeVisible({
       timeout: 15_000,
     });
 

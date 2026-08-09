@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, View } from 'react-native';
-import { BookmarkIcon, ThemedIcon } from '@/components/icons';
+import { BookmarkIcon } from '@/components/icons';
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
@@ -8,10 +8,12 @@ import { Text } from '@/components/ui/text';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
 import type { PriceHistoryPanelItem } from '@/hooks/useVariantPriceHistory';
 import { cn } from '@/lib/utils';
+import { hapticPress } from '@/utils/haptics';
 
 interface CatalogDetailScrollBodyProps {
-  collectionAndStats: React.ReactNode;
-  desktopMetaPills: React.ReactNode | null;
+  printingRows: React.ReactNode;
+  statsRow: React.ReactNode;
+  metaAttributes: React.ReactNode;
   descriptionBlock: React.ReactNode;
   isWatchingActive: boolean;
   watchBusy: boolean;
@@ -30,9 +32,14 @@ interface CatalogDetailScrollBodyProps {
   isDrawer: boolean;
 }
 
+function SectionDivider() {
+  return <View className="h-hairline bg-border/60" />;
+}
+
 export function CatalogDetailScrollBody({
-  collectionAndStats,
-  desktopMetaPills,
+  printingRows,
+  statsRow,
+  metaAttributes,
   descriptionBlock,
   isWatchingActive,
   watchBusy,
@@ -48,39 +55,52 @@ export function CatalogDetailScrollBody({
   isDrawer,
 }: CatalogDetailScrollBodyProps) {
   return (
-    <View className="gap-3 p-3">
-      {collectionAndStats}
-      {desktopMetaPills}
-      {descriptionBlock}
+    <View>
+      {printingRows ? (
+        <>
+          <SectionDivider />
+          {printingRows}
+        </>
+      ) : null}
 
-      <View className="gap-2">
+      <SectionDivider />
+      <View className="px-1 py-1">{statsRow}</View>
+
+      <SectionDivider />
+      <View className="px-3 py-3">{metaAttributes}</View>
+
+      <SectionDivider />
+      <View className="gap-3 px-3 py-3">
+        {descriptionBlock}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={
             isWatchingActive ? 'Remove from wishlist' : 'Add to wishlist'
           }
+          disabled={watchBusy}
+          onPress={() => {
+            void hapticPress();
+            onWatchPress();
+          }}
           className={cn(
-            'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-full web:cursor-pointer',
+            'h-10 w-full flex-row items-center justify-center gap-1.5 rounded-lg web:cursor-pointer',
             isWatchingActive
               ? 'bg-primary/18 active:bg-primary/24'
               : 'bg-primary/12 active:bg-primary/18',
             watchBusy && 'opacity-60'
           )}
-          disabled={watchBusy}
-          onPress={onWatchPress}
         >
           {watchBusy ? (
             <ActivityIndicator size="small" className="accent-primary" />
           ) : (
             <>
-              <ThemedIcon
-                icon={BookmarkIcon}
-                size={16}
-                color="archive-accent-text"
+              <BookmarkIcon
+                className="size-4 text-archive-accent-text"
                 weight={isWatchingActive ? 'fill' : 'bold'}
               />
               <Text className="text-sm font-semibold text-archive-accent-text">
-                {isWatchingActive ? 'Wishlisted · tap to remove' : 'Wishlist card'}
+                {isWatchingActive ? 'Wishlisted' : 'Add to wishlist'}
               </Text>
             </>
           )}
@@ -88,50 +108,59 @@ export function CatalogDetailScrollBody({
       </View>
 
       {singleMarketPrice && hidePriceHistory ? (
-        <View className="border-t border-border/40 pt-3">
-          <VariantPriceSummary
-            label={singleMarketPrice.label}
-            price={singleMarketPrice.price}
-            trend={singlePriceTrend}
-            className="mt-0"
-            hideLabel={variantFamilyCount > 1}
-          />
-        </View>
+        <>
+          <SectionDivider />
+          <View className="px-3 py-3">
+            <VariantPriceSummary
+              label={singleMarketPrice.label}
+              price={singleMarketPrice.price}
+              trend={singlePriceTrend}
+              className="mt-0"
+              hideLabel={variantFamilyCount > 1}
+            />
+          </View>
+        </>
       ) : null}
       {!hidePriceHistory ? (
-        <View className="border-t border-border/40 pt-3" style={{ minHeight: 140 }}>
-          {wishlistItem && wishlistItem.variantNumber === activeVariantNumber ? (
-            <WishlistPriceHistoryPanel
-              item={{
-                ...wishlistItem,
-                cardmarketId: wishlistItem.cardmarketId ?? activeCardmarketId,
-              }}
-            />
-          ) : priceHistory.panelItem ? (
-            <WishlistPriceHistoryPanel
-              item={{
-                ...priceHistory.panelItem,
-                cardmarketId: priceHistory.panelItem.cardmarketId ?? activeCardmarketId,
-              }}
-            />
-          ) : priceHistory.isLoading ? (
-            <View className="min-h-[140px] justify-center rounded-xl border border-border bg-card p-3">
-              <Text className="text-xs leading-5 text-muted-foreground">
-                Loading daily trend history…
-              </Text>
-            </View>
-          ) : (
-            <WishlistPriceHistoryPanel
-              item={{
-                points: [],
-                trend: '—',
-                baselinePrice: null,
-                listingLow: null,
-                cardmarketId: activeCardmarketId,
-              }}
-            />
-          )}
-        </View>
+        <>
+          <SectionDivider />
+          <View className="px-3 py-3" style={{ minHeight: 140 }}>
+            {wishlistItem && wishlistItem.variantNumber === activeVariantNumber ? (
+              <WishlistPriceHistoryPanel
+                item={{
+                  ...wishlistItem,
+                  cardmarketId: wishlistItem.cardmarketId ?? activeCardmarketId,
+                }}
+                className="border-0 bg-transparent p-0"
+              />
+            ) : priceHistory.panelItem ? (
+              <WishlistPriceHistoryPanel
+                item={{
+                  ...priceHistory.panelItem,
+                  cardmarketId: priceHistory.panelItem.cardmarketId ?? activeCardmarketId,
+                }}
+                className="border-0 bg-transparent p-0"
+              />
+            ) : priceHistory.isLoading ? (
+              <View className="min-h-[140px] justify-center py-3">
+                <Text className="text-xs leading-5 text-muted-foreground">
+                  Loading daily trend history…
+                </Text>
+              </View>
+            ) : (
+              <WishlistPriceHistoryPanel
+                item={{
+                  points: [],
+                  trend: '—',
+                  baselinePrice: null,
+                  listingLow: null,
+                  cardmarketId: activeCardmarketId,
+                }}
+                className="border-0 bg-transparent p-0"
+              />
+            )}
+          </View>
+        </>
       ) : null}
 
       {isDrawer ? <View style={{ height: 72 }} /> : null}
@@ -148,7 +177,7 @@ export function CatalogDetailDescriptionBlock({
 }) {
   if (isPlaceholder && !description) {
     return (
-      <View className="gap-2 rounded-xl bg-card-panel p-3">
+      <View className="gap-2">
         <Skeleton className="h-3 w-full rounded" />
         <Skeleton className="h-3 w-[92%] rounded" />
         <Skeleton className="h-3 w-[80%] rounded" />
@@ -156,9 +185,5 @@ export function CatalogDetailDescriptionBlock({
     );
   }
   if (!description) return null;
-  return (
-    <View className="rounded-xl bg-card-panel p-3">
-      <CardRulesText text={description} />
-    </View>
-  );
+  return <CardRulesText text={description} />;
 }

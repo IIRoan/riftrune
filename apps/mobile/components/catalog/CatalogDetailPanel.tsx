@@ -17,7 +17,6 @@ import { useVariantPriceHistory } from '@/hooks/useVariantPriceHistory';
 import {
   isFoilVariant,
 } from '@/utils/variants';
-import { useMobileLayout } from '@/hooks/useBreakpoint';
 
 interface CatalogDetailPanelProps {
   variantNumber: string;
@@ -36,7 +35,6 @@ export function CatalogDetailPanel({
   wishlistItem = null,
   hidePriceHistory = false,
 }: CatalogDetailPanelProps) {
-  const isMobile = useMobileLayout();
   const detail = useCardDetail(variantNumber, { listItem: catalogListItem });
   const { data: collectionEntries = [] } = useCollection();
   const detailVariants = useMemo(() => {
@@ -85,7 +83,6 @@ export function CatalogDetailPanel({
       hideCollectionActions={hideCollectionActions}
       wishlistItem={wishlistItem}
       hidePriceHistory={hidePriceHistory}
-      isMobile={isMobile}
       priceHistory={priceHistory}
     />
   );

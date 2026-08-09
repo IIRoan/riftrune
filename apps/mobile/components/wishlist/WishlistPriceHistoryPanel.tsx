@@ -29,7 +29,7 @@ function CardmarketIconButton({ cardmarketId }: { cardmarketId: number }) {
       accessibilityRole="link"
       accessibilityLabel="Open on Cardmarket"
       hitSlop={8}
-      className="h-9 w-9 items-center justify-center rounded-md bg-secondary web:cursor-pointer active:opacity-70"
+      className="h-9 w-9 items-center justify-center rounded-md border border-border bg-transparent web:cursor-pointer active:opacity-70"
     >
       <ThemedIcon icon={ShoppingCartIcon} size={16} color="archive-accent-text" />
     </Pressable>

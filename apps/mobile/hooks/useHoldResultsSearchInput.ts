@@ -43,11 +43,17 @@ export function useHoldResultsSearchInput(
     onCommit('');
   }, [onCommit]);
 
+  /** Clear the visible draft without committing — results keep using `committed`. */
+  const onHoldClear = useCallback(() => {
+    setState((prev) => focusHoldResultsSearchState(prev, committed));
+  }, [committed]);
+
   return {
     draft: state.draft,
     onFocus,
     onBlur,
     onChangeText,
     onClear,
+    onHoldClear,
   };
 }

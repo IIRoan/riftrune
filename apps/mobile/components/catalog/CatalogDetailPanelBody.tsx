@@ -44,7 +44,6 @@ interface CatalogDetailPanelBodyProps {
   hideCollectionActions: boolean;
   wishlistItem: WishlistPriceItem | null;
   hidePriceHistory: boolean;
-  isMobile: boolean;
   priceHistory: PriceHistoryState;
 }
 
@@ -57,7 +56,6 @@ export function CatalogDetailPanelBody({
   hideCollectionActions,
   wishlistItem,
   hidePriceHistory,
-  isMobile,
   priceHistory,
 }: CatalogDetailPanelBodyProps) {
   const { adjustQuantity } = useCollectionMutations();
@@ -209,7 +207,7 @@ export function CatalogDetailPanelBody({
     />
   ) : null;
 
-  const { collectionAndStats, desktopMetaPills } = buildCatalogDetailCollectionSections({
+  const { printingRows, statsRow, metaAttributes } = buildCatalogDetailCollectionSections({
     printings,
     cardName: card.name,
     hideCollectionActions,
@@ -221,7 +219,6 @@ export function CatalogDetailPanelBody({
     colors: card.colors,
     activeRarity: activeVariant.rarity,
     tags: card.tags,
-    isMobile,
     onAddPrinting: (vn, isFoil) => {
       void detail.onAddToCollection(vn, isFoil);
     },
@@ -240,8 +237,9 @@ export function CatalogDetailPanelBody({
 
   const detailBody = (
     <CatalogDetailScrollBody
-      collectionAndStats={collectionAndStats}
-      desktopMetaPills={desktopMetaPills}
+      printingRows={printingRows}
+      statsRow={statsRow}
+      metaAttributes={metaAttributes}
       descriptionBlock={descriptionBlock}
       isWatchingActive={isWatchingActive}
       watchBusy={watchBusy}
@@ -272,14 +270,10 @@ export function CatalogDetailPanelBody({
           cardName={card.name}
           isBanned={isBanned}
           setCode={setCode}
-          isMobile={isMobile}
           isDrawer={isDrawer}
           detailImageUri={detailImageUri}
           activeVariantNumber={activeVariant.variantNumber}
           activeRarity={activeVariant.rarity}
-          cardType={card.type}
-          colors={card.colors}
-          tags={card.tags}
           watchedElsewhereCount={watchedElsewhereCount}
           variantFamilySwitcher={variantFamilySwitcher}
           onOpenFullscreen={openFullscreen}

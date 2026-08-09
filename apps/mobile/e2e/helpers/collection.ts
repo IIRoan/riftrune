@@ -102,7 +102,9 @@ export async function enableSimpleAdd(page: Page): Promise<void> {
 }
 
 export function detailWishlistButton(page: Page): Locator {
-  return page.getByRole('button', { name: /Wishlist card|Wishlisted/ });
+  return page.getByRole('button', {
+    name: /Add to wishlist|Remove from wishlist|Wishlisted/,
+  });
 }
 
 function escapeRegExp(value: string): string {

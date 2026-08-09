@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import type { CardListPrinting } from '@riftbound/contracts';
+import { CatalogDetailAddButton } from '@/components/catalog/CatalogDetailAddButton';
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import { Text } from '@/components/ui/text';
@@ -27,52 +28,59 @@ export function CatalogDetailPrintingRows({
   if (printings.length === 0) return null;
 
   return (
-    <View className="bg-card-panel">
+    <View>
       {printings.map((printing, index) => {
         const qty = ownedQuantityForPrinting(collectionByVariant, printing);
+        const rowName = `${cardName} ${printing.variantLabel}`;
         return (
           <View key={collectionFinishKey(printing.variantNumber, printing.isFoil)}>
-            {index > 0 ? <View className="h-hairline bg-border" /> : null}
-            <View className="flex-row items-start justify-between gap-3 p-3">
+            {index > 0 ? <View className="h-hairline bg-border/60" /> : null}
+            <View className="flex-row items-center justify-between gap-3 px-3 py-3">
               <View className="min-w-0 shrink flex-1" style={{ flexBasis: 0 }}>
-                <View className="flex-row flex-wrap items-center gap-2">
-                  <Text
-                    className="shrink text-sm font-semibold text-foreground"
-                    numberOfLines={2}
-                  >
-                    {printing.variantLabel}
-                  </Text>
-                </View>
+                <Text
+                  className="shrink text-sm font-semibold text-foreground"
+                  numberOfLines={2}
+                >
+                  {printing.variantLabel}
+                </Text>
                 <Text
                   className="font-mono text-[11px] text-archive-subtle"
                   numberOfLines={1}
                 >
                   {printing.variantNumber}
                 </Text>
-                <View className="mt-1 flex-row flex-wrap items-center gap-2">
+                <View className="mt-0.5 flex-row flex-wrap items-center gap-2">
                   <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
                     {formatPrintingPrice(printing.priceEur) ?? '—'}
                   </Text>
                   <TrendTag trend={formatMarketTrend(printing.priceEur)} />
                 </View>
               </View>
-              <View className="shrink-0 self-center">
+              <View className="shrink-0">
                 {!hideCollectionActions ? (
-                  <OwnershipStepper
-                    owned={qty}
-                    name={`${cardName} ${printing.variantLabel}`}
-                    compact
-                    printings={[printing]}
-                    fixedVariantNumber={printing.variantNumber}
-                    fixedIsFoil={printing.isFoil}
-                    onAdd={() => {
-                      onAdd(printing.variantNumber, printing.isFoil);
-                    }}
-                    onRemove={() => {
-                      if (qty <= 0) return;
-                      onRemove(printing.variantNumber, printing.isFoil, qty);
-                    }}
-                  />
+                  qty > 0 ? (
+                    <OwnershipStepper
+                      owned={qty}
+                      name={rowName}
+                      compact
+                      printings={[printing]}
+                      fixedVariantNumber={printing.variantNumber}
+                      fixedIsFoil={printing.isFoil}
+                      onAdd={() => {
+                        onAdd(printing.variantNumber, printing.isFoil);
+                      }}
+                      onRemove={() => {
+                        onRemove(printing.variantNumber, printing.isFoil, qty);
+                      }}
+                    />
+                  ) : (
+                    <CatalogDetailAddButton
+                      name={rowName}
+                      onPress={() => {
+                        onAdd(printing.variantNumber, printing.isFoil);
+                      }}
+                    />
+                  )
                 ) : qty > 0 ? (
                   <Text className="font-mono text-xs tabular-nums text-muted-foreground">
                     Own {qty}
