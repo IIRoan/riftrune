@@ -14,7 +14,7 @@ Riftbound is a card catalog and collection tracker. It should make card discover
 
 ## Brand Personality
 
-Instrument-panel precision. The app is a terminal war room for collection work: stark black canvas, monochrome chrome, and one bright figure when hierarchy needs to land. Calm authority comes from contrast, spacing, and Medium-weight type — not Regular/400 frailty, soft tint stacks, glow, or game UI chrome. Card art, rarity marks, and live price signals carry personality; controls stay quiet and mechanical.
+Instrument-panel precision. The app is a terminal war room for collection work: stark black canvas, monochrome chrome, and one bright figure when hierarchy needs to land. Calm authority comes from contrast, spacing, and a clear Lato weight ladder (Regular body, SemiBold structure, Bold commit) — not soft tint stacks, glow, or game UI chrome. Card art, rarity marks, and live price signals carry personality; controls stay quiet and mechanical.
 
 ## Visual world
 
@@ -26,7 +26,7 @@ Instrument-panel precision. The app is a terminal war room for collection work: 
 - Noisy card-game chrome, glow, blur, and drop-shadow elevation
 - Generic SaaS dashboards, cream editorial stacks, broadsheet hairline layouts
 - Marketing-first screens that block catalog work
-- Bold/semibold-heavy type hierarchies; chromatic brand fills on primary actions
+- All-caps marketing type stacks or weight remaps that hide Regular body; chromatic brand fills on primary actions
 - Theatrical motion — prefer short mechanical state switches
 
 ## Design Principles

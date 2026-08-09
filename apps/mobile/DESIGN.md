@@ -14,14 +14,14 @@ colors:
   metric-green: "#a0ca92"
 typography:
   body:
-    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Lato, ui-sans-serif, system-ui, sans-serif"
     fontSize: "16px"
-    fontWeight: 500
+    fontWeight: 400
     lineHeight: 1.5
   body-sm:
-    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Lato, ui-sans-serif, system-ui, sans-serif"
     fontSize: "14px"
-    fontWeight: 500
+    fontWeight: 400
     lineHeight: 1.43
   caption:
     fontFamily: "Geist Mono, ui-monospace, monospace"
@@ -30,9 +30,9 @@ typography:
     lineHeight: 1
     letterSpacing: "-0.24px"
   title:
-    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Lato, ui-sans-serif, system-ui, sans-serif"
     fontSize: "36px"
-    fontWeight: 500
+    fontWeight: 600
     lineHeight: 1.1
     letterSpacing: "-1.12px"
 rounded:
@@ -88,8 +88,8 @@ This is an **Operate** surface (catalog, collection, decks, wishlist). Expressio
 **Key Characteristics:**
 
 - Obsidian canvas everywhere; bone/chalk are the only bright figures
-- Weight 500 Operate baseline (Geist Medium); weight 600 (SemiBold) for dense emphasis
-- Geist Mono Medium for instrument labels; sans for body and actions
+- Lato Regular (400) body baseline; Medium/SemiBold for structure; Bold for CTAs and dense tile labels
+- Geist Mono for instrument labels; Lato sans for body and actions
 - Button radius 3px; cards 10px; no soft pills as the system voice
 - Chromatic color = data voice only (trends, live status, keyword badges)
 - Zero shadow dependency; hairline ash strokes instead
@@ -129,22 +129,22 @@ Monochrome instrument palette with two functional accents. No third brand accent
 
 ## Typography
 
-**Body / UI Font:** Geist (bundled)  
+**Body / UI Font:** Lato (bundled, SIL OFL)  
 **Instrument Font:** Geist Mono (bundled)
 
-**Character:** Medium-weight authority on dark canvas. Geist Regular reads too frail at catalog densities — Operate maps `font-normal` → Medium and `font-medium`/`font-semibold` → SemiBold. Size and tracking still create hierarchy; avoid Black/ExtraBold stacks.
+**Character:** Professional product UI weight usage — Lato Regular for reading, clear steps up for hierarchy. Tailwind classes map honestly to faces (`font-normal` → 400, `font-medium` → 500, `font-semibold` → 600, `font-bold` → 700). Dense tile chrome (title, price, variant, Add) shares tokens in `constants/operateType.ts`.
 
 ### Hierarchy
 
-- **Display** (500, 72px, lh 1, tracking −2.88px): rare marketing/empty-hero moments only
-- **Heading** (500–600, 36–44px, lh ~1.1, tight tracking): screen titles when needed
-- **Body** (500, 16px, lh 1.5): primary reading
-- **Body-sm** (500, 14px, lh 1.43): dense UI, buttons
+- **Display** (700–900, 72px, lh 1, tracking −2.88px): rare marketing/empty-hero moments only
+- **Heading** (600–700, 36–44px, lh ~1.1, tight tracking): screen titles when needed
+- **Body** (400, 16px, lh 1.5): primary reading
+- **Body-sm** (400–500, 14px, lh 1.43): dense UI; Medium for mid-emphasis controls
 - **Caption / Instrument** (Geist Mono 500, 12px, uppercase, tracking −0.24px): section labels, status tags, metric units, printing IDs when treated as instrument labels
 
 ### Named Rules
 
-**The Flat Weight Rule.** Operate baseline is Medium (500), not Regular. Use SemiBold (600) when a label must dominate a dense surface (catalog tile titles, prices, owned qty). Do not use Black stacks for everyday UI hierarchy.
+**The Honest Weight Rule.** Map Tailwind weight classes to the real Lato face. Body stays Regular (400). Use Medium (500) for nav/idle emphasis, SemiBold (600) for titles/prices/tags, Bold (700) for primary CTAs (Add, auth commit). Do not remap `font-normal` → Medium to fake thickness. Do not use Black for everyday UI hierarchy.
 
 **The Two Voices Rule.** Sans = page/body. Mono uppercase 12px = instrument. Seeing mono means system surface, not marketing copy.
 
@@ -180,8 +180,8 @@ Depth is figure/ground: bone card or chalk control on obsidian/carbon. Optional 
 
 ### Buttons
 
-- **Dark filled (default commit on dark):** carbon lift `#1d1a18` / `#1f1d1c`, bone text, 3px radius, ~14px horizontal padding, weight 500 — collection row actions that commit inside a dark surface may use this or chalk when higher emphasis is needed
-- **Light filled / chalk (high-emphasis CTA):** chalk fill, obsidian text, 3px radius — use for primary commit actions that must read as flashlit dispatch (e.g. Add to collection in detail rows, auth)
+- **Dark filled (default commit on dark):** carbon lift `#1d1a18` / `#1f1d1c`, bone text, 3px radius, ~14px horizontal padding, weight 600 — collection row actions that commit inside a dark surface may use this or chalk when higher emphasis is needed
+- **Light filled / chalk (high-emphasis CTA):** chalk fill, obsidian text, 3px radius, weight 700 — use for primary commit actions that must read as flashlit dispatch (e.g. Add to collection in detail rows, auth)
 - **Ghost:** transparent, 1px ash stroke, bone text; hover shifts text/border toward chalk — no fill wash
 - **Never:** soft `primary/12` tint chips, champagne/gold outlined pills, signal/metric fills
 
@@ -199,7 +199,7 @@ Dark field on carbon or canvas, ash border, bone text, warm-granite placeholder.
 
 ### Navigation
 
-Transparent or carbon well on obsidian. Labels weight 500. Active state via contrast, not accent underline glow.
+Transparent or carbon well on obsidian. Labels weight 400–500. Active state via contrast, not accent underline glow.
 
 ### Catalog detail actions (canonical)
 
@@ -219,7 +219,7 @@ Sparklines and bars use signal (attention/down) or metric green (up). Axes and l
 ### Do
 
 - **Do** keep the canvas near `#101010` and treat bone/chalk as the only bright figures
-- **Do** use weight 500 (Medium) as the Operate baseline; reach for SemiBold on dense labels
+- **Do** use Lato Regular (400) as the body baseline; SemiBold for structure; Bold for primary CTAs
 - **Do** use Geist Mono Medium 12px uppercase for instrument labels and status
 - **Do** set button radius to 3px and card radius to 10px
 - **Do** build pressability with chalk or carbon fills — contrast CTAs
@@ -230,7 +230,7 @@ Sparklines and bars use signal (attention/down) or metric green (up). Axes and l
 
 - **Don't** use soft accent tint fills (`bg-primary/12`, champagne outline pills) as the default action language
 - **Don't** fill buttons with signal orange, metric green, or legacy archive lime
-- **Don't** use Regular/400 as the app-wide body weight on dark Operate surfaces
+- **Don't** remap `font-normal` to a heavier face — keep weight classes honest
 - **Don't** use Black stacks for everyday UI hierarchy
 - **Don't** add drop shadows, glows, or blur to fake elevation
 - **Don't** mix serif display faces or decorative marketing type into Operate UI

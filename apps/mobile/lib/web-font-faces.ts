@@ -1,13 +1,12 @@
 /**
  * Web-only font-face registration for Firefox-correct weight matching.
  *
- * Expo's loader emits `@font-face { font-family: "Geist-Medium"; src: … }` with
+ * Expo's loader emits `@font-face { font-family: "Lato-Medium"; src: … }` with
  * no `font-weight` descriptor. Firefox then fails to match when Uniwind sets
- * `font-weight: 500`/`600` on the element and can fall back to a thinner face
- * or synthesize awkwardly. Spec + Firefox guidance: one family name, explicit
- * weight per file (MDN `@font-face` font-weight; Expo PR #37170).
+ * numeric CSS weights. Spec guidance: one family name, explicit weight per file
+ * (MDN `@font-face` font-weight; Expo PR #37170).
  *
- * Native keeps the Expo per-file family names (`Geist-Medium`, etc.).
+ * Native keeps Expo per-file family names (`Lato-Medium`, etc.).
  */
 
 import { Asset } from 'expo-asset';
@@ -26,11 +25,11 @@ type Face = {
 };
 
 const FACES: Face[] = [
-  { family: WEB_FONT_SANS_FAMILY, weight: 400, moduleId: require('@/assets/fonts/Geist-Regular.ttf') },
-  { family: WEB_FONT_SANS_FAMILY, weight: 500, moduleId: require('@/assets/fonts/Geist-Medium.ttf') },
-  { family: WEB_FONT_SANS_FAMILY, weight: 600, moduleId: require('@/assets/fonts/Geist-SemiBold.ttf') },
-  { family: WEB_FONT_SANS_FAMILY, weight: 700, moduleId: require('@/assets/fonts/Geist-Bold.ttf') },
-  { family: WEB_FONT_SANS_FAMILY, weight: 900, moduleId: require('@/assets/fonts/Geist-Black.ttf') },
+  { family: WEB_FONT_SANS_FAMILY, weight: 400, moduleId: require('@/assets/fonts/Lato-Regular.ttf') },
+  { family: WEB_FONT_SANS_FAMILY, weight: 500, moduleId: require('@/assets/fonts/Lato-Medium.ttf') },
+  { family: WEB_FONT_SANS_FAMILY, weight: 600, moduleId: require('@/assets/fonts/Lato-SemiBold.ttf') },
+  { family: WEB_FONT_SANS_FAMILY, weight: 700, moduleId: require('@/assets/fonts/Lato-Bold.ttf') },
+  { family: WEB_FONT_SANS_FAMILY, weight: 900, moduleId: require('@/assets/fonts/Lato-Black.ttf') },
   {
     family: WEB_FONT_MONO_FAMILY,
     weight: 400,
@@ -54,14 +53,14 @@ const FACES: Face[] = [
 ];
 
 /** Re-declare Expo per-weight family names with a full weight range so
- * `fontFamily: 'Geist-Medium'` + CSS `font-weight: 500` still hits the correct
+ * `fontFamily: 'Lato-Medium'` + CSS `font-weight: 500` still hits the correct
  * file in Firefox instead of falling through. */
 const LEGACY_NAMED_FACES: { family: string; moduleId: number }[] = [
-  { family: 'Geist-Regular', moduleId: require('@/assets/fonts/Geist-Regular.ttf') },
-  { family: 'Geist-Medium', moduleId: require('@/assets/fonts/Geist-Medium.ttf') },
-  { family: 'Geist-SemiBold', moduleId: require('@/assets/fonts/Geist-SemiBold.ttf') },
-  { family: 'Geist-Bold', moduleId: require('@/assets/fonts/Geist-Bold.ttf') },
-  { family: 'Geist-Black', moduleId: require('@/assets/fonts/Geist-Black.ttf') },
+  { family: 'Lato-Regular', moduleId: require('@/assets/fonts/Lato-Regular.ttf') },
+  { family: 'Lato-Medium', moduleId: require('@/assets/fonts/Lato-Medium.ttf') },
+  { family: 'Lato-SemiBold', moduleId: require('@/assets/fonts/Lato-SemiBold.ttf') },
+  { family: 'Lato-Bold', moduleId: require('@/assets/fonts/Lato-Bold.ttf') },
+  { family: 'Lato-Black', moduleId: require('@/assets/fonts/Lato-Black.ttf') },
   {
     family: 'GeistMono-Regular',
     moduleId: require('@/assets/fonts/GeistMono-Regular.ttf'),

@@ -54,11 +54,11 @@ export const FILTER_CHIP_SHELL_CLASS = cn(
 export const FILTER_CHIP_CATEGORY_CLASS = 'justify-center border-r border-border px-2.5';
 
 export const FILTER_CHIP_CATEGORY_LABEL_CLASS =
-  'font-mono text-[11px] font-normal uppercase leading-none tracking-[-0.24px] text-muted-foreground';
+  'font-mono text-[11px] font-semibold uppercase leading-none tracking-[-0.24px] text-muted-foreground';
 
 export const FILTER_CHIP_VALUE_CLASS = 'min-w-0 flex-row items-center px-2';
 
-export const FILTER_CHIP_VALUE_TEXT_CLASS = 'text-[12px] font-normal leading-none text-foreground';
+export const FILTER_CHIP_VALUE_TEXT_CLASS = 'text-[12px] font-semibold leading-none text-foreground';
 
 /** Nested value token inside a multi-value chip (e.g. color names) — fits inside h-8. */
 export const FILTER_CHIP_VALUE_PILL_CLASS = cn(

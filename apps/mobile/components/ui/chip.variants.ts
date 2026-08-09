@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority';
 
 /** Factory chips — 3px square, chalk/carbon fills (no pills). */
 export const chipVariants = cva(
-  'flex w-fit shrink-0 flex-row items-center justify-center gap-1 self-start overflow-hidden whitespace-nowrap rounded-[3px] px-2.5 py-1.5 font-medium text-xs',
+  'flex w-fit shrink-0 flex-row items-center justify-center gap-1 self-start overflow-hidden whitespace-nowrap rounded-[3px] px-2.5 py-1.5 font-semibold text-xs',
   {
     variants: {
       variant: {
@@ -20,7 +20,7 @@ export const chipVariants = cva(
 );
 
 export const chipTextVariants = cva(
-  'whitespace-nowrap font-medium text-sm leading-tight',
+  'whitespace-nowrap font-semibold text-sm leading-tight',
   {
     variants: {
       variant: {

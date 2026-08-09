@@ -13,7 +13,7 @@ export function TrendTag({ trend, className }: TrendTagProps) {
   return (
     <Text
       className={cn(
-        'font-mono text-xs font-normal tabular-nums',
+        'font-mono text-xs font-semibold tabular-nums',
         isUp && 'text-success',
         isDown && 'text-warning',
         !isUp && !isDown && 'text-muted-foreground',

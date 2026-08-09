@@ -5,14 +5,20 @@
 
 /*
  * Global render polish (web + RNW):
- * - Unified Geist family tokens (Medium Operate baseline)
+ * - Unified Lato / Geist Mono family tokens (honest weight ladder)
  * - No faux-bold (font-synthesis off; web uses real weight files)
  * - Geometric SVG edges so Phosphor icons stay clean in Firefox
+ *
+ * Do NOT force -webkit-font-smoothing: antialiased / -moz-osx-font-smoothing:
+ * grayscale. MDN: those switch to grayscale AA and make light-on-dark text look
+ * thinner. Blink (Chrome) often still looks full; Gecko (Firefox/Zen) looks
+ * wispy — especially on Linux when Zen disables subpixel AA (rounded view / CSD).
+ * Leave smoothing at auto so the engine can use subpixel when available.
  */
 @layer base {
   html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
     text-rendering: optimizeLegibility;
     font-synthesis: none;
     font-synthesis-weight: none;
@@ -20,8 +26,8 @@
   }
 
   body {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
     text-rendering: optimizeLegibility;
     font-synthesis: none;
     font-synthesis-weight: none;
@@ -40,24 +46,7 @@
     overflow: visible;
   }
 
-  /*
-   * Firefox-only: Expo/RNW registers each weight as its own family without a
-   * font-weight descriptor. Gecko is stricter about family+weight matching than
-   * Blink — disable synthesis and avoid grayscale AA thinning light-on-dark text.
-   * (@supports -moz-appearance is the standard Firefox gate; do not use smoothing
-   * as a substitute for real weight files — see MDN font-synthesis / @font-face.)
-   */
   @supports (-moz-appearance: none) {
-    html,
-    body {
-      -moz-osx-font-smoothing: auto;
-      -webkit-font-smoothing: auto;
-      font-synthesis: none;
-      font-synthesis-weight: none;
-      font-synthesis-style: none;
-      text-rendering: auto;
-    }
-
     strong,
     b {
       font-weight: 700;
@@ -181,9 +170,9 @@
 }
 
 @theme inline {
-  /* Operate baseline — Medium face via unified web family (see web-font-faces.ts) */
-  --font-sans: Geist, Geist-Medium, ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", GeistMono-Medium, ui-monospace, monospace;
+  /* Lato body + Geist Mono instrument (see web-font-faces.ts) */
+  --font-sans: Lato, Lato-Regular, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", GeistMono-Regular, ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

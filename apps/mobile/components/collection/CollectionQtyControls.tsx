@@ -5,6 +5,7 @@ import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
+import { OPERATE_CTA_LABEL_CLASS } from '@/constants/operateType';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
@@ -56,7 +57,7 @@ export function CollectionAddButton({
         ) : (
           <>
             <PlusIcon className="size-3.5 text-background" weight="bold" />
-            <Text className="text-[13px] font-medium tracking-tight text-background">Add</Text>
+            <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
           </>
         )}
       </Pressable>

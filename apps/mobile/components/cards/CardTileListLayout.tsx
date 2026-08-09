@@ -8,6 +8,10 @@ import { TrendTag } from '@/components/catalog/TrendTag';
 import { Text } from '@/components/ui/text';
 import { rarityIconFor } from '@/constants/gameAssets';
 import { CARD_ART_RADIUS_CLASS, CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
+import {
+  CARD_LIST_PRICE_CLASS,
+  CARD_LIST_TITLE_CLASS,
+} from '@/constants/operateType';
 import { formatPrintingPrice, formatMarketTrend } from '@/utils/variants';
 import { cn } from '@/lib/utils';
 
@@ -89,10 +93,7 @@ export function CardTileListLayout({
       <View className="min-w-0 flex-1">
         <View className="flex-row items-baseline gap-2">
           <Text
-            className={cn(
-              'flex-1 font-medium text-foreground',
-              listCompact ? 'text-[14px]' : 'text-[15px]'
-            )}
+            className={cn(CARD_LIST_TITLE_CLASS, listCompact ? 'text-[14px]' : 'text-[15px]')}
             numberOfLines={1}
           >
             {card.name}
@@ -193,10 +194,7 @@ export function CardTileListLayout({
                   </Text>
                 ) : null}
                 <Text
-                  className={cn(
-                    'font-mono font-medium tabular-nums text-foreground',
-                    listCompact ? 'text-[13px]' : 'text-sm'
-                  )}
+                  className={cn(CARD_LIST_PRICE_CLASS, listCompact ? 'text-[13px]' : 'text-sm')}
                 >
                   {formatPrintingPrice(p.priceEur) ?? '—'}
                 </Text>

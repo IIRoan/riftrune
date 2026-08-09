@@ -66,7 +66,7 @@ export function CatalogDetailHeader({
         <View className="min-w-0 flex-1 justify-center gap-1.5">
           <View className="flex-row flex-wrap items-center gap-2">
             <Text
-              className="text-xl font-normal leading-tight tracking-tight text-foreground"
+              className="text-xl font-semibold leading-tight tracking-tight text-foreground"
               numberOfLines={2}
             >
               {cardName}

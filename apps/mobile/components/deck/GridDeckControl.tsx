@@ -2,6 +2,10 @@ import { ThemedIcon, MinusIcon, PlusIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
+import {
+  OPERATE_CTA_LABEL_CLASS,
+  OPERATE_QTY_CLASS,
+} from '@/constants/operateType';
 import { hapticPress } from '@/utils/haptics';
 import { cn } from '@/lib/utils';
 
@@ -47,9 +51,7 @@ export function GridDeckControl({
     if (count === 0) return null;
     return (
       <View className={`${CONTROL_HEIGHT} w-full flex-row items-center justify-center`}>
-        <Text className="font-mono text-[13px] font-normal tabular-nums text-foreground">
-          ×{count}
-        </Text>
+        <Text className={cn(OPERATE_QTY_CLASS, 'min-w-0')}>×{count}</Text>
       </View>
     );
   }
@@ -89,7 +91,7 @@ export function GridDeckControl({
         onPress={handleAdd}
       >
         <PlusIcon className="size-3.5 text-background" weight="bold" />
-        <Text className="text-[13px] font-medium tracking-tight text-background">Add</Text>
+        <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
       </Pressable>
     );
   }
@@ -116,9 +118,7 @@ export function GridDeckControl({
       >
         <ThemedIcon icon={MinusIcon} size={ICON_SIZE} color="foreground" />
       </Pressable>
-      <Text className="min-w-6 text-center font-mono text-[13px] font-normal tabular-nums text-foreground">
-        {count}
-      </Text>
+      <Text className={OPERATE_QTY_CLASS}>{count}</Text>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Add one ${name}`}

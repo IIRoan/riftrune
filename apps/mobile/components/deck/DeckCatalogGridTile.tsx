@@ -123,7 +123,7 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
           <View className="gap-0.5">
             <Text
               className={cn(
-                'h-8 text-[13px] font-medium leading-4',
+                'h-8 text-[13px] font-semibold leading-4',
                 illegal ? 'text-destructive' : 'text-foreground'
               )}
               numberOfLines={2}
@@ -134,7 +134,7 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
               {owned != null && count > 0 ? (
                 <Text
                   className={cn(
-                    'font-mono text-[11px] tabular-nums',
+                    'font-mono text-[12px] font-semibold tabular-nums',
                     shortfall ? 'text-warning' : 'text-success'
                   )}
                 >
@@ -142,7 +142,7 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
                 </Text>
               ) : (
                 <Text
-                  className="font-mono text-[10px] text-muted-foreground"
+                  className="font-mono text-[12px] font-semibold tabular-nums text-muted-foreground"
                   numberOfLines={1}
                 >
                   {candidate.variantNumber}

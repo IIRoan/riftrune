@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority';
 
 /** Factory control chrome — 3px radius, chalk commit, ash ghost (DESIGN.md). */
 export const buttonVariants = cva(
-  'flex w-full shrink-0 flex-row items-center justify-center gap-2 whitespace-nowrap rounded-[3px] font-medium text-sm',
+  'flex w-full shrink-0 flex-row items-center justify-center gap-2 whitespace-nowrap rounded-[3px] font-bold text-sm',
   {
     variants: {
       size: {
@@ -30,7 +30,7 @@ export const buttonVariants = cva(
   }
 );
 
-export const buttonTextVariants = cva('whitespace-nowrap font-medium text-sm', {
+export const buttonTextVariants = cva('whitespace-nowrap font-bold text-sm', {
   variants: {
     variant: {
       default: 'text-background',

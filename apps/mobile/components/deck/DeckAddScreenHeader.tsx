@@ -33,7 +33,7 @@ export function DeckAddScreenHeader({
           <ThemedIcon icon={ChevronLeftIcon} size={22} color="foreground" />
         </Pressable>
         <View className="min-w-0 flex-1 gap-0.5">
-          <Text className="text-base font-normal text-foreground">
+          <Text className="text-base font-semibold text-foreground">
             Add to {meta?.title ?? section}
           </Text>
           <Text className="font-mono text-[11px] text-muted-foreground">

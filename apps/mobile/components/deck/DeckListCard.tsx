@@ -171,7 +171,7 @@ function DeckListCardInner({
             <View className="flex-row items-start gap-2">
               <View className="min-w-0 flex-1">
                 <Text
-                  className="text-[15px] font-normal leading-5 text-foreground"
+                  className="text-[15px] font-semibold leading-5 text-foreground"
                   numberOfLines={1}
                 >
                   {deck.name}

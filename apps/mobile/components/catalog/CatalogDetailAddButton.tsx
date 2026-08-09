@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable } from 'react-native';
 import { PlusIcon } from '@/components/icons';
 import { Text } from '@/components/ui/text';
+import { OPERATE_CTA_LABEL_CLASS } from '@/constants/operateType';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
@@ -39,7 +40,7 @@ export function CatalogDetailAddButton({
       ) : (
         <>
           <PlusIcon className="size-3.5 text-background" weight="bold" />
-          <Text className="text-[13px] font-medium tracking-tight text-background">Add</Text>
+          <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
         </>
       )}
     </Pressable>

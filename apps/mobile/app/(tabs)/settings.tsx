@@ -75,11 +75,11 @@ export default function SettingsScreen() {
               className="flex-row items-center justify-between gap-3 overflow-hidden rounded-[10px] border border-border bg-card active:border-foreground"
             >
               <View className="min-w-0 flex-1 gap-1 px-4 py-3">
-                <Text className="text-sm font-normal text-foreground">Rune charge loader</Text>
+                <Text className="text-sm font-medium text-foreground">Rune charge loader</Text>
                 <Text className="font-mono text-[11px] text-muted-foreground">/loading</Text>
               </View>
               <View className="h-full w-14 items-center justify-center border-l border-border bg-card-panel py-3">
-                <Text className="font-mono text-xs font-normal text-foreground">→</Text>
+                <Text className="font-mono text-xs font-medium text-foreground">→</Text>
               </View>
             </Pressable>
           </SettingsSection>

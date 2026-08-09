@@ -63,8 +63,8 @@ import { cn } from '@/lib/utils';
 - Secondary: ash ghost (1px `border-border`, transparent) — no soft `primary/12` tint chips
 - Never: champagne/gold outline pills, chromatic CTA fills, pill radius as default
 - Functional color (trends, status pulses) is data voice only — see DESIGN.md
-- **Typography:** Operate remaps `font-normal` → Geist Medium and `font-medium`/`font-semibold` → SemiBold (`lib/fonts.ts`) — do not reintroduce Regular as the body face on dark surfaces
-- **Web / Firefox:** `ensureWebFontFaces()` registers unified `Geist` / `Geist Mono` `@font-face` rules with explicit `font-weight` (Expo’s default faces omit weight and break Gecko matching). Prefer that path over font-smoothing hacks.
+- **Typography:** Lato (bundled) with honest weights — `font-normal` → 400, `font-medium` → 500, `font-semibold` → 600, `font-bold` → 700 (`lib/fonts.ts`). Body/UI defaults to Regular; SemiBold for structure; Bold for primary CTAs. Dense tile labels + chalk CTAs use shared tokens in `constants/operateType.ts`. Instrument/mono remains Geist Mono.
+- **Web / Firefox / Zen:** `ensureWebFontFaces()` registers unified `Lato` / `Geist Mono` `@font-face` rules with explicit `font-weight`. Do not force `antialiased`/`grayscale` font-smoothing — that thins light-on-dark in Gecko while Chrome still looks fine. Zen on Linux often disables subpixel AA (`zen.view.experimental-rounded-view`); that is a browser bug, not a missing face.
 
 ### App providers
 

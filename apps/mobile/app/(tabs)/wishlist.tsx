@@ -189,7 +189,7 @@ const WishlistRow = memo(function WishlistRow({
         ) : null}
 
         <View className="min-w-[72px] items-end">
-          <Text className="font-mono text-[15px] font-normal tabular-nums text-foreground">
+          <Text className="font-mono text-[15px] font-semibold tabular-nums text-foreground">
             {formatPrice(item.currentPrice)}
           </Text>
           <TrendTag trend={item.trend} className="mt-0.5" />
@@ -217,13 +217,13 @@ const WishlistRow = memo(function WishlistRow({
                 size={EXPANDED_THUMB}
               />
               <View className="min-w-0 flex-1 gap-1">
-                <Text className="text-[15px] font-normal text-foreground" numberOfLines={2}>
+                <Text className="text-[15px] font-semibold text-foreground" numberOfLines={2}>
                   {item.name}
                 </Text>
                 <Text className="font-mono text-[11px] text-muted-foreground">
                   {item.variantNumber}
                 </Text>
-                <Text className="font-mono text-[15px] font-normal tabular-nums text-foreground">
+                <Text className="font-mono text-[15px] font-semibold tabular-nums text-foreground">
                   {formatPrice(item.currentPrice)}
                 </Text>
                 <TrendTag trend={item.trend} className="self-start" />
@@ -312,7 +312,7 @@ function WishlistScreenBody() {
   const listHeader = (
     <View className="gap-4 pb-2">
       <View>
-        <Text className="text-xl font-normal tracking-tight text-foreground">Wishlist</Text>
+        <Text className="text-xl font-semibold tracking-tight text-foreground">Wishlist</Text>
         <Text className="mt-1 text-sm text-muted-foreground">
           {items.length === 0
             ? 'Track cards you want and watch Cardmarket trend prices.'
@@ -357,7 +357,7 @@ function WishlistScreenBody() {
                 <Text
                   className={cn(
                     'text-[12px]',
-                    active ? 'font-normal text-foreground' : 'text-muted-foreground'
+                    active ? 'font-medium text-foreground' : 'text-muted-foreground'
                   )}
                 >
                   {option.label}
@@ -400,7 +400,7 @@ function WishlistScreenBody() {
         <View className="py-10">
           {items.length === 0 ? (
             <View className="gap-3">
-              <Text className="text-base font-normal text-foreground">
+              <Text className="text-base font-semibold text-foreground">
                 No wishlist cards yet
               </Text>
               <Text className="max-w-md text-sm leading-6 text-muted-foreground">

@@ -34,8 +34,9 @@ const responsiveBackground = `
 html,
 body {
   height: 100%;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* auto — forced grayscale AA thins light-on-dark in Firefox/Zen vs Chrome */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
   text-rendering: optimizeLegibility;
   font-synthesis: none;
   font-synthesis-weight: none;
@@ -55,17 +56,7 @@ svg {
   overflow: visible;
 }
 
-/* Firefox: real weight files via web-font-faces.ts; avoid AA thinning + synth bold */
 @supports (-moz-appearance: none) {
-  html,
-  body {
-    -moz-osx-font-smoothing: auto;
-    -webkit-font-smoothing: auto;
-    font-synthesis: none;
-    font-synthesis-weight: none;
-    text-rendering: auto;
-  }
-
   strong,
   b {
     font-weight: 700;

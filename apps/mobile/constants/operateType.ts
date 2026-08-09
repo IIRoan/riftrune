@@ -1,0 +1,56 @@
+/**
+ * Shared Operate typography for dense catalog/collection chrome.
+ *
+ * Lato weight usage (professional app convention — Regular body, SemiBold
+ * structure, Bold commit):
+ * - font-normal (400) — body / secondary
+ * - font-semibold (600) — titles, prices, instrument tags
+ * - font-bold (700) — primary CTAs (Add, commit actions)
+ */
+
+/** Chalk/carbon commit label — Add on tiles and detail rows. */
+export const OPERATE_CTA_LABEL_CLASS =
+  'text-[13px] font-bold tracking-tight text-background';
+
+/** Catalog grid tile card name. */
+export const CARD_TILE_TITLE_CLASS =
+  'h-4 text-[13px] font-semibold leading-4 text-foreground';
+
+/** Catalog grid tile price (instrument mono). */
+export const CARD_TILE_PRICE_CLASS =
+  'min-w-0 flex-1 font-mono text-[12px] font-semibold tabular-nums text-foreground';
+
+/** Catalog grid tile printing id (instrument mono). */
+export const CARD_TILE_VARIANT_CLASS =
+  'shrink-0 font-mono text-[12px] font-semibold tabular-nums text-muted-foreground';
+
+/** Owned qty in −n+ steppers. */
+export const OPERATE_QTY_CLASS =
+  'min-w-6 text-center font-mono text-[13px] font-semibold tabular-nums text-foreground';
+
+/** List-row card title. */
+export const CARD_LIST_TITLE_CLASS = 'flex-1 font-semibold text-foreground';
+
+/** List-row price. */
+export const CARD_LIST_PRICE_CLASS =
+  'font-mono font-semibold tabular-nums text-foreground';
+
+/** Detail printing row label (Standard / Foil). */
+export const DETAIL_PRINTING_LABEL_CLASS =
+  'shrink text-sm font-semibold text-foreground';
+
+/** Detail printing / meta price (instrument mono). */
+export const DETAIL_PRINTING_PRICE_CLASS =
+  'font-mono text-[13px] font-semibold tabular-nums text-foreground';
+
+/** Detail printing id under Standard / Foil. */
+export const DETAIL_PRINTING_ID_CLASS =
+  'font-mono text-[11px] font-medium tabular-nums text-muted-foreground';
+
+/** Detail stats / meta values (Cost 2, Type Spell, …). */
+export const DETAIL_META_VALUE_CLASS =
+  'text-sm font-semibold text-foreground';
+
+/** Detail stat numeric values (mono). */
+export const DETAIL_STAT_VALUE_CLASS =
+  'font-mono text-sm font-semibold tabular-nums text-foreground';

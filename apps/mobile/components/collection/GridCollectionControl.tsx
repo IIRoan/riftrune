@@ -4,6 +4,10 @@ import { useMemo } from 'react';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
 import { Text } from '@/components/ui/text';
 import {
+  OPERATE_CTA_LABEL_CLASS,
+  OPERATE_QTY_CLASS,
+} from '@/constants/operateType';
+import {
   buildPrintingPickerOptions,
   getRemovePrintingPickerOptions,
   printingSelectionId,
@@ -109,7 +113,7 @@ export function GridCollectionControl({
         ) : (
           <>
             <PlusIcon className="size-3.5 text-background" weight="bold" />
-            <Text className="text-[13px] font-medium tracking-tight text-background">Add</Text>
+            <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
           </>
         )}
       </Pressable>
@@ -171,9 +175,7 @@ export function GridCollectionControl({
       {showRemovePicker
         ? wrapWithPicker('Remove printing', removeOptions, onRemove, decrement)
         : decrement}
-      <Text className="min-w-6 text-center font-mono text-[13px] font-medium tabular-nums text-foreground">
-        {owned}
-      </Text>
+      <Text className={OPERATE_QTY_CLASS}>{owned}</Text>
       {showAddPicker
         ? wrapWithPicker('Add printing', pickerOptions, onAdd, increment)
         : increment}

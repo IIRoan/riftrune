@@ -5,6 +5,7 @@ import { CardRulesText } from '@/components/riftbound/CardRulesText';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
+import { OPERATE_CTA_LABEL_CLASS } from '@/constants/operateType';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
 import type { PriceHistoryPanelItem } from '@/hooks/useVariantPriceHistory';
 import { cn } from '@/lib/utils';
@@ -94,7 +95,7 @@ export function CatalogDetailScrollBody({
                 className="size-3.5 text-background"
                 weight={isWatchingActive ? 'fill' : 'bold'}
               />
-              <Text className="text-[13px] font-medium tracking-tight text-background">
+              <Text className={OPERATE_CTA_LABEL_CLASS}>
                 {isWatchingActive ? 'Wishlisted' : 'Wishlist'}
               </Text>
             </>

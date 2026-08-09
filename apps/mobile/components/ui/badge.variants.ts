@@ -2,7 +2,7 @@ import { cva } from 'class-variance-authority';
 
 /** Factory badges — 3px square chrome (no soft md pills). */
 export const badgeVariants = cva(
-  'flex w-fit shrink-0 flex-row items-center justify-center gap-1.5 self-start overflow-hidden whitespace-nowrap rounded-[3px] border border-border px-2 py-1 font-medium text-xs transition-[color,box-shadow] aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
+  'flex w-fit shrink-0 flex-row items-center justify-center gap-1.5 self-start overflow-hidden whitespace-nowrap rounded-[3px] border border-border px-2 py-1 font-semibold text-xs transition-[color,box-shadow] aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
   {
     variants: {
       variant: {
@@ -19,7 +19,7 @@ export const badgeVariants = cva(
 );
 
 export const badgeTextVariants = cva(
-  'whitespace-nowrap font-medium text-sm leading-none',
+  'whitespace-nowrap font-semibold text-sm leading-none',
   {
     variants: {
       variant: {
