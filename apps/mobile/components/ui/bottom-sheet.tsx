@@ -79,6 +79,10 @@ type BottomSheetContentConfig = {
   enableOverDrag?: boolean;
   enableDynamicSizing?: boolean;
   enableContentPanningGesture?: boolean;
+  /** Lower = freer downward drag (Gorhom default 2.5). */
+  overDragResistanceFactor?: number;
+  /** Pixels before pan activates — lower engages dismiss sooner. */
+  activeOffsetY?: number;
   keyboardBehavior?: BottomSheetProps["keyboardBehavior"];
   detached?: boolean;
   bottomInset?: number;
@@ -111,6 +115,8 @@ type BottomSheetPortalProps = Partial<React.ComponentProps<typeof Portal>>;
 type BottomSheetOverlayProps = {
   closeOnPress?: boolean;
   className?: string;
+  /** Override max scrim opacity (0–1). Dark default ~0.75. */
+  maxOpacity?: number;
 };
 
 type BottomSheetContentProps = Omit<
@@ -119,7 +125,13 @@ type BottomSheetContentProps = Omit<
 > &
   BottomSheetContentConfig & {
     children: React.ReactNode;
+    /** Applied to the sheet shell (rounded top + fill). */
+    backgroundClassName?: string;
     handleClassName?: string;
+    /** Surface under the grabber when `handleDivider` is set. */
+    handleSurfaceClassName?: string;
+    /** When true, handle chrome includes a bottom hairline (drawer / no sticky header). */
+    handleDivider?: boolean;
     onAnimate?: BottomSheetProps["onAnimate"];
   };
 
@@ -150,7 +162,7 @@ const BottomSheetStickyScrollContent = ({
     : 0;
 
   return (
-    <View className={cn("absolute inset-0 bg-background", className)}>
+    <View className={cn("absolute inset-0 flex flex-col bg-background", className)}>
       {header ? (
         <View
           className="absolute inset-x-0 top-0 z-10 border-border border-b bg-background"
@@ -166,11 +178,16 @@ const BottomSheetStickyScrollContent = ({
         ) {
           const scrollChild = child as React.ReactElement<{
             headerInset?: number;
+            style?: BottomSheetScrollViewProps["style"];
           }>;
 
           return cloneElement(scrollChild, {
             headerInset,
             key: scrollChild.key ?? `bottom-sheet-scroll-${index}`,
+            style: StyleSheet.flatten([
+              { flex: 1, minHeight: 0 },
+              scrollChild.props.style,
+            ]) as BottomSheetScrollViewProps["style"],
           });
         }
 
@@ -352,14 +369,45 @@ const BottomSheetAnimatedFooter = ({
   );
 };
 
-const BottomSheetHandleIndicator = ({ className }: { className?: string }) => (
+const BottomSheetHandleIndicator = ({
+  className,
+  divider = false,
+  surfaceClassName,
+}: {
+  className?: string;
+  divider?: boolean;
+  surfaceClassName?: string;
+}) => (
   <View
-    className={cn("mt-2 h-1 w-10 self-center rounded-full bg-muted", className)}
-  />
+    className={cn(
+      "items-center pt-2.5",
+      divider
+        ? cn("border-b border-border pb-3", surfaceClassName ?? "bg-card")
+        : "pb-1"
+    )}
+  >
+    <View
+      className={cn(
+        "h-1.5 w-12 rounded-full bg-muted-foreground/60",
+        className
+      )}
+    />
+  </View>
 );
 
-const BottomSheetBackground = (props: BottomSheetBackgroundProps) => (
-  <View className="rounded-t-2xl bg-background" {...props} />
+const BottomSheetBackground = ({
+  className,
+  style,
+  ...props
+}: BottomSheetBackgroundProps & { className?: string }) => (
+  <View
+    className={cn(
+      "overflow-hidden rounded-t-[20px] border-t border-border bg-background",
+      className
+    )}
+    style={style}
+    {...props}
+  />
 );
 
 const renderNullBackdrop = () => null;
@@ -487,6 +535,7 @@ export const BottomSheetPortal = ({
 export const BottomSheetOverlay = ({
   closeOnPress = true,
   className,
+  maxOpacity: maxOpacityProp,
 }: BottomSheetOverlayProps) => {
   const {
     onOpenChange,
@@ -496,9 +545,9 @@ export const BottomSheetOverlay = ({
     keyboardVisible,
   } = useBottomSheetContext();
 
-  const { maxOpacity, minOpacity } = getOverlayOpacityRange(
-    Uniwind.currentTheme === "dark"
-  );
+  const defaults = getOverlayOpacityRange(Uniwind.currentTheme === "dark");
+  const maxOpacity = maxOpacityProp ?? defaults.maxOpacity;
+  const minOpacity = maxOpacity * 0.35;
   const maxSnapIndex = Math.max(0, (contentConfig.snapPoints?.length ?? 1) - 1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -539,10 +588,15 @@ export const BottomSheetContent = ({
   enableOverDrag = true,
   enableDynamicSizing: enableDynamicSizingProp,
   enableContentPanningGesture = true,
+  overDragResistanceFactor,
+  activeOffsetY,
   keyboardBehavior = BOTTOM_SHEET_KEYBOARD_BEHAVIOR,
   detached,
   bottomInset,
+  backgroundClassName,
   handleClassName,
+  handleSurfaceClassName,
+  handleDivider = false,
   onAnimate,
 }: BottomSheetContentProps) => {
   const {
@@ -572,6 +626,8 @@ export const BottomSheetContent = ({
       enableOverDrag,
       enableDynamicSizing: enableDynamicSizingProp,
       enableContentPanningGesture,
+      overDragResistanceFactor,
+      activeOffsetY,
       keyboardBehavior,
       detached,
       bottomInset,
@@ -583,6 +639,8 @@ export const BottomSheetContent = ({
       enableOverDrag,
       enableDynamicSizingProp,
       enableContentPanningGesture,
+      overDragResistanceFactor,
+      activeOffsetY,
       keyboardBehavior,
       detached,
       bottomInset,
@@ -667,16 +725,35 @@ export const BottomSheetContent = ({
   );
 
   const handleComponent = useCallback(
-    () => <BottomSheetHandleIndicator className={handleClassName} />,
-    [handleClassName]
+    () => (
+      <BottomSheetHandleIndicator
+        className={handleClassName}
+        divider={handleDivider}
+        surfaceClassName={handleSurfaceClassName}
+      />
+    ),
+    [handleClassName, handleDivider, handleSurfaceClassName]
   );
 
+  const backgroundComponent = useCallback(
+    (props: BottomSheetBackgroundProps) => (
+      <BottomSheetBackground {...props} className={backgroundClassName} />
+    ),
+    [backgroundClassName]
+  );
+
+  // Sticky absolute wrapper is only for overlay headers. Bare scroll sheets must
+  // stay direct Gorhom children so height + pan/scroll handoff measure correctly.
   const sheetContent = hasScrollView ? (
-    <BottomSheetStickyScrollContent
-      body={body}
-      className={className}
-      header={header}
-    />
+    header ? (
+      <BottomSheetStickyScrollContent
+        body={body}
+        className={className}
+        header={header}
+      />
+    ) : (
+      <>{body}</>
+    )
   ) : (
     <BottomSheetView
       className={cn("bg-background", className)}
@@ -694,7 +771,7 @@ export const BottomSheetContent = ({
       animationConfigs={animationConfigs}
       animateOnMount
       backdropComponent={renderNullBackdrop}
-      backgroundComponent={BottomSheetBackground}
+      backgroundComponent={backgroundComponent}
       bottomInset={bottomInset ?? 0}
       detached={detached}
       enableContentPanningGesture={enableContentPanningGesture}
@@ -709,6 +786,8 @@ export const BottomSheetContent = ({
       maxDynamicContentSize={maxDynamicContentSize}
       onAnimate={onAnimate}
       onChange={handleSheetChange}
+      overDragResistanceFactor={overDragResistanceFactor}
+      activeOffsetY={activeOffsetY}
       ref={bottomSheetRef}
       snapPoints={normalizedSnapPoints}
       topInset={topInset}

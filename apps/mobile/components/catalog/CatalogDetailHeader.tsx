@@ -35,7 +35,7 @@ export function CatalogDetailHeader({
 }: CatalogDetailHeaderProps) {
   return (
     <>
-      <View className={cn('flex-row gap-3 p-3', !isDrawer && 'bg-card-panel')}>
+      <View className="flex-row gap-3 bg-card-panel p-3">
         <GesturePressable
           className="shrink-0 active:opacity-90 web:cursor-pointer"
           onPress={onOpenFullscreen}
@@ -98,7 +98,7 @@ export function CatalogDetailHeader({
       </View>
 
       {isDrawer && variantFamilySwitcher ? (
-        <View className="gap-2 border-t border-border/40 px-3 pb-1 pt-2">
+        <View className="gap-2 border-t border-border px-3 pb-1 pt-2">
           {variantFamilySwitcher}
         </View>
       ) : null}

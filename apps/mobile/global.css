@@ -170,9 +170,13 @@
 }
 
 @theme inline {
-  /* Lato body + Geist Mono instrument (see web-font-faces.ts) */
-  --font-sans: Lato, Lato-Regular, ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", GeistMono-Regular, ui-monospace, monospace;
+  /*
+   * Native Expo face names only — Uniwind turns these into RN fontFamily ids.
+   * Quoted multi-word names like "Geist Mono" crash Hermes (MonoGeistMono).
+   * Web overrides to unified `Lato` / `Geist Mono` via textFontStyleForClassName.
+   */
+  --font-sans: Lato-Regular, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: GeistMono-Regular, ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

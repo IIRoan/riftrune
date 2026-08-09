@@ -259,9 +259,9 @@ export function CatalogDetailPanelBody({
   );
 
   return (
-    <View className={isDrawer ? undefined : 'max-h-full'}>
+    <View className={isDrawer ? undefined : 'min-h-0 h-full'}>
       {isDrawer ? (
-        <View className="bg-card">
+        <View className="bg-card-panel">
           <CatalogDetailHeader
             cardName={card.name}
             isBanned={isBanned}
@@ -279,10 +279,12 @@ export function CatalogDetailPanelBody({
       ) : (
         <ScrollView
           className={cn(
-            'max-h-full border border-border bg-card',
+            'min-h-0 flex-1 border border-border bg-card',
             FACTORY_RADIUS_PANEL_CLASS
           )}
           contentContainerClassName="grow-0"
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
           showsVerticalScrollIndicator={false}
         >
           <CatalogDetailHeader

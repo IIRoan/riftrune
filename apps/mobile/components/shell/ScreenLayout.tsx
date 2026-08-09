@@ -186,7 +186,10 @@ export function ScreenSplit({
         <SplitMainContext.Provider value={mainWidth}>{children}</SplitMainContext.Provider>
       </View>
       {aside ? (
-        <View style={{ width: asideWidth }} className="max-h-full shrink-0 self-start">
+        <View
+          style={{ width: asideWidth }}
+          className="min-h-0 h-full shrink-0 overflow-hidden"
+        >
           {aside}
         </View>
       ) : null}
