@@ -78,13 +78,13 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
     Layout.tabBarMaxWidth
   );
 
-  const [primaryRaw, cardRaw, borderRaw, mutedForegroundRaw] = useCSSVariable([
-    '--color-primary',
+  const [foregroundRaw, cardRaw, borderRaw, mutedForegroundRaw] = useCSSVariable([
+    '--color-foreground',
     '--color-card',
     '--color-border',
     '--color-muted-foreground',
   ]);
-  const primary = String(primaryRaw ?? 'oklch(0.976 0.063 111)');
+  const foreground = String(foregroundRaw ?? 'oklch(0.94 0 0)');
   const card = String(cardRaw ?? 'oklch(0.175 0 0)');
   const border = String(borderRaw ?? 'oklch(0.292 0 0)');
   const mutedForeground = String(mutedForegroundRaw ?? 'oklch(0.720 0 0)');
@@ -133,28 +133,19 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
     >
       <View
         accessibilityRole="tablist"
-        className="relative flex-row items-stretch overflow-hidden rounded-2xl border border-border bg-card"
+        className="relative flex-row items-stretch overflow-hidden rounded-[3px] border border-border bg-card"
         style={{
           width: tabBarWidth,
           height: Layout.tabBarHeight,
           marginHorizontal: (width - tabBarWidth) / 2,
           borderColor: border,
           backgroundColor: card,
-          ...(reduceMotion
-            ? {}
-            : {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.35,
-                shadowRadius: 12,
-                elevation: 10,
-              }),
         }}
       >
         {segmentWidth > 0 ? (
           <Animated.View
             pointerEvents="none"
-            className="absolute bottom-1 top-1 rounded-xl bg-card-panel"
+            className="absolute bottom-1 top-1 rounded-[3px] bg-card-panel"
             style={indicatorStyle}
           />
         ) : null}
@@ -186,7 +177,7 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
             });
           };
 
-          const color = isFocused ? primary : mutedForeground;
+          const color = isFocused ? foreground : mutedForeground;
           const Icon = item.icon;
 
           return (
@@ -204,8 +195,8 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
               <Icon size={20} color={color} />
               <Text
                 className={cn(
-                  'text-[10px] font-semibold',
-                  isFocused ? 'text-primary' : 'text-muted-foreground'
+                  'text-[10px] font-normal',
+                  isFocused ? 'text-foreground' : 'text-muted-foreground'
                 )}
                 numberOfLines={1}
               >

@@ -87,7 +87,7 @@ function MiniSparkline({ points }: { points: WishlistPriceItem['points'] }) {
             key={point.priceDate}
             className={cn(
               'min-w-0 flex-1 rounded-t-[1px]',
-              isLatest ? 'bg-primary' : 'bg-muted-foreground/25'
+              isLatest ? 'bg-foreground' : 'bg-muted-foreground/25'
             )}
             style={{ height }}
           />
@@ -246,7 +246,7 @@ function WishlistLoadingSkeleton({ compact }: { compact: boolean }) {
       <View className="gap-0">
         {Array.from({ length: 8 }).map((_, index) => (
           <View key={index} className="flex-row items-center gap-3 border-b border-border py-3">
-            <Skeleton className="h-14 w-10 shrink-0 rounded-md" />
+            <Skeleton className="h-14 w-10 shrink-0 rounded-[3px]" />
             <View className="min-w-0 flex-1 gap-2">
               <Skeleton className="h-4 w-2/3 rounded" />
               <Skeleton className="h-3 w-1/3 rounded" />
@@ -327,7 +327,7 @@ function WishlistScreenBody() {
         onChangeText={setQuery}
         placeholder="Search by name or variant"
         accessibilityLabel="Search wishlist"
-        className="min-h-12 rounded-xl border-border bg-card"
+        className="min-h-12 rounded-[10px] border-border bg-card"
       />
 
       <View className="flex-row flex-wrap items-center justify-between gap-3">
@@ -348,7 +348,7 @@ function WishlistScreenBody() {
                   setSort(option.value);
                 }}
                 className={cn(
-                  'min-h-9 rounded-md px-2.5 py-1.5',
+                  'min-h-9 rounded-[3px] px-2.5 py-1.5',
                   active ? 'bg-secondary' : 'active:opacity-70'
                 )}
                 accessibilityRole="tab"
@@ -357,7 +357,7 @@ function WishlistScreenBody() {
                 <Text
                   className={cn(
                     'text-[12px]',
-                    active ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                    active ? 'font-medium text-foreground' : 'text-muted-foreground'
                   )}
                 >
                   {option.label}

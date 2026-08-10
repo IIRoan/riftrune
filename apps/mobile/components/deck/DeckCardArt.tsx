@@ -8,7 +8,7 @@ type DeckCardArtProps = {
   variantNumber: string;
 };
 
-/** Static deck-builder card art with shimmer loading and disk+memory cache. */
+/** Static deck-builder card art with disk+memory cache (no scroll shimmer). */
 function DeckCardArtInner({ uri, variantNumber }: DeckCardArtProps) {
   return (
     <View className="absolute inset-0 items-center justify-center p-1">
@@ -20,7 +20,9 @@ function DeckCardArtInner({ uri, variantNumber }: DeckCardArtProps) {
         contentPosition="center"
         transition={0}
         priority="high"
+        instant
         thumbWidth={CATALOG_ART_THUMB_WIDTH}
+        progressive
       />
     </View>
   );

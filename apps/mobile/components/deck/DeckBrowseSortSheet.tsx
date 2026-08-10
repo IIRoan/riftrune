@@ -62,7 +62,7 @@ export function DeckBrowseSortSheet({
               return (
                 <Pressable
                   key={deckBrowseSortKey(option)}
-                  className="min-h-11 flex-row items-center justify-between rounded-lg px-3 py-2.5 active:bg-accent"
+                  className="min-h-11 flex-row items-center justify-between rounded-[3px] px-3 py-2.5 active:bg-card-panel"
                   onPress={() => {
                     onSortChange({ sort: option.sort, dir: option.dir });
                     onClose();
@@ -70,7 +70,7 @@ export function DeckBrowseSortSheet({
                 >
                   <Text className="text-sm font-medium text-foreground">{option.label}</Text>
                   {active ? (
-                    <ThemedIcon icon={CheckIcon} size={18} color="archive-accent-text" />
+                    <ThemedIcon icon={CheckIcon} size={18} color="foreground" />
                   ) : null}
                 </Pressable>
               );

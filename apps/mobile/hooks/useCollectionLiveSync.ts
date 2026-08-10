@@ -11,16 +11,23 @@ import { authClient } from '@/src/lib/auth-client';
 const RECONNECT_BASE_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
 
+/** Hermes has no DOMException — use Error with AbortError name. */
+function abortError(): Error {
+  const error = new Error('Aborted');
+  error.name = 'AbortError';
+  return error;
+}
+
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
-      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+      reject(signal.reason ?? abortError());
       return;
     }
     const timer = setTimeout(resolve, ms);
     const onAbort = () => {
       clearTimeout(timer);
-      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+      reject(signal.reason ?? abortError());
     };
     signal.addEventListener('abort', onAbort, { once: true });
   });

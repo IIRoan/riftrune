@@ -71,7 +71,7 @@ function CardThumb({
       </View>
       {count != null && count > 1 ? (
         <View className="absolute -bottom-1 -right-1 rounded bg-background/95 px-1 py-px">
-          <Text className="font-mono text-[9px] font-bold text-foreground">×{count}</Text>
+          <Text className="font-mono text-[9px] font-normal text-foreground">×{count}</Text>
         </View>
       ) : null}
     </View>
@@ -145,7 +145,7 @@ function DeckListCardInner({
         hapticPress();
         onPress();
       }}
-      className="overflow-hidden rounded-xl border border-border bg-card"
+      className="overflow-hidden rounded-[10px] border border-border bg-card"
       contentClassName="overflow-hidden"
       depth={0.985}
     >
@@ -196,7 +196,7 @@ function DeckListCardInner({
                 <Pressable
                   accessibilityLabel={`Delete ${deck.name}`}
                   hitSlop={6}
-                  className="size-8 shrink-0 items-center justify-center rounded-lg active:bg-destructive/10"
+                  className="size-8 shrink-0 items-center justify-center rounded-[3px] active:bg-destructive/10"
                   onPress={(event) => {
                     event.stopPropagation?.();
                     hapticPress();
@@ -252,7 +252,7 @@ function DeckListCardInner({
                 )}
                 style={{ width: PREVIEW_SIZE, height: Math.round(PREVIEW_SIZE * 1.4) }}
               >
-                <Text className="font-mono text-[11px] font-semibold text-muted-foreground">
+                <Text className="font-mono text-[11px] font-normal text-muted-foreground">
                   +{remainingMain}
                 </Text>
               </View>
@@ -270,7 +270,7 @@ function DeckListCardInner({
           <Pressable
             accessibilityLabel={`Import ${deck.name} to my decks`}
             accessibilityState={{ disabled: importBusy }}
-            className="self-start rounded-lg border border-primary/30 px-2.5 py-1.5 active:bg-primary/10"
+            className="self-start rounded-[3px] border border-border px-2.5 py-1.5 active:bg-card-panel"
             disabled={importBusy}
             onPress={(event) => {
               event.stopPropagation?.();
@@ -278,7 +278,7 @@ function DeckListCardInner({
               onImport();
             }}
           >
-            <Text className="text-[12px] font-medium text-primary">
+            <Text className="text-[12px] font-medium text-foreground">
               {importBusy ? 'Importing…' : 'Import to my decks'}
             </Text>
           </Pressable>

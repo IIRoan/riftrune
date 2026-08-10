@@ -15,6 +15,23 @@ export const MOTION = {
   bouncy: { stiffness: 500, damping: 18, mass: 1 },
 } as const;
 
+/**
+ * Layout / accordion springs — slightly lighter mass so height expands feel
+ * mechanical (Factory) while still settling like a physical instrument panel.
+ */
+export const LAYOUT_SPRING = {
+  damping: 28,
+  stiffness: 340,
+  mass: 0.55,
+} as const;
+
+/** Chip / tray entry — snappy arrival with tiny settle. */
+export const TRAY_SPRING = {
+  damping: 30,
+  stiffness: 380,
+  mass: 0.5,
+} as const;
+
 /** Functional press depth (no spring overshoot while held). */
 export const PRESS = {
   depth: 0.97,
@@ -35,6 +52,7 @@ export const PULSE_MS = 1400;
  * Overlay / sheet / dialog choreography.
  * Open: spring-smooth spatial settle. Close: snappy decel (no bounce past closed).
  * Reduced motion: opacity-only fades — no scale/translate.
+ * Card-detail Gorhom backdrop opacity must track animatedIndex (−1→0), not pop in.
  */
 export const OVERLAY = {
   /** Content starts slightly small + below, settles into place. */
@@ -43,10 +61,14 @@ export const OVERLAY = {
   /** Backdrop target opacities (light / dark). */
   backdropLight: 0.5,
   backdropDark: 0.75,
-  /** Card modal uses a denser scrim. */
+  /** Card modal / card-detail drawer denser scrim. */
   backdropCard: 0.85,
-  /** Keep portal mounted until close settle finishes. */
-  unmountMs: 520,
+  /**
+   * Dialog presence settle only. Bottom-sheet hosts must release hit-testing
+   * at dismiss-start; card detail may retain non-interactive visual presence
+   * until Gorhom finishes closing.
+   */
+  unmountMs: 280,
   closeMs: 220,
   closeEasing: Easing.out(Easing.cubic),
 } as const;

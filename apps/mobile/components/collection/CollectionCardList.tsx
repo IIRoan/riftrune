@@ -136,7 +136,7 @@ export function CollectionCardList({
         {listHeader}
         <View className="mb-4 gap-3">
           <View className="flex-row items-center justify-between gap-3">
-            <Text className="text-sm font-semibold text-muted-foreground">
+            <Text className="text-sm font-normal text-muted-foreground">
               Your cards ({uniquePrintings.toLocaleString()} printings ·{' '}
               {totalCopies.toLocaleString()} copies)
             </Text>
@@ -150,9 +150,9 @@ export function CollectionCardList({
                 >
                   <Text
                     className={cn(
-                      'rounded-md px-2 py-1 text-[12px] capitalize',
+                      'rounded-[3px] px-2 py-1 text-[12px] capitalize',
                       sortBy === mode
-                        ? 'bg-primary/15 text-primary'
+                        ? 'bg-card-panel text-foreground'
                         : 'text-muted-foreground'
                     )}
                   >

@@ -29,9 +29,9 @@ function CardmarketIconButton({ cardmarketId }: { cardmarketId: number }) {
       accessibilityRole="link"
       accessibilityLabel="Open on Cardmarket"
       hitSlop={8}
-      className="h-9 w-9 items-center justify-center rounded-md border border-border bg-transparent web:cursor-pointer active:opacity-70"
+      className="h-9 w-9 items-center justify-center rounded-[3px] border border-border bg-transparent web:cursor-pointer active:opacity-70"
     >
-      <ThemedIcon icon={ShoppingCartIcon} size={16} color="archive-accent-text" />
+      <ThemedIcon icon={ShoppingCartIcon} size={16} color="foreground" />
     </Pressable>
   );
 }
@@ -71,7 +71,7 @@ export function WishlistPriceHistoryPanel({
 
   if (points.length === 0) {
     return (
-      <View className={cn('rounded-xl border border-border bg-card p-3', className)}>
+      <View className={cn('rounded-[10px] border border-border bg-card p-3', className)}>
         <View className="flex-row items-center gap-3">
           <Text className="min-w-0 flex-1 text-xs leading-5 text-muted-foreground">
             No trend history yet.
@@ -89,10 +89,10 @@ export function WishlistPriceHistoryPanel({
   const last = points.at(-1)!;
 
   return (
-    <View className={cn('rounded-xl border border-border bg-card p-3', className)}>
+    <View className={cn('rounded-[10px] border border-border bg-card p-3', className)}>
       <View className="mb-3 flex-row items-center gap-3">
         <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
-          <Text className="font-mono text-lg font-semibold tabular-nums text-foreground">
+          <Text className="font-mono text-lg font-normal tabular-nums text-foreground">
             {formatPrice(active?.value ?? null)}
           </Text>
           {active ? (
@@ -152,7 +152,7 @@ export function WishlistPriceHistoryPanel({
                   <View
                     className={cn(
                       'w-full rounded-t-sm',
-                      isActive ? 'bg-primary' : 'bg-muted-foreground/35'
+                      isActive ? 'bg-foreground' : 'bg-muted-foreground/35'
                     )}
                     style={{ height: barHeight }}
                   />

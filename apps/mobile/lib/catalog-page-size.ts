@@ -4,11 +4,13 @@ const MIN_CATALOG_PAGE_SIZE = 40;
 const MAX_CATALOG_PAGE_SIZE = 100;
 
 /** Rows kept loaded beyond the visible viewport. */
-export const CATALOG_SCROLL_BUFFER_ROWS = 6;
+export const CATALOG_SCROLL_BUFFER_ROWS = 10;
 /** Extra viewport lengths to prefetch when the user scrolls down quickly. */
 export const CATALOG_FAST_SCROLL_VIEWPORTS = 1.75;
 /** px/ms — treat as a fast downward flick at or above this rate. */
 export const CATALOG_FAST_SCROLL_VELOCITY = 0.55;
+/** FlashList onEndReached threshold — start paging ~1.75 list lengths early. */
+export const CATALOG_END_REACHED_THRESHOLD = 1.75;
 /** Stable network page size — kept out of react-query keys. */
 export const CATALOG_NETWORK_PAGE_SIZE = MAX_CATALOG_PAGE_SIZE;
 
@@ -118,9 +120,18 @@ export function catalogLookaheadCount(
   numColumns: number,
   velocityY: number
 ): number {
-  const base = layout === 'list' ? 14 : numColumns * 5;
+  const base = layout === 'list' ? 24 : numColumns * 8;
   if (!isFastCatalogScroll(velocityY)) return base;
-  return layout === 'list' ? 28 : numColumns * 10;
+  return layout === 'list' ? 48 : numColumns * 14;
+}
+
+/**
+ * FlashList draw buffer (px). Default native is 250 — too small for tall
+ * card tiles; keep ~1.5 viewports mounted so art can warm before it enters view.
+ */
+export function catalogDrawDistance(viewportHeight: number): number {
+  const height = Math.max(320, viewportHeight);
+  return Math.max(900, Math.round(height * 1.5));
 }
 
 export function measureCatalogScrollVelocity(

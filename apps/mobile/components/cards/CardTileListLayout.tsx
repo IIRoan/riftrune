@@ -8,6 +8,10 @@ import { TrendTag } from '@/components/catalog/TrendTag';
 import { Text } from '@/components/ui/text';
 import { rarityIconFor } from '@/constants/gameAssets';
 import { CARD_ART_RADIUS_CLASS, CATALOG_ART_THUMB_WIDTH } from '@/constants/CardArt';
+import {
+  CARD_LIST_PRICE_CLASS,
+  CARD_LIST_TITLE_CLASS,
+} from '@/constants/operateType';
 import { formatPrintingPrice, formatMarketTrend } from '@/utils/variants';
 import { cn } from '@/lib/utils';
 
@@ -74,8 +78,8 @@ export function CardTileListLayout({
             banned
               ? 'border-2 border-destructive/70'
               : selected
-                ? 'border-2 border-ring'
-                : 'border border-white/10'
+                ? 'border-2 border-foreground'
+                : 'border border-border'
           )}
           contentFit="cover"
           contentPosition="top"
@@ -89,10 +93,7 @@ export function CardTileListLayout({
       <View className="min-w-0 flex-1">
         <View className="flex-row items-baseline gap-2">
           <Text
-            className={cn(
-              'flex-1 font-semibold text-foreground',
-              listCompact ? 'text-[14px]' : 'text-[15px]'
-            )}
+            className={cn(CARD_LIST_TITLE_CLASS, listCompact ? 'text-[14px]' : 'text-[15px]')}
             numberOfLines={1}
           >
             {card.name}
@@ -122,7 +123,7 @@ export function CardTileListLayout({
           >
             <Text
               className={cn(
-                PREMIUM_RARITIES.includes(card.rarity) && 'font-semibold text-foreground'
+                PREMIUM_RARITIES.includes(card.rarity) && 'font-medium text-foreground'
               )}
             >
               {card.rarity}
@@ -139,7 +140,7 @@ export function CardTileListLayout({
               <View className="size-1.5 rounded-full bg-success" />
               <Text
                 className={cn(
-                  'font-medium text-success',
+                  'font-normal text-success',
                   listCompact ? 'text-[11px]' : 'text-xs'
                 )}
               >
@@ -161,7 +162,7 @@ export function CardTileListLayout({
               <View className="size-1.5 rounded-full border border-muted-foreground" />
               <Text
                 className={cn(
-                  'font-medium text-muted-foreground',
+                  'font-normal text-muted-foreground',
                   listCompact ? 'text-[11px]' : 'text-xs'
                 )}
               >
@@ -193,10 +194,7 @@ export function CardTileListLayout({
                   </Text>
                 ) : null}
                 <Text
-                  className={cn(
-                    'font-mono font-semibold tabular-nums text-foreground',
-                    listCompact ? 'text-[13px]' : 'text-sm'
-                  )}
+                  className={cn(CARD_LIST_PRICE_CLASS, listCompact ? 'text-[13px]' : 'text-sm')}
                 >
                   {formatPrintingPrice(p.priceEur) ?? '—'}
                 </Text>

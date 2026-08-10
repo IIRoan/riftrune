@@ -34,22 +34,33 @@ const responsiveBackground = `
 html,
 body {
   height: 100%;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* auto — forced grayscale AA thins light-on-dark in Firefox/Zen vs Chrome */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
   text-rendering: optimizeLegibility;
   font-synthesis: none;
+  font-synthesis-weight: none;
+  font-synthesis-style: none;
 }
 
 *,
 *::before,
 *::after {
   font-synthesis: none;
+  font-synthesis-weight: none;
 }
 
 svg {
   shape-rendering: geometricPrecision;
   text-rendering: geometricPrecision;
   overflow: visible;
+}
+
+@supports (-moz-appearance: none) {
+  strong,
+  b {
+    font-weight: 700;
+  }
 }
 
 body {

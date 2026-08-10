@@ -17,6 +17,7 @@ import {
 import { cardListItemMatchesVariant } from '@/utils/variants';
 import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
 import { cn } from '@/lib/utils';
+import { FACTORY_RADIUS_CARD_CLASS } from '@/constants/factoryShape';
 
 interface SearchCatalogListProps {
   catalogListRef: React.RefObject<FlashListRef<CardListItem> | null>;
@@ -41,6 +42,8 @@ interface SearchCatalogListProps {
   handleCatalogScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   fetchMoreCatalog: () => void;
   maybeFillCatalogViewport: (height: number) => void;
+  drawDistance: number;
+  onEndReachedThreshold?: number;
 }
 
 export function SearchCatalogList({
@@ -66,6 +69,8 @@ export function SearchCatalogList({
   handleCatalogScroll,
   fetchMoreCatalog,
   maybeFillCatalogViewport,
+  drawDistance,
+  onEndReachedThreshold = 1.75,
 }: SearchCatalogListProps) {
   const gridCellStyle = useMemo(() => catalogGridCellStyle(), []);
 
@@ -78,8 +83,13 @@ export function SearchCatalogList({
     () =>
       ({ item, index }) => {
         const tileSelected = cardListItemMatchesVariant(item, selectedVariant);
+        // Phone drawer: no tile selection chrome — it lingered as a “stuck”
+        // cue after close. Desktop split panel still highlights the active card.
+        const showSelected = splitLayout && tileSelected;
         const familyContextVariantNumber =
-          splitLayout && tileSelected ? selectedVariant : item.variantNumber;
+          showSelected && selectedVariant != null
+            ? selectedVariant
+            : item.variantNumber;
 
         if (isList) {
           const isLast = index === displayItems.length - 1;
@@ -92,7 +102,7 @@ export function SearchCatalogList({
                 compact={compact}
                 enableQuickAdd
                 simpleAdd={catalogFiltersSimpleAdd}
-                selected={tileSelected}
+                selected={showSelected}
                 collectionByVariant={collectionByVariant}
                 familyContextVariantNumber={familyContextVariantNumber}
                 onSelectVariant={handleSelectCard}
@@ -110,7 +120,7 @@ export function SearchCatalogList({
               compact={compact}
               enableQuickAdd
               simpleAdd={catalogFiltersSimpleAdd}
-              selected={tileSelected}
+              selected={showSelected}
               collectionByVariant={collectionByVariant}
               familyContextVariantNumber={familyContextVariantNumber}
               onSelectVariant={handleSelectCard}
@@ -145,7 +155,10 @@ export function SearchCatalogList({
             isList &&
               displayItems.length > 0 &&
               !sortPending &&
-              'overflow-hidden rounded-xl border border-border bg-card'
+              cn(
+                'overflow-hidden border border-border bg-card',
+                FACTORY_RADIUS_CARD_CLASS
+              )
           )}
         >
           <FlashList
@@ -168,7 +181,8 @@ export function SearchCatalogList({
             onScroll={handleCatalogScroll}
             scrollEventThrottle={16}
             onEndReached={fetchMoreCatalog}
-            onEndReachedThreshold={1.75}
+            onEndReachedThreshold={onEndReachedThreshold}
+            drawDistance={drawDistance}
             onContentSizeChange={(_, height) => {
               maybeFillCatalogViewport(height);
             }}

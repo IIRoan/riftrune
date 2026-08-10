@@ -68,7 +68,7 @@ export function RemoveCollectionSheet({
                   <InlineListItemTitle>{item.label}</InlineListItemTitle>
                   <InlineListItemDescription>{item.variantNumber}</InlineListItemDescription>
                   <InlineListItemAddon align="inline-end">
-                    <Text className="text-[13px] font-bold text-ring">
+                    <Text className="text-[13px] font-normal text-ring">
                       {item.quantity > 1 ? `−1 (×${String(item.quantity)})` : 'Remove'}
                     </Text>
                   </InlineListItemAddon>
@@ -79,7 +79,7 @@ export function RemoveCollectionSheet({
             {items.length > 1 ? (
               <Button
                 variant="outline"
-                className="border-ring/40 bg-primary/5"
+                className="border-foreground/40 bg-foreground/5"
                 onPress={onRemoveAll}
               >
                 <ButtonText className="text-ring">Remove all printings</ButtonText>

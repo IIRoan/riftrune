@@ -70,7 +70,7 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
         illegal
           ? 'border-destructive/70'
           : inDeck
-            ? 'border-primary/60'
+            ? 'border-foreground'
             : blocked
               ? 'border-border/70'
               : 'border-border'
@@ -119,21 +119,22 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
 
       <View className="gap-2 border-t border-border bg-card-panel px-2.5 py-2.5">
         <Pressable onPress={handleOpenCard} accessibilityRole="button">
+          {/* Fixed 2-line title + meta row so Add CTAs align across the grid. */}
           <View className="gap-0.5">
             <Text
               className={cn(
-                'text-[13px] font-semibold leading-4',
+                'h-8 text-[13px] font-semibold leading-4',
                 illegal ? 'text-destructive' : 'text-foreground'
               )}
               numberOfLines={2}
             >
               {candidate.name}
             </Text>
-            <View className="flex-row items-center justify-between gap-2">
+            <View className="h-4 flex-row items-center justify-between gap-2">
               {owned != null && count > 0 ? (
                 <Text
                   className={cn(
-                    'font-mono text-[11px] tabular-nums',
+                    'font-mono text-[12px] font-semibold tabular-nums',
                     shortfall ? 'text-warning' : 'text-success'
                   )}
                 >
@@ -141,7 +142,7 @@ export const DeckCatalogGridTile = memo(function DeckCatalogGridTile({
                 </Text>
               ) : (
                 <Text
-                  className="font-mono text-[10px] text-muted-foreground"
+                  className="font-mono text-[12px] font-semibold tabular-nums text-muted-foreground"
                   numberOfLines={1}
                 >
                   {candidate.variantNumber}

@@ -127,7 +127,7 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
             </View>
           )}
         </View>
-        <Text className="text-[12px] font-semibold text-foreground" numberOfLines={2}>
+        <Text className="text-[12px] font-normal text-foreground" numberOfLines={2}>
           {item.name}
         </Text>
         {item.colors.length > 0 ? (
@@ -146,7 +146,7 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Back"
-              className="size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel"
+              className="size-10 shrink-0 items-center justify-center rounded-[3px] border border-border bg-card active:bg-card-panel"
               onPress={() => {
                 hapticPress();
                 onBack();
@@ -154,10 +154,10 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
             >
               <ThemedIcon icon={ChevronLeftIcon} size={22} color="foreground" />
             </Pressable>
-            <Text className="text-lg font-semibold text-foreground">Choose your Legend</Text>
+            <Text className="text-lg font-normal text-foreground">Choose your Legend</Text>
           </View>
         ) : (
-          <Text className="text-lg font-semibold text-foreground">Choose your Legend</Text>
+          <Text className="text-lg font-normal text-foreground">Choose your Legend</Text>
         )}
         <Text className="text-[13px] leading-snug text-muted-foreground">
           Your Legend sets domain identity, rune colors, and signature rules for the entire deck.

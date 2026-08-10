@@ -1,16 +1,16 @@
 import { cva } from 'class-variance-authority';
 
+/** Factory chips — 3px square, chalk/carbon fills (no pills). */
 export const chipVariants = cva(
-  'flex w-fit shrink-0 flex-row items-center justify-center gap-1 self-start overflow-hidden whitespace-nowrap rounded-full px-2.5 py-1.5 font-medium text-xs',
+  'flex w-fit shrink-0 flex-row items-center justify-center gap-1 self-start overflow-hidden whitespace-nowrap rounded-[3px] px-2.5 py-1.5 font-semibold text-xs',
   {
     variants: {
       variant: {
-        default: 'bg-primary active:bg-primary/80',
-        secondary: 'bg-secondary active:bg-secondary/50',
+        default: 'bg-foreground active:opacity-80',
+        secondary: 'bg-card-panel active:opacity-80',
         destructive:
           'bg-destructive active:bg-destructive/80 dark:bg-destructive/60',
-        outline:
-          'border border-border bg-card active:bg-accent/90 dark:border-input dark:bg-input/30 dark:active:bg-input/50',
+        outline: 'border border-border bg-transparent active:bg-card-panel',
       },
     },
     defaultVariants: {
@@ -24,8 +24,8 @@ export const chipTextVariants = cva(
   {
     variants: {
       variant: {
-        default: 'text-primary-foreground',
-        secondary: 'text-secondary-foreground',
+        default: 'text-background',
+        secondary: 'text-foreground',
         destructive: 'text-white',
         outline: 'text-foreground',
       },
@@ -39,8 +39,8 @@ export const chipTextVariants = cva(
 export const chipIconVariants = cva('size-4', {
   variants: {
     variant: {
-      default: 'text-primary-foreground',
-      secondary: 'text-secondary-foreground',
+      default: 'text-background',
+      secondary: 'text-foreground',
       destructive: 'text-white',
       outline: 'text-foreground',
     },

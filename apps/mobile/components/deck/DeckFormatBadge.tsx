@@ -20,14 +20,14 @@ export function DeckFormatBadge({
       className={cn(
         'shrink-0 items-center justify-center border border-border',
         isToolbar
-          ? 'h-9 rounded-lg bg-card px-2.5'
-          : 'rounded-md bg-card-panel px-2 py-0.5',
+          ? 'h-9 rounded-[3px] bg-card px-2.5'
+          : 'rounded-[3px] bg-card-panel px-2 py-0.5',
         className
       )}
     >
       <Text
         className={cn(
-          'font-semibold text-muted-foreground',
+          'font-normal text-muted-foreground',
           isToolbar ? 'text-[13px]' : 'text-[11px]'
         )}
       >

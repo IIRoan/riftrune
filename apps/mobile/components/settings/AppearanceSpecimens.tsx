@@ -48,7 +48,7 @@ const EMPTY_OWNERSHIP: CollectionOwnershipMap = new Map();
 function ThemeSwatch({ mode }: { mode: 'light' | 'dark' | 'system' }) {
   if (mode === 'system') {
     return (
-      <View className="h-16 w-full flex-row overflow-hidden rounded-md">
+      <View className="h-16 w-full flex-row overflow-hidden rounded-[3px]">
         <View className="flex-1" style={{ backgroundColor: SPECIMEN.light.bg }}>
           <View className="m-1.5 h-2 w-8 rounded-sm" style={{ backgroundColor: SPECIMEN.light.ink }} />
           <View
@@ -70,7 +70,7 @@ function ThemeSwatch({ mode }: { mode: 'light' | 'dark' | 'system' }) {
 
   const paint = SPECIMEN[mode];
   return (
-    <View className="h-16 w-full overflow-hidden rounded-md" style={{ backgroundColor: paint.bg }}>
+    <View className="h-16 w-full overflow-hidden rounded-[3px]" style={{ backgroundColor: paint.bg }}>
       <View className="flex-row items-center justify-between px-2 pt-2">
         <View className="h-2 w-10 rounded-sm" style={{ backgroundColor: paint.ink }} />
         <View className="size-2.5 rounded-sm" style={{ backgroundColor: SPECIMEN.accent }} />
@@ -128,7 +128,7 @@ function ScaleToFitPreview({
 
   return (
     <View
-      className="w-full overflow-hidden rounded-md bg-background"
+      className="w-full overflow-hidden rounded-[3px] bg-background"
       style={{ height: scaledHeight }}
       onLayout={onBoxLayout}
       pointerEvents="none"
@@ -168,8 +168,8 @@ function GridLayoutPreview({ cards }: { cards: CardListItem[] }) {
                 collectionByVariant={EMPTY_OWNERSHIP}
               />
             ) : (
-              <View className="overflow-hidden rounded-xl border border-border bg-card p-2 opacity-40">
-                <View className="aspect-[5/7] w-full rounded-md bg-card-panel" />
+              <View className="overflow-hidden rounded-[10px] border border-border bg-card p-2 opacity-40">
+                <View className="aspect-[5/7] w-full rounded-[3px] bg-card-panel" />
                 <View className="mt-2 h-3 w-[70%] rounded bg-card-panel" />
                 <View className="mt-1.5 h-2.5 w-[40%] rounded bg-card-panel" />
               </View>
@@ -202,7 +202,7 @@ function ListLayoutPreview({ cards }: { cards: CardListItem[] }) {
               key={`list-slot-${index}`}
               className="flex-row items-center gap-4 px-4 py-3.5 opacity-40"
             >
-              <View className="h-[78px] w-[56px] rounded-md bg-card-panel" />
+              <View className="h-[78px] w-[56px] rounded-[3px] bg-card-panel" />
               <View className="min-w-0 flex-1 gap-1.5">
                 <View className="h-3 w-[65%] rounded bg-card-panel" />
                 <View className="h-2.5 w-[40%] rounded bg-card-panel" />
@@ -248,9 +248,9 @@ export function AppearanceSpecimens() {
                   setTheme(item.value);
                 }}
                 className={cn(
-                  'min-w-0 flex-1 gap-2 rounded-xl border p-2 active:opacity-90',
+                  'min-w-0 flex-1 gap-2 rounded-[3px] border p-2 active:opacity-90',
                   selected
-                    ? 'border-ring bg-primary/10'
+                    ? 'border-foreground bg-card-panel'
                     : 'border-border bg-card active:border-border'
                 )}
               >
@@ -259,7 +259,7 @@ export function AppearanceSpecimens() {
                 />
                 <Text
                   className={cn(
-                    'px-0.5 text-sm font-semibold',
+                    'px-0.5 text-sm font-normal',
                     selected ? 'text-foreground' : 'text-muted-foreground'
                   )}
                 >
@@ -287,9 +287,9 @@ export function AppearanceSpecimens() {
                   setDefaultLayout(layout);
                 }}
                 className={cn(
-                  'min-w-0 flex-1 gap-2 rounded-xl border p-2 active:opacity-90',
+                  'min-w-0 flex-1 gap-2 rounded-[3px] border p-2 active:opacity-90',
                   selected
-                    ? 'border-ring bg-primary/10'
+                    ? 'border-foreground bg-card-panel'
                     : 'border-border bg-card'
                 )}
               >
@@ -300,7 +300,7 @@ export function AppearanceSpecimens() {
                 )}
                 <Text
                   className={cn(
-                    'px-0.5 text-sm font-semibold capitalize',
+                    'px-0.5 text-sm font-normal capitalize',
                     selected ? 'text-foreground' : 'text-muted-foreground'
                   )}
                 >

@@ -122,16 +122,43 @@ const {
   bootstrapLocal,
   bootstrapCatalog,
   bootstrapUser,
+  hydrateSignedInUser,
+  refreshSignedInUser,
   bootstrapDeferred,
 } = await import('@/services/appBootstrapService');
 
 beforeEach(() => {
+  hydrateCatalogIndex.mockClear();
+  prefetchCatalogIndex.mockClear();
+  prefetchCatalogFilters.mockClear();
+  prefetchPlayLegendCatalog.mockClear();
   hydrateCollectionCache.mockClear();
   hydrateOwnedDecksCache.mockClear();
   hydrateWishlistCache.mockClear();
   prefetchCollection.mockClear();
   prefetchOwnedDecks.mockClear();
   prefetchWishlist.mockClear();
+  prefetchCollectionShareStatus.mockClear();
+  prefetchWishlistPrices.mockClear();
+  prefetchCollectionInsights.mockClear();
+  prefetchDefaultDeckBrowse.mockClear();
+  prefetchImageUris.mockClear();
+  flushCardDetailPrefetch.mockClear();
+  prefetchCollection.mockImplementation(async () => undefined);
+  prefetchOwnedDecks.mockImplementation(async (client: QueryClient) => {
+    await client.prefetchQuery({
+      queryKey: deckQueryKeys.list('owned'),
+      queryFn: async () => [],
+    });
+  });
+  prefetchWishlist.mockImplementation(async (client: QueryClient) => {
+    await client.prefetchQuery({
+      queryKey: wishlistQueryKeys.all,
+      queryFn: async () => [],
+    });
+  });
+  preloadCriticalLocalAssets.mockClear();
+  preloadCollectionDashboardAssets.mockClear();
   clearPersistedCollection.mockClear();
   clearPersistedOwnedDecks.mockClear();
   clearPersistedWishlist.mockClear();
@@ -142,12 +169,12 @@ beforeEach(() => {
 });
 
 describe('appBootstrapService', () => {
-  test('bootstrapLocal hydrates catalog and bundled assets', async () => {
+  test('bootstrapLocal hydrates catalog and critical assets only', async () => {
     const client = new QueryClient();
     await bootstrapLocal(client);
     expect(hydrateCatalogIndex).toHaveBeenCalledWith(client);
     expect(preloadCriticalLocalAssets).toHaveBeenCalled();
-    expect(preloadCollectionDashboardAssets).toHaveBeenCalled();
+    expect(preloadCollectionDashboardAssets).not.toHaveBeenCalled();
   });
 
   test('bootstrapCatalog prefetches filters, index, and warms images', async () => {
@@ -156,6 +183,18 @@ describe('appBootstrapService', () => {
     expect(prefetchCatalogFilters).toHaveBeenCalledWith(client);
     expect(prefetchCatalogIndex).toHaveBeenCalledWith(client);
     expect(prefetchImageUris).toHaveBeenCalled();
+  });
+
+  test('hydrateSignedInUser seeds disk caches without network or image warm', async () => {
+    readLastCachedUserId.mockImplementation(async () => 'user-a');
+    const client = new QueryClient();
+    await hydrateSignedInUser(client, { userId: 'user-a' });
+    expect(hydrateCollectionCache).toHaveBeenCalledWith(client);
+    expect(hydrateOwnedDecksCache).toHaveBeenCalledWith(client);
+    expect(hydrateWishlistCache).toHaveBeenCalledWith(client);
+    expect(prefetchCollection).not.toHaveBeenCalled();
+    expect(preloadCollectionDashboardAssets).not.toHaveBeenCalled();
+    expect(writeLastCachedUserId).toHaveBeenCalledWith('user-a');
   });
 
   test('bootstrapUser hydrates wishlist alongside collection and decks for same user', async () => {
@@ -215,18 +254,43 @@ describe('appBootstrapService', () => {
     expect(phases).toContain('deferred');
   });
 
-  test('bootstrapSignedInUser reports user then deferred tab warmup', async () => {
+  test('bootstrapSignedInUser opens gate after hydrate; refresh runs in background', async () => {
     readLastCachedUserId.mockImplementation(async () => 'user-a');
     const client = new QueryClient();
     const phases: string[] = [];
-    await bootstrapSignedInUser(client, {
+
+    let resolveRefresh: (() => void) | undefined;
+    const refreshGate = new Promise<void>((resolve) => {
+      resolveRefresh = resolve;
+    });
+    prefetchCollection.mockImplementation(async () => {
+      await refreshGate;
+    });
+
+    const signedIn = bootstrapSignedInUser(client, {
       userId: 'user-a',
       onPhaseComplete: (phase) => phases.push(phase),
     });
-    expect(phases[0]).toBe('user');
+
+    await signedIn;
+    expect(phases).toEqual(['user']);
+    expect(hydrateCollectionCache).toHaveBeenCalled();
+    expect(prefetchCollection).toHaveBeenCalled();
+    expect(prefetchWishlistPrices).not.toHaveBeenCalled();
+
+    resolveRefresh?.();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(phases).toContain('deferred');
     expect(prefetchWishlistPrices).toHaveBeenCalled();
+  });
+
+  test('refreshSignedInUser warms collection dashboard after network', async () => {
+    const client = new QueryClient();
+    await refreshSignedInUser(client, { userId: 'user-a' });
+    expect(prefetchCollection).toHaveBeenCalledWith(client);
+    expect(preloadCollectionDashboardAssets).toHaveBeenCalled();
+    expect(writeLastCachedUserId).toHaveBeenCalledWith('user-a');
   });
 
   test('prefetch helpers register deck and wishlist cache keys', async () => {

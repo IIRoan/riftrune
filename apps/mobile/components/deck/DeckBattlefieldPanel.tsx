@@ -74,7 +74,7 @@ function BattlefieldSlot({
           )}
         >
           {interactive ? (
-            <ThemedIcon icon={PlusIcon} size={20} color="primary" />
+            <ThemedIcon icon={PlusIcon} size={20} color="foreground" />
           ) : (
             <ThemedIcon icon={LockIcon} size={18} color="muted-foreground" />
           )}
@@ -98,7 +98,7 @@ function BattlefieldSlot({
         className={cn(
           'relative aspect-[7/5] w-full overflow-hidden border bg-background',
           CARD_ART_RADIUS_CLASS,
-          illegal ? 'border-destructive' : 'border-white/10'
+          illegal ? 'border-destructive' : 'border-border'
         )}
       >
         <Pressable
@@ -121,7 +121,7 @@ function BattlefieldSlot({
         />
       </View>
 
-      <Text className="px-0.5 text-[11px] font-semibold text-foreground" numberOfLines={1}>
+      <Text className="px-0.5 text-[11px] font-normal text-foreground" numberOfLines={1}>
         {card.name}
       </Text>
 
@@ -157,10 +157,10 @@ export function DeckBattlefieldPanel({
     <View className="gap-3">
       <View className="flex-row items-center justify-between gap-2">
         <View className="min-w-0 flex-1 flex-row items-baseline gap-2">
-          <Text className="text-sm font-semibold text-foreground">Battlefields</Text>
+          <Text className="text-sm font-normal text-foreground">Battlefields</Text>
           <Text
             className={cn(
-              'font-mono text-[11px] font-bold tabular-nums',
+              'font-mono text-[11px] font-normal tabular-nums',
               count === BATTLEFIELD_MAX ? 'text-success' : 'text-muted-foreground'
             )}
           >
@@ -171,14 +171,14 @@ export function DeckBattlefieldPanel({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add battlefield"
-            className="h-8 shrink-0 flex-row items-center gap-1 rounded-lg border border-border bg-card-panel px-2.5 active:opacity-90"
+            className="h-8 shrink-0 flex-row items-center gap-1 rounded-[3px] bg-foreground px-2.5 active:opacity-80"
             onPress={() => {
               hapticPress();
               onAdd();
             }}
           >
-            <ThemedIcon icon={PlusIcon} size={14} color="primary" />
-            <Text className="text-[12px] font-semibold text-primary">Add</Text>
+            <PlusIcon className="size-3.5 text-background" weight="bold" />
+            <Text className="text-[12px] font-medium tracking-tight text-background">Add</Text>
           </Pressable>
         ) : null}
       </View>

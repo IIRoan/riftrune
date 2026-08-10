@@ -4,6 +4,11 @@ import { CatalogDetailAddButton } from '@/components/catalog/CatalogDetailAddBut
 import { OwnershipStepper } from '@/components/catalog/OwnershipStepper';
 import { TrendTag } from '@/components/catalog/TrendTag';
 import { Text } from '@/components/ui/text';
+import {
+  DETAIL_PRINTING_ID_CLASS,
+  DETAIL_PRINTING_LABEL_CLASS,
+  DETAIL_PRINTING_PRICE_CLASS,
+} from '@/constants/operateType';
 import { collectionFinishKey } from '@riftbound/contracts';
 import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
 import { formatMarketTrend, formatPrintingPrice, ownedQuantityForPrinting } from '@/utils/variants';
@@ -37,20 +42,14 @@ export function CatalogDetailPrintingRows({
             {index > 0 ? <View className="h-hairline bg-border/60" /> : null}
             <View className="flex-row items-center justify-between gap-3 px-3 py-3">
               <View className="min-w-0 shrink flex-1" style={{ flexBasis: 0 }}>
-                <Text
-                  className="shrink text-sm font-semibold text-foreground"
-                  numberOfLines={2}
-                >
+                <Text className={DETAIL_PRINTING_LABEL_CLASS} numberOfLines={2}>
                   {printing.variantLabel}
                 </Text>
-                <Text
-                  className="font-mono text-[11px] text-archive-subtle"
-                  numberOfLines={1}
-                >
+                <Text className={DETAIL_PRINTING_ID_CLASS} numberOfLines={1}>
                   {printing.variantNumber}
                 </Text>
                 <View className="mt-0.5 flex-row flex-wrap items-center gap-2">
-                  <Text className="font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                  <Text className={DETAIL_PRINTING_PRICE_CLASS}>
                     {formatPrintingPrice(printing.priceEur) ?? '—'}
                   </Text>
                   <TrendTag trend={formatMarketTrend(printing.priceEur)} />
@@ -63,6 +62,7 @@ export function CatalogDetailPrintingRows({
                       owned={qty}
                       name={rowName}
                       compact
+                      relaxed
                       printings={[printing]}
                       fixedVariantNumber={printing.variantNumber}
                       fixedIsFoil={printing.isFoil}
@@ -79,6 +79,7 @@ export function CatalogDetailPrintingRows({
                       onPress={() => {
                         onAdd(printing.variantNumber, printing.isFoil);
                       }}
+                      className="h-10 min-w-[7.25rem] px-3.5"
                     />
                   )
                 ) : qty > 0 ? (

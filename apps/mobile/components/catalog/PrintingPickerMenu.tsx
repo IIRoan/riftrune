@@ -40,14 +40,14 @@ function PrintingMenuItems({
               accessibilityRole="menuitem"
               accessibilityLabel={`Select ${option.label} printing ${option.id}`}
               testID={`printing-option-${option.id}`}
-              className="flex-row items-center justify-between gap-3 rounded-md px-2.5 py-2 active:bg-accent"
+              className="flex-row items-center justify-between gap-3 rounded-[3px] px-2.5 py-2 active:bg-card-panel"
               onPress={() => {
                 onSelect(option.id);
                 onOpenChange(false);
               }}
             >
             <View className="min-w-0 flex-1 flex-row items-center gap-2">
-              <Text className="text-[13px] font-medium text-foreground" numberOfLines={1}>
+              <Text className="text-[13px] font-normal text-foreground" numberOfLines={1}>
                 {option.label}
               </Text>
             </View>
@@ -88,9 +88,9 @@ export function PrintingPickerMenu({
             side="bottom"
             align="end"
             sideOffset={6}
-            className="min-w-[220px] border border-border bg-card p-1 shadow-lg"
+            className="min-w-[220px] border border-border bg-card p-1 shadow-none"
           >
-            <Text className="px-2.5 pb-1 pt-2.5 text-[11px] font-semibold text-muted-foreground">
+            <Text className="px-2.5 pb-1 pt-2.5 font-mono text-[11px] font-normal uppercase tracking-[-0.24px] text-muted-foreground">
               {title}
             </Text>
             <PrintingMenuItems options={options} onSelect={handleSelect} />

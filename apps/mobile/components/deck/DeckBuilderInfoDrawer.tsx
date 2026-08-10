@@ -12,6 +12,10 @@ import { deckHasBannedCards } from '@/lib/card-legality';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 
 export const DECK_INFO_DRAWER_WIDTH = 280;
+/** Matches `px-3` on the drawer body — keep in sync with content padding. */
+export const DECK_INFO_DRAWER_PAD = 12;
+/** Shared column gutter for identity + battlefield slots (search-page 8px rhythm). */
+export const DECK_INFO_SLOT_GAP = 8;
 
 interface DeckBuilderInfoDrawerProps {
   deck: DeckState;
@@ -56,11 +60,11 @@ export function DeckBuilderInfoDrawer({
   paddingBottom = 0,
   scrollEnabled = true,
 }: DeckBuilderInfoDrawerProps) {
-  const identityInnerWidth = DECK_INFO_DRAWER_WIDTH - 32;
-  const identityPairGap = 8;
+  const identityInnerWidth =
+    DECK_INFO_DRAWER_WIDTH - DECK_INFO_DRAWER_PAD * 2;
   const identityPairColumns = deck.legend != null || deck.format === 'pre-rift';
   const legendTileWidth = identityPairColumns
-    ? Math.floor((identityInnerWidth - identityPairGap) / 2)
+    ? Math.floor((identityInnerWidth - DECK_INFO_SLOT_GAP) / 2)
     : identityInnerWidth;
   const showMiddleToggle =
     !readOnly && middlePanel != null && onMiddlePanelChange != null;
@@ -71,6 +75,7 @@ export function DeckBuilderInfoDrawer({
         deck={deck}
         readOnly={readOnly}
         legendTileWidth={legendTileWidth}
+        stretchSlots
         imageByVariant={imageByVariant}
         collectionByName={collectionByName}
         runeCardsByDomain={runeCardsByDomain}
@@ -82,20 +87,24 @@ export function DeckBuilderInfoDrawer({
         onAdjustRune={onAdjustRune}
       />
 
-      <DeckBattlefieldPanel
-        deck={deck}
-        readOnly={readOnly}
-        imageByVariant={imageByVariant}
-        onAdd={onAddBattlefield}
-        onRemove={onRemoveBattlefield}
-        onAdjust={onAdjustBattlefield}
-      />
+      <View className="border-t border-border pt-4">
+        <DeckBattlefieldPanel
+          deck={deck}
+          readOnly={readOnly}
+          imageByVariant={imageByVariant}
+          onAdd={onAddBattlefield}
+          onRemove={onRemoveBattlefield}
+          onAdjust={onAdjustBattlefield}
+        />
+      </View>
 
       {showMiddleToggle ? (
-        <DeckBuilderMiddlePanelToggle
-          value={middlePanel}
-          onChange={onMiddlePanelChange}
-        />
+        <View className="border-t border-border pt-4">
+          <DeckBuilderMiddlePanelToggle
+            value={middlePanel}
+            onChange={onMiddlePanelChange}
+          />
+        </View>
       ) : null}
 
       {readOnly ? (

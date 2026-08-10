@@ -45,8 +45,8 @@ import {
 export const BOOTSTRAP_PHASES = ['local', 'catalog', 'user', 'deferred'] as const;
 export type BootstrapPhase = (typeof BOOTSTRAP_PHASES)[number];
 
-/** First viewport of Cards tab art / details. */
-const CATALOG_IMAGE_WARM_COUNT = 40;
+/** First viewports of Cards tab art / details. */
+const CATALOG_IMAGE_WARM_COUNT = 80;
 /** Deck / wishlist thumbnails outside the collection dashboard. */
 const USER_IMAGE_WARM_COUNT = 48;
 /** Collection list rows to warm (recent-first). */
@@ -126,15 +126,12 @@ async function warmUserImages(queryClient: QueryClient): Promise<void> {
 }
 
 /**
- * Disk + bundled assets — no network required.
- * Hold the splash until this phase finishes so the first frame is warm.
+ * Disk + auth-critical bundled assets — no network required.
+ * Hold the splash until this finishes. Collection set banners warm later
+ * (warmCollectionDashboard) so they do not block first paint.
  */
 export async function bootstrapLocal(queryClient: QueryClient): Promise<void> {
-  await Promise.all([
-    hydrateCatalogIndex(queryClient),
-    preloadCriticalLocalAssets(),
-    preloadCollectionDashboardAssets(),
-  ]);
+  await Promise.all([hydrateCatalogIndex(queryClient), preloadCriticalLocalAssets()]);
 }
 
 /** Filters + catalog index sync — needed before tabs feel usable. */
@@ -163,11 +160,11 @@ async function resetAccountCachesForUserSwitch(queryClient: QueryClient): Promis
 }
 
 /**
- * Account-bound lists after sign-in.
- * Same user: hydrate from disk first so tabs paint instantly, then refresh.
- * Different user: clear prior caches and network-fetch only.
+ * Disk hydrate / account-switch reset only — enough for AuthGate to open.
+ * Same user: seed query cache from disk so tabs paint immediately.
+ * Different user: clear prior caches (network refresh follows in background).
  */
-export async function bootstrapUser(
+export async function hydrateSignedInUser(
   queryClient: QueryClient,
   options: { userId: string }
 ): Promise<void> {
@@ -183,9 +180,21 @@ export async function bootstrapUser(
       hydrateOwnedDecksCache(queryClient),
       hydrateWishlistCache(queryClient),
     ]);
-    // Paint collection dashboard from disk immediately, then refresh.
-    await warmCollectionDashboard(queryClient);
   }
+
+  // Stamp scope before background refresh so a mid-refresh kill still scopes correctly.
+  await writeLastCachedUserId(userId);
+}
+
+/**
+ * Network refresh + image/detail warm for signed-in tabs.
+ * Never await this on the AuthGate path — run after hydrateSignedInUser.
+ */
+export async function refreshSignedInUser(
+  queryClient: QueryClient,
+  options: { userId: string }
+): Promise<void> {
+  const { userId } = options;
 
   await Promise.allSettled([
     prefetchCollection(queryClient),
@@ -194,17 +203,28 @@ export async function bootstrapUser(
     prefetchCollectionShareStatus(queryClient),
   ]);
 
-  // After network collection lands — insights + full list art + set banners.
   await warmCollectionDashboard(queryClient);
   await warmUserImages(queryClient);
   await writeLastCachedUserId(userId);
 }
 
 /**
+ * Full signed-in bootstrap (hydrate + refresh). Prefer hydrateSignedInUser +
+ * background refreshSignedInUser on the AuthGate path.
+ */
+export async function bootstrapUser(
+  queryClient: QueryClient,
+  options: { userId: string }
+): Promise<void> {
+  await hydrateSignedInUser(queryClient, options);
+  await refreshSignedInUser(queryClient, options);
+}
+
+/**
  * Background warm-up for every main tab — never blocks AuthGate / splash.
  * Public: Play legends + Cards first-page details.
  * Signed-in: Wishlist prices, community deck browse.
- * (Collection dashboard is warmed in bootstrapUser so it feels already open.)
+ * Collection dashboard art is warmed in refreshSignedInUser after hydrate.
  */
 export async function bootstrapDeferred(
   queryClient: QueryClient,
@@ -239,15 +259,24 @@ export async function bootstrapAppColdStart(
   void bootstrapDeferred(queryClient).then(() => onPhaseComplete?.('deferred'));
 }
 
+/**
+ * Open AuthGate as soon as disk caches are hydrated; refresh + tab warm-up
+ * continue in the background so splash/gate are not blocked on images/network.
+ */
 export async function bootstrapSignedInUser(
   queryClient: QueryClient,
   options: { userId: string; onPhaseComplete?: PhaseListener }
 ): Promise<void> {
   const { userId, onPhaseComplete } = options;
-  await bootstrapUser(queryClient, { userId });
+  await hydrateSignedInUser(queryClient, { userId });
   onPhaseComplete?.('user');
-  // Tab payloads (wishlist prices, insights, browse) after the gate opens.
-  void bootstrapDeferred(queryClient, { signedIn: true }).then(() =>
-    onPhaseComplete?.('deferred')
-  );
+  void (async () => {
+    try {
+      await refreshSignedInUser(queryClient, { userId });
+    } catch {
+      // Best-effort — screens still fetch on demand.
+    }
+    await bootstrapDeferred(queryClient, { signedIn: true });
+    onPhaseComplete?.('deferred');
+  })();
 }

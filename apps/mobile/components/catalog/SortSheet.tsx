@@ -59,15 +59,15 @@ export function SortSheet({ visible, activeSort, onClose, onSortChange }: SortSh
               return (
                 <Pressable
                   key={sortOptionKey(option)}
-                  className="min-h-11 flex-row items-center justify-between rounded-lg px-3 py-2.5 active:bg-accent"
+                  className="min-h-11 flex-row items-center justify-between rounded-[3px] px-3 py-2.5 active:bg-card-panel"
                   onPress={() => {
                     onClose();
                     onSortChange({ sortBy: option.sortBy, dir: option.dir });
                   }}
                 >
-                  <Text className="text-sm font-medium text-foreground">{option.label}</Text>
+                  <Text className="text-sm font-normal text-foreground">{option.label}</Text>
                   {active ? (
-                    <ThemedIcon icon={CheckIcon} size={18} color="archive-accent-text" />
+                    <ThemedIcon icon={CheckIcon} size={18} color="foreground" />
                   ) : null}
                 </Pressable>
               );

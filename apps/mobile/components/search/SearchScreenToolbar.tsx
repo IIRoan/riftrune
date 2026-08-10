@@ -66,7 +66,6 @@ export function SearchScreenToolbar({
           />
           {filterActive ? (
             <CatalogActiveFilterChips
-              layout="inline"
               filters={catalogFilters}
               onFiltersChange={onFiltersChange}
             />

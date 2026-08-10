@@ -51,12 +51,12 @@ function MeterTrack({
   return (
     <View
       className={cn(
-        'overflow-hidden rounded-full bg-border/70',
+        'overflow-hidden rounded-none bg-border/70',
         tall ? 'h-1.5' : 'h-1'
       )}
     >
       <View
-        className={cn('h-full rounded-full', complete ? 'bg-success' : 'bg-primary')}
+        className={cn('h-full rounded-none', complete ? 'bg-success' : 'bg-foreground')}
         style={{ width: `${Math.max(ratio * 100, ratio > 0 ? 6 : 0)}%` }}
       />
     </View>
@@ -99,19 +99,19 @@ export function DeckBuilderStatusStrip({
             <View className="mt-0.5 flex-row items-baseline gap-1">
               <Text
                 className={cn(
-                  'font-mono text-2xl font-bold tabular-nums leading-none',
+                  'font-mono text-2xl font-normal tabular-nums leading-none',
                   mainComplete ? 'text-success' : 'text-foreground'
                 )}
               >
                 {main.current}
               </Text>
-              <Text className="font-mono text-[13px] font-semibold tabular-nums text-muted-foreground">
+              <Text className="font-mono text-[13px] font-normal tabular-nums text-muted-foreground">
                 / {main.target}
               </Text>
             </View>
           </View>
           {mainComplete ? (
-            <ThemedIcon icon={CircleCheckIcon} size={18} color="primary" />
+            <ThemedIcon icon={CircleCheckIcon} size={18} color="foreground" />
           ) : ownershipLabel ? (
             <Text className="pb-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
               {ownershipLabel}
@@ -150,14 +150,14 @@ export function DeckBuilderStatusStrip({
                 <View className="flex-row items-center gap-1.5">
                   <Text
                     className={cn(
-                      'font-mono text-[12px] font-bold tabular-nums',
+                      'font-mono text-[12px] font-normal tabular-nums',
                       complete ? 'text-success' : 'text-foreground'
                     )}
                   >
                     {current}/{target}
                   </Text>
                   {complete ? (
-                    <ThemedIcon icon={CheckIcon} size={12} color="primary" />
+                    <ThemedIcon icon={CheckIcon} size={12} color="foreground" />
                   ) : null}
                 </View>
               </View>

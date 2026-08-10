@@ -137,7 +137,7 @@ export const InlineList = ({
         </Text>
       ) : null}
       <View
-        className="w-full overflow-hidden rounded-2xl bg-card"
+        className="w-full overflow-hidden rounded-[10px] bg-card"
         data-slot="inline-list"
       >
         {items}

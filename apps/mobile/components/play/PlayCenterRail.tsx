@@ -42,7 +42,7 @@ function RailButton({
         onPress();
       }}
       className={cn(
-        'size-10 items-center justify-center rounded-full border border-border bg-background',
+        'size-10 items-center justify-center rounded-[3px] border border-border bg-background',
         className
       )}
       contentClassName="items-center justify-center"
@@ -95,10 +95,10 @@ export function PlayCenterRail({
                 void hapticPress();
                 onNextGame();
               }}
-              className="rounded-full border border-primary bg-primary/20 px-3 py-2"
+              className="rounded-[3px] border border-border bg-card-panel px-3 py-2"
               contentClassName="items-center justify-center"
             >
-              <Text className="text-xs font-semibold text-primary">Next</Text>
+              <Text className="text-xs font-normal text-foreground">Next</Text>
             </PressableScale>
           </Animated.View>
         ) : null}

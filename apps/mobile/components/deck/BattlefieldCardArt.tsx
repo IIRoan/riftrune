@@ -41,6 +41,7 @@ export function BattlefieldCardArt({ uri, variantNumber }: BattlefieldCardArtPro
             transition={0}
             priority="high"
             thumbWidth={CATALOG_ART_THUMB_WIDTH}
+            progressive
           />
         </View>
       ) : null}

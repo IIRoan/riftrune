@@ -20,6 +20,12 @@ import {
 import { Button, ButtonText } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import {
+  FILTER_OPTION_CHIP_ACTIVE_CLASS,
+  FILTER_OPTION_CHIP_CLASS,
+  FILTER_OPTION_CHIP_IDLE_CLASS,
+} from '@/constants/catalogToolbar';
+import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { cn } from '@/lib/utils';
 
 interface MobileFilterSheetProps {
@@ -72,8 +78,13 @@ export function MobileFilterSheet({
                 <View className="min-w-0 flex-1 flex-row items-center gap-2">
                   <BottomSheetTitle>{title}</BottomSheetTitle>
                   {hasActiveFilters ? (
-                    <View className="h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5">
-                      <Text className="font-mono text-[11px] font-semibold text-primary-foreground">
+                    <View
+                      className={cn(
+                        'h-6 min-w-6 items-center justify-center bg-foreground px-1.5',
+                        FACTORY_RADIUS_CONTROL_CLASS
+                      )}
+                    >
+                      <Text className="font-mono text-[11px] font-normal text-background">
                         {activeCount}
                       </Text>
                     </View>
@@ -87,7 +98,7 @@ export function MobileFilterSheet({
                     accessibilityLabel="Clear all filters"
                     className="shrink-0 active:opacity-70"
                   >
-                    <Text className="text-sm font-semibold text-primary">Clear all</Text>
+                    <Text className="text-sm font-normal text-foreground">Clear all</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -104,8 +115,14 @@ export function MobileFilterSheet({
           </BottomSheetScrollView>
 
           <BottomSheetFooter className="border-border border-t bg-card-panel pt-3">
-            <Button className="w-full" onPress={onClose}>
-              <ButtonText>{doneLabel}</ButtonText>
+            <Button
+              className={cn(
+                'h-10 w-full bg-foreground active:opacity-80',
+                FACTORY_RADIUS_CONTROL_CLASS
+              )}
+              onPress={onClose}
+            >
+              <ButtonText className="text-sm font-medium text-background">{doneLabel}</ButtonText>
             </Button>
           </BottomSheetFooter>
         </BottomSheetContent>
@@ -131,11 +148,11 @@ export function FilterAccordionSection({
 }: FilterAccordionSectionProps) {
   return (
     <AccordionItem value={value} className="bg-transparent">
-      <AccordionTrigger className="rounded-xl bg-card px-3 py-3">
+      <AccordionTrigger className="rounded-[10px] bg-card px-3 py-3">
         <View className="min-w-0 flex-1 pr-2">
           <View className="flex-row items-center gap-2">
-            <Text className="text-sm font-semibold text-foreground">{label}</Text>
-            {active ? <View className="size-1.5 rounded-full bg-primary" /> : null}
+            <Text className="text-sm font-normal text-foreground">{label}</Text>
+            {active ? <View className="size-1.5 rounded-full bg-foreground" /> : null}
           </View>
           {summary ? (
             <Text className="mt-0.5 text-[12px] text-muted-foreground" numberOfLines={1}>
@@ -181,8 +198,8 @@ export function FilterOptionChip({
   return (
     <Pressable
       className={cn(
-        'min-h-10 flex-row items-center gap-1.5 rounded-lg border px-3 py-2 active:opacity-90',
-        active ? 'border-ring bg-card-panel' : 'border-border bg-card'
+        FILTER_OPTION_CHIP_CLASS,
+        active ? FILTER_OPTION_CHIP_ACTIVE_CLASS : FILTER_OPTION_CHIP_IDLE_CLASS
       )}
       onPress={onPress}
       accessibilityRole="checkbox"
@@ -192,8 +209,8 @@ export function FilterOptionChip({
       {leading}
       <Text
         className={cn(
-          'text-sm font-semibold',
-          active ? 'text-foreground' : 'text-muted-foreground'
+          'text-sm font-normal',
+          active ? 'text-background' : 'text-muted-foreground'
         )}
         numberOfLines={1}
       >

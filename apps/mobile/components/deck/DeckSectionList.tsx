@@ -63,14 +63,14 @@ export function DeckSectionTabs({
             onSectionChange(section.key);
           }}
           className={cn(
-            'rounded-lg px-3 py-2 active:opacity-90',
-            selected ? 'bg-primary/15' : 'bg-card-panel active:bg-card'
+            'rounded-[3px] px-3 py-2 active:opacity-90',
+            selected ? 'bg-card-panel' : 'bg-card-panel active:bg-card'
           )}
         >
           <Text
             className={cn(
-              'text-[12px] font-semibold',
-              selected ? 'text-primary' : 'text-muted-foreground',
+              'text-[12px] font-normal',
+              selected ? 'text-foreground' : 'text-muted-foreground',
               !selected && complete && count > 0 && 'text-success'
             )}
           >

@@ -47,7 +47,7 @@ export function DeckCreateMenu({ onCreate, children, className }: DeckCreateMenu
         ) : (
           <>
             <ButtonIcon>
-              <CalendarPlusIcon className="size-4 text-primary-foreground" />
+              <CalendarPlusIcon className="size-4 text-background" />
             </ButtonIcon>
             <ButtonText>New</ButtonText>
           </>
@@ -74,7 +74,7 @@ export function DeckCreateMenu({ onCreate, children, className }: DeckCreateMenu
             align="end"
             sideOffset={4}
             width={288}
-            className="z-50 overflow-hidden rounded-md border border-border bg-popover p-1 shadow-md"
+            className="z-50 overflow-hidden rounded-[3px] border border-border bg-popover p-1 shadow-none"
           >
             <Text className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
               Deck format
@@ -85,7 +85,7 @@ export function DeckCreateMenu({ onCreate, children, className }: DeckCreateMenu
                 <Pressable
                   accessibilityRole="menuitem"
                   accessibilityLabel={`Create ${option.label} deck`}
-                  className="rounded-sm px-2 py-1.5 active:bg-accent"
+                  className="rounded-[3px] px-2 py-1.5 active:bg-card-panel"
                   onPress={() => void handleSelect(option.value)}
                 >
                   <Text className="text-sm text-popover-foreground">{option.label}</Text>

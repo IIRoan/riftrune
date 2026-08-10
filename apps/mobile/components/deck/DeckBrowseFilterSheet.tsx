@@ -112,8 +112,8 @@ export function DeckBrowseFilterTrigger({
           activeCount === 1 ? (
             <CatalogToolbarBadgeDot />
           ) : (
-            <View className="size-5 items-center justify-center rounded-full bg-primary">
-              <Text className="font-mono text-[11px] font-semibold text-primary-foreground">
+            <View className="size-5 items-center justify-center rounded-[3px] bg-foreground">
+              <Text className="font-mono text-[11px] font-normal text-background">
                 {activeCount}
               </Text>
             </View>
@@ -168,11 +168,11 @@ export function DeckBrowseActiveFilterChips({
       if (chip.key === 'legend' || chip.key === 'sets') {
         return (
           <Pressable
-            className="h-9 flex-row items-center gap-1.5 rounded-xl border border-border bg-card-panel px-3 active:opacity-80"
+            className="h-9 flex-row items-center gap-1.5 rounded-[3px] border border-border bg-card-panel px-3 active:opacity-80"
             onPress={() => onFiltersChange(chip.applyClear(filters))}
             accessibilityLabel={`Clear ${chip.label} filter`}
           >
-            <Text className="text-sm font-semibold text-foreground">{chip.label}</Text>
+            <Text className="text-sm font-normal text-foreground">{chip.label}</Text>
             <Text className="text-muted-foreground">×</Text>
           </Pressable>
         );

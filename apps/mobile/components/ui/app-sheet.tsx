@@ -305,7 +305,7 @@ function AppSheetDialogContent({
     <Animated.View
       {...props}
       className={cn(
-        'z-10 flex max-h-[90%] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-background',
+        'z-10 flex max-h-[90%] w-full max-w-md flex-col overflow-hidden rounded-[10px] bg-background',
         className
       )}
       style={animatedStyle}

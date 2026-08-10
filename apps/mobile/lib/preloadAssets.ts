@@ -5,7 +5,7 @@ import { allFilterPanelIconSources } from '@/constants/gameAssets';
 import { SET_CATALOG } from '@/constants/setCatalog';
 import { markSessionImageLoaded } from '@/lib/imageSessionCache';
 
-/** Auth wallpapers — needed before AuthGate paints. */
+/** Auth wallpapers + filter icons — needed before AuthGate / Cards filters paint. */
 const CRITICAL_LOCAL_ASSETS: number[] = [
   require('@/assets/wallpapers/wallpaper.jpg'),
   require('@/assets/wallpapers/wallpaper2.jpg'),

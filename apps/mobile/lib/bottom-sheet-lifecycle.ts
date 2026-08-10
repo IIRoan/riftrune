@@ -1,3 +1,16 @@
+/**
+ * One catalog drawer presentation. Every tap creates a new session id, even
+ * when reopening the same card, so callbacks from an older close are harmless.
+ *
+ * Dismiss-start flips `open` off to release hit-testing. The presentation stays
+ * mounted until Gorhom completes its close motion.
+ */
+export type CatalogDrawerPresentation = {
+  sessionId: number;
+  variantNumber: string;
+  open: boolean;
+};
+
 export type BottomSheetMountState = {
   open: boolean;
   mounted: boolean;
@@ -29,10 +42,7 @@ export function applyClosedToMountState(
 }
 
 /** Gorhom reports a snap index change; dismiss only notifies the parent. */
-export function onSheetIndexChange(
-  index: number,
-  notifyClosed: () => void
-): void {
+export function onSheetIndexChange(index: number, notifyClosed: () => void): void {
   if (index === -1) {
     notifyClosed();
   }
@@ -65,4 +75,67 @@ export function simulateDismissCycle(
     next = applyClosedToMountState({ ...next, open: false });
   });
   return applyOpenToMountState({ ...next, open: true });
+}
+
+export function createCatalogDrawerPresentation(
+  sessionId: number,
+  variantNumber: string
+): CatalogDrawerPresentation {
+  return {
+    sessionId,
+    variantNumber,
+    open: true,
+  };
+}
+
+export function isCatalogDrawerBlockingTaps(
+  presentation: CatalogDrawerPresentation | null
+): boolean {
+  return presentation?.open === true;
+}
+
+export function isCatalogDrawerClosing(
+  presentation: CatalogDrawerPresentation | null
+): boolean {
+  return presentation != null && !presentation.open;
+}
+
+/**
+ * Close-start is monotonic for one session. A stale callback cannot close a
+ * replacement presentation, including a new session for the same card.
+ */
+export function beginCatalogDrawerDismiss(
+  presentation: CatalogDrawerPresentation | null,
+  dismissedSessionId: number
+): CatalogDrawerPresentation | null {
+  if (presentation?.sessionId !== dismissedSessionId || !presentation.open) {
+    return presentation;
+  }
+
+  return {
+    ...presentation,
+    open: false,
+  };
+}
+
+export function finishCatalogDrawerDismiss(
+  presentation: CatalogDrawerPresentation | null,
+  dismissedSessionId: number
+): CatalogDrawerPresentation | null {
+  if (presentation?.sessionId !== dismissedSessionId || presentation.open) {
+    return presentation;
+  }
+
+  return null;
+}
+
+export function simulateQuickReopen(
+  presentation: CatalogDrawerPresentation,
+  nextSessionId: number,
+  nextVariantNumber: string
+): CatalogDrawerPresentation {
+  const dismissedSessionId = presentation.sessionId;
+  const reopened = createCatalogDrawerPresentation(nextSessionId, nextVariantNumber);
+
+  return finishCatalogDrawerDismiss(reopened, dismissedSessionId) ?? reopened;
 }

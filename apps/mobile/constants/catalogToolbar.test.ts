@@ -22,8 +22,8 @@ describe('catalogToolbarIconColor', () => {
     expect(catalogToolbarIconColor('inactive')).toBe('muted-foreground');
   });
 
-  test('primary tone uses primary for mobile-native emphasis', () => {
-    expect(catalogToolbarIconColor('primary')).toBe('primary');
+  test('primary tone uses foreground (Factory chalk — no chromatic chrome)', () => {
+    expect(catalogToolbarIconColor('primary')).toBe('foreground');
   });
 });
 
@@ -34,11 +34,12 @@ describe('catalogToolbarButtonClasses', () => {
     expect(classes).not.toContain(CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS);
   });
 
-  test('active button adds panel background and ring border', () => {
+  test('active button adds panel background and ash border', () => {
     const classes = catalogToolbarButtonClasses(true);
     expect(classes).toContain(CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS);
     expect(classes).toContain('size-11');
-    expect(classes).toContain('border-ring/50');
+    expect(classes).toContain('border-border');
+    expect(classes).toContain('bg-card-panel');
   });
 
   test('mobile idle button uses bordered card shell for contrast', () => {
@@ -49,10 +50,11 @@ describe('catalogToolbarButtonClasses', () => {
     expect(classes).toContain('shrink-0');
   });
 
-  test('mobile active button uses ring border and panel fill', () => {
+  test('mobile active button uses ash border and panel fill', () => {
     const classes = catalogToolbarButtonClasses(true, true);
     expect(classes).toContain(CATALOG_TOOLBAR_CONTROL_ACTIVE_CLASS_MOBILE);
-    expect(classes).toContain('border-ring/50');
+    expect(classes).toContain('border-border');
+    expect(classes).toContain('bg-card-panel');
     expect(classes).toContain('size-11');
   });
 
@@ -61,7 +63,7 @@ describe('catalogToolbarButtonClasses', () => {
     expect(classes).toContain(CATALOG_TOOLBAR_LABELED_CONTROL_CLASS);
     expect(classes).not.toContain('size-11');
     expect(classes).toContain('h-10');
-    expect(classes).toContain('rounded-lg');
+    expect(classes).toContain('rounded-[3px]');
     expect(classes).toContain('px-3');
   });
 });

@@ -1,22 +1,33 @@
 /**
- * Self-hosted Inter (SIL OFL) — bundled in assets/fonts, no network requests.
- * Matches the clean Skiff Sans / professional product-UI look from skiff.com
- * (Skiff Sans itself is proprietary; Inter is the open face their stack references).
+ * Self-hosted Lato (SIL OFL) — bundled in assets/fonts, no network requests.
+ * Instrument/mono remains Geist Mono.
  *
- * Each weight is a separate family name (RN / Expo convention). Always pair the
- * selected face with fontWeight/fontStyle "normal" so web (especially Firefox)
- * and Android do not synthesize extra bold on top of an already-weighted file.
+ * Professional UI weight ladder (aligned with product design systems that ship
+ * Lato — ONS SDC, Timely TUI, Beeline): honest Tailwind → face mapping.
+ *
+ * | Class           | Weight | Use                                      |
+ * |-----------------|--------|------------------------------------------|
+ * | font-normal     | 400    | Body, secondary copy, dense reading      |
+ * | font-medium     | 500    | Nav labels, mid emphasis, chip idle      |
+ * | font-semibold   | 600    | Titles, prices, instrument tags          |
+ * | font-bold       | 700    | Primary CTAs, headings that must commit  |
+ * | font-black      | 900    | Rare display / hero only                 |
+ *
+ * Native: each weight is a separate Expo family name + fontWeight "normal".
+ * Web: unified `Lato` / `Geist Mono` + numeric fontWeight (Firefox-safe) —
+ * see `web-font-faces.ts`.
  */
 
 import type { TextStyle } from 'react-native';
 
+/** Native Expo family names (per-file). */
 export const FONT_SANS = {
-  normal: 'Inter-Regular',
-  medium: 'Inter-Medium',
-  semibold: 'Inter-SemiBold',
-  bold: 'Inter-Bold',
-  extrabold: 'Inter-ExtraBold',
-  black: 'Inter-Black',
+  normal: 'Lato-Regular',
+  medium: 'Lato-Medium',
+  semibold: 'Lato-SemiBold',
+  bold: 'Lato-Bold',
+  extrabold: 'Lato-Bold',
+  black: 'Lato-Black',
 } as const;
 
 export const FONT_MONO = {
@@ -26,10 +37,32 @@ export const FONT_MONO = {
   bold: 'GeistMono-Bold',
 } as const;
 
-type SansWeight = (typeof FONT_SANS)[keyof typeof FONT_SANS];
-type MonoWeight = (typeof FONT_MONO)[keyof typeof FONT_MONO];
+/** Unified web families — registered with weight descriptors in web-font-faces.ts */
+export const WEB_FONT_SANS_FAMILY = 'Lato';
+export const WEB_FONT_MONO_FAMILY = 'Geist Mono';
 
-function weightFromClassName(className: string): keyof typeof FONT_SANS {
+/** CSS numeric weights for the unified web families. */
+const WEB_SANS_WEIGHT = {
+  normal: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+  extrabold: '700',
+  black: '900',
+} as const satisfies Record<keyof typeof FONT_SANS, TextStyle['fontWeight']>;
+
+const WEB_MONO_WEIGHT = {
+  normal: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+  extrabold: '700',
+  black: '700',
+} as const satisfies Record<keyof typeof FONT_SANS, TextStyle['fontWeight']>;
+
+type SansWeightKey = keyof typeof FONT_SANS;
+
+function weightFromClassName(className: string): SansWeightKey {
   if (className.includes('font-black') || className.includes('font-heavy')) {
     return 'black';
   }
@@ -48,11 +81,24 @@ function weightFromClassName(className: string): keyof typeof FONT_SANS {
   return 'normal';
 }
 
-/** Resolve bundled Inter / mono family from Tailwind class string. */
-export function fontFamilyForClassName(className?: string): SansWeight | MonoWeight {
+/** Web detection without importing `Platform` (keeps bun:test free of RN runtime). */
+function isWebRuntime(): boolean {
+  if (typeof process !== 'undefined' && process.env.EXPO_OS === 'web') {
+    return true;
+  }
+  return typeof document !== 'undefined' && typeof navigator !== 'undefined';
+}
+
+/** Resolve bundled Lato / mono family from Tailwind class string. */
+export function fontFamilyForClassName(className?: string): string {
   const value = className ?? '';
   const isMono = /\bfont-mono\b/.test(value);
   const weight = weightFromClassName(value);
+
+  if (isWebRuntime()) {
+    return isMono ? WEB_FONT_MONO_FAMILY : WEB_FONT_SANS_FAMILY;
+  }
+
   if (isMono) {
     if (weight === 'extrabold' || weight === 'black') {
       return FONT_MONO.bold;
@@ -63,12 +109,25 @@ export function fontFamilyForClassName(className?: string): SansWeight | MonoWei
 }
 
 /**
- * Font styles for Text / TextInput. Resets CSS weight/style so the chosen
- * face file is used as-is (avoids Firefox faux-bold on Inter-SemiBold + font-semibold).
+ * Font styles for Text / TextInput.
+ * - Native: per-face family + fontWeight normal (no faux-bold).
+ * - Web: unified family + numeric weight so Firefox picks the real face.
  */
 export function textFontStyleForClassName(className?: string): TextStyle {
+  const value = className ?? '';
+  const isMono = /\bfont-mono\b/.test(value);
+  const weight = weightFromClassName(value);
+
+  if (isWebRuntime()) {
+    return {
+      fontFamily: isMono ? WEB_FONT_MONO_FAMILY : WEB_FONT_SANS_FAMILY,
+      fontWeight: isMono ? WEB_MONO_WEIGHT[weight] : WEB_SANS_WEIGHT[weight],
+      fontStyle: 'normal',
+    };
+  }
+
   return {
-    fontFamily: fontFamilyForClassName(className),
+    fontFamily: fontFamilyForClassName(value),
     fontWeight: 'normal',
     fontStyle: 'normal',
   };

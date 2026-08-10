@@ -83,12 +83,34 @@ export function OwnershipStepper({
     [printings, pickerOptions]
   );
 
-  const iconSize = relaxed ? 12 : 11;
+  /** Compact + relaxed = card-detail drawer rows (larger +/− hit targets). */
+  const detailTouch = compact && relaxed && !gridSlot;
+  const iconSize = detailTouch ? 16 : relaxed ? 12 : 11;
   /** Keep Add + owned stepper the same height to avoid tile layout shift. */
-  const controlHeight = gridSlot || compact ? 'h-7' : relaxed ? 'h-8' : 'h-7';
-  const stepSize = gridSlot || compact ? 'size-7' : relaxed ? 'size-8' : 'size-7';
+  const controlHeight = gridSlot
+    ? 'h-7'
+    : detailTouch
+      ? 'h-10'
+      : compact
+        ? 'h-7'
+        : relaxed
+          ? 'h-8'
+          : 'h-7';
+  const stepSize = gridSlot
+    ? 'size-7'
+    : detailTouch
+      ? 'size-10'
+      : compact
+        ? 'size-7'
+        : relaxed
+          ? 'size-8'
+          : 'size-7';
   /** Shared footprint so Add ↔ owned doesn't jump in detail rows. */
-  const controlWidth = compact && !gridSlot ? 'min-w-[5.75rem]' : undefined;
+  const controlWidth = compact && !gridSlot
+    ? detailTouch
+      ? 'min-w-[7.25rem]'
+      : 'min-w-[5.75rem]'
+    : undefined;
 
   const addDefaultFinish = () => {
     if (pinnedSelectionId) {
@@ -106,7 +128,7 @@ export function OwnershipStepper({
         accessibilityRole="button"
         accessibilityLabel={`Add ${name} to collection`}
         className={cn(
-          'flex-row items-center justify-center gap-1 rounded-md bg-primary/12 px-2.5 active:bg-primary/18',
+          'flex-row items-center justify-center gap-1 rounded-[3px] bg-foreground px-2.5 active:opacity-80',
           gridSlot ? 'w-full' : 'w-auto shrink-0',
           controlWidth,
           controlHeight,
@@ -117,11 +139,22 @@ export function OwnershipStepper({
         disabled={busy}
       >
         {busy && !showAddPicker ? (
-          <ActivityIndicator size="small" className="accent-primary" />
+          <ActivityIndicator size="small" className="accent-background" />
         ) : (
           <>
-            <ThemedIcon icon={PlusIcon} size={iconSize} color="archive-accent-text" />
-            <Text className="text-[11px] font-semibold text-archive-accent-text">
+            <PlusIcon
+              className={cn(
+                'text-background',
+                detailTouch ? 'size-4' : relaxed ? 'size-3.5' : 'size-3'
+              )}
+              weight="bold"
+            />
+            <Text
+              className={cn(
+                'font-medium tracking-tight text-background',
+                detailTouch ? 'text-[13px]' : 'text-[11px]'
+              )}
+            >
               Add
             </Text>
           </>
@@ -149,16 +182,16 @@ export function OwnershipStepper({
       <Pressable
         accessibilityLabel={label}
         className={cn(
-          'items-center justify-center rounded-full active:bg-primary/14',
+          'items-center justify-center rounded-[3px] active:bg-foreground/10',
           gridSlot ? 'h-full flex-1' : stepSize
         )}
         onPress={showPicker ? undefined : onPress}
         disabled={busy}
       >
         {busy && !showPicker ? (
-          <ActivityIndicator size="small" className="accent-primary" />
+          <ActivityIndicator size="small" className="accent-foreground" />
         ) : (
-          <ThemedIcon icon={icon} size={iconSize} color="archive-accent-text" />
+          <ThemedIcon icon={icon} size={iconSize} color="foreground" />
         )}
       </Pressable>
     );
@@ -172,7 +205,7 @@ export function OwnershipStepper({
     return (
       <View
         className={cn(
-          'flex-row items-center',
+          'flex-row items-center rounded-[3px] border border-border bg-card-panel',
           gridSlot
             ? 'w-full justify-between'
             : cn('justify-between gap-0.5', controlWidth),
@@ -194,14 +227,16 @@ export function OwnershipStepper({
         )}
         <Text
           className={cn(
-            'shrink-0 text-center font-mono font-semibold tabular-nums text-foreground',
+            'shrink-0 text-center font-mono font-normal tabular-nums text-foreground',
             gridSlot
               ? 'min-w-7 text-xs'
-              : compact
-                ? 'min-w-5 text-[11px]'
-                : relaxed
-                  ? 'min-w-6 text-[13px]'
-                  : 'min-w-6 text-[12px]'
+              : detailTouch
+                ? 'min-w-7 text-sm'
+                : compact
+                  ? 'min-w-5 text-[11px]'
+                  : relaxed
+                    ? 'min-w-6 text-[13px]'
+                    : 'min-w-6 text-[12px]'
           )}
         >
           {owned}

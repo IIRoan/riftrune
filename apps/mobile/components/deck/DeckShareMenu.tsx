@@ -77,8 +77,8 @@ export function DeckShareMenu({
             accessibilityLabel="Share deck"
             accessibilityState={{ expanded: open }}
             className={cn(
-              'size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel',
-              open && 'border-primary/40',
+              'size-9 shrink-0 items-center justify-center rounded-[3px] border border-border bg-card active:bg-card-panel',
+              open && 'border-foreground',
               triggerClassName
             )}
             onPress={() => {
@@ -95,7 +95,7 @@ export function DeckShareMenu({
             side="bottom"
             align="end"
             sideOffset={4}
-            className="z-50 min-w-[11rem] overflow-hidden rounded-md border border-border bg-popover p-1 shadow-md"
+            className="z-50 min-w-[11rem] overflow-hidden rounded-[3px] border border-border bg-popover p-1 shadow-none"
           >
             <Text className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
               Copy
@@ -105,7 +105,7 @@ export function DeckShareMenu({
               <Pressable
                 accessibilityRole="menuitem"
                 accessibilityLabel="Copy Riftrune link"
-                className="flex-row items-center gap-2 rounded-sm px-2 py-1.5 active:bg-accent"
+                className="flex-row items-center gap-2 rounded-[3px] px-2 py-1.5 active:bg-card-panel"
                 onPress={() => handleSelect('link')}
               >
                 <ThemedIcon icon={LinkIcon} size={16} color="muted-foreground" />
@@ -118,7 +118,7 @@ export function DeckShareMenu({
                 <Pressable
                   accessibilityRole="menuitem"
                   accessibilityLabel="Copy deck code"
-                  className="flex-row items-center gap-2 rounded-sm px-2 py-1.5 active:bg-accent"
+                  className="flex-row items-center gap-2 rounded-[3px] px-2 py-1.5 active:bg-card-panel"
                   onPress={() => handleSelect('code')}
                 >
                   <ThemedIcon icon={HashIcon} size={16} color="muted-foreground" />
@@ -131,7 +131,7 @@ export function DeckShareMenu({
                 accessibilityLabel="Copy deck code"
                 accessibilityState={{ disabled: true }}
                 disabled
-                className="flex-row items-center gap-2 rounded-sm px-2 py-1.5 opacity-50"
+                className="flex-row items-center gap-2 rounded-[3px] px-2 py-1.5 opacity-50"
               >
                 <ThemedIcon icon={HashIcon} size={16} color="muted-foreground" />
                 <Text className="text-sm text-muted-foreground">Deck code</Text>

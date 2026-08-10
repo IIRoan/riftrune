@@ -108,7 +108,10 @@ export function SearchBar({
     [clearDraftKeepResults, enableSlashFocus]
   );
 
-  const showClear = (draft.length > 0 || value.length > 0) && !isLoading;
+  // Keep the clear control mounted while loading. Swapping it for a spinner
+  // remounts Pressable siblings inside InputPressable and steals TextInput
+  // focus on web — exactly when search crosses MIN_SEARCH_LENGTH (3 chars).
+  const showClear = draft.length > 0 || value.length > 0;
 
   return (
     <SearchInput

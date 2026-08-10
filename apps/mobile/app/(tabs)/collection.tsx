@@ -116,7 +116,7 @@ function CollectionScreenBody() {
       </View>
 
       <View className="mb-8">
-        <Text className="mb-4 text-sm font-semibold text-muted-foreground">Sets</Text>
+        <Text className="mb-4 text-sm font-medium text-muted-foreground">Sets</Text>
         <SetCardGrid sets={mergedSets} />
       </View>
 
@@ -174,7 +174,7 @@ function CollectionScreenBody() {
 
       <View className="mb-8 gap-2">
         <View className="flex-row items-center justify-between gap-3">
-          <Text className="text-sm font-semibold text-muted-foreground">Your collection</Text>
+          <Text className="text-sm font-medium text-muted-foreground">Your collection</Text>
           <CollectionImportExportToolbar disabled={isLoading} />
         </View>
         <SearchInput
@@ -182,7 +182,7 @@ function CollectionScreenBody() {
           onChangeText={setQuery}
           placeholder="Search by name or variant"
           accessibilityLabel="Search your collection"
-          className="min-h-12 rounded-xl border-border bg-card"
+          className="min-h-12 rounded-[10px] border-border bg-card"
         />
         <CollectionImportExportStatus disabled={isLoading} />
       </View>

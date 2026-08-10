@@ -7,6 +7,7 @@ import {
   catalogToolbarIconColor,
   catalogToolbarSegmentClasses,
 } from '@/constants/catalogToolbar';
+import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
 export type CatalogSegmentOption<T extends string> = {
@@ -22,6 +23,9 @@ interface CatalogSegmentedControlProps<T extends string> {
   options: readonly CatalogSegmentOption<T>[];
   mobile?: boolean;
   iconOnly?: boolean;
+  /** Stretch to parent width; labeled segments share space equally. */
+  fill?: boolean;
+  className?: string;
   accessibilityRole?: 'radiogroup' | 'tablist';
   segmentAccessibilityRole?: 'radio' | 'tab';
 }
@@ -33,11 +37,16 @@ export function CatalogSegmentedControl<T extends string>({
   options,
   mobile = false,
   iconOnly = false,
+  fill = false,
+  className,
   accessibilityRole = 'radiogroup',
   segmentAccessibilityRole = 'radio',
 }: CatalogSegmentedControlProps<T>) {
   return (
-    <View accessibilityRole={accessibilityRole} className={catalogToolbarGroupClass(mobile)}>
+    <View
+      accessibilityRole={accessibilityRole}
+      className={cn(catalogToolbarGroupClass(mobile), fill && 'w-full', className)}
+    >
       {options.map((option) => {
         const active = value === option.id;
         const tone = active ? 'active' : 'inactive';
@@ -55,7 +64,10 @@ export function CatalogSegmentedControl<T extends string>({
               hapticPress();
               onChange(option.id);
             }}
-            className={catalogToolbarSegmentClasses(active, mobile, !iconOnly)}
+            className={cn(
+              catalogToolbarSegmentClasses(active, mobile, !iconOnly),
+              fill && !iconOnly && 'min-w-0 flex-1 justify-center'
+            )}
           >
             <ThemedIcon
               icon={option.icon}
@@ -66,8 +78,8 @@ export function CatalogSegmentedControl<T extends string>({
               <Text
                 className={
                   active
-                    ? 'text-[13px] font-semibold leading-none text-foreground'
-                    : 'text-[13px] font-semibold leading-none text-muted-foreground'
+                    ? 'text-[13px] font-normal leading-none text-foreground'
+                    : 'text-[13px] font-normal leading-none text-muted-foreground'
                 }
                 numberOfLines={1}
               >

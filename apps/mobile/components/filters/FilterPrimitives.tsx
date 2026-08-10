@@ -1,4 +1,4 @@
-import { ChevronDownIcon, ChevronUpIcon, CircleCheckIcon, ThemedIcon } from '@/components/icons';
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon, ThemedIcon } from '@/components/icons';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
@@ -15,7 +15,11 @@ import {
   CATALOG_TOOLBAR_EMBEDDED_TRIGGER_ACTIVE_CLASS,
   CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS,
   CATALOG_TOOLBAR_LABELED_CONTROL_CLASS,
+  FILTER_OPTION_CHIP_ACTIVE_CLASS,
+  FILTER_OPTION_CHIP_CLASS,
+  FILTER_OPTION_CHIP_IDLE_CLASS,
 } from '@/constants/catalogToolbar';
+import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { cn } from '@/lib/utils';
 
 export function FilterToggleRow({
@@ -37,7 +41,8 @@ export function FilterToggleRow({
     <Pressable
       className={cn(
         'flex-row items-center justify-between active:opacity-90',
-        compact ? 'min-h-10 rounded-md px-2 py-2' : 'min-h-12 rounded-lg px-3 py-2.5',
+        FACTORY_RADIUS_CONTROL_CLASS,
+        compact ? 'min-h-10 px-2 py-2' : 'min-h-12 px-3 py-2.5',
         active ? 'bg-foreground/8' : 'bg-transparent'
       )}
       onPress={onPress}
@@ -50,16 +55,23 @@ export function FilterToggleRow({
       <View className="min-w-0 flex-1 flex-row items-center gap-2.5 pr-3">
         {leading}
         <View className="min-w-0 flex-1">
-          <Text className="text-sm font-semibold text-foreground">{label}</Text>
+          <Text className="text-sm font-normal text-foreground">{label}</Text>
           {subtitle ? (
-            <Text className="mt-0.5 text-[12px] text-archive-subtle">{subtitle}</Text>
+            <Text className="mt-0.5 text-[12px] text-muted-foreground">{subtitle}</Text>
           ) : null}
         </View>
       </View>
       {active ? (
-        <ThemedIcon icon={CircleCheckIcon} size={20} color="archive-accent-text" />
+        <View
+          className={cn(
+            'size-5 items-center justify-center bg-foreground',
+            FACTORY_RADIUS_CONTROL_CLASS
+          )}
+        >
+          <CheckIcon className="size-3.5 text-background" weight="bold" />
+        </View>
       ) : (
-        <View className="size-5 rounded-full border border-archive-subtle/60" />
+        <View className={cn('size-5 border border-border', FACTORY_RADIUS_CONTROL_CLASS)} />
       )}
     </Pressable>
   );
@@ -77,8 +89,9 @@ export function FilterStatChip({
   return (
     <Pressable
       className={cn(
-        'min-w-[44px] items-center justify-center rounded-lg border px-3 py-2 active:opacity-90',
-        active ? 'border-foreground bg-foreground' : 'border-border/70 bg-transparent'
+        FILTER_OPTION_CHIP_CLASS,
+        'min-w-[44px] justify-center px-3',
+        active ? FILTER_OPTION_CHIP_ACTIVE_CLASS : FILTER_OPTION_CHIP_IDLE_CLASS
       )}
       onPress={onPress}
       accessibilityRole="button"
@@ -86,8 +99,8 @@ export function FilterStatChip({
     >
       <Text
         className={cn(
-          'font-mono text-sm font-semibold',
-          active ? 'text-background' : 'text-archive-subtle'
+          'font-mono text-sm font-normal',
+          active ? 'text-background' : 'text-muted-foreground'
         )}
       >
         {label}
@@ -146,7 +159,7 @@ function FilterPopoverTrigger({
     >
       <Text
         className={cn(
-          'text-[13px] font-semibold leading-none',
+          'text-[13px] font-normal leading-none',
           open || hasValue ? 'text-foreground' : 'text-muted-foreground'
         )}
         numberOfLines={1}
@@ -159,7 +172,7 @@ function FilterPopoverTrigger({
         color={open || hasValue ? 'foreground' : 'muted-foreground'}
       />
       {hasValue && !open ? (
-        <View className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary" />
+        <View className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-foreground" />
       ) : null}
     </Pressable>
   );
@@ -268,17 +281,20 @@ export function FilterPopoverBar<T extends string>({
           {activeSegment ? (
             <PopoverContent
               className={cn(
-                'border border-border bg-card-panel p-0 shadow-md',
+                'overflow-hidden border border-border bg-card-panel p-0 shadow-none',
+                FACTORY_RADIUS_CONTROL_CLASS,
                 activeSegment.contentClassName
               )}
               side="bottom"
               align="start"
               width={280}
+              style={{ maxHeight: effectiveMaxHeight }}
             >
               <ScrollView
                 ref={contentRef}
                 style={{ maxHeight: effectiveMaxHeight }}
-                contentContainerClassName="p-2"
+                contentContainerClassName="p-1.5"
+                contentContainerStyle={{ flexGrow: 0 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator
                 nestedScrollEnabled
@@ -310,13 +326,16 @@ export function FilterClearButton({
               CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS,
               'items-center justify-center px-2.5'
             )
-          : 'h-10 shrink-0 items-center justify-center rounded-lg px-2 active:opacity-80'
+          : cn(
+              'h-10 shrink-0 items-center justify-center px-2 active:opacity-80',
+              FACTORY_RADIUS_CONTROL_CLASS
+            )
       )}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Text className="text-[13px] font-semibold text-primary">{label}</Text>
+      <Text className="text-[13px] font-normal text-foreground">{label}</Text>
     </Pressable>
   );
 }

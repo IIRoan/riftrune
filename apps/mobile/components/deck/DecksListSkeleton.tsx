@@ -8,11 +8,11 @@ export function DeckListSkeleton() {
         {[0, 1, 2].map((index) => (
           <View
             key={index}
-            className="overflow-hidden rounded-xl border border-border bg-card p-3.5"
+            className="overflow-hidden rounded-[10px] border border-border bg-card p-3.5"
           >
             <View className="gap-3">
               <View className="flex-row gap-3">
-                <Skeleton className="h-[100px] w-[72px] rounded-lg" />
+                <Skeleton className="h-[100px] w-[72px] rounded-[3px]" />
                 <View className="min-w-0 flex-1 gap-2">
                   <Skeleton className="h-4 w-40 rounded" />
                   <Skeleton className="h-3 w-32 rounded" />
@@ -21,10 +21,10 @@ export function DeckListSkeleton() {
                 </View>
               </View>
               <View className="flex-row gap-1.5">
-                <Skeleton className="h-14 w-10 rounded-md" />
-                <Skeleton className="h-14 w-10 rounded-md" />
-                <Skeleton className="h-14 w-10 rounded-md" />
-                <Skeleton className="h-14 w-10 rounded-md" />
+                <Skeleton className="h-14 w-10 rounded-[3px]" />
+                <Skeleton className="h-14 w-10 rounded-[3px]" />
+                <Skeleton className="h-14 w-10 rounded-[3px]" />
+                <Skeleton className="h-14 w-10 rounded-[3px]" />
               </View>
             </View>
           </View>

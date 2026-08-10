@@ -69,7 +69,7 @@ export function DeckFormatPickerSheet({
           <AppSheetBody className="gap-4 pb-2">
             <Text className="text-sm leading-snug text-muted-foreground">{description}</Text>
             <View className="gap-2">
-              <Text className="text-sm font-semibold text-foreground">Format</Text>
+              <Text className="text-sm font-normal text-foreground">Format</Text>
               <DeckFormatSegmentedControl
                 value={format}
                 onChange={setFormat}

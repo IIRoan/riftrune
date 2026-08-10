@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useSyncExternalStore } from "react";
+import { Fragment, useLayoutEffect, useSyncExternalStore } from "react";
 import { Platform } from "react-native";
 import { FullWindowOverlay } from "react-native-screens";
 
@@ -42,11 +42,13 @@ export const Portal = ({
   hostName = DEFAULT_PORTAL_HOST,
   children,
 }: PortalProps) => {
-  useEffect(() => {
+  // Layout effect so remove/update happen before paint — delayed useEffect
+  // cleanup raced the next drawer open and left a dead full-screen host.
+  useLayoutEffect(() => {
     updatePortal(hostName, name, children);
   }, [hostName, name, children]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     return () => {
       removePortal(hostName, name);
     };

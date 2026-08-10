@@ -28,8 +28,11 @@ interface CatalogDesktopToolbarProps {
 }
 
 /**
- * Desktop catalog chrome — filter controls with active chips beneath them,
- * plus collection/sort actions on the right.
+ * Desktop catalog chrome — bordered filter/action row stays fixed height;
+ * active chips mount in a separate in-flow tray underneath so the shell never grows.
+ *
+ * Do not use Reanimated `entering` here on web — it pins the tray to
+ * `position: absolute` and the catalog list paints over it.
  */
 export function CatalogDesktopToolbar({
   filters,
@@ -46,10 +49,10 @@ export function CatalogDesktopToolbar({
   const segments = useCatalogDesktopFilterSegments(filters, onFiltersChange);
 
   return (
-    <View className={CATALOG_TOOLBAR_DESKTOP_SHELL_CLASS}>
-      <View className={CATALOG_TOOLBAR_DESKTOP_PRIMARY_ROW_CLASS}>
-        <View className="min-w-0 flex-1">
-          <View className="flex-row flex-wrap items-center gap-1">
+    <View className="w-full gap-1.5">
+      <View className={CATALOG_TOOLBAR_DESKTOP_SHELL_CLASS}>
+        <View className={CATALOG_TOOLBAR_DESKTOP_PRIMARY_ROW_CLASS}>
+          <View className="min-w-0 flex-1 flex-row flex-wrap items-center gap-1">
             <FilterPopoverBar
               portalName="catalog-filter-bar"
               openId={openSegment}
@@ -67,30 +70,29 @@ export function CatalogDesktopToolbar({
             ) : null}
           </View>
 
-          {filterActive ? (
-            <CatalogActiveFilterChips
-              layout="inline"
-              filters={filters}
-              onFiltersChange={onFiltersChange}
-            />
-          ) : null}
+          <View className={CATALOG_TOOLBAR_DESKTOP_DIVIDER_CLASS} />
+
+          <CatalogActionBar
+            inline
+            activeSort={activeSort}
+            onSortPress={onSortPress}
+            filters={filters}
+            onFilterPress={() => undefined}
+            collection={collection}
+            onCollectionChange={onCollectionChange}
+            simpleAdd={simpleAdd}
+            onSimpleAddChange={onSimpleAddChange}
+            showFilterTrigger={false}
+          />
         </View>
-
-        <View className={CATALOG_TOOLBAR_DESKTOP_DIVIDER_CLASS} />
-
-        <CatalogActionBar
-          inline
-          activeSort={activeSort}
-          onSortPress={onSortPress}
-          filters={filters}
-          onFilterPress={() => undefined}
-          collection={collection}
-          onCollectionChange={onCollectionChange}
-          simpleAdd={simpleAdd}
-          onSimpleAddChange={onSimpleAddChange}
-          showFilterTrigger={false}
-        />
       </View>
+
+      {filterActive ? (
+        <CatalogActiveFilterChips
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+        />
+      ) : null}
     </View>
   );
 }

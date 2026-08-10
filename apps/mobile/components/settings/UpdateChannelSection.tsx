@@ -26,23 +26,23 @@ export function UpdateChannelSection() {
   const shortId = updateId.length > 12 ? `${updateId.slice(0, 8)}…` : updateId;
 
   return (
-    <View className="overflow-hidden rounded-xl border border-border bg-card">
+    <View className="overflow-hidden rounded-[10px] border border-border bg-card">
       <View className="flex-row items-stretch">
         <View className="min-w-0 flex-1 gap-1 px-4 py-4">
-          <Text className="text-[10px] font-semibold uppercase tracking-[1.4px] text-muted-foreground">
+          <Text className="text-[10px] font-normal uppercase tracking-[1.4px] text-muted-foreground">
             Active
           </Text>
-          <Text className="font-mono text-2xl font-bold tabular-nums leading-none text-foreground">
+          <Text className="font-mono text-2xl font-normal tabular-nums leading-none text-foreground">
             {resolveChannelLabel()}
           </Text>
         </View>
         <View className="w-hairline self-stretch bg-archive-soft-line" />
         <View className="min-w-0 flex-1 gap-1 px-4 py-4">
-          <Text className="text-[10px] font-semibold uppercase tracking-[1.4px] text-muted-foreground">
+          <Text className="text-[10px] font-normal uppercase tracking-[1.4px] text-muted-foreground">
             Update
           </Text>
           <Text
-            className="font-mono text-base font-semibold tabular-nums text-foreground"
+            className="font-mono text-base font-normal tabular-nums text-foreground"
             numberOfLines={1}
           >
             {shortId}
@@ -61,7 +61,7 @@ export function UpdateChannelSection() {
         className="flex-row items-center justify-between border-t border-border px-4 py-3 active:bg-card-panel"
       >
         <Text className="text-sm font-medium text-foreground">Browse Expo updates</Text>
-        <Text className="font-mono text-xs font-bold text-primary">↗</Text>
+        <Text className="font-mono text-xs font-normal text-foreground">↗</Text>
       </Pressable>
     </View>
   );

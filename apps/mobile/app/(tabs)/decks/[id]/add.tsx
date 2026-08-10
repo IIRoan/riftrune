@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/empty';
 import { useScreenLayout } from '@/components/shell/ScreenLayout';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
+import { useCatalogArtLookahead } from '@/hooks/useCatalogArtLookahead';
 import { useDeckAddCatalog } from '@/hooks/useDeckAddCatalog';
 import { useDeckAutoSave } from '@/hooks/useDeckAutoSave';
 import { useDeckDetail } from '@/hooks/useDeckDetail';
@@ -40,6 +41,7 @@ import {
   defaultDeckAddCatalogFilters,
   defaultDeckAddSearch,
 } from '@/lib/deck-add-catalog';
+import { CATALOG_END_REACHED_THRESHOLD } from '@/lib/catalog-page-size';
 import {
   catalogFiltersActive,
   sanitizeCatalogFilters,
@@ -386,6 +388,24 @@ function DeckAddCatalogBrowse({
   const membershipRevision = deckMembershipRevision(deck);
   const sectionFull = activeSection === 'battlefields' && battlefieldsAtCapacity(deck);
 
+  const {
+    drawDistance,
+    viewabilityConfig,
+    handleViewableItemsChanged,
+    handleScroll,
+  } = useCatalogArtLookahead({
+    items: catalog.cards,
+    numColumns,
+    layout: 'grid',
+    tileWidth,
+  });
+
+  const requestNextPage = useCallback(() => {
+    if (catalog.hasNextPage && !catalog.isFetchingNextPage) {
+      catalog.fetchNextPage();
+    }
+  }, [catalog]);
+
   const gridCellStyle = useMemo(
     () => ({ paddingHorizontal: gap / 2, marginBottom: gap }),
     [gap]
@@ -483,7 +503,6 @@ function DeckAddCatalogBrowse({
 
         {filterActive ? (
           <CatalogActiveFilterChips
-            layout="inline"
             filters={catalogFilters}
             onFiltersChange={applyCatalogFilters}
           />
@@ -513,12 +532,13 @@ function DeckAddCatalogBrowse({
         extraData={membershipRevision}
         ListEmptyComponent={showBlockingLoader ? null : emptyState}
         ListFooterComponent={listFooter}
-        onEndReached={() => {
-          if (catalog.hasNextPage && !catalog.isFetchingNextPage) {
-            catalog.fetchNextPage();
-          }
-        }}
-        onEndReachedThreshold={0.5}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onEndReached={requestNextPage}
+        onEndReachedThreshold={CATALOG_END_REACHED_THRESHOLD}
+        drawDistance={drawDistance}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           flexGrow: catalog.cards.length === 0 ? 1 : undefined,

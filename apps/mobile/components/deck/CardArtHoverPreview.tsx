@@ -184,7 +184,7 @@ export function CardArtHoverPreview({
           >
             <View
               className={cn(
-                'overflow-hidden border border-border bg-background shadow-lg',
+                'overflow-hidden border border-border bg-background shadow-none',
                 CARD_ART_RADIUS_CLASS
               )}
               style={{ width: previewWidth, height: previewHeight }}

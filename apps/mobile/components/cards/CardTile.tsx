@@ -333,7 +333,7 @@ export function CardTileSkeleton({
       <View className="gap-1.5 border-t border-border bg-card-panel px-2 py-2">
         <Skeleton className="h-4 w-[80%] rounded" />
         <Skeleton className="h-3 w-[70%] rounded" />
-        <Skeleton className="h-9 w-full rounded-full" />
+        <Skeleton className="h-9 w-full rounded-[3px]" />
       </View>
     </View>
   );

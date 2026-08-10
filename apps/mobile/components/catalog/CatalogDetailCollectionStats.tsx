@@ -5,6 +5,10 @@ import { CatalogDetailPrintingRows } from '@/components/catalog/CatalogDetailPri
 import { CardTag } from '@/components/riftbound/CardDetailParts';
 import { DomainIcon, RarityIcon } from '@/components/riftbound/CardIcons';
 import { Text } from '@/components/ui/text';
+import {
+  DETAIL_META_VALUE_CLASS,
+  DETAIL_STAT_VALUE_CLASS,
+} from '@/constants/operateType';
 import { formatStat } from '@/utils/cardFormat';
 import type { CardListPrinting } from '@riftbound/contracts';
 import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
@@ -55,24 +59,18 @@ export function buildCatalogDetailCollectionSections({
   const statsRow = (
     <View className="flex-row">
       <CatalogDetailStat label="Cost">
-        <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
-          {formatStat(energy ?? 0)}
-        </Text>
+        <Text className={DETAIL_STAT_VALUE_CLASS}>{formatStat(energy ?? 0)}</Text>
       </CatalogDetailStat>
       <View className="w-hairline bg-border" />
       <CatalogDetailStat label="Might">
         <View className="flex-row items-center gap-1">
           <MightIcon size={14} />
-          <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
-            {formatStat(might ?? 0)}
-          </Text>
+          <Text className={DETAIL_STAT_VALUE_CLASS}>{formatStat(might ?? 0)}</Text>
         </View>
       </CatalogDetailStat>
       <View className="w-hairline bg-border" />
       <CatalogDetailStat label="Power">
-        <Text className="font-mono text-sm font-semibold tabular-nums text-foreground">
-          {formatStat(power ?? 0)}
-        </Text>
+        <Text className={DETAIL_STAT_VALUE_CLASS}>{formatStat(power ?? 0)}</Text>
       </CatalogDetailStat>
     </View>
   );
@@ -80,7 +78,7 @@ export function buildCatalogDetailCollectionSections({
   const metaAttributes = (
     <View className="flex-row flex-wrap gap-x-4 gap-y-3">
       <CatalogDetailMetaPill label="Type">
-        <Text className="text-sm font-semibold text-foreground">{cardType}</Text>
+        <Text className={DETAIL_META_VALUE_CLASS}>{cardType}</Text>
       </CatalogDetailMetaPill>
       <CatalogDetailMetaPill label="Domain">
         {colors.length > 0 ? (
@@ -88,18 +86,18 @@ export function buildCatalogDetailCollectionSections({
             {colors.map((color) => (
               <View key={color.id} className="flex-row items-center gap-1">
                 <DomainIcon name={color.name} imageUrl={color.imageUrl} size={16} />
-                <Text className="text-sm font-semibold text-foreground">{color.name}</Text>
+                <Text className={DETAIL_META_VALUE_CLASS}>{color.name}</Text>
               </View>
             ))}
           </View>
         ) : (
-          <Text className="text-sm font-semibold text-foreground">—</Text>
+          <Text className={DETAIL_META_VALUE_CLASS}>—</Text>
         )}
       </CatalogDetailMetaPill>
       <CatalogDetailMetaPill label="Rarity">
         <View className="flex-row items-center gap-1">
           <RarityIcon rarity={activeRarity} size={16} />
-          <Text className="text-sm font-semibold text-foreground">{activeRarity}</Text>
+          <Text className={DETAIL_META_VALUE_CLASS}>{activeRarity}</Text>
         </View>
       </CatalogDetailMetaPill>
       <CatalogDetailMetaPill label="Tags">
@@ -110,7 +108,7 @@ export function buildCatalogDetailCollectionSections({
             ))}
           </View>
         ) : (
-          <Text className="text-sm font-semibold text-foreground">—</Text>
+          <Text className={DETAIL_META_VALUE_CLASS}>—</Text>
         )}
       </CatalogDetailMetaPill>
     </View>

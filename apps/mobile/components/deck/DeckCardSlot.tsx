@@ -19,6 +19,8 @@ type DeckCardSlotVariant = 'card' | 'add' | 'empty' | 'identity';
 interface DeckCardSlotProps {
   variant: DeckCardSlotVariant;
   tileWidth: number;
+  /** Stretch to parent width (drawer identity grid) instead of fixed tileWidth. */
+  stretch?: boolean;
   label?: string;
   card?: DeckCard;
   entry?: DeckEntry;
@@ -38,6 +40,7 @@ interface DeckCardSlotProps {
 function DeckCardSlotInner({
   variant,
   tileWidth,
+  stretch = false,
   label,
   card,
   entry,
@@ -55,14 +58,16 @@ function DeckCardSlotInner({
   const router = useRouter();
   const count = entry?.count ?? 1;
   const shortfall = owned != null && owned < count;
+  const widthStyle = stretch ? undefined : { width: tileWidth };
+  const stretchClass = stretch ? 'w-full min-w-0' : undefined;
 
   if (variant === 'add') {
     return (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label ? `Add ${label}` : 'Add card'}
-        style={{ width: tileWidth }}
-        className="gap-1.5 active:opacity-90"
+        style={widthStyle}
+        className={cn('gap-1.5 active:opacity-90', stretchClass)}
         onPress={() => {
           hapticPress();
           onAdd?.();
@@ -75,8 +80,8 @@ function DeckCardSlotInner({
           )}
         >
           <View className="items-center gap-1">
-            <ThemedIcon icon={PlusIcon} size={24} color="primary" />
-            <Text className="text-[11px] font-semibold text-primary">Add</Text>
+            <ThemedIcon icon={PlusIcon} size={24} color="foreground" />
+            <Text className="text-[11px] font-normal text-foreground">Add</Text>
           </View>
         </View>
         {label ? (
@@ -94,8 +99,8 @@ function DeckCardSlotInner({
         accessibilityRole="button"
         accessibilityLabel={label ? `${label} slot` : 'Empty slot'}
         accessibilityState={{ disabled: isLocked }}
-        style={{ width: tileWidth }}
-        className={cn('gap-1.5', !isLocked && 'active:opacity-90')}
+        style={widthStyle}
+        className={cn('gap-1.5', stretchClass, !isLocked && 'active:opacity-90')}
         onPress={() => {
           if (!onAdd) return;
           hapticPress();
@@ -107,19 +112,19 @@ function DeckCardSlotInner({
           className={cn(
             'aspect-[5/7] w-full items-center justify-center border border-dashed bg-card-panel',
             CARD_ART_RADIUS_CLASS,
-            isIdentity ? 'border-primary/35' : isLocked ? 'border-border/60 opacity-60' : 'border-border'
+            isIdentity ? 'border-foreground' : isLocked ? 'border-border/60 opacity-60' : 'border-border'
           )}
         >
           <ThemedIcon
             icon={isIdentity ? StarIcon : isLocked ? LockIcon : PlusIcon}
             size={22}
-            color={isLocked ? 'muted-foreground' : isIdentity ? 'muted-foreground' : 'primary'}
+            color={isLocked ? 'muted-foreground' : isIdentity ? 'muted-foreground' : 'foreground'}
           />
         </View>
         {label ? (
           <Text
             className={cn(
-              'px-0.5 text-center text-[11px] font-medium',
+              'px-0.5 text-center text-[11px] font-normal',
               isLocked ? 'text-muted-foreground/80' : 'text-muted-foreground'
             )}
           >
@@ -135,12 +140,12 @@ function DeckCardSlotInner({
   const showArtRemove = single && Boolean(onRemove);
 
   return (
-    <View style={{ width: tileWidth }} className="gap-1.5">
+    <View style={widthStyle} className={cn('gap-1.5', stretchClass)}>
       <View
         className={cn(
           'relative aspect-[5/7] w-full overflow-hidden border bg-background',
           CARD_ART_RADIUS_CLASS,
-          illegal ? 'border-destructive' : 'border-white/10'
+          illegal ? 'border-destructive' : 'border-border'
         )}
       >
         <Pressable
@@ -178,7 +183,7 @@ function DeckCardSlotInner({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Remove ${card.name}`}
-            className="absolute bottom-1 left-1 z-10 size-7 items-center justify-center rounded-md border border-border bg-background/92 active:bg-destructive/15"
+            className="absolute bottom-1 left-1 z-10 size-7 items-center justify-center rounded-[3px] border border-border bg-background/92 active:bg-destructive/15"
             onPress={() => {
               hapticPress();
               onRemove?.();
@@ -191,7 +196,7 @@ function DeckCardSlotInner({
 
       <Text
         className={cn(
-          'px-0.5 text-[12px] font-semibold',
+          'px-0.5 text-[12px] font-normal',
           illegal ? 'text-destructive' : 'text-foreground'
         )}
         numberOfLines={2}
@@ -228,6 +233,7 @@ function deckCardSlotPropsEqual(prev: DeckCardSlotProps, next: DeckCardSlotProps
   return (
     prev.variant === next.variant &&
     prev.tileWidth === next.tileWidth &&
+    prev.stretch === next.stretch &&
     prev.label === next.label &&
     prev.imageUri === next.imageUri &&
     prev.owned === next.owned &&

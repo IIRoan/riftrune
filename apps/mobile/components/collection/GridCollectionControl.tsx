@@ -4,6 +4,10 @@ import { useMemo } from 'react';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
 import { Text } from '@/components/ui/text';
 import {
+  OPERATE_CTA_LABEL_CLASS,
+  OPERATE_QTY_CLASS,
+} from '@/constants/operateType';
+import {
   buildPrintingPickerOptions,
   getRemovePrintingPickerOptions,
   printingSelectionId,
@@ -46,7 +50,7 @@ function wrapWithPicker(
 const CONTROL_HEIGHT = 'h-9';
 const ICON_SIZE = 14;
 
-/** Collection control for tray tiles — full-width soft Add / compact −n+. */
+/** Collection control for tray tiles — Factory chalk Add / carbon −n+. */
 export function GridCollectionControl({
   owned,
   name,
@@ -98,18 +102,18 @@ export function GridCollectionControl({
         accessibilityLabel={`Add ${name} to collection`}
         className={cn(
           CONTROL_HEIGHT,
-          'w-full flex-row items-center justify-center gap-1.5 rounded-full border border-border bg-card active:opacity-80',
+          'w-full flex-row items-center justify-center gap-1.5 rounded-[3px] bg-foreground active:opacity-80',
           busy && 'opacity-60'
         )}
         onPress={showAddPicker ? undefined : handleAdd}
         disabled={busy}
       >
         {busy && !showAddPicker ? (
-          <ActivityIndicator size="small" className="accent-foreground" />
+          <ActivityIndicator size="small" className="accent-background" />
         ) : (
           <>
-            <ThemedIcon icon={PlusIcon} size={ICON_SIZE} color="foreground" />
-            <Text className="text-[13px] font-semibold text-foreground">Add</Text>
+            <PlusIcon className="size-3.5 text-background" weight="bold" />
+            <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
           </>
         )}
       </Pressable>
@@ -126,7 +130,7 @@ export function GridCollectionControl({
       accessibilityLabel={`Remove one ${name}`}
       hitSlop={6}
       className={cn(
-        'size-8 items-center justify-center rounded-full active:bg-foreground/8',
+        'size-8 items-center justify-center rounded-[3px] active:bg-foreground/10',
         busy && 'opacity-60'
       )}
       onPress={showRemovePicker ? undefined : handleRemove}
@@ -146,7 +150,7 @@ export function GridCollectionControl({
       accessibilityLabel={`Add one ${name}`}
       hitSlop={6}
       className={cn(
-        'size-8 items-center justify-center rounded-full active:bg-foreground/8',
+        'size-8 items-center justify-center rounded-[3px] active:bg-foreground/10',
         busy && 'opacity-60'
       )}
       onPress={showAddPicker ? undefined : handleAdd}
@@ -164,16 +168,14 @@ export function GridCollectionControl({
     <View
       className={cn(
         CONTROL_HEIGHT,
-        'w-full flex-row items-center justify-between rounded-full bg-background/80 px-0.5',
+        'w-full flex-row items-center justify-between rounded-[3px] border border-border bg-card-panel px-0.5',
         busy && 'opacity-60'
       )}
     >
       {showRemovePicker
         ? wrapWithPicker('Remove printing', removeOptions, onRemove, decrement)
         : decrement}
-      <Text className="min-w-6 text-center font-mono text-[13px] font-semibold tabular-nums text-foreground">
-        {owned}
-      </Text>
+      <Text className={OPERATE_QTY_CLASS}>{owned}</Text>
       {showAddPicker
         ? wrapWithPicker('Add printing', pickerOptions, onAdd, increment)
         : increment}

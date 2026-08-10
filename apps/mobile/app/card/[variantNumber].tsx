@@ -122,19 +122,9 @@ export default function CardDetailScreen() {
       />
 
       {useDrawer ? (
-        <View
-          className={Platform.OS === 'web' ? 'fixed inset-0' : 'flex-1'}
-          style={
-            Platform.OS === 'web'
-              ? undefined
-              : { width: windowWidth, height: windowHeight }
-          }
-          pointerEvents="box-none"
-        >
-          <CardDetailDrawer open onClose={detail.handleClose}>
-            {drawerContent}
-          </CardDetailDrawer>
-        </View>
+        <CardDetailDrawer onClose={detail.handleClose}>
+          {drawerContent}
+        </CardDetailDrawer>
       ) : isModal ? (
         <View
           className={Platform.OS === 'web' ? 'fixed inset-0' : 'flex-1'}

@@ -7,6 +7,7 @@ import { DeckIdentityHeader } from '@/components/deck/DeckIdentityHeader';
 import { DeckSectionGrid } from '@/components/deck/DeckSectionGrid';
 import { DeckViewInfoPanel } from '@/components/deck/DeckViewInfoPanel';
 import { DeckLegalityBadge } from '@/components/deck/DeckLegalityBadge';
+import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { deckHasBannedCards } from '@/lib/card-legality';
 import { getSectionCount } from '@/lib/deck-card';
@@ -14,8 +15,11 @@ import { computeShowcaseIdentityTileWidth } from '@/lib/deck-showcase-layout';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
 
-/** Stack runes under identity when the showcase column is this narrow. */
-const RUNES_BELOW_MAX_WIDTH = 380;
+/**
+ * Runes sit beside legend/champion only when there is real horizontal room.
+ * Two ~120–200px tiles + gap + ~176px rune column needs ~560px+; phones must stack.
+ */
+const RUNES_BESIDE_MIN_WIDTH = 560;
 
 interface DeckShowcasePanelProps {
   deck: DeckState;
@@ -38,6 +42,7 @@ export function DeckShowcasePanel({
   paddingBottom = 0,
   className,
 }: DeckShowcasePanelProps) {
+  const isMobile = useMobileLayout();
   const [contentWidth, setContentWidth] = useState(0);
   const hasWidth = contentWidth > 0;
   // Same column math as the Cards catalog: 3-up on mobile, fill-available on desktop.
@@ -45,7 +50,8 @@ export function DeckShowcasePanel({
     measuredWidth: hasWidth ? contentWidth : null,
     fillAvailable: true,
   });
-  const runesBeside = hasWidth && contentWidth >= RUNES_BELOW_MAX_WIDTH;
+  const runesBeside =
+    !isMobile && hasWidth && contentWidth >= RUNES_BESIDE_MIN_WIDTH;
   const identityTileWidth = computeShowcaseIdentityTileWidth(contentWidth, runesBeside);
   const sideCount = getSectionCount(deck, 'sideboard');
 
@@ -58,7 +64,7 @@ export function DeckShowcasePanel({
     <ScrollView
       className={cn('min-h-0 flex-1', className)}
       contentContainerStyle={{ gap: 24 }}
-      contentContainerClassName="px-1 py-1"
+      contentContainerClassName="w-full max-w-full px-1 py-1"
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       onLayout={onLayout}

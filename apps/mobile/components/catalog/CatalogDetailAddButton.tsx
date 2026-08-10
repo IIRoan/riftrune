@@ -1,12 +1,13 @@
 import { ActivityIndicator, Pressable } from 'react-native';
-import { PlusIcon, ThemedIcon } from '@/components/icons';
+import { PlusIcon } from '@/components/icons';
 import { Text } from '@/components/ui/text';
+import { OPERATE_CTA_LABEL_CLASS } from '@/constants/operateType';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
 /**
- * Card-detail printing-row Add control.
- * Same tinted chip language as OwnershipStepper / CollectionAddButton.
+ * Card-detail printing-row Add — Factory chalk CTA (flashlit dispatch on dark).
+ * See apps/mobile/DESIGN.md → Catalog detail actions.
  */
 export function CatalogDetailAddButton({
   name,
@@ -29,17 +30,17 @@ export function CatalogDetailAddButton({
         onPress();
       }}
       className={cn(
-        'h-8 shrink-0 flex-row items-center justify-center gap-1 rounded-md bg-primary/12 px-3 web:cursor-pointer active:bg-primary/18',
+        'h-8 shrink-0 flex-row items-center justify-center gap-1 rounded-[3px] bg-foreground px-3.5 web:cursor-pointer active:opacity-80',
         busy && 'opacity-60',
         className
       )}
     >
       {busy ? (
-        <ActivityIndicator size="small" className="accent-primary" />
+        <ActivityIndicator size="small" className="accent-background" />
       ) : (
         <>
-          <ThemedIcon icon={PlusIcon} size={12} color="archive-accent-text" weight="bold" />
-          <Text className="text-[13px] font-semibold text-archive-accent-text">Add</Text>
+          <PlusIcon className="size-3.5 text-background" weight="bold" />
+          <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
         </>
       )}
     </Pressable>

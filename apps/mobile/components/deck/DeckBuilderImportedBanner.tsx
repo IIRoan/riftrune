@@ -27,7 +27,7 @@ export function DeckBuilderImportedBanner({
           accessibilityState={{ disabled: importBusy, busy: importBusy }}
           disabled={importBusy}
           className={cn(
-            'flex-row items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5',
+            'flex-row items-center gap-1 rounded-[3px] border border-border bg-card px-2.5 py-1.5',
             importBusy ? 'opacity-50' : 'active:bg-card-panel'
           )}
           onPress={() => {
@@ -35,8 +35,8 @@ export function DeckBuilderImportedBanner({
             onImportToMyDecks();
           }}
         >
-          <ThemedIcon icon={DownloadIcon} size={14} color="primary" />
-          <Text className="text-[12px] font-semibold text-primary">
+          <ThemedIcon icon={DownloadIcon} size={14} color="foreground" />
+          <Text className="text-[12px] font-normal text-foreground">
             {importBusy ? 'Importing…' : 'Import'}
           </Text>
         </Pressable>

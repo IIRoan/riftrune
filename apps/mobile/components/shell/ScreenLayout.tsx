@@ -10,7 +10,7 @@ import {
 import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { ListTopSpacer } from '@/components/ui/list-top-spacer';
 import { Layout } from '@/constants/Layout';
-import { SIDE_RAIL_WIDTH, useShowSideRail } from '@/hooks/useBreakpoint';
+import { CATALOG_DETAIL_GAP, SIDE_RAIL_WIDTH, useShowSideRail } from '@/hooks/useBreakpoint';
 import { useScreenInsets } from '@/hooks/useScreenInsets';
 import { cn } from '@/lib/utils';
 
@@ -125,7 +125,7 @@ export function ScreenLayout({
       <View
         className={cn(
           'flex-1 bg-background',
-          showRail ? 'px-2' : 'px-4 sm:px-6',
+          showRail ? 'px-4' : 'px-4 sm:px-6',
           className
         )}
       >
@@ -138,7 +138,7 @@ export function ScreenLayout({
   return (
     <ScrollView
       className={cn('flex-1 bg-background', className)}
-      contentContainerClassName={showRail ? 'px-2' : 'px-4 sm:px-6'}
+      contentContainerClassName={showRail ? 'px-4' : 'px-4 sm:px-6'}
       contentContainerStyle={{ width: '100%' }}
       showsVerticalScrollIndicator={false}
       {...scrollProps}
@@ -163,7 +163,7 @@ export function ScreenSplit({
   children,
   aside,
   asideWidth,
-  gap = 16,
+  gap = CATALOG_DETAIL_GAP,
   className,
   onMainWidthChange,
 }: ScreenSplitProps) {
@@ -186,7 +186,10 @@ export function ScreenSplit({
         <SplitMainContext.Provider value={mainWidth}>{children}</SplitMainContext.Provider>
       </View>
       {aside ? (
-        <View style={{ width: asideWidth }} className="shrink-0">
+        <View
+          style={{ width: asideWidth }}
+          className="min-h-0 h-full shrink-0 overflow-hidden"
+        >
           {aside}
         </View>
       ) : null}

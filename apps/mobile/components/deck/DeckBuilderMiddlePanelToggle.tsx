@@ -1,18 +1,24 @@
-import { Pressable, View } from 'react-native';
-import { CardsIcon, PencilIcon, ThemedIcon } from '@/components/icons';
-import { Text } from '@/components/ui/text';
-import { cn } from '@/lib/utils';
-import { hapticPress } from '@/utils/haptics';
+import { CardsIcon, PencilIcon } from '@/components/icons';
+import {
+  CatalogSegmentedControl,
+  type CatalogSegmentOption,
+} from '@/components/catalog/CatalogSegmentedControl';
 
 export type DeckBuilderMiddlePanel = 'catalog' | 'description';
 
-const OPTIONS: readonly {
-  value: DeckBuilderMiddlePanel;
-  label: string;
-  icon: typeof CardsIcon;
-}[] = [
-  { value: 'catalog', label: 'Cards', icon: CardsIcon },
-  { value: 'description', label: 'Desc', icon: PencilIcon },
+const OPTIONS: readonly CatalogSegmentOption<DeckBuilderMiddlePanel>[] = [
+  {
+    id: 'catalog',
+    label: 'Cards',
+    accessibilityLabel: 'Show card catalog',
+    icon: CardsIcon,
+  },
+  {
+    id: 'description',
+    label: 'Desc',
+    accessibilityLabel: 'Edit deck description',
+    icon: PencilIcon,
+  },
 ];
 
 interface DeckBuilderMiddlePanelToggleProps {
@@ -21,56 +27,19 @@ interface DeckBuilderMiddlePanelToggleProps {
   className?: string;
 }
 
-/** Left-rail control that swaps the middle builder column. */
+/** Left-rail control that swaps the middle builder column — same chrome as catalog segments. */
 export function DeckBuilderMiddlePanelToggle({
   value,
   onChange,
   className,
 }: DeckBuilderMiddlePanelToggleProps) {
   return (
-    <View
-      accessibilityRole="radiogroup"
-      className={cn(
-        'flex-row gap-1 rounded-lg border border-border bg-card-panel p-1',
-        className
-      )}
-    >
-      {OPTIONS.map((option) => {
-        const selected = value === option.value;
-        return (
-          <Pressable
-            key={option.value}
-            accessibilityRole="radio"
-            accessibilityState={{ selected }}
-            accessibilityLabel={
-              option.value === 'catalog' ? 'Show card catalog' : 'Edit deck description'
-            }
-            className={cn(
-              'min-h-9 flex-1 flex-row items-center justify-center gap-1.5 rounded-md px-2 py-1.5',
-              selected ? 'border border-border bg-card' : 'active:bg-accent/60'
-            )}
-            onPress={() => {
-              if (selected) return;
-              hapticPress();
-              onChange(option.value);
-            }}
-          >
-            <ThemedIcon
-              icon={option.icon}
-              size={14}
-              color={selected ? 'foreground' : 'muted-foreground'}
-            />
-            <Text
-              className={cn(
-                'text-[13px] font-semibold',
-                selected ? 'text-foreground' : 'text-muted-foreground'
-              )}
-            >
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
+    <CatalogSegmentedControl
+      value={value}
+      onChange={onChange}
+      options={OPTIONS}
+      fill
+      className={className}
+    />
   );
 }

@@ -20,7 +20,7 @@ const noopNameChange = (_name: string) => undefined;
 
 /** Shared size for every deck-builder toolbar control (36×36). */
 const TOOLBAR_CONTROL =
-  'size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card active:bg-card-panel';
+  'size-9 shrink-0 items-center justify-center rounded-[3px] border border-border bg-card active:bg-card-panel';
 
 interface DeckBuilderToolbarProps {
   deck: DeckState;
@@ -110,13 +110,13 @@ export function DeckBuilderToolbar({
           accessibilityRole="button"
           accessibilityLabel={infoDrawerOpen ? 'Hide deck info' : 'Show deck info'}
           accessibilityState={{ selected: infoDrawerOpen === true }}
-          className={cn(TOOLBAR_CONTROL, infoDrawerOpen && 'border-primary/40')}
+          className={cn(TOOLBAR_CONTROL, infoDrawerOpen && 'border-foreground')}
           onPress={onToggleInfoDrawer}
         >
           <ThemedIcon
             icon={MenuIcon}
             size={18}
-            color={infoDrawerOpen ? 'primary' : 'foreground'}
+            color="foreground"
           />
         </Pressable>
       ) : null}
@@ -127,14 +127,14 @@ export function DeckBuilderToolbar({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Edit deck"
-      className="h-9 shrink-0 flex-row items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2.5 active:bg-primary/20"
+      className="h-9 shrink-0 flex-row items-center gap-1.5 rounded-[3px] bg-foreground px-2.5 active:opacity-80"
       onPress={() => {
         hapticPress();
         onEdit();
       }}
     >
-      <ThemedIcon icon={PencilIcon} size={16} color="primary" />
-      <Text className="text-[13px] font-semibold text-primary">Edit</Text>
+      <PencilIcon className="size-4 text-background" />
+      <Text className="text-[13px] font-normal text-background">Edit</Text>
     </Pressable>
   ) : null;
 
@@ -175,7 +175,7 @@ export function DeckBuilderToolbar({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Open filters"
-      className={cn(TOOLBAR_CONTROL, 'relative', filterActive && 'border-ring/50 bg-card-panel')}
+      className={cn(TOOLBAR_CONTROL, 'relative', filterActive && 'border-foreground bg-card-panel')}
       onPress={() => {
         hapticPress();
         onOpenCatalogFilters();
@@ -187,10 +187,10 @@ export function DeckBuilderToolbar({
       />
       {filterActive ? (
         filterCount === 1 ? (
-          <View className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary" />
+          <View className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-foreground" />
         ) : (
-          <View className="absolute -right-1 -top-1 size-4 items-center justify-center rounded-full bg-primary">
-            <Text className="font-mono text-[9px] font-semibold text-primary-foreground">
+          <View className="absolute -right-1 -top-1 size-4 items-center justify-center rounded-[3px] bg-foreground">
+            <Text className="font-mono text-[9px] font-normal text-background">
               {filterCount}
             </Text>
           </View>
@@ -254,10 +254,10 @@ export function DeckBuilderToolbar({
                   onFocus={nameDraft.onFocus}
                   onBlur={nameDraft.onBlur}
                   placeholder="Deck name"
-                  className="h-9 min-h-9 py-0 text-base font-semibold"
+                  className="h-9 min-h-9 py-0 text-base font-normal"
                 />
               ) : (
-                <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
+                <Text className="text-lg font-normal text-foreground" numberOfLines={1}>
                   {deckName}
                 </Text>
               )}

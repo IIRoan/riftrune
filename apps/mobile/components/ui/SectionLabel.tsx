@@ -11,7 +11,7 @@ export function SectionLabel({ children, className, ...rest }: SectionLabelProps
   return (
     <Text
       className={cn(
-        'mb-2 text-[10px] font-semibold uppercase tracking-[1.6px] text-muted-foreground',
+        'mb-2 text-[10px] font-normal uppercase tracking-[1.6px] text-muted-foreground',
         className
       )}
       {...rest}

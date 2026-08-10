@@ -124,7 +124,7 @@ function AuthWidePlaymat({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
         >
-          <View className="relative rounded-xl border border-border bg-background/95 px-8 py-9 shadow-lg shadow-black/40">
+          <View className="relative rounded-[10px] border border-border bg-background/95 px-8 py-9 shadow-lg shadow-black/40">
             <AuthSlabCorners />
             <AuthBrandLockup />
             <View className="mt-8">

@@ -18,6 +18,7 @@ import { useWishlistMutations } from '@/hooks/useWishlistMutations';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
 import type { useVariantPriceHistory } from '@/hooks/useVariantPriceHistory';
 import { buildCatalogDetailListItem } from '@/components/catalog/catalogDetailListItem';
+import { FACTORY_RADIUS_PANEL_CLASS } from '@/constants/factoryShape';
 import { isCardBannedAt, parseCollectionFinishKey } from '@riftbound/contracts';
 import {
   formatMarketTrend,
@@ -254,42 +255,53 @@ export function CatalogDetailPanelBody({
       activeVariantNumber={activeVariant.variantNumber}
       activeCardmarketId={activeVariant.cardmarketId ?? null}
       priceHistory={priceHistory}
-      isDrawer={isDrawer}
     />
   );
 
   return (
-    <>
-      <View
-        className={cn(
-          'bg-card',
-          isDrawer ? undefined : 'overflow-hidden rounded-xl border border-border'
-        )}
-      >
-        <CatalogDetailHeader
-          cardName={card.name}
-          isBanned={isBanned}
-          setCode={setCode}
-          isDrawer={isDrawer}
-          detailImageUri={detailImageUri}
-          activeVariantNumber={activeVariant.variantNumber}
-          activeRarity={activeVariant.rarity}
-          watchedElsewhereCount={watchedElsewhereCount}
-          variantFamilySwitcher={variantFamilySwitcher}
-          onOpenFullscreen={openFullscreen}
-        />
-
-        {isDrawer ? (
-          detailBody
-        ) : (
-          <ScrollView
-            className="max-h-[calc(100vh-280px)]"
-            showsVerticalScrollIndicator={false}
-          >
-            {detailBody}
-          </ScrollView>
-        )}
-      </View>
+    <View className={isDrawer ? undefined : 'min-h-0 h-full'}>
+      {isDrawer ? (
+        <View className="bg-card-panel">
+          <CatalogDetailHeader
+            cardName={card.name}
+            isBanned={isBanned}
+            setCode={setCode}
+            isDrawer={isDrawer}
+            detailImageUri={detailImageUri}
+            activeVariantNumber={activeVariant.variantNumber}
+            activeRarity={activeVariant.rarity}
+            watchedElsewhereCount={watchedElsewhereCount}
+            variantFamilySwitcher={variantFamilySwitcher}
+            onOpenFullscreen={openFullscreen}
+          />
+          {detailBody}
+        </View>
+      ) : (
+        <ScrollView
+          className={cn(
+            'min-h-0 flex-1 border border-border bg-card',
+            FACTORY_RADIUS_PANEL_CLASS
+          )}
+          contentContainerClassName="grow-0"
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+        >
+          <CatalogDetailHeader
+            cardName={card.name}
+            isBanned={isBanned}
+            setCode={setCode}
+            isDrawer={isDrawer}
+            detailImageUri={detailImageUri}
+            activeVariantNumber={activeVariant.variantNumber}
+            activeRarity={activeVariant.rarity}
+            watchedElsewhereCount={watchedElsewhereCount}
+            variantFamilySwitcher={variantFamilySwitcher}
+            onOpenFullscreen={openFullscreen}
+          />
+          {detailBody}
+        </ScrollView>
+      )}
 
       <CatalogCardFullscreen
         visible={fullscreen}
@@ -322,6 +334,6 @@ export function CatalogDetailPanelBody({
           void detail.onAddToCollection(parsed?.variantNumber ?? id, parsed?.isFoil);
         }}
       />
-    </>
+    </View>
   );
 }

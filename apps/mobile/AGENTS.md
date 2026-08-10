@@ -46,15 +46,25 @@ import { cn } from '@/lib/utils';
 
 ### Styling conventions
 
+- **Visual authority:** [`PRODUCT.md`](./PRODUCT.md) + [`DESIGN.md`](./DESIGN.md) (Factory instrument panel). Prefer DESIGN.md over legacy soft-tint / archive-accent CTA habits when they conflict.
 - Use Uniwind `className` props exclusively — never `StyleSheet.create` or inline color styles
 - Use `cn()` from `@/lib/utils` for conditional classes
-- Theme tokens are defined in `global.css` and mapped in `@theme inline`
-- Standard tokens: `bg-background`, `bg-card`, `bg-card-panel`, `text-foreground`, `text-muted-foreground`, `border-border`, `text-primary`, `text-ring`, `text-success`
-- Keyword badge colors: `bg-keyword-accelerate`, `bg-keyword-combat`, `bg-keyword-ability`, `bg-keyword-default` (see `lib/card-keywords.ts`)
+- Theme tokens are defined in `global.css` and mapped in `@theme inline` — retarget toward Factory roles (obsidian / carbon / ash / bone / chalk; signal + metric as data only) as surfaces are redesigned
+- Standard tokens today: `bg-background`, `bg-card`, `bg-card-panel`, `text-foreground`, `text-muted-foreground`, `border-border`, `text-primary`, `text-ring`, `text-success` — map new work to Factory semantics in DESIGN.md
+- Keyword badge colors: `bg-keyword-accelerate`, `bg-keyword-combat`, `bg-keyword-ability`, `bg-keyword-default` (see `lib/card-keywords.ts`) — domain content, not chrome
 - **Riftbound UI kit** (`components/riftbound/`): use `KeywordBadge`, `StatusKeywordBadge`, `ContentKeywordBadge`, `QuantityPip`, and `EnergyPip` for game-native labels instead of generic pills. Import from `@/components/riftbound/RiftboundBadges` or the specific component file.
 - Child `Text` elements must be styled directly; styles do not cascade from parent `View` classes
 - `ThemeContext` syncs accent color and light/dark/system mode to Uniwind via `Uniwind.setTheme` and `Uniwind.updateCSSVariables`
 - For React Navigation tab bar colors, use `useCSSVariable` from `uniwind`
+
+### Action language (Factory)
+
+- Primary commit on dark: chalk fill (`foreground`/`bone` surface with inverted ink) or carbon lift fill — 3px radius, weight 500–600
+- Secondary: ash ghost (1px `border-border`, transparent) — no soft `primary/12` tint chips
+- Never: champagne/gold outline pills, chromatic CTA fills, pill radius as default
+- Functional color (trends, status pulses) is data voice only — see DESIGN.md
+- **Typography:** Lato (bundled) with honest weights — `font-normal` → 400, `font-medium` → 500, `font-semibold` → 600, `font-bold` → 700 (`lib/fonts.ts`). Body/UI defaults to Regular; SemiBold for structure; Bold for primary CTAs. Dense tile labels + chalk CTAs use shared tokens in `constants/operateType.ts`. Instrument/mono remains Geist Mono.
+- **Web / Firefox / Zen:** `ensureWebFontFaces()` registers unified `Lato` / `Geist Mono` `@font-face` rules with explicit `font-weight`. Do not force `antialiased`/`grayscale` font-smoothing — that thins light-on-dark in Gecko while Chrome still looks fine. Zen on Linux often disables subpixel AA (`zen.view.experimental-rounded-view`); that is a browser bug, not a missing face.
 
 ### App providers
 

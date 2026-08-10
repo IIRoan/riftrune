@@ -28,22 +28,22 @@ function messageTone(type: DeckValidationMessage['type']) {
 function triggerTone(status: 'valid' | 'warning' | 'error') {
   if (status === 'error') {
     return {
-      border: 'border-destructive/40',
+      border: 'border-border',
       bg: 'bg-card',
       ink: 'text-destructive',
     };
   }
   if (status === 'warning') {
     return {
-      border: 'border-warning/45',
+      border: 'border-border',
       bg: 'bg-card',
-      ink: 'text-warning',
+      ink: 'text-foreground',
     };
   }
   return {
-    border: 'border-success/40',
+    border: 'border-border',
     bg: 'bg-card',
-    ink: 'text-success',
+    ink: 'text-foreground',
   };
 }
 
@@ -80,7 +80,7 @@ export function DeckValidationMenu({
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`Deck validation: ${headline.label}`}
         className={cn(
-          'h-9 flex-row items-center rounded-lg border active:bg-card-panel',
+          'h-9 flex-row items-center rounded-[3px] border active:bg-card-panel',
           showLabel ? 'gap-1.5 px-2.5' : 'min-w-9 justify-center gap-1 px-1.5',
           tone.border,
           tone.bg
@@ -99,9 +99,9 @@ export function DeckValidationMenu({
           )}
         />
         {showLabel ? (
-          <Text className={cn('text-[12px] font-medium', tone.ink)}>{headline.label}</Text>
+          <Text className={cn('text-[12px] font-normal', tone.ink)}>{headline.label}</Text>
         ) : (
-          <Text className={cn('font-mono text-[12px] font-semibold tabular-nums', tone.ink)}>
+          <Text className={cn('font-mono text-[12px] font-normal tabular-nums', tone.ink)}>
             {messages.length}
           </Text>
         )}
@@ -115,14 +115,14 @@ export function DeckValidationMenu({
       {open ? (
         <View
           className={cn(
-            'absolute top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-border bg-popover shadow-md',
+            'absolute top-full z-30 mt-1.5 overflow-hidden rounded-[10px] border border-border bg-popover shadow-none',
             align === 'end' && 'right-0 w-[min(19rem,calc(100vw-2rem))]',
             align === 'start' && 'left-0 w-[min(19rem,calc(100vw-2rem))]',
             align === 'stretch' && 'left-0 right-0'
           )}
         >
           <View className="border-b border-border px-3 py-2.5">
-            <Text className="text-[13px] font-semibold text-foreground">{headline.label}</Text>
+            <Text className="text-[13px] font-normal text-foreground">{headline.label}</Text>
             <Text className="mt-0.5 text-[12px] text-muted-foreground">
               Fix these before the list is tournament-ready.
             </Text>
@@ -139,7 +139,7 @@ export function DeckValidationMenu({
                     index < messages.length - 1 && 'border-b border-border/60'
                   )}
                 >
-                  <View className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', row.dot)} />
+                  <View className={cn('mt-1.5 size-1.5 shrink-0 rounded-[3px]', row.dot)} />
                   <Text className={cn('min-w-0 flex-1 text-[13px] leading-snug', row.text)}>
                     {message.message}
                   </Text>
