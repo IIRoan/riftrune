@@ -1,14 +1,14 @@
 /**
- * Catalog card drawer session — Gorhom sheet with immediate dismiss.
+ * One catalog drawer presentation. Every tap creates a new session id, even
+ * when reopening the same card, so callbacks from an older close are harmless.
  *
- * Parent mount-gates on selection. Dismiss clears selection as soon as the
- * close commits (not after the spring) so nothing stays mounted and blocking
- * catalog taps.
+ * Dismiss-start flips `open` off to release hit-testing. The presentation stays
+ * mounted until Gorhom completes its close motion.
  */
-export type CatalogDrawerSession = {
-  selectedVariant: string | null;
-  /** Drawer React tree is mounted. */
-  hostMounted: boolean;
+export type CatalogDrawerPresentation = {
+  sessionId: number;
+  variantNumber: string;
+  open: boolean;
 };
 
 export type BottomSheetMountState = {
@@ -42,10 +42,7 @@ export function applyClosedToMountState(
 }
 
 /** Gorhom reports a snap index change; dismiss only notifies the parent. */
-export function onSheetIndexChange(
-  index: number,
-  notifyClosed: () => void
-): void {
+export function onSheetIndexChange(index: number, notifyClosed: () => void): void {
   if (index === -1) {
     notifyClosed();
   }
@@ -80,116 +77,65 @@ export function simulateDismissCycle(
   return applyOpenToMountState({ ...next, open: true });
 }
 
-export function isCatalogDrawerGlitched(session: CatalogDrawerSession): boolean {
-  return session.selectedVariant != null && !session.hostMounted;
+export function createCatalogDrawerPresentation(
+  sessionId: number,
+  variantNumber: string
+): CatalogDrawerPresentation {
+  return {
+    sessionId,
+    variantNumber,
+    open: true,
+  };
 }
 
-export function isCatalogDrawerIdle(session: CatalogDrawerSession): boolean {
-  return session.selectedVariant == null && !session.hostMounted;
+export function isCatalogDrawerBlockingTaps(
+  presentation: CatalogDrawerPresentation | null
+): boolean {
+  return presentation?.open === true;
 }
 
-/** Mounted host means the sheet is in the tree (presented or presenting). */
-export function isCatalogDrawerBlockingTaps(session: CatalogDrawerSession): boolean {
-  return session.hostMounted;
-}
-
-export function openCatalogDrawer(
-  _session: CatalogDrawerSession,
-  variant: string
-): CatalogDrawerSession {
-  return { selectedVariant: variant, hostMounted: true };
-}
-
-/** Dismiss finished: clear selection and unmount host together. */
-export function closeCatalogDrawer(_session: CatalogDrawerSession): CatalogDrawerSession {
-  return { selectedVariant: null, hostMounted: false };
-}
-
-/**
- * Legacy Gorhom path: wait for close animation while host stays mounted.
- * Blocks catalog taps / next open — do not use.
- */
-export function closeCatalogDrawerAfterAnimation(
-  _session: CatalogDrawerSession
-): CatalogDrawerSession {
-  return { selectedVariant: null, hostMounted: false };
-}
-
-/** Mid-close: animation running, app state not cleared yet (legacy / buggy). */
-export function catalogDrawerClosingButSelectionHeld(
-  session: CatalogDrawerSession
-): CatalogDrawerSession {
-  return { selectedVariant: session.selectedVariant, hostMounted: true };
+export function isCatalogDrawerClosing(
+  presentation: CatalogDrawerPresentation | null
+): boolean {
+  return presentation != null && !presentation.open;
 }
 
 /**
- * Legacy: sheet dismissed visually but selection stayed — next select has no host.
- */
-export function closeCatalogDrawerLeavingSelection(
-  session: CatalogDrawerSession
-): CatalogDrawerSession {
-  return { selectedVariant: session.selectedVariant, hostMounted: false };
-}
-
-/**
- * Legacy: selection cleared but an invisible host still blocked taps.
- */
-export function closeCatalogDrawerLeavingHost(
-  _session: CatalogDrawerSession
-): CatalogDrawerSession {
-  return { selectedVariant: null, hostMounted: true };
-}
-
-export function selectCatalogCard(
-  session: CatalogDrawerSession,
-  variant: string
-): CatalogDrawerSession {
-  if (!session.hostMounted && session.selectedVariant == null) {
-    return openCatalogDrawer(session, variant);
-  }
-  if (session.hostMounted && session.selectedVariant != null) {
-    return { selectedVariant: variant, hostMounted: true };
-  }
-  return { selectedVariant: variant, hostMounted: false };
-}
-
-/**
- * Dismiss commit — clear selection in the same turn so the host unmounts and
- * the next card can open a fresh sheet.
+ * Close-start is monotonic for one session. A stale callback cannot close a
+ * replacement presentation, including a new session for the same card.
  */
 export function beginCatalogDrawerDismiss(
-  session: CatalogDrawerSession
-): CatalogDrawerSession {
-  return closeCatalogDrawer(session);
+  presentation: CatalogDrawerPresentation | null,
+  dismissedSessionId: number
+): CatalogDrawerPresentation | null {
+  if (presentation?.sessionId !== dismissedSessionId || !presentation.open) {
+    return presentation;
+  }
+
+  return {
+    ...presentation,
+    open: false,
+  };
 }
 
-/**
- * Stale dismiss from a previous sheet instance must not clear a newer selection
- * (e.g. remount with key=B while A's onDidDismiss still fires).
- */
-export function shouldClearSelectionOnDismiss(
-  selectedVariant: string | null,
-  dismissedVariant: string
-): boolean {
-  return selectedVariant === dismissedVariant;
+export function finishCatalogDrawerDismiss(
+  presentation: CatalogDrawerPresentation | null,
+  dismissedSessionId: number
+): CatalogDrawerPresentation | null {
+  if (presentation?.sessionId !== dismissedSessionId || presentation.open) {
+    return presentation;
+  }
+
+  return null;
 }
 
 export function simulateQuickReopen(
-  session: CatalogDrawerSession,
-  nextVariant: string,
-  mode: 'fixed' | 'leave-selection' | 'leave-host' | 'wait-for-animation'
-): CatalogDrawerSession {
-  if (mode === 'wait-for-animation') {
-    const mid = catalogDrawerClosingButSelectionHeld(session);
-    return selectCatalogCard(mid, nextVariant);
-  }
-  if (mode === 'fixed') {
-    const closed = beginCatalogDrawerDismiss(session);
-    return selectCatalogCard(closed, nextVariant);
-  }
-  const closed =
-    mode === 'leave-selection'
-      ? closeCatalogDrawerLeavingSelection(session)
-      : closeCatalogDrawerLeavingHost(session);
-  return selectCatalogCard(closed, nextVariant);
+  presentation: CatalogDrawerPresentation,
+  nextSessionId: number,
+  nextVariantNumber: string
+): CatalogDrawerPresentation {
+  const dismissedSessionId = presentation.sessionId;
+  const reopened = createCatalogDrawerPresentation(nextSessionId, nextVariantNumber);
+
+  return finishCatalogDrawerDismiss(reopened, dismissedSessionId) ?? reopened;
 }

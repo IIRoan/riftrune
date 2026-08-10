@@ -64,8 +64,9 @@ export const OVERLAY = {
   /** Card modal / card-detail drawer denser scrim. */
   backdropCard: 0.85,
   /**
-   * Dialog presence settle only — bottom sheets must unmount immediately on
-   * close (a delayed portal host blocks catalog taps / quick reopen).
+   * Dialog presence settle only. Bottom-sheet hosts must release hit-testing
+   * at dismiss-start; card detail may retain non-interactive visual presence
+   * until Gorhom finishes closing.
    */
   unmountMs: 280,
   closeMs: 220,

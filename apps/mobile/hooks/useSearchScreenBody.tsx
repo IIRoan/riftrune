@@ -70,6 +70,12 @@ import {
 } from '@/lib/catalog-page-size';
 import { prefetchCatalogArt } from '@/lib/imagePrefetch';
 import { isCatalogGridLoading, resolveCatalogDisplayItems } from '@/lib/catalog-loading';
+import {
+  beginCatalogDrawerDismiss,
+  createCatalogDrawerPresentation,
+  finishCatalogDrawerDismiss,
+  type CatalogDrawerPresentation,
+} from '@/lib/bottom-sheet-lifecycle';
 
 export function useSearchScreenBody(): React.ReactElement {
   const { defaultLayout: view } = useTheme();
@@ -91,6 +97,9 @@ export function useSearchScreenBody(): React.ReactElement {
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(DEFAULT_CATALOG_SORT);
   const [sortPending, setSortPending] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+  const [drawerPresentation, setDrawerPresentation] =
+    useState<CatalogDrawerPresentation | null>(null);
+  const nextDrawerSessionIdRef = useRef(0);
   const queryClient = useQueryClient();
   const catalogListRef = useRef<FlashListRef<CardListItem>>(null);
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 20 }).current;
@@ -264,6 +273,24 @@ export function useSearchScreenBody(): React.ReactElement {
     [displayItems, selectedVariant]
   );
 
+  const catalogSelectedVariant = splitLayout
+    ? selectedVariant
+    : drawerPresentation?.open
+      ? drawerPresentation.variantNumber
+      : null;
+
+  const drawerVariant = drawerPresentation?.variantNumber ?? null;
+
+  const drawerCard = useMemo(
+    () =>
+      drawerVariant
+        ? (displayItems.find((item) =>
+            cardListItemMatchesVariant(item, drawerVariant)
+          ) ?? null)
+        : null,
+    [displayItems, drawerVariant]
+  );
+
   useEffect(() => {
     if (displayItems.length === 0) return;
 
@@ -295,6 +322,7 @@ export function useSearchScreenBody(): React.ReactElement {
 
   useEffect(() => {
     if (!splitLayout) return;
+    setDrawerPresentation(null);
     if (displayItems.length === 0) {
       setSelectedVariant(null);
       return;
@@ -317,9 +345,18 @@ export function useSearchScreenBody(): React.ReactElement {
       }
       // Direct GET for rules text — don't wait on the batch prefetch queue.
       ensureCardDetail(queryClient, variantNumber);
+      if (!splitLayout) {
+        nextDrawerSessionIdRef.current += 1;
+        setDrawerPresentation(
+          createCatalogDrawerPresentation(
+            nextDrawerSessionIdRef.current,
+            variantNumber
+          )
+        );
+      }
       setSelectedVariant(variantNumber);
     },
-    [queryClient, displayItemsRef]
+    [queryClient, displayItemsRef, splitLayout]
   );
 
   const onViewableItemsChanged = useCallback(
@@ -628,11 +665,11 @@ export function useSearchScreenBody(): React.ReactElement {
 
   const listExtraData = useMemo(
     () => ({
-      selectedVariant,
+      selectedVariant: catalogSelectedVariant,
       ownership: collectionByVariant,
       simpleAdd: catalogFilters.simpleAdd,
     }),
-    [selectedVariant, collectionByVariant, catalogFilters.simpleAdd]
+    [catalogSelectedVariant, collectionByVariant, catalogFilters.simpleAdd]
   );
 
   const catalogList = (
@@ -642,7 +679,7 @@ export function useSearchScreenBody(): React.ReactElement {
       view={view}
       numColumns={numColumns}
       isList={isList}
-      selectedVariant={selectedVariant}
+      selectedVariant={catalogSelectedVariant}
       splitLayout={splitLayout}
       compact={compact}
       catalogFiltersSimpleAdd={catalogFilters.simpleAdd}
@@ -711,20 +748,28 @@ export function useSearchScreenBody(): React.ReactElement {
         onSortChange={applyCatalogSort}
       />
 
-      {/* Mount-gated — host unmounts as soon as dismiss commits. */}
-      {!splitLayout && selectedVariant ? (
+      {/* Selection clears at dismiss-start; the non-interactive visual host
+          remains only until Gorhom reports that its close motion completed. */}
+      {!splitLayout && drawerPresentation && drawerVariant ? (
         <CardDetailDrawer
-          key={selectedVariant}
+          key={drawerPresentation.sessionId}
+          open={drawerPresentation.open}
           onClose={() => {
-            const closedVariant = selectedVariant;
-            setSelectedVariant((current) =>
-              current === closedVariant ? null : current
+            const dismissedSessionId = drawerPresentation.sessionId;
+            setDrawerPresentation((current) =>
+              beginCatalogDrawerDismiss(current, dismissedSessionId)
+            );
+          }}
+          onDismissed={() => {
+            const dismissedSessionId = drawerPresentation.sessionId;
+            setDrawerPresentation((current) =>
+              finishCatalogDrawerDismiss(current, dismissedSessionId)
             );
           }}
         >
           <CatalogDetailPanel
-            variantNumber={selectedVariant}
-            catalogListItem={selectedCard}
+            variantNumber={drawerVariant}
+            catalogListItem={drawerCard}
             embedded="drawer"
           />
         </CardDetailDrawer>

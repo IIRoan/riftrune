@@ -3,21 +3,16 @@ import {
   applyClosedToMountState,
   applyOpenToMountState,
   beginCatalogDrawerDismiss,
-  closeCatalogDrawerLeavingHost,
-  closeCatalogDrawerLeavingSelection,
+  createCatalogDrawerPresentation,
+  finishCatalogDrawerDismiss,
   isBottomSheetStuck,
   isCatalogDrawerBlockingTaps,
-  isCatalogDrawerGlitched,
-  isCatalogDrawerIdle,
+  isCatalogDrawerClosing,
   onSheetIndexChange,
-  openCatalogDrawer,
-  selectCatalogCard,
-  shouldClearSelectionOnDismiss,
   simulateBuggyDismissBeforeParentUpdates,
   simulateDismissCycle,
   simulateQuickReopen,
   type BottomSheetMountState,
-  type CatalogDrawerSession,
 } from '@/lib/bottom-sheet-lifecycle';
 
 describe('bottom sheet mount lifecycle', () => {
@@ -76,75 +71,63 @@ describe('bottom sheet mount lifecycle', () => {
 });
 
 describe('catalog drawer dismiss', () => {
-  const idle: CatalogDrawerSession = {
-    selectedVariant: null,
-    hostMounted: false,
-  };
-
-  test('dismiss clears selection and host so the next card can present', () => {
-    const open = openCatalogDrawer(idle, 'OGN-001');
+  test('dismiss-start releases taps without clipping the visual host', () => {
+    const open = createCatalogDrawerPresentation(1, 'OGN-001');
     expect(isCatalogDrawerBlockingTaps(open)).toBe(true);
 
-    const afterDismiss = beginCatalogDrawerDismiss(open);
-    expect(isCatalogDrawerIdle(afterDismiss)).toBe(true);
+    const afterDismiss = beginCatalogDrawerDismiss(open, 1);
+    expect(afterDismiss?.variantNumber).toBe('OGN-001');
+    expect(isCatalogDrawerClosing(afterDismiss)).toBe(true);
     expect(isCatalogDrawerBlockingTaps(afterDismiss)).toBe(false);
 
-    const reopened = selectCatalogCard(afterDismiss, 'OGN-002');
-    expect(reopened).toEqual({ selectedVariant: 'OGN-002', hostMounted: true });
+    expect(finishCatalogDrawerDismiss(afterDismiss, 1)).toBeNull();
   });
 
-  test('stale dismiss for a previous variant does not clear the new selection', () => {
-    expect(shouldClearSelectionOnDismiss('OGN-002', 'OGN-001')).toBe(false);
-    expect(shouldClearSelectionOnDismiss('OGN-001', 'OGN-001')).toBe(true);
-    expect(shouldClearSelectionOnDismiss(null, 'OGN-001')).toBe(false);
+  test('another card can open before the previous close completion arrives', () => {
+    const open = createCatalogDrawerPresentation(1, 'OGN-001');
+    const closing = beginCatalogDrawerDismiss(open, 1);
+    const reopened = createCatalogDrawerPresentation(2, 'OGN-002');
+    const afterStaleCompletion = finishCatalogDrawerDismiss(reopened, 1);
+
+    expect(afterStaleCompletion).toEqual(reopened);
+    expect(afterStaleCompletion?.variantNumber).toBe('OGN-002');
+    expect(afterStaleCompletion?.open).toBe(true);
+    expect(isCatalogDrawerClosing(closing)).toBe(true);
   });
 
-  test('leaving selection after close reproduces selected-but-no-drawer', () => {
-    const open = openCatalogDrawer(idle, 'OGN-001');
-    expect(isCatalogDrawerGlitched(closeCatalogDrawerLeavingSelection(open))).toBe(
-      true
-    );
+  test('reopening the same card creates a fresh session that stale callbacks cannot close', () => {
+    const first = createCatalogDrawerPresentation(1, 'OGN-001');
+    const closing = beginCatalogDrawerDismiss(first, 1);
+    const reopened = createCatalogDrawerPresentation(2, 'OGN-001');
+
+    expect(beginCatalogDrawerDismiss(reopened, 1)).toEqual(reopened);
+    expect(finishCatalogDrawerDismiss(reopened, 1)).toEqual(reopened);
+    expect(reopened.sessionId).toBe(2);
+    expect(reopened.open).toBe(true);
+    expect(isCatalogDrawerClosing(closing)).toBe(true);
   });
 
-  test('leaving a host after close is a stale blocker', () => {
-    const open = openCatalogDrawer(idle, 'OGN-001');
-    const blocked = closeCatalogDrawerLeavingHost(open);
-    expect(isCatalogDrawerBlockingTaps(blocked)).toBe(true);
-    expect(blocked.selectedVariant).toBeNull();
-  });
+  test('rapid dismiss and reopen remains open across many stale completions', () => {
+    let presentation = createCatalogDrawerPresentation(1, 'OGN-001');
 
-  test('fixed quick reopen never glitches across many cycles', () => {
-    let session = idle;
-
-    for (let i = 0; i < 40; i += 1) {
-      session = openCatalogDrawer(session, `OGN-${String(i).padStart(3, '0')}`);
-      expect(isCatalogDrawerGlitched(session)).toBe(false);
-
-      session = simulateQuickReopen(
-        session,
-        `OGN-${String(i + 1).padStart(3, '0')}`,
-        'fixed'
+    for (let sessionId = 2; sessionId <= 80; sessionId += 1) {
+      presentation = simulateQuickReopen(
+        presentation,
+        sessionId,
+        sessionId % 2 === 0 ? 'OGN-001' : 'OGN-002'
       );
-      expect(isCatalogDrawerGlitched(session)).toBe(false);
-      expect(session.hostMounted).toBe(true);
-      expect(session.selectedVariant).toBe(`OGN-${String(i + 1).padStart(3, '0')}`);
+      expect(presentation.sessionId).toBe(sessionId);
+      expect(presentation.open).toBe(true);
+      expect(isCatalogDrawerBlockingTaps(presentation)).toBe(true);
     }
   });
 
-  test('legacy leave-selection stays glitched', () => {
-    const open = openCatalogDrawer(idle, 'OGN-001');
-    expect(
-      isCatalogDrawerGlitched(simulateQuickReopen(open, 'OGN-002', 'leave-selection'))
-    ).toBe(true);
-  });
+  test('duplicate callbacks are monotonic and cannot reopen a closing session', () => {
+    const open = createCatalogDrawerPresentation(7, 'OGN-007');
+    const closing = beginCatalogDrawerDismiss(open, 7);
 
-  test('delayed host while selection held blocks the next open', () => {
-    const open = openCatalogDrawer(idle, 'OGN-001');
-    const midClose = {
-      selectedVariant: open.selectedVariant,
-      hostMounted: true,
-    };
-    expect(isCatalogDrawerBlockingTaps(midClose)).toBe(true);
-    expect(isCatalogDrawerIdle(beginCatalogDrawerDismiss(open))).toBe(true);
+    expect(beginCatalogDrawerDismiss(closing, 7)).toEqual(closing);
+    expect(isCatalogDrawerClosing(closing)).toBe(true);
+    expect(finishCatalogDrawerDismiss(closing, 7)).toBeNull();
   });
 });
