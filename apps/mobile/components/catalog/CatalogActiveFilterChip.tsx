@@ -108,33 +108,32 @@ export function CatalogActiveFilterChip({
   onRemoveColor,
 }: CatalogActiveFilterChipProps) {
   const { category, value } = parseCatalogFilterChipDisplay(chip);
+  const hasColorPills = Boolean(chip.colorNames && chip.colorNames.length > 0);
 
   const valueContent =
-    chip.colorNames && chip.colorNames.length > 0 ? (
-      <View className="flex-row items-center gap-1">
-        {chip.colorNames.map((name) => (
-          <FilterChipValuePill
-            key={name}
-            removeLabel={`Remove ${name} color filter`}
-            onRemove={
-              onRemoveColor
-                ? () => {
-                    onRemoveColor(name);
-                  }
-                : undefined
-            }
-          >
-            <View className="flex-row items-center gap-1 pr-0.5">
-              <DomainIcon
-                name={name}
-                imageUrl={colorImageByName?.get(name)?.imageUrl}
-                size={14}
-              />
-              <Text className={FILTER_CHIP_VALUE_TEXT_CLASS}>{name}</Text>
-            </View>
-          </FilterChipValuePill>
-        ))}
-      </View>
+    hasColorPills && chip.colorNames ? (
+      chip.colorNames.map((name) => (
+        <FilterChipValuePill
+          key={name}
+          removeLabel={`Remove ${name} color filter`}
+          onRemove={
+            onRemoveColor
+              ? () => {
+                  onRemoveColor(name);
+                }
+              : undefined
+          }
+        >
+          <View className="flex-row items-center gap-1 pr-0.5">
+            <DomainIcon
+              name={name}
+              imageUrl={colorImageByName?.get(name)?.imageUrl}
+              size={14}
+            />
+            <Text className={FILTER_CHIP_VALUE_TEXT_CLASS}>{name}</Text>
+          </View>
+        </FilterChipValuePill>
+      ))
     ) : value ? (
       <Text className={FILTER_CHIP_VALUE_TEXT_CLASS} numberOfLines={1}>
         {value}
@@ -142,13 +141,26 @@ export function CatalogActiveFilterChip({
     ) : null;
 
   return (
-    <View className={FILTER_CHIP_SHELL_CLASS}>
+    <View
+      className={cn(
+        FILTER_CHIP_SHELL_CLASS,
+        // Multi-color pills wrap instead of clipping inside the fixed-height shell.
+        hasColorPills && 'h-auto min-h-8'
+      )}
+    >
       <View className={FILTER_CHIP_CATEGORY_CLASS}>
         <Text className={FILTER_CHIP_CATEGORY_LABEL_CLASS}>{category}</Text>
       </View>
 
       {valueContent ? (
-        <View className={FILTER_CHIP_VALUE_CLASS}>{valueContent}</View>
+        <View
+          className={cn(
+            FILTER_CHIP_VALUE_CLASS,
+            hasColorPills && 'flex-wrap gap-1 py-1'
+          )}
+        >
+          {valueContent}
+        </View>
       ) : null}
 
       <View className="justify-center border-l border-border">

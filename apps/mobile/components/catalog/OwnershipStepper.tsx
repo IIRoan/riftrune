@@ -83,12 +83,34 @@ export function OwnershipStepper({
     [printings, pickerOptions]
   );
 
-  const iconSize = relaxed ? 12 : 11;
+  /** Compact + relaxed = card-detail drawer rows (larger +/− hit targets). */
+  const detailTouch = compact && relaxed && !gridSlot;
+  const iconSize = detailTouch ? 16 : relaxed ? 12 : 11;
   /** Keep Add + owned stepper the same height to avoid tile layout shift. */
-  const controlHeight = gridSlot || compact ? 'h-7' : relaxed ? 'h-8' : 'h-7';
-  const stepSize = gridSlot || compact ? 'size-7' : relaxed ? 'size-8' : 'size-7';
+  const controlHeight = gridSlot
+    ? 'h-7'
+    : detailTouch
+      ? 'h-10'
+      : compact
+        ? 'h-7'
+        : relaxed
+          ? 'h-8'
+          : 'h-7';
+  const stepSize = gridSlot
+    ? 'size-7'
+    : detailTouch
+      ? 'size-10'
+      : compact
+        ? 'size-7'
+        : relaxed
+          ? 'size-8'
+          : 'size-7';
   /** Shared footprint so Add ↔ owned doesn't jump in detail rows. */
-  const controlWidth = compact && !gridSlot ? 'min-w-[5.75rem]' : undefined;
+  const controlWidth = compact && !gridSlot
+    ? detailTouch
+      ? 'min-w-[7.25rem]'
+      : 'min-w-[5.75rem]'
+    : undefined;
 
   const addDefaultFinish = () => {
     if (pinnedSelectionId) {
@@ -121,10 +143,20 @@ export function OwnershipStepper({
         ) : (
           <>
             <PlusIcon
-              className={cn('text-background', relaxed ? 'size-3.5' : 'size-3')}
+              className={cn(
+                'text-background',
+                detailTouch ? 'size-4' : relaxed ? 'size-3.5' : 'size-3'
+              )}
               weight="bold"
             />
-            <Text className="text-[11px] font-medium tracking-tight text-background">Add</Text>
+            <Text
+              className={cn(
+                'font-medium tracking-tight text-background',
+                detailTouch ? 'text-[13px]' : 'text-[11px]'
+              )}
+            >
+              Add
+            </Text>
           </>
         )}
       </Pressable>
@@ -198,11 +230,13 @@ export function OwnershipStepper({
             'shrink-0 text-center font-mono font-normal tabular-nums text-foreground',
             gridSlot
               ? 'min-w-7 text-xs'
-              : compact
-                ? 'min-w-5 text-[11px]'
-                : relaxed
-                  ? 'min-w-6 text-[13px]'
-                  : 'min-w-6 text-[12px]'
+              : detailTouch
+                ? 'min-w-7 text-sm'
+                : compact
+                  ? 'min-w-5 text-[11px]'
+                  : relaxed
+                    ? 'min-w-6 text-[13px]'
+                    : 'min-w-6 text-[12px]'
           )}
         >
           {owned}

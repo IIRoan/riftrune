@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
+  BackHandler,
   Modal,
   Platform,
   Pressable,
@@ -28,16 +29,24 @@ interface CardDetailDrawerProps {
   children: React.ReactNode;
 }
 
-const SHEET_RADIUS = 20;
-/** animatedIndex drops below this when Gorhom commits to pan-down close. */
+export const CARD_DETAIL_SHEET_RADIUS = 20;
+export const CARD_DETAIL_SNAP_RATIO = 0.94;
+
+/** animatedIndex drops to/below this when Gorhom commits to pan-down close. */
 const DISMISS_INDEX = -0.12;
 
+/** Activate vertical pan after a short drag — easier grab, not early dismiss. */
+const PAN_ACTIVE_OFFSET_Y = Platform.OS === 'web' ? 3 : 4;
+
 /**
- * Mobile card detail — Gorhom sheet without the app Portal.
+ * Mobile card detail — Gorhom sheet (Expo Go compatible).
  *
  * Critical: clear selection / unmount as soon as dismiss is committed
  * (backdrop press or pan past close threshold). Waiting for Gorhom’s
  * onClose (post-animation) leaves a full-screen host eating catalog taps.
+ *
+ * True Sheet would be nicer natively but requires a custom dev client —
+ * not Expo Go.
  */
 export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
   const reduceMotion = useReduceMotion();
@@ -48,11 +57,14 @@ export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
   const closedRef = useRef(false);
   const animatedIndex = useSharedValue(0);
 
-  const snapPoints = useMemo(() => ['94%'], []);
+  const snapPoints = useMemo(
+    () => [`${Math.round(CARD_DETAIL_SNAP_RATIO * 100)}%`],
+    []
+  );
   const paddingBottom = Math.max(insets.bottom, 16) + 32;
   const topInset = Math.max(insets.top, 12) + 16;
   const sheetSurface = isDark ? 'bg-card-panel' : 'bg-card';
-  const backdropOpacity = isDark ? 0.88 : OVERLAY.backdropDark;
+  const backdropOpacity = isDark ? OVERLAY.backdropCard : OVERLAY.backdropLight;
   const animationConfigs = reduceMotion ? SHEET_REDUCED : SHEET_SPRING;
 
   const dismiss = useCallback(() => {
@@ -61,11 +73,12 @@ export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
     onClose();
   }, [onClose]);
 
-  // Pan-down: Gorhom’s onClose waits for the spring to finish (~1s). Unmount
-  // as soon as the index crosses into “closing” so catalog taps work again.
+  // Pan-down: Gorhom’s onClose waits for the spring to finish. Unmount as soon
+  // as the index crosses into “closing” so catalog taps work again.
   useAnimatedReaction(
     () => animatedIndex.value,
     (index, prev) => {
+      'worklet';
       if (prev == null) return;
       // Opening: -1 → 0. Ignore. Closing from open (≈0) toward -1.
       if (prev > DISMISS_INDEX && index <= DISMISS_INDEX) {
@@ -75,6 +88,18 @@ export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
     [dismiss]
   );
 
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        dismiss();
+        return true;
+      }
+    );
+    return () => subscription.remove();
+  }, [dismiss]);
+
   const renderBackground = useCallback(
     (props: BottomSheetBackgroundProps) => (
       <View
@@ -83,8 +108,8 @@ export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
         style={[
           props.style,
           {
-            borderTopLeftRadius: SHEET_RADIUS,
-            borderTopRightRadius: SHEET_RADIUS,
+            borderTopLeftRadius: CARD_DETAIL_SHEET_RADIUS,
+            borderTopRightRadius: CARD_DETAIL_SHEET_RADIUS,
           },
         ]}
       />
@@ -96,11 +121,11 @@ export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
     () => (
       <View
         className={cn('items-center justify-center border-b border-border', sheetSurface)}
-        style={{ paddingTop: 10, paddingBottom: 8 }}
+        style={{ paddingTop: 12, paddingBottom: 14 }}
       >
         <View
           className={cn(
-            'h-1 w-12 rounded-[3px]',
+            'h-1.5 w-14 rounded-[3px]',
             isDark ? 'bg-foreground/45' : 'bg-muted-foreground/70'
           )}
         />
@@ -112,13 +137,14 @@ export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
   const sheet = (
     <GestureHandlerRootView style={styles.flex} pointerEvents="box-none">
       <View style={[styles.flex, { height: windowHeight }]} pointerEvents="box-none">
-        {/* Instant backdrop — do not use Gorhom backdrop pressBehavior="close"
-            (that waits for the sheet animation before our tree unmounts). */}
         <Pressable
           accessibilityLabel="Close card detail"
           accessibilityRole="button"
           onPress={dismiss}
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000', opacity: backdropOpacity }]}
+          style={[
+            StyleSheet.absoluteFillObject,
+            { backgroundColor: '#000', opacity: backdropOpacity },
+          ]}
         />
         <GorhomBottomSheet
           index={0}
@@ -131,8 +157,8 @@ export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
           enableDynamicSizing={false}
           animateOnMount
           animationConfigs={animationConfigs}
-          overDragResistanceFactor={1.15}
-          activeOffsetY={Platform.OS === 'web' ? 4 : 6}
+          overDragResistanceFactor={0.7}
+          activeOffsetY={PAN_ACTIVE_OFFSET_Y}
           backgroundComponent={renderBackground}
           handleComponent={renderHandle}
           style={styles.sheetContainer}
@@ -187,7 +213,6 @@ export function CardDetailDrawer({ onClose, children }: CardDetailDrawerProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  // Let taps outside the sheet chrome pass through once backdrop is gone.
   sheetContainer: {
     pointerEvents: 'box-none',
   },

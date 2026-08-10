@@ -711,16 +711,18 @@ export function useSearchScreenBody(): React.ReactElement {
         onSortChange={applyCatalogSort}
       />
 
-      {/* Mount-gated, no app Portal — host unmounts as soon as dismiss starts
-          so catalog taps aren’t blocked by a lingering overlay. */}
+      {/* Mount-gated — host unmounts as soon as dismiss commits. */}
       {!splitLayout && selectedVariant ? (
         <CardDetailDrawer
+          key={selectedVariant}
           onClose={() => {
-            setSelectedVariant(null);
+            const closedVariant = selectedVariant;
+            setSelectedVariant((current) =>
+              current === closedVariant ? null : current
+            );
           }}
         >
           <CatalogDetailPanel
-            key={selectedVariant}
             variantNumber={selectedVariant}
             catalogListItem={selectedCard}
             embedded="drawer"

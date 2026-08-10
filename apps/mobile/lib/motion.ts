@@ -52,6 +52,7 @@ export const PULSE_MS = 1400;
  * Overlay / sheet / dialog choreography.
  * Open: spring-smooth spatial settle. Close: snappy decel (no bounce past closed).
  * Reduced motion: opacity-only fades — no scale/translate.
+ * Card-detail Gorhom backdrop opacity must track animatedIndex (−1→0), not pop in.
  */
 export const OVERLAY = {
   /** Content starts slightly small + below, settles into place. */
@@ -60,7 +61,7 @@ export const OVERLAY = {
   /** Backdrop target opacities (light / dark). */
   backdropLight: 0.5,
   backdropDark: 0.75,
-  /** Card modal uses a denser scrim. */
+  /** Card modal / card-detail drawer denser scrim. */
   backdropCard: 0.85,
   /**
    * Dialog presence settle only — bottom sheets must unmount immediately on

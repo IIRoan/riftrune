@@ -62,6 +62,7 @@ export function CatalogDetailPrintingRows({
                       owned={qty}
                       name={rowName}
                       compact
+                      relaxed
                       printings={[printing]}
                       fixedVariantNumber={printing.variantNumber}
                       fixedIsFoil={printing.isFoil}
@@ -78,6 +79,7 @@ export function CatalogDetailPrintingRows({
                       onPress={() => {
                         onAdd(printing.variantNumber, printing.isFoil);
                       }}
+                      className="h-10 min-w-[7.25rem] px-3.5"
                     />
                   )
                 ) : qty > 0 ? (
