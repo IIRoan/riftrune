@@ -1,17 +1,22 @@
 import { useMemo, useRef } from 'react';
 import { Platform, useWindowDimensions } from 'react-native';
 import { Layout } from '@/constants/Layout';
+import { useTheme } from '@/context/ThemeContext';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import {
   GRID_TILE_MAX_WIDTH,
   GRID_TILE_MIN_WIDTH,
   computeMaxCappedGridColumns,
+  resolveGridTileMaxWidth,
+  type GridCardSize,
 } from '@/lib/grid-columns';
 
 export {
   GRID_TILE_MAX_WIDTH,
   GRID_TILE_MIN_WIDTH,
   computeMaxCappedGridColumns,
+  resolveGridTileMaxWidth,
+  type GridCardSize,
 } from '@/lib/grid-columns';
 
 const MIN_GRID_COLUMNS = 2;
@@ -23,7 +28,8 @@ const LIST_MAX_WIDTH = 640;
 function computeGridLayout(
   contentWidth: number,
   fillAvailable = false,
-  subtractScreenPadding = true
+  subtractScreenPadding = true,
+  maxTileWidth = GRID_TILE_MAX_WIDTH
 ) {
   const horizontalPad = subtractScreenPadding ? Layout.screenPaddingHorizontal * 2 : 0;
   const gap = Layout.gridGap;
@@ -31,13 +37,12 @@ function computeGridLayout(
 
   let numColumns = Math.max(
     MIN_GRID_COLUMNS,
-    Math.floor((available + gap) / (GRID_TILE_MAX_WIDTH + gap))
+    Math.floor((available + gap) / (maxTileWidth + gap))
   );
   numColumns = Math.min(MAX_GRID_COLUMNS, numColumns);
 
   if (!fillAvailable) {
-    const minForEight =
-      TARGET_GRID_COLUMNS * GRID_TILE_MAX_WIDTH + (TARGET_GRID_COLUMNS - 1) * gap;
+    const minForEight = TARGET_GRID_COLUMNS * maxTileWidth + (TARGET_GRID_COLUMNS - 1) * gap;
     if (available >= minForEight) {
       numColumns = Math.max(TARGET_GRID_COLUMNS, numColumns);
     }
@@ -50,15 +55,15 @@ function computeGridLayout(
     return { numColumns, tileWidth, gap };
   }
 
-  if (tileWidth > GRID_TILE_MAX_WIDTH) {
+  if (tileWidth > maxTileWidth) {
     numColumns = Math.max(
       MIN_GRID_COLUMNS,
-      Math.floor((available + gap) / (GRID_TILE_MAX_WIDTH + gap))
+      Math.floor((available + gap) / (maxTileWidth + gap))
     );
     tileWidth = (available - gap * (numColumns - 1)) / numColumns;
   }
 
-  tileWidth = Math.max(GRID_TILE_MIN_WIDTH, Math.min(GRID_TILE_MAX_WIDTH, tileWidth));
+  tileWidth = Math.max(GRID_TILE_MIN_WIDTH, Math.min(maxTileWidth, tileWidth));
 
   return { numColumns, tileWidth, gap };
 }
@@ -67,18 +72,19 @@ function computeGridLayout(
 function computeMobileGridLayout(
   contentWidth: number,
   fillAvailable = false,
-  subtractScreenPadding = true
+  subtractScreenPadding = true,
+  maxTileWidth = GRID_TILE_MAX_WIDTH
 ) {
   const horizontalPad = subtractScreenPadding ? Layout.screenPaddingHorizontal * 2 : 0;
   const gap = Layout.gridGap;
   const available = contentWidth - horizontalPad;
-  const numColumns = computeMaxCappedGridColumns(available, gap);
+  const numColumns = computeMaxCappedGridColumns(available, gap, maxTileWidth);
 
   let tileWidth = (available - gap * (numColumns - 1)) / numColumns;
   if (fillAvailable) {
     tileWidth = Math.max(GRID_TILE_MIN_WIDTH, tileWidth);
   } else {
-    tileWidth = Math.max(GRID_TILE_MIN_WIDTH, Math.min(GRID_TILE_MAX_WIDTH, tileWidth));
+    tileWidth = Math.max(GRID_TILE_MIN_WIDTH, Math.min(maxTileWidth, tileWidth));
   }
 
   return { numColumns, tileWidth, gap };
@@ -91,6 +97,8 @@ type ResponsiveColumnOptions = {
   measuredWidth?: number | null;
   /** Expand tiles to fill the measured column (split catalog + detail layout). */
   fillAvailable?: boolean;
+  /** Override Settings → Card size for this grid. */
+  gridCardSize?: GridCardSize;
 };
 
 export type ResponsiveColumnResult = ReturnType<typeof useResponsiveColumns>;
@@ -107,6 +115,7 @@ type StableResponsiveColumnOptions = ResponsiveColumnOptions & {
 type StableResponsiveColumnCache = {
   windowWidth: number;
   layout: 'grid' | 'list';
+  gridCardSize: GridCardSize;
   values: ResponsiveColumnResult;
 };
 
@@ -116,6 +125,9 @@ export function useResponsiveColumns(
 ) {
   const { width } = useWindowDimensions();
   const isMobile = useMobileLayout();
+  const { gridCardSize: settingGridCardSize } = useTheme();
+  const gridCardSize = options?.gridCardSize ?? settingGridCardSize;
+  const maxTileWidth = resolveGridTileMaxWidth(gridCardSize);
   const reservedWidth = options?.reservedWidth ?? 0;
   const measuredWidth = options?.measuredWidth;
   const fillAvailable = options?.fillAvailable ?? false;
@@ -143,7 +155,8 @@ export function useResponsiveColumns(
       const grid = computeMobileGridLayout(
         contentWidth,
         fillAvailable,
-        subtractScreenPadding
+        subtractScreenPadding,
+        maxTileWidth
       );
       return {
         contentWidth,
@@ -153,26 +166,41 @@ export function useResponsiveColumns(
       };
     }
 
-    const grid = computeGridLayout(contentWidth, fillAvailable, subtractScreenPadding);
+    const grid = computeGridLayout(
+      contentWidth,
+      fillAvailable,
+      subtractScreenPadding,
+      maxTileWidth
+    );
     return {
       contentWidth,
       listMaxWidth: LIST_MAX_WIDTH,
       compact: grid.tileWidth < 160,
       ...grid,
     };
-  }, [layout, width, reservedWidth, measuredWidth, fillAvailable, isMobile]);
+  }, [
+    layout,
+    width,
+    reservedWidth,
+    measuredWidth,
+    fillAvailable,
+    isMobile,
+    maxTileWidth,
+  ]);
 }
 
 /**
  * Like {@link useResponsiveColumns}, but freezes column math after the catalog
  * column has been measured so search/filter transitions do not resize tiles.
- * Recalculates when the window width changes or grid/list mode toggles.
+ * Recalculates when the window width, grid/list mode, or card size setting changes.
  */
 export function useStableResponsiveColumns(
   layout: 'grid' | 'list',
   options?: StableResponsiveColumnOptions
 ) {
   const { width: windowWidth } = useWindowDimensions();
+  const { gridCardSize: settingGridCardSize } = useTheme();
+  const gridCardSize = options?.gridCardSize ?? settingGridCardSize;
   const measurementReady = options?.measurementReady ?? true;
   const live = useResponsiveColumns(layout, options);
   const cacheRef = useRef<StableResponsiveColumnCache | null>(null);
@@ -183,12 +211,16 @@ export function useStableResponsiveColumns(
 
   const cache = cacheRef.current;
   const shouldRefresh =
-    cache == null || cache.windowWidth !== windowWidth || cache.layout !== layout;
+    cache == null ||
+    cache.windowWidth !== windowWidth ||
+    cache.layout !== layout ||
+    cache.gridCardSize !== gridCardSize;
 
   if (shouldRefresh) {
     cacheRef.current = {
       windowWidth,
       layout,
+      gridCardSize,
       values: live,
     };
     return live;

@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { Layout } from '@/constants/Layout';
 import {
-  GRID_TILE_MAX_WIDTH,
   GRID_TILE_MIN_WIDTH,
   computeMaxCappedGridColumns,
+  resolveGridTileMaxWidth,
 } from '@/lib/grid-columns';
 
 const gap = Layout.gridGap;
@@ -13,29 +13,50 @@ function tileWidthFor(available: number, columns: number) {
 }
 
 describe('computeMaxCappedGridColumns', () => {
-  test('keeps phone-width catalogs around 3 columns under the max tile size', () => {
+  test('large cards keep phone grids readable without packing too dense', () => {
     const available = 390;
-    const columns = computeMaxCappedGridColumns(available, gap);
-    expect(columns).toBe(3);
-    expect(tileWidthFor(available, columns)).toBeLessThanOrEqual(GRID_TILE_MAX_WIDTH);
+    const maxTileWidth = resolveGridTileMaxWidth('large');
+    const columns = computeMaxCappedGridColumns(available, gap, maxTileWidth);
+    expect(columns).toBe(2);
+    expect(tileWidthFor(available, columns)).toBeLessThanOrEqual(maxTileWidth);
     expect(tileWidthFor(available, columns)).toBeGreaterThanOrEqual(GRID_TILE_MIN_WIDTH);
   });
 
-  test('adds columns on tablet widths instead of stretching past the max', () => {
-    const available = 768;
-    const columns = computeMaxCappedGridColumns(available, gap);
-    expect(columns).toBeGreaterThanOrEqual(5);
-    expect(tileWidthFor(available, columns)).toBeLessThanOrEqual(GRID_TILE_MAX_WIDTH);
+  test('medium cards keep phone catalogs around 3 columns', () => {
+    const available = 390;
+    const maxTileWidth = resolveGridTileMaxWidth('medium');
+    const columns = computeMaxCappedGridColumns(available, gap, maxTileWidth);
+    expect(columns).toBe(3);
+    expect(tileWidthFor(available, columns)).toBeLessThanOrEqual(maxTileWidth);
   });
 
-  test('keeps growing on large tablet / narrow-desktop widths', () => {
-    const available = 1000;
-    const columns = computeMaxCappedGridColumns(available, gap);
-    expect(columns).toBeGreaterThanOrEqual(6);
-    expect(tileWidthFor(available, columns)).toBeLessThanOrEqual(GRID_TILE_MAX_WIDTH);
+  test('large cards land around 5-up on landscape tablet instead of 8', () => {
+    const available = 1194;
+    const maxTileWidth = resolveGridTileMaxWidth('large');
+    const columns = computeMaxCappedGridColumns(available, gap, maxTileWidth);
+    expect(columns).toBeGreaterThanOrEqual(5);
+    expect(columns).toBeLessThanOrEqual(6);
+    expect(tileWidthFor(available, columns)).toBeLessThanOrEqual(maxTileWidth);
+  });
+
+  test('small cards allow denser tablet grids', () => {
+    const available = 1194;
+    const large = computeMaxCappedGridColumns(
+      available,
+      gap,
+      resolveGridTileMaxWidth('large')
+    );
+    const small = computeMaxCappedGridColumns(
+      available,
+      gap,
+      resolveGridTileMaxWidth('small')
+    );
+    expect(small).toBeGreaterThan(large);
   });
 
   test('does not drop below two columns on very narrow widths', () => {
-    expect(computeMaxCappedGridColumns(200, gap)).toBe(2);
+    expect(computeMaxCappedGridColumns(200, gap, resolveGridTileMaxWidth('large'))).toBe(
+      2
+    );
   });
 });

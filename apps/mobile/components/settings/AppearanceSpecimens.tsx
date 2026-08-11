@@ -7,6 +7,7 @@ import { Text } from '@/components/ui/text';
 import { useTheme, type ThemeType } from '@/context/ThemeContext';
 import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
 import { Layout } from '@/constants/Layout';
+import { GRID_CARD_SIZE_OPTIONS } from '@/lib/grid-columns';
 import { cn } from '@/lib/utils';
 import type { CollectionOwnershipMap } from '@/utils/collectionOwnership';
 
@@ -217,7 +218,14 @@ function ListLayoutPreview({ cards }: { cards: CardListItem[] }) {
 }
 
 export function AppearanceSpecimens() {
-  const { theme, setTheme, defaultLayout, setDefaultLayout } = useTheme();
+  const {
+    theme,
+    setTheme,
+    defaultLayout,
+    setDefaultLayout,
+    gridCardSize,
+    setGridCardSize,
+  } = useTheme();
   const catalogIndex = useCatalogIndex();
   const previewCards = useMemo(() => {
     const items = getCatalogIndexItems(catalogIndex.data);
@@ -305,6 +313,54 @@ export function AppearanceSpecimens() {
                   )}
                 >
                   {layout}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View className="gap-2">
+        <SectionLabel className="mb-0">Card size</SectionLabel>
+        <Text className="text-sm text-muted-foreground">
+          Controls how many cards fit across the grid on phones and tablets.
+        </Text>
+
+        <View className="flex-row gap-2">
+          {GRID_CARD_SIZE_OPTIONS.map((item) => {
+            const selected = gridCardSize === item.value;
+            return (
+              <Pressable
+                key={item.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={`${item.label} card size. ${item.description}`}
+                onPress={() => {
+                  setGridCardSize(item.value);
+                }}
+                className={cn(
+                  'min-w-0 flex-1 gap-1 rounded-[3px] border px-2 py-2.5 active:opacity-90',
+                  selected
+                    ? 'border-foreground bg-card-panel'
+                    : 'border-border bg-card'
+                )}
+              >
+                <Text
+                  className={cn(
+                    'text-sm font-medium',
+                    selected ? 'text-foreground' : 'text-muted-foreground'
+                  )}
+                >
+                  {item.label}
+                </Text>
+                <Text
+                  className={cn(
+                    'text-[11px] leading-4',
+                    selected ? 'text-foreground/80' : 'text-muted-foreground'
+                  )}
+                  numberOfLines={2}
+                >
+                  {item.description}
                 </Text>
               </Pressable>
             );
