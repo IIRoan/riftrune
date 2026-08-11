@@ -2,13 +2,21 @@ import { useMemo, useRef } from 'react';
 import { Platform, useWindowDimensions } from 'react-native';
 import { Layout } from '@/constants/Layout';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
+import {
+  GRID_TILE_MAX_WIDTH,
+  GRID_TILE_MIN_WIDTH,
+  computeMaxCappedGridColumns,
+} from '@/lib/grid-columns';
 
-export const GRID_TILE_MAX_WIDTH = 148;
-const GRID_TILE_MIN_WIDTH = 96;
+export {
+  GRID_TILE_MAX_WIDTH,
+  GRID_TILE_MIN_WIDTH,
+  computeMaxCappedGridColumns,
+} from '@/lib/grid-columns';
+
 const MIN_GRID_COLUMNS = 2;
 const MAX_GRID_COLUMNS = 12;
 const TARGET_GRID_COLUMNS = 8;
-const MOBILE_GRID_COLUMNS = 3;
 const DESKTOP_MAX_WIDTH = 1600;
 const LIST_MAX_WIDTH = 640;
 
@@ -51,6 +59,27 @@ function computeGridLayout(
   }
 
   tileWidth = Math.max(GRID_TILE_MIN_WIDTH, Math.min(GRID_TILE_MAX_WIDTH, tileWidth));
+
+  return { numColumns, tileWidth, gap };
+}
+
+/** Mobile / tablet catalog grids — hard-cap tile size, grow columns with width. */
+function computeMobileGridLayout(
+  contentWidth: number,
+  fillAvailable = false,
+  subtractScreenPadding = true
+) {
+  const horizontalPad = subtractScreenPadding ? Layout.screenPaddingHorizontal * 2 : 0;
+  const gap = Layout.gridGap;
+  const available = contentWidth - horizontalPad;
+  const numColumns = computeMaxCappedGridColumns(available, gap);
+
+  let tileWidth = (available - gap * (numColumns - 1)) / numColumns;
+  if (fillAvailable) {
+    tileWidth = Math.max(GRID_TILE_MIN_WIDTH, tileWidth);
+  } else {
+    tileWidth = Math.max(GRID_TILE_MIN_WIDTH, Math.min(GRID_TILE_MAX_WIDTH, tileWidth));
+  }
 
   return { numColumns, tileWidth, gap };
 }
@@ -111,34 +140,16 @@ export function useResponsiveColumns(
     }
 
     if (isMobile) {
-      const horizontalPad = subtractScreenPadding ? Layout.screenPaddingHorizontal * 2 : 0;
-      const gap = Layout.gridGap;
-      const available = contentWidth - horizontalPad;
-
-      let numColumns = MOBILE_GRID_COLUMNS;
-      const minWidthTotal =
-        numColumns * GRID_TILE_MIN_WIDTH + (numColumns - 1) * gap;
-      if (minWidthTotal > available) {
-        numColumns = Math.max(
-          MIN_GRID_COLUMNS,
-          Math.floor((available + gap) / (GRID_TILE_MIN_WIDTH + gap))
-        );
-      }
-
-      let tileWidth = (available - gap * (numColumns - 1)) / numColumns;
-      const minClamped = Math.max(GRID_TILE_MIN_WIDTH, tileWidth);
-      const minRowWidth = numColumns * minClamped + (numColumns - 1) * gap;
-      if (minRowWidth <= available) {
-        tileWidth = minClamped;
-      }
-
-      return {
-        numColumns,
+      const grid = computeMobileGridLayout(
         contentWidth,
-        tileWidth,
-        gap,
+        fillAvailable,
+        subtractScreenPadding
+      );
+      return {
+        contentWidth,
         listMaxWidth: LIST_MAX_WIDTH,
         compact: true,
+        ...grid,
       };
     }
 

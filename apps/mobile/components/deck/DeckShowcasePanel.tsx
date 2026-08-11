@@ -45,7 +45,7 @@ export function DeckShowcasePanel({
   const isMobile = useMobileLayout();
   const [contentWidth, setContentWidth] = useState(0);
   const hasWidth = contentWidth > 0;
-  // Same column math as the Cards catalog: 3-up on mobile, fill-available on desktop.
+  // Same column math as the Cards catalog: max-capped on mobile/tablet, fill-available on desktop.
   const grid = useResponsiveColumns('grid', {
     measuredWidth: hasWidth ? contentWidth : null,
     fillAvailable: true,
