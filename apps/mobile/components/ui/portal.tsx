@@ -1,9 +1,13 @@
-import { Fragment, useLayoutEffect, useSyncExternalStore } from "react";
-import { Platform } from "react-native";
-import { FullWindowOverlay } from "react-native-screens";
+import { useLayoutEffect, useSyncExternalStore } from 'react';
+import { Platform } from 'react-native';
+import { FullWindowOverlay } from 'react-native-screens';
+import {
+  shouldMountFullWindowOverlay,
+  useInAppBrowserOverlaySuspended,
+} from '@/lib/in-app-browser-overlay';
 
 // Constants
-const DEFAULT_PORTAL_HOST = "TETRA_UI_DEFAULT_HOST_NAME";
+const DEFAULT_PORTAL_HOST = 'TETRA_UI_DEFAULT_HOST_NAME';
 
 // Types
 type PortalHostProps = {
@@ -23,8 +27,18 @@ type PortalHostMap = Map<string, PortalMap>;
 type PortalListener = () => void;
 
 // Components
-export const PortalOverlay =
-  Platform.OS === "ios" ? FullWindowOverlay : Fragment;
+export function PortalOverlay({ children }: { children: React.ReactNode }) {
+  const inAppBrowserOpen = useInAppBrowserOverlaySuspended();
+  if (
+    shouldMountFullWindowOverlay({
+      platform: Platform.OS,
+      inAppBrowserOpen,
+    })
+  ) {
+    return <FullWindowOverlay>{children}</FullWindowOverlay>;
+  }
+  return <>{children}</>;
+}
 
 export const PortalHost = ({ name = DEFAULT_PORTAL_HOST }: PortalHostProps) => {
   const map = usePortalMap();
@@ -84,11 +98,7 @@ const notifyListeners = () => {
   }
 };
 
-const updatePortal = (
-  hostName: string,
-  name: string,
-  content: React.ReactNode
-) => {
+const updatePortal = (hostName: string, name: string, content: React.ReactNode) => {
   const next = new Map(portalMap);
   const portal = next.get(hostName) ?? new Map<string, React.ReactNode>();
   const updatedPortal = new Map(portal);

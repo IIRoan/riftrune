@@ -1,7 +1,7 @@
 import { Linking, View } from 'react-native';
 import type MarkdownIt from 'markdown-it';
-import * as WebBrowser from 'expo-web-browser';
 import { Text } from '@/components/ui/text';
+import { openExternalUrl } from '@/lib/open-external';
 import {
   getSafeMarkdownIt,
   isSafeMarkdownUrl,
@@ -44,13 +44,13 @@ const HEADING_CLASS_PROSE: Record<number, string> = {
 
 async function openSafeUrl(url: string) {
   if (!isSafeMarkdownUrl(url)) return;
-  hapticPress();
   try {
     if (url.trim().toLowerCase().startsWith('mailto:')) {
+      hapticPress();
       await Linking.openURL(url);
       return;
     }
-    await WebBrowser.openBrowserAsync(url);
+    await openExternalUrl(url);
   } catch {
     // Ignore failed opens (unsupported scheme / no mail client).
   }
@@ -169,7 +169,11 @@ function renderInline(
   return nodes;
 }
 
-function findClosingIndex(tokens: Token[], openIndex: number, closeType: string): number {
+function findClosingIndex(
+  tokens: Token[],
+  openIndex: number,
+  closeType: string
+): number {
   const openType = tokens[openIndex]?.type ?? '';
   const openBase = openType.replace(/_open$/, '');
   let depth = 0;
@@ -264,9 +268,7 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
         const itemTokens = tokens.slice(j + 1, itemClose);
         const itemKey = markdownListItemKey(itemSiblingPath, itemTokens);
         itemSiblingPath = itemKey;
-        const marker = ordered
-          ? `${items.length + 1}.`
-          : '•';
+        const marker = ordered ? `${items.length + 1}.` : '•';
         items.push(
           <View key={itemKey} className="flex-row gap-2">
             <Text className={markerClass}>{marker}</Text>
@@ -308,7 +310,9 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
     }
 
     if (token.type === 'hr') {
-      nodes.push(<View key={key} className={cn('h-px bg-border', prose ? 'my-3' : 'my-1')} />);
+      nodes.push(
+        <View key={key} className={cn('h-px bg-border', prose ? 'my-3' : 'my-1')} />
+      );
       siblingPath = extendSiblingPath(siblingPath, token);
       i += 1;
       continue;
