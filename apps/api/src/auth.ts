@@ -3,6 +3,7 @@ import { bearer } from 'better-auth/plugins';
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { betterAuth } from 'better-auth';
 import type { Database } from './db/client.js';
+import { resolveAuthAdvanced } from './lib/auth-advanced.js';
 import { resolveAuthCookieDomain } from './lib/auth-cookie-domain.js';
 import type { Env } from './env.js';
 import { resolveTrustedOrigins } from './lib/trusted-origins.js';
@@ -32,20 +33,6 @@ export function createAuth(db: Database, env: Env): AuthApi {
     },
     plugins: [expo(), bearer()],
     trustedOrigins: resolveTrustedOrigins(env),
-    ...(cookieDomain
-      ? {
-          advanced: {
-            crossSubDomainCookies: {
-              enabled: true,
-              domain: cookieDomain,
-            },
-            defaultCookieAttributes: {
-              secure: true,
-              httpOnly: true,
-              sameSite: 'lax',
-            },
-          },
-        }
-      : {}),
+    advanced: resolveAuthAdvanced(cookieDomain),
   }) as unknown as AuthApi;
 }
