@@ -1,6 +1,5 @@
 import { Image } from 'expo-image';
 import { View } from 'react-native';
-import { Text } from '@/components/ui/text';
 import { domainIconFor } from '@/constants/gameAssets';
 import { AUTH_DOMAINS } from '@/components/auth/authArtifacts.constants';
 import { cn } from '@/lib/utils';
@@ -48,25 +47,3 @@ export function AuthSlabCorners() {
   );
 }
 
-export function AuthBrandLockup({
-  light = false,
-  showDomains = true,
-}: {
-  light?: boolean;
-  showDomains?: boolean;
-}) {
-  return (
-    <View className="gap-4">
-      <Text
-        className={cn(
-          'text-[26px] font-semibold tracking-tight',
-          light ? 'text-white' : 'text-foreground'
-        )}
-        accessibilityRole="header"
-      >
-        The Astral Grove
-      </Text>
-      {showDomains ? <AuthDomainStrip size={24} /> : null}
-    </View>
-  );
-}

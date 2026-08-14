@@ -10,11 +10,7 @@ import {
   useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  AuthBrandLockup,
-  AuthDomainStrip,
-  AuthSlabCorners,
-} from '@/components/auth/AuthArtifacts';
+import { AuthDomainStrip, AuthSlabCorners } from '@/components/auth/AuthArtifacts';
 import { AuthBackdrop } from '@/components/auth/AuthBackdrop';
 import { useAuthWideLayout } from '@/components/auth/useAuthWideLayout';
 import { AuthPanel } from '@/components/auth/AuthPanel';
@@ -55,13 +51,6 @@ function AuthMobilePlaymat({
       >
         <Animated.View className="relative overflow-hidden" style={artStyle}>
           <AuthBackdrop mode={mode} variant="hero" />
-          <View
-            className="absolute inset-x-0 top-0 px-5"
-            style={{ paddingTop: insets.top + 14 }}
-            pointerEvents="none"
-          >
-            <AuthBrandLockup light showDomains={false} />
-          </View>
           <View className="absolute inset-x-5 bottom-8" pointerEvents="none">
             <AuthDomainStrip size={26} />
           </View>
@@ -126,7 +115,7 @@ function AuthWidePlaymat({
         >
           <View className="relative rounded-[10px] border border-border bg-background/95 px-8 py-9 shadow-lg shadow-black/40">
             <AuthSlabCorners />
-            <AuthBrandLockup />
+            <AuthDomainStrip size={24} />
             <View className="mt-8">
               <AuthPanel
                 variant="screen"
