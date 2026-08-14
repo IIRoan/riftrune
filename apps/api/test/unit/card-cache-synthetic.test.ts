@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { PaLogicalCard, type PaVariant } from '@riftbound/contracts';
 import { CardCacheService } from '../../src/services/card-cache.js';
 import type { Database } from '../../src/db/client.js';
-import { RiftruneApiError, type RiftruneClient } from '../../src/upstream/riftrune-client.js';
+import { PaApiError, type PaClient } from '../../src/upstream/pa-client.js';
 
 const CARD_ID = '7596dc74-82bc-41ac-a25f-83f4b98ffb72';
 const PARENT_ID = '0cd819d5-a03f-45d2-9e65-aec8ddae735e';
@@ -82,7 +82,7 @@ function cachedDetail() {
 }
 
 function createService(options?: {
-  getCard?: RiftruneClient['getCard'];
+  getCard?: PaClient['getCard'];
   loadDetail?: () => Promise<ReturnType<typeof cachedDetail> | null>;
 }) {
   const db = {
@@ -93,17 +93,17 @@ function createService(options?: {
     update: () => ({ set: () => ({ where: async () => [] }) }),
   } as unknown as Database;
 
-  const riftrune = {
+  const pa = {
     getCard:
       options?.getCard ??
       (async () => {
-        throw new RiftruneApiError('missing', 404);
+        throw new PaApiError('missing', 404);
       }),
-  } as unknown as RiftruneClient;
+  } as unknown as PaClient;
 
   const cards = new CardCacheService(
     db,
-    riftrune,
+    pa,
     { getRowsForCardmarketIds: async () => [] } as never,
     {
       rewriteCard: (card: PaLogicalCard) => card,
@@ -234,7 +234,7 @@ describe('CardCacheService.getByVariantNumber synthetic fallback', () => {
   test('serves cached synthetic * variant when PA returns 404', async () => {
     const cards = createService({
       getCard: async () => {
-        throw new RiftruneApiError('Riftrune API 404', 404);
+        throw new PaApiError('Piltover Archive API 404', 404);
       },
       loadDetail: async () => ({
         ...cachedDetail(),
@@ -250,26 +250,26 @@ describe('CardCacheService.getByVariantNumber synthetic fallback', () => {
   test('rethrows non-404 upstream failures even when cache exists', async () => {
     const cards = createService({
       getCard: async () => {
-        throw new RiftruneApiError('Riftrune API 500', 500);
+        throw new PaApiError('Piltover Archive API 500', 500);
       },
       loadDetail: async () => cachedDetail(),
     });
 
     await expect(cards.getByVariantNumber('VEN-189', { refresh: true })).rejects.toBeInstanceOf(
-      RiftruneApiError
+      PaApiError
     );
   });
 
   test('rethrows 404 for ordinary printings instead of serving stale cache', async () => {
     const cards = createService({
       getCard: async () => {
-        throw new RiftruneApiError('Riftrune API 404', 404);
+        throw new PaApiError('Piltover Archive API 404', 404);
       },
       loadDetail: async () => cachedDetail(),
     });
 
     await expect(cards.getByVariantNumber('VEN-189', { refresh: true })).rejects.toBeInstanceOf(
-      RiftruneApiError
+      PaApiError
     );
   });
 });

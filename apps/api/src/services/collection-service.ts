@@ -70,10 +70,10 @@ export class CollectionService {
     private readonly db: Database,
     cardCache: CardCacheService,
     private readonly images: ImageStoreService,
-    riftrune: ConstructorParameters<typeof VariantResolver>[2],
+    pa: ConstructorParameters<typeof VariantResolver>[2],
     audit?: CollectionAuditService
   ) {
-    this.variantResolver = new VariantResolver(db, cardCache, riftrune);
+    this.variantResolver = new VariantResolver(db, cardCache, pa);
     this.audit = audit ?? new CollectionAuditService(db);
   }
 

@@ -13,7 +13,7 @@ import {
 } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { cardColors, cards, colors, sets, syncState, variants } from '../db/schema.js';
-import { RiftruneApiError, type RiftruneClient } from '../upstream/riftrune-client.js';
+import { PaApiError, type PaClient } from '../upstream/pa-client.js';
 import {
   mapCardDetail,
   mapListItem,
@@ -129,7 +129,7 @@ export class CardCacheService {
 
   constructor(
     private readonly db: Database,
-    private readonly riftrune: RiftruneClient,
+    private readonly pa: PaClient,
     private readonly prices: PriceCacheService,
     private readonly images: ImageStoreService
   ) {}
@@ -505,7 +505,7 @@ export class CardCacheService {
     }
 
     try {
-      const upstream = await this.riftrune.getCard(variantNumber);
+      const upstream = await this.pa.getCard(variantNumber);
       const changed = await this.upsertFromUpstream(upstream);
       if (changed || options?.refresh) {
         this.invalidateSearchCache();
@@ -528,7 +528,7 @@ export class CardCacheService {
     } catch (err) {
       // Local-only synthetics (e.g. VEN-189*) are absent from PA — serve cache on 404.
       // Do not hide refresh/network failures for real upstream cards.
-      const notFound = err instanceof RiftruneApiError && err.status === 404;
+      const notFound = err instanceof PaApiError && err.status === 404;
       const localOnlySynthetic = variantNumber.trim().endsWith('*');
       if (cached && notFound && localOnlySynthetic) {
         return {
@@ -661,13 +661,13 @@ export class CardCacheService {
     const maxPages = 500;
 
     while (pending.size > 0 && page <= maxPages) {
-      const upstream = await this.riftrune.listCards({ page, limit: 100 });
+      const upstream = await this.pa.listCards({ page, limit: 100 });
       const res = PaCardsListResponse.parse(upstream);
 
       for (const item of res.data) {
         if (pending.has(item.id)) {
           try {
-            const logical = await this.riftrune.getCard(item.variantNumber);
+            const logical = await this.pa.getCard(item.variantNumber);
             await this.upsertFromUpstream(logical);
             resolved.set(item.id, item.variantNumber);
             this.variantIdResolveCache.set(item.id, item.variantNumber);
@@ -696,7 +696,7 @@ export class CardCacheService {
 
         fetchedCardIds.add(listCardId);
         try {
-          const logical = await this.riftrune.getCard(item.variantNumber);
+          const logical = await this.pa.getCard(item.variantNumber);
           await this.upsertFromUpstream(logical);
           for (const variant of logical.variants) {
             if (!pending.has(variant.id)) continue;
@@ -802,9 +802,9 @@ export class CardCacheService {
       return { found, notFound: [], source: 'cache' };
     }
 
-    const batch = await this.riftrune.batchCards(missing);
+    const batch = await this.pa.batchCards(missing);
     for (const item of batch.data) {
-      const logical = await this.riftrune.getCard(item.variantNumber);
+      const logical = await this.pa.getCard(item.variantNumber);
       await this.upsertFromUpstream(logical);
       const priceRows = await this.priceRowsForLogicalCard(logical);
       found.push(this.mapDetail(logical, priceRows));
@@ -945,7 +945,7 @@ export class CardCacheService {
         query.colorMode === 'within' && Boolean(query.colors);
 
       while (pagesScanned < maxBackfillPages) {
-        const upstream = await this.riftrune.listCards(
+        const upstream = await this.pa.listCards(
           buildUpstreamListParams({ ...query, page })
         );
         pagesScanned += 1;
@@ -960,7 +960,7 @@ export class CardCacheService {
 
         for (const item of missing) {
           try {
-            const logical = await this.riftrune.getCard(item.variantNumber);
+            const logical = await this.pa.getCard(item.variantNumber);
             await this.upsertFromUpstream(logical);
             upserted += 1;
           } catch (err) {

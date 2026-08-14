@@ -63,7 +63,7 @@ riftbound/
 │   │   │   │   ├── schema.ts   # Drizzle tables
 │   │   │   │   └── client.ts
 │   │   │   ├── upstream/
-│   │   │   │   ├── riftrune-client.ts
+│   │   │   │   ├── pa-client.ts
 │   │   │   │   └── types.ts    # Re-exports from contracts
 │   │   │   ├── services/
 │   │   │   │   ├── card-cache.ts
@@ -128,7 +128,7 @@ riftbound/
 ## 4. Upstream: piltoverarchive.com External API
 
 **Base URL:** `https://piltoverarchive.com/api/external`  
-**Auth:** `x-api-key: <RIFTRUNE_API_KEY>` (server env only — never in Expo app)
+**Auth:** `x-api-key: <PA_API_KEY>` (server env only — never in Expo app)
 
 ### 4.1 Endpoints we consume (v1)
 
@@ -773,8 +773,8 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']),
   PORT: z.coerce.number().default(3000),
   DATABASE_URL: z.string().url(),
-  RIFTRUNE_API_KEY: z.string().startsWith('ak_'),
-  RIFTRUNE_BASE_URL: z
+  PA_API_KEY: z.string().startsWith('ak_'),
+  PA_BASE_URL: z
     .string()
     .url()
     .default('https://piltoverarchive.com/api/external'),
@@ -786,7 +786,7 @@ const EnvSchema = z.object({
 ### 10.2 Upstream client
 
 ```ts
-class RiftruneClient {
+class PaClient {
   async getCard(variantNumber: string): Promise<PaLogicalCard>;
   async listCards(params: PaListParams): Promise<PaCardsListResponse>;
   async batchCards(variantNumbers: string[]): Promise<PaCardsBatchResponse>;
@@ -890,7 +890,7 @@ export async function apiGet<T>(path: string, schema: z.ZodType<T>): Promise<T> 
 
 | Rule             | Implementation                                            |
 | ---------------- | --------------------------------------------------------- |
-| PA API key       | `RIFTRUNE_API_KEY` env on server only (legacy name)       |
+| PA API key       | `PA_API_KEY` env on server only                           |
 | Sync endpoints   | `Authorization: Bearer <ADMIN_SYNC_TOKEN>`                |
 | Client auth      | None in v1 (add Clerk/JWT when collection syncs per-user) |
 | Input validation | Zod on every route                                        |
@@ -912,7 +912,7 @@ export async function apiGet<T>(path: string, schema: z.ZodType<T>): Promise<T> 
 
 ### Phase 1 — Upstream client + hash utils (1–2 days)
 
-- [ ] `RiftruneClient` with typed responses
+- [ ] `PaClient` with typed responses
 - [ ] `HashService` canonical JSON
 - [ ] Unit tests against recorded fixtures (VCR-style JSON files)
 
@@ -961,7 +961,7 @@ docker compose up -d postgres
 
 # Terminal 2 — API
 cd apps/api
-cp .env.example .env   # add RIFTRUNE_API_KEY
+cp .env.example .env   # add PA_API_KEY
 bun run db:migrate
 bun run dev            # :3000
 

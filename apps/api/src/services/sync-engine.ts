@@ -3,7 +3,7 @@ import type { Database } from '../db/client.js';
 import { syncState } from '../db/schema.js';
 import { catalogFingerprint } from '../lib/hash.js';
 import { computeCatalogTotal } from '../lib/catalog-total.js';
-import type { RiftruneClient } from '../upstream/riftrune-client.js';
+import type { PaClient } from '../upstream/pa-client.js';
 import type { CardCacheService } from './card-cache.js';
 import type { CatalogMetadataService } from './catalog-metadata.js';
 import { accumulatePrintCounts } from './catalog-probe.js';
@@ -11,7 +11,7 @@ import { accumulatePrintCounts } from './catalog-probe.js';
 export class SyncEngine {
   constructor(
     private readonly db: Database,
-    private readonly riftrune: RiftruneClient,
+    private readonly pa: PaClient,
     private readonly cards: CardCacheService,
     private readonly catalogMetadata: CatalogMetadataService
   ) {}
@@ -26,7 +26,7 @@ export class SyncEngine {
     await this.setSyncStatus('catalog', 'running');
 
     try {
-      const probe = await this.riftrune.listCards({ limit: 1, page: 1 });
+      const probe = await this.pa.listCards({ limit: 1, page: 1 });
       const fingerprint = catalogFingerprint(
         probe.pagination.total,
         probe.meta?.filters ?? {}
@@ -96,7 +96,7 @@ export class SyncEngine {
       }
 
       while (hasMore) {
-        const res = await this.riftrune.listCards({ limit, page });
+        const res = await this.pa.listCards({ limit, page });
         pages += 1;
         console.log(
           `[sync] Processing page ${String(page)} (${String(res.data.length)} list items)`
@@ -104,7 +104,7 @@ export class SyncEngine {
 
         for (const item of res.data) {
           try {
-            const logical = await this.riftrune.getCard(item.variantNumber);
+            const logical = await this.pa.getCard(item.variantNumber);
             if (syncedCardIds.has(logical.id)) continue;
             await this.cards.upsertFromUpstream(logical);
             accumulatePrintCounts(logical, setPrintTotals);

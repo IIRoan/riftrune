@@ -27,14 +27,14 @@ import { PriceCacheService } from './services/price-cache.js';
 import { SyncEngine } from './services/sync-engine.js';
 import { WishlistService } from './services/wishlist-service.js';
 import { DeckService } from './services/deck-service.js';
-import { RiftruneClient } from './upstream/riftrune-client.js';
+import { PaClient } from './upstream/pa-client.js';
 
 export interface AppContext {
   app: Elysia;
   db: Database;
   client: postgres.Sql;
   auth: Auth;
-  riftrune: RiftruneClient;
+  pa: PaClient;
   cardCache: CardCacheService;
   catalogMetadata: CatalogMetadataService;
   priceCache: PriceCacheService;
@@ -49,13 +49,13 @@ function buildApp(env: Env): AppContext {
   const { db, client } = createDb(env);
   const auth = createAuth(db, env);
   const authPlugin = createAuthPlugin(auth);
-  const riftrune = new RiftruneClient(env);
+  const pa = new PaClient(env);
   const priceCache = new PriceCacheService(db);
   const imageStore = new ImageStoreService(env);
-  const cardCache = new CardCacheService(db, riftrune, priceCache, imageStore);
-  const catalogMetadata = new CatalogMetadataService(db, riftrune);
-  const syncEngine = new SyncEngine(db, riftrune, cardCache, catalogMetadata);
-  const collectionService = new CollectionService(db, cardCache, imageStore, riftrune);
+  const cardCache = new CardCacheService(db, pa, priceCache, imageStore);
+  const catalogMetadata = new CatalogMetadataService(db, pa);
+  const syncEngine = new SyncEngine(db, pa, cardCache, catalogMetadata);
+  const collectionService = new CollectionService(db, cardCache, imageStore, pa);
   const collectionShareService = new CollectionShareService(db, env.PUBLIC_APP_URL);
   const wishlistService = new WishlistService(db, imageStore);
   const upstreamDeckWriteExtraHeader =
@@ -66,7 +66,7 @@ function buildApp(env: Env): AppContext {
       }
       : undefined;
 
-  const deckService = new DeckService(db, riftrune, cardCache, upstreamDeckWriteExtraHeader);
+  const deckService = new DeckService(db, pa, cardCache, upstreamDeckWriteExtraHeader);
 
   const app = new Elysia()
     .use(
@@ -102,7 +102,7 @@ function buildApp(env: Env): AppContext {
     db,
     client,
     auth,
-    riftrune,
+    pa,
     cardCache,
     catalogMetadata,
     priceCache,

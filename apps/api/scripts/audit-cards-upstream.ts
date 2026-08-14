@@ -24,7 +24,7 @@ import { paCardHash, paVariantHash } from '../src/services/card-mapper.js';
 import { CardCacheService } from '../src/services/card-cache.js';
 import { ImageStoreService } from '../src/services/image-store.js';
 import { PriceCacheService } from '../src/services/price-cache.js';
-import { RiftruneApiError, RiftruneClient } from '../src/upstream/riftrune-client.js';
+import { PaApiError, PaClient } from '../src/upstream/pa-client.js';
 
 type FieldDiff = {
   path: string;
@@ -358,14 +358,14 @@ async function loadLocalCards(
 }
 
 async function listAllUpstreamVariantNumbers(
-  riftrune: RiftruneClient
+  pa: PaClient
 ): Promise<string[]> {
   const variantNumbers: string[] = [];
   let page = 1;
   const limit = 100;
 
   for (;;) {
-    const res = await riftrune.listCards({ limit, page });
+    const res = await pa.listCards({ limit, page });
     for (const item of res.data) {
       variantNumbers.push(item.variantNumber);
     }
@@ -434,10 +434,10 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const env = loadEnv();
   const { db, client } = createDb(env);
-  const riftrune = new RiftruneClient(env);
+  const pa = new PaClient(env);
   const prices = new PriceCacheService(db);
   const images = new ImageStoreService(env);
-  const cardCache = new CardCacheService(db, riftrune, prices, images);
+  const cardCache = new CardCacheService(db, pa, prices, images);
 
   try {
     console.log('[audit] Loading local cards…');
@@ -463,7 +463,7 @@ async function main() {
       );
     } else {
       console.log('[audit] Listing upstream variants…');
-      upstreamVariantNumbers = await listAllUpstreamVariantNumbers(riftrune);
+      upstreamVariantNumbers = await listAllUpstreamVariantNumbers(pa);
       upstreamVariantSet = new Set(
         upstreamVariantNumbers.map((vn) => vn.toUpperCase())
       );
@@ -547,11 +547,11 @@ async function main() {
 
     async function fetchProbe(probe: Probe) {
       try {
-        const upstream = await riftrune.getCard(probe.probeVariant);
+        const upstream = await pa.getCard(probe.probeVariant);
         return { probe, upstream, error: null as string | null };
       } catch (err) {
         const message =
-          err instanceof RiftruneApiError
+          err instanceof PaApiError
             ? `${err.message}${err.body ? ` — ${err.body.slice(0, 200)}` : ''}`
             : err instanceof Error
               ? err.message

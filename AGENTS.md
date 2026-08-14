@@ -59,7 +59,7 @@ flowchart TB
     PA["piltoverarchive.com\nexternal API"]
   end
 
-  API -->|"sync catalog, prices, decks\n(RiftruneClient)"| PA
+  API -->|"sync catalog, prices, decks\n(PaClient)"| PA
 ```
 
 ### Naming in this repo
@@ -71,12 +71,12 @@ The codebase uses several names — agents should understand the mapping:
 | **The Astral Grove** | Product name (Expo app, user-facing copy) |
 | **Piltover Archive / PA** | Upstream card & deck platform we integrate with |
 | **`@riftbound/*` packages** | Internal npm scope (historical codename — same monorepo) |
-| **`RIFTRUNE_API_KEY`, `RiftruneClient`** | Env vars and code for the **PA external API** client (legacy names — not the product) |
+| **`PA_API_KEY`, `PaClient`** | Env vars and code for the **PA external API** client |
 | **`piltoverarchive` repo folder** | Git checkout path — not the product name |
 | **`design/`** | Marketing site, separate from the Expo app |
 | **EAS identifiers** | Expo slug `astral-grove`, scheme `astral-grove`, bundle/package `com.iroan.astralgrove` |
 
-When writing user-facing copy, prefer **The Astral Grove**. When reading upstream integration code, expect **Piltover Archive** terminology in comments and deck I/O (`importPiltoverArchive`, `exportPiltoverArchive`). Do not rename `RiftruneClient` / `RIFTRUNE_API_KEY` — those talk to PA, not our product.
+When writing user-facing copy, prefer **The Astral Grove**. When reading upstream integration code, expect **Piltover Archive** terminology in comments and deck I/O (`importPiltoverArchive`, `exportPiltoverArchive`).
 
 ---
 
@@ -283,7 +283,7 @@ packages/contracts/src/
 |------|----------|-------|----------|
 | **Unit** | `apps/api/test/unit/` | Nothing external | `search.test.ts`, `deck-import.test.ts`, `hash` helpers |
 | **E2E** | `apps/api/test/e2e/` | Postgres (`riftbound_test` DB), API server | `decks-db.test.ts`, `auth.test.ts`, `collection-db.test.ts` |
-| **Upstream probe** | `apps/api/test/upstream/` | Network + `RIFTRUNE_API_KEY` | PA catalog probe |
+| **Upstream probe** | `apps/api/test/upstream/` | Network + `PA_API_KEY` | PA catalog probe |
 
 E2E flow (`apps/api/scripts/run-tests.ts`):
 
@@ -347,7 +347,7 @@ src/
   db/               # Drizzle client + schema
   routes/           # Elysia route modules (parse with contracts)
   services/         # Business logic
-  upstream/         # Piltover Archive HTTP client (RiftruneClient)
+  upstream/         # Piltover Archive HTTP client (PaClient)
   plugins/          # error handler, auth plugin
 ```
 

@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { normalizeVariantNumber, VariantResolver } from '../../src/services/variant-resolver.js';
 import type { Database } from '../../src/db/client.js';
 import type { CardCacheService } from '../../src/services/card-cache.js';
-import type { RiftruneClient } from '../../src/upstream/riftrune-client.js';
+import type { PaClient } from '../../src/upstream/pa-client.js';
 
 describe('normalizeVariantNumber', () => {
   test('trims surrounding whitespace', () => {
@@ -23,7 +23,7 @@ describe('VariantResolver', () => {
     const resolver = new VariantResolver(
       db,
       { upsertFromUpstream: mock(async () => {}) } as unknown as CardCacheService,
-      { batchCards: mock(async () => ({ data: [], notFound: [] })) } as unknown as RiftruneClient
+      { batchCards: mock(async () => ({ data: [], notFound: [] })) } as unknown as PaClient
     );
 
     const lookup = await resolver.loadLookupMap(['ogn-001']);
@@ -39,17 +39,17 @@ describe('VariantResolver', () => {
       }),
     } as unknown as Database;
 
-    const riftrune = {
+    const pa = {
       batchCards: mock(async () => ({ data: [], notFound: ['OGN-999'] })),
       getCard: mock(async () => {
         throw new Error('not found');
       }),
-    } as unknown as RiftruneClient;
+    } as unknown as PaClient;
 
     const resolver = new VariantResolver(
       db,
       { upsertFromUpstream: mock(async () => {}) } as unknown as CardCacheService,
-      riftrune
+      pa
     );
 
     const lookup = await resolver.loadLookupMap(['OGN-999']);

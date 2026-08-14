@@ -6,7 +6,7 @@ import {
   probeExpandedCatalog,
   snapshotHasPrintCounts,
 } from '../../src/services/catalog-probe.js';
-import type { RiftruneClient } from '../../src/upstream/riftrune-client.js';
+import type { PaClient } from '../../src/upstream/pa-client.js';
 
 function logicalCard(id: string, variants: PaLogicalCard['variants']): PaLogicalCard {
   return {
@@ -103,8 +103,8 @@ describe('probeExpandedCatalog', () => {
       return cardB;
     });
 
-    const riftrune = { listCards, getCard } as unknown as RiftruneClient;
-    const result = await probeExpandedCatalog(riftrune);
+    const pa = { listCards, getCard } as unknown as PaClient;
+    const result = await probeExpandedCatalog(pa);
 
     expect(result.logicalCardCount).toBe(2);
     expect(result.catalogPrintTotal).toBe(3);

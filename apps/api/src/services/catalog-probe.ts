@@ -1,6 +1,6 @@
 import type { FilterSnapshot, PaLogicalCard } from '@riftbound/contracts';
 import { isVariantFoil } from '@riftbound/contracts';
-import type { RiftruneClient } from '../upstream/riftrune-client.js';
+import type { PaClient } from '../upstream/pa-client.js';
 
 export type ExpandedCatalogProbe = {
   catalogPrintTotal: number;
@@ -46,7 +46,7 @@ export function accumulatePrintCounts(
  * Overnumbered, Foil, etc.) — matching Piltover Archive collection totals (1,396).
  */
 export async function probeExpandedCatalog(
-  riftrune: RiftruneClient
+  pa: PaClient
 ): Promise<ExpandedCatalogProbe> {
   const seenCardIds = new Set<string>();
   const setPrintTotals = new Map<string, number>();
@@ -56,11 +56,11 @@ export async function probeExpandedCatalog(
   let hasMore = true;
 
   while (hasMore) {
-    const res = await riftrune.listCards({ limit: 100, page });
+    const res = await pa.listCards({ limit: 100, page });
     let newCards = 0;
 
     for (const item of res.data) {
-      const logical = await riftrune.getCard(item.variantNumber);
+      const logical = await pa.getCard(item.variantNumber);
       if (seenCardIds.has(logical.id)) continue;
       seenCardIds.add(logical.id);
       newCards += 1;

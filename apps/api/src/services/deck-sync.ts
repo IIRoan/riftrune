@@ -12,7 +12,7 @@ import {
   unresolvedDeckVariantNumber,
   type DeckCardInput,
 } from '@riftbound/contracts';
-import type { RiftruneClient } from '../upstream/riftrune-client.js';
+import type { PaClient } from '../upstream/pa-client.js';
 import type { CardCacheService } from './card-cache.js';
 import { variants } from '../db/schema.js';
 import type { Database } from '../db/client.js';
@@ -369,13 +369,13 @@ function browseMetaFromListEntry(entry: UpstreamListEntry): Partial<DeckListItem
 export class DeckSyncService {
   constructor(
     private readonly db: Database,
-    private readonly riftrune: RiftruneClient,
+    private readonly pa: PaClient,
     private readonly cardCache: CardCacheService,
     private readonly deckWriteAuthorizationHeader?: { name: string; value: string }
   ) {}
 
   async listUpstreamDeckIds(limit = 20): Promise<string[]> {
-    const res = await this.riftrune.listDecks({ limit });
+    const res = await this.pa.listDecks({ limit });
     const parsed = UpstreamDeckListResponse.parse(res);
     return parsed.data.map((d) => d.id);
   }
@@ -402,7 +402,7 @@ export class DeckSyncService {
       dir: 'desc' as const,
       source: 'imported' as const,
     };
-    const res = await this.riftrune.listDecks(buildUpstreamDeckListParams(query));
+    const res = await this.pa.listDecks(buildUpstreamDeckListParams(query));
     const parsed = UpstreamDeckListResponse.parse(res);
     const legendByVariantNumber = new Map<string, DeckCardInput>();
     const items: DeckListItem[] = [];
@@ -520,7 +520,7 @@ export class DeckSyncService {
   async getUpstreamDeckDetail(
     deckId: string
   ): Promise<z.infer<typeof UpstreamDeckDetail>> {
-    const res = await this.riftrune.getDeck(deckId);
+    const res = await this.pa.getDeck(deckId);
     return UpstreamDeckDetail.parse(res);
   }
 
@@ -664,7 +664,7 @@ export class DeckSyncService {
     deckName: string
   ): Promise<Partial<DeckListItem>> {
     try {
-      const res = await this.riftrune.listDecks({ q: deckName, limit: 50 });
+      const res = await this.pa.listDecks({ q: deckName, limit: 50 });
       const parsed = UpstreamDeckListResponse.parse(res);
       const entry = parsed.data.find((item) => item.id === deckId);
       return entry ? browseMetaFromListEntry(entry) : {};
@@ -786,7 +786,7 @@ export class DeckSyncService {
         }
       : undefined;
 
-    const res = await this.riftrune.createOrUpsertDeck(payload, extraHeaders);
+    const res = await this.pa.createOrUpsertDeck(payload, extraHeaders);
 
     // If the upstream returns the full deck detail, we can transform it. Otherwise,
     // fall back to returning our own deck payload.
@@ -805,6 +805,6 @@ export class DeckSyncService {
             this.deckWriteAuthorizationHeader.value,
         }
       : undefined;
-    await this.riftrune.deleteDeck(deckId, extraHeaders);
+    await this.pa.deleteDeck(deckId, extraHeaders);
   }
 }

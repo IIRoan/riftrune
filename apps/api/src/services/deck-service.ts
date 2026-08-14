@@ -2,7 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import type { DeckListItem, DecksListQuery, StoredDeckPayload } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { userDecks } from '../db/schema.js';
-import type { RiftruneClient } from '../upstream/riftrune-client.js';
+import type { PaClient } from '../upstream/pa-client.js';
 import type { CardCacheService } from './card-cache.js';
 import { DeckSyncService } from './deck-sync.js';
 
@@ -40,13 +40,13 @@ export class DeckService {
 
   constructor(
     private readonly db: Database,
-    riftrune?: RiftruneClient,
+    pa?: PaClient,
     cardCache?: CardCacheService,
     upstreamDeckWriteExtraHeader?: { name: string; value: string }
   ) {
     this.deckSync =
-      riftrune && cardCache
-        ? new DeckSyncService(db, riftrune, cardCache, upstreamDeckWriteExtraHeader)
+      pa && cardCache
+        ? new DeckSyncService(db, pa, cardCache, upstreamDeckWriteExtraHeader)
         : null;
   }
 

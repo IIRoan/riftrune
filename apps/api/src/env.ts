@@ -20,8 +20,9 @@ const EnvSchema = z.object({
   HOST: z.string().min(1).default('::'),
   DATABASE_URL: z.string().min(1),
   DB_POOL_MAX: z.coerce.number().int().positive().max(50).optional(),
-  RIFTRUNE_API_KEY: z.string().startsWith('ak_'),
-  RIFTRUNE_BASE_URL: z
+  /** Piltover Archive external API key (`ak_…`). */
+  PA_API_KEY: z.string().startsWith('ak_'),
+  PA_BASE_URL: z
     .string()
     .url()
     .default('https://piltoverarchive.com/api/external'),

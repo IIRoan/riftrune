@@ -50,7 +50,7 @@ function createDeckSyncForTest() {
   let listCalls = 0;
   let detailCalls = 0;
 
-  const riftrune = {
+  const pa = {
     listDecks: async () => {
       listCalls += 1;
       return upstreamListFixture;
@@ -84,7 +84,7 @@ function createDeckSyncForTest() {
 
   const deckSync = new DeckSyncService(
     {} as never,
-    riftrune as never,
+    pa as never,
     cardCache as never
   );
 
@@ -120,7 +120,7 @@ describe('DeckSyncService.listImportedDeckSummaries', () => {
 
   test('forwards search query to upstream list', async () => {
     let upstreamQuery: Record<string, unknown> | undefined;
-    const riftrune = {
+    const pa = {
       listDecks: async (params?: Record<string, unknown>) => {
         upstreamQuery = params;
         return upstreamListFixture;
@@ -145,7 +145,7 @@ describe('DeckSyncService.listImportedDeckSummaries', () => {
     };
     const testSync = new DeckSyncService(
       {} as never,
-      riftrune as never,
+      pa as never,
       cardCache as never
     );
 
@@ -228,7 +228,7 @@ describe('DeckSyncService.listImportedDeckSummaries', () => {
       ],
     };
 
-    const riftrune = {
+    const pa = {
       listDecks: async () => fixtureWithDuplicateLegend,
       getDeck: async () => {
         throw new Error('unexpected detail fetch');
@@ -236,7 +236,7 @@ describe('DeckSyncService.listImportedDeckSummaries', () => {
     };
     const testSync = new DeckSyncService(
       {} as never,
-      riftrune as never,
+      pa as never,
       syncInternals.cardCache as never
     );
 

@@ -76,8 +76,8 @@ describe('decks: upstream transformation', () => {
 
   test('GET /api/v1/decks/:id returns transformed upstream deck payload', async () => {
     const env = getEnv();
-    const upstream = await fetch(`${env.RIFTRUNE_BASE_URL}/v1/decks?limit=1`, {
-      headers: { 'x-api-key': env.RIFTRUNE_API_KEY },
+    const upstream = await fetch(`${env.PA_BASE_URL}/v1/decks?limit=1`, {
+      headers: { 'x-api-key': env.PA_API_KEY },
     });
     expect(upstream.status).toBe(200);
     const upstreamJson = (await upstream.json()) as unknown as {
@@ -103,8 +103,8 @@ describe('decks: upstream transformation', () => {
 
   test('imported upstream decks cannot be modified or deleted', async () => {
     const env = getEnv();
-    const upstream = await fetch(`${env.RIFTRUNE_BASE_URL}/v1/decks?limit=1`, {
-      headers: { 'x-api-key': env.RIFTRUNE_API_KEY },
+    const upstream = await fetch(`${env.PA_BASE_URL}/v1/decks?limit=1`, {
+      headers: { 'x-api-key': env.PA_API_KEY },
     });
     expect(upstream.status).toBe(200);
     const upstreamJson = (await upstream.json()) as unknown as {
@@ -145,8 +145,8 @@ describe('decks: upstream transformation', () => {
 
   test('POST /api/v1/decks/:id/import copies an upstream deck into owned decks', async () => {
     const env = getEnv();
-    const upstream = await fetch(`${env.RIFTRUNE_BASE_URL}/v1/decks?limit=1`, {
-      headers: { 'x-api-key': env.RIFTRUNE_API_KEY },
+    const upstream = await fetch(`${env.PA_BASE_URL}/v1/decks?limit=1`, {
+      headers: { 'x-api-key': env.PA_API_KEY },
     });
     expect(upstream.status).toBe(200);
     const upstreamJson = (await upstream.json()) as unknown as {

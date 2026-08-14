@@ -4,7 +4,7 @@ import { computeCatalogTotal, sumSetPrintCounts } from '../lib/catalog-total.js'
 import { catalogFingerprint, entityHash } from '../lib/hash.js';
 import type { Database } from '../db/client.js';
 import { filterSnapshots, sets, syncState, variants } from '../db/schema.js';
-import type { RiftruneClient } from '../upstream/riftrune-client.js';
+import type { PaClient } from '../upstream/pa-client.js';
 import {
   enrichFilterSnapshotWithPrintCounts,
   probeExpandedCatalog,
@@ -35,7 +35,7 @@ export class CatalogMetadataService {
 
   constructor(
     private readonly db: Database,
-    private readonly riftrune: RiftruneClient
+    private readonly pa: PaClient
   ) {}
 
   async getFiltersMeta(): Promise<FiltersMeta> {
@@ -194,7 +194,7 @@ export class CatalogMetadataService {
   }
 
   private async prepareProbeContext(force = false): Promise<ProbeContext> {
-    const probe = await this.riftrune.listCards({ limit: 1, page: 1 });
+    const probe = await this.pa.listCards({ limit: 1, page: 1 });
     const fingerprint = catalogFingerprint(
       probe.pagination.total,
       probe.meta?.filters ?? {}
@@ -243,7 +243,7 @@ export class CatalogMetadataService {
     fingerprint: string
   ): Promise<FilterSnapshot> {
     console.log('Probing expanded catalog print counts from Piltover Archive…');
-    const expanded = await probeExpandedCatalog(this.riftrune);
+    const expanded = await probeExpandedCatalog(this.pa);
     const enriched = enrichFilterSnapshotWithPrintCounts(
       baseFilters,
       expanded.setPrintTotals,
@@ -293,7 +293,7 @@ export class CatalogMetadataService {
     const latest = await this.loadLatestSnapshotRecord();
     if (latest) return latest.snapshot;
 
-    const probe = await this.riftrune.listCards({ limit: 1, page: 1 });
+    const probe = await this.pa.listCards({ limit: 1, page: 1 });
     return FilterSnapshot.parse(
       probe.meta?.filters ?? {
         colors: [],

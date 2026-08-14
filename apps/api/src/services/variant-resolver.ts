@@ -3,7 +3,7 @@ import { chunkArray } from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { variants } from '../db/schema.js';
 import type { CardCacheService } from './card-cache.js';
-import type { RiftruneClient } from '../upstream/riftrune-client.js';
+import type { PaClient } from '../upstream/pa-client.js';
 
 const UPSTREAM_BATCH_SIZE = 50;
 
@@ -15,7 +15,7 @@ export class VariantResolver {
   constructor(
     private readonly db: Database,
     private readonly cardCache: CardCacheService,
-    private readonly riftrune: RiftruneClient
+    private readonly pa: PaClient
   ) {}
 
   private addToLookup(lookup: Map<string, string>, variantNumber: string): void {
@@ -48,13 +48,13 @@ export class VariantResolver {
     if (missing.length === 0) return lookup;
 
     for (const chunk of chunkArray(missing, UPSTREAM_BATCH_SIZE)) {
-      const batch = await this.riftrune.batchCards(chunk);
+      const batch = await this.pa.batchCards(chunk);
       const fetchedVariants = new Set<string>();
 
       for (const item of batch.data) {
         if (fetchedVariants.has(item.variantNumber)) continue;
         fetchedVariants.add(item.variantNumber);
-        const logical = await this.riftrune.getCard(item.variantNumber);
+        const logical = await this.pa.getCard(item.variantNumber);
         await this.cardCache.upsertFromUpstream(logical);
         for (const variant of logical.variants) {
           this.addToLookup(lookup, variant.variantNumber);
@@ -63,7 +63,7 @@ export class VariantResolver {
 
       for (const vn of batch.notFound) {
         try {
-          const logical = await this.riftrune.getCard(vn);
+          const logical = await this.pa.getCard(vn);
           await this.cardCache.upsertFromUpstream(logical);
           for (const variant of logical.variants) {
             this.addToLookup(lookup, variant.variantNumber);

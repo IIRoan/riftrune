@@ -40,7 +40,7 @@ function createService(options?: ServiceOptions) {
   let syncStateCalls = 0;
   let localAggregateCalls = 0;
 
-  const riftrune = {
+  const pa = {
     listCards: async () => ({
       pagination: { total: catalogTotal, page: 1, limit: 1, hasNext: false },
       meta: { filters: baseFilters },
@@ -91,7 +91,7 @@ function createService(options?: ServiceOptions) {
     delete process.env.CATALOG_PROBE_DISABLED;
   }
 
-  const service = new CatalogMetadataService(db as never, riftrune as never);
+  const service = new CatalogMetadataService(db as never, pa as never);
 
   (
     service as unknown as {

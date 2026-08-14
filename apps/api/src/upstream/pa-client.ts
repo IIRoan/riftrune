@@ -8,30 +8,31 @@ import {
 } from '@riftbound/contracts';
 import type { Env } from '../env.js';
 
-export class RiftruneApiError extends Error {
+export class PaApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
     readonly body?: string
   ) {
     super(message);
-    this.name = 'RiftruneApiError';
+    this.name = 'PaApiError';
   }
 }
 
-export class RiftruneClient {
-  constructor(private readonly env: Env) {}
+/** HTTP client for the Piltover Archive external API. */
+export class PaClient {
+  constructor(private readonly env: Env) { }
 
   private async request<T>(
     path: string,
     init?: RequestInit & { parse?: (data: unknown) => T }
   ): Promise<T> {
     const { parse, method, body, headers: extraHeaders } = init ?? {};
-    const url = `${this.env.RIFTRUNE_BASE_URL}${path}`;
+    const url = `${this.env.PA_BASE_URL}${path}`;
     const fetchInit: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': this.env.RIFTRUNE_API_KEY,
+        'x-api-key': this.env.PA_API_KEY,
         ...(extraHeaders ?? {}),
       },
       signal: AbortSignal.timeout(30_000),
@@ -43,8 +44,8 @@ export class RiftruneClient {
 
     if (!res.ok) {
       const text = await res.text();
-      throw new RiftruneApiError(
-        `Riftrune API ${String(res.status)}: ${path}`,
+      throw new PaApiError(
+        `Piltover Archive API ${String(res.status)}: ${path}`,
         res.status,
         text
       );

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { PaLogicalCard } from '@riftbound/contracts';
 import { CardCacheService } from '../../src/services/card-cache.js';
 import type { Database } from '../../src/db/client.js';
-import type { RiftruneClient } from '../../src/upstream/riftrune-client.js';
+import type { PaClient } from '../../src/upstream/pa-client.js';
 
 const VARIANT_ID = '0cd819d5-a03f-45d2-9e65-aec8ddae735e';
 const CARD_ID = '7596dc74-82bc-41ac-a25f-83f4b98ffb72';
@@ -21,7 +21,7 @@ function createCardCacheHarness() {
     },
   } as unknown as Database;
 
-  const riftrune = {
+  const pa = {
     listCards: async ({ page }: { page?: number }) => ({
       data:
         page === 4
@@ -93,11 +93,11 @@ function createCardCacheHarness() {
           },
         ],
       }),
-  } as unknown as RiftruneClient;
+  } as unknown as PaClient;
 
   const cards = new CardCacheService(
     db,
-    riftrune,
+    pa,
     { getRowsForCardmarketIds: async () => [] } as never,
     { rewriteCard: (card: PaLogicalCard) => card, rewriteImageUrl: (url: string) => url } as never
   );

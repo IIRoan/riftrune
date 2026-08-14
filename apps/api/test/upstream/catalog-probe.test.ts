@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { loadEnv } from '../../src/env.js';
-import { RiftruneClient } from '../../src/upstream/riftrune-client.js';
+import { PaClient } from '../../src/upstream/pa-client.js';
 import { probeExpandedCatalog } from '../../src/services/catalog-probe.js';
 import { sumVariantTypeCounts } from '../../src/lib/catalog-total.js';
 import { FilterSnapshot } from '@riftbound/contracts';
@@ -12,7 +12,7 @@ describe.skipIf(!runUpstream)('upstream catalog probe (Piltover Archive)', () =>
     'expanded collectible printing total is derived live from PA API',
     async () => {
       const env = loadEnv();
-      const client = new RiftruneClient(env);
+      const client = new PaClient(env);
       const result = await probeExpandedCatalog(client);
 
       const setSum = Object.values(result.setPrintTotals).reduce(
