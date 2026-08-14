@@ -64,11 +64,11 @@ export function FilterToggleRow({
       {active ? (
         <View
           className={cn(
-            'size-5 items-center justify-center bg-foreground',
+            'size-5 items-center justify-center border border-border bg-card-panel',
             FACTORY_RADIUS_CONTROL_CLASS
           )}
         >
-          <CheckIcon className="size-3.5 text-background" weight="bold" />
+          <CheckIcon className="size-3.5 text-foreground" weight="bold" />
         </View>
       ) : (
         <View className={cn('size-5 border border-border', FACTORY_RADIUS_CONTROL_CLASS)} />
@@ -100,7 +100,7 @@ export function FilterStatChip({
       <Text
         className={cn(
           'font-mono text-sm font-normal',
-          active ? 'text-background' : 'text-muted-foreground'
+          active ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
         {label}

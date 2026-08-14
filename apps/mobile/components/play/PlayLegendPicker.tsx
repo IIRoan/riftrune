@@ -117,7 +117,7 @@ export function PlayLegendPicker({
             className={cn(
               'aspect-[5/7] w-full overflow-hidden border bg-background',
               CARD_ART_RADIUS_CLASS,
-              selected ? 'border-primary' : 'border-border'
+              selected ? 'border-foreground' : 'border-border'
             )}
           >
             {item.imageUrl ? (
@@ -134,7 +134,7 @@ export function PlayLegendPicker({
           <Text
             className={cn(
               'text-[12px] font-semibold',
-              selected ? 'text-primary' : 'text-foreground'
+              selected ? 'text-foreground' : 'text-muted-foreground'
             )}
             numberOfLines={2}
           >

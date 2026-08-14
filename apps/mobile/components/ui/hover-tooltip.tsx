@@ -115,7 +115,7 @@ export function HoverTooltip({
   const delayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [entered, setEntered] = useState(false);
-  const primaryColor = useCSSVariable('--color-primary') as string;
+  const cardColor = useCSSVariable('--color-card') as string;
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
   const clearDelay = useCallback(() => {
@@ -256,11 +256,11 @@ export function HoverTooltip({
               } as object
             }
           >
-            <View className="relative rounded-md bg-primary px-3 py-1.5 shadow-md shadow-black/25">
-              <TooltipArrow placement={placement} color={primaryColor} />
-              <Text className="text-xs font-medium text-primary-foreground">{label}</Text>
+            <View className="relative rounded-md border border-border bg-card px-3 py-1.5">
+              <TooltipArrow placement={placement} color={cardColor} />
+              <Text className="text-xs font-medium text-foreground">{label}</Text>
               {description ? (
-                <Text className="mt-0.5 text-[11px] leading-snug text-primary-foreground/80">
+                <Text className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
                   {description}
                 </Text>
               ) : null}

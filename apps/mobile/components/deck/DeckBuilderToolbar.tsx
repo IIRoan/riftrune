@@ -11,6 +11,7 @@ import { countCatalogFilters, type CatalogFilters } from '@/constants/catalogFil
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { useFocusedTextDraft } from '@/hooks/useFocusedTextDraft';
 import type { DeckState, DeckValidationMessage } from '@/lib/deck-types';
+import { OPERATE_SECONDARY_FILL_CLASS } from '@/constants/operateType';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
@@ -127,14 +128,17 @@ export function DeckBuilderToolbar({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Edit deck"
-      className="h-9 shrink-0 flex-row items-center gap-1.5 rounded-[3px] bg-foreground px-2.5 active:opacity-80"
+      className={cn(
+        'h-9 shrink-0 flex-row items-center gap-1.5 rounded-[3px] px-2.5 active:opacity-80',
+        OPERATE_SECONDARY_FILL_CLASS
+      )}
       onPress={() => {
         hapticPress();
         onEdit();
       }}
     >
-      <PencilIcon className="size-4 text-background" />
-      <Text className="text-[13px] font-normal text-background">Edit</Text>
+      <PencilIcon className="size-4 text-foreground" />
+      <Text className="text-[13px] font-normal text-foreground">Edit</Text>
     </Pressable>
   ) : null;
 
@@ -189,8 +193,8 @@ export function DeckBuilderToolbar({
         filterCount === 1 ? (
           <View className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-foreground" />
         ) : (
-          <View className="absolute -right-1 -top-1 size-4 items-center justify-center rounded-[3px] bg-foreground">
-            <Text className="font-mono text-[9px] font-normal text-background">
+          <View className="absolute -right-1 -top-1 size-4 items-center justify-center rounded-[3px] border border-border bg-card-panel">
+            <Text className="font-mono text-[9px] font-normal text-foreground">
               {filterCount}
             </Text>
           </View>

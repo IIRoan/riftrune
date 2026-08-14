@@ -260,7 +260,7 @@ function FinalPointCue({ compact }: { compact: boolean }) {
     >
       <Text
         className={cn(
-          'font-semibold uppercase tracking-wide text-primary',
+          'font-semibold uppercase tracking-wide text-foreground',
           compact ? 'text-[10px]' : 'text-[11px]'
         )}
       >
@@ -287,7 +287,7 @@ function VictoryBanner({ compact }: { compact: boolean }) {
     >
       <Text
         className={cn(
-          'font-semibold text-primary',
+          'font-semibold text-foreground',
           compact ? 'text-xs' : 'text-sm'
         )}
       >
@@ -320,7 +320,7 @@ function VictoryFrame() {
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      className="absolute inset-2 z-20 border-2 border-primary"
+      className="absolute inset-2 z-20 border-2 border-foreground"
       style={frameStyle}
     />
   );

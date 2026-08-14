@@ -3,6 +3,8 @@ import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import {
+  OPERATE_CTA_FILL_CLASS,
+  OPERATE_CTA_ICON_CLASS,
   OPERATE_CTA_LABEL_CLASS,
   OPERATE_QTY_CLASS,
 } from '@/constants/operateType';
@@ -25,7 +27,7 @@ interface GridDeckControlProps {
   onRemove: () => void;
 }
 
-/** Deck control for tray tiles — Factory chalk Add / carbon −n+ (matches collection). */
+/** Deck control for tray tiles — quiet panel Add / −n+ (matches collection). */
 export function GridDeckControl({
   count,
   name,
@@ -83,14 +85,15 @@ export function GridDeckControl({
         accessibilityState={{ disabled: !canAdd }}
         className={cn(
           CONTROL_HEIGHT,
-          'w-full flex-row items-center justify-center gap-1.5 bg-foreground active:opacity-80',
+          'w-full flex-row items-center justify-center gap-1.5 active:opacity-80',
+          OPERATE_CTA_FILL_CLASS,
           FACTORY_RADIUS_CONTROL_CLASS,
           !canAdd && 'opacity-45'
         )}
         disabled={!canAdd}
         onPress={handleAdd}
       >
-        <PlusIcon className="size-3.5 text-background" weight="bold" />
+        <PlusIcon className={cn('size-3.5', OPERATE_CTA_ICON_CLASS)} weight="bold" />
         <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
       </Pressable>
     );

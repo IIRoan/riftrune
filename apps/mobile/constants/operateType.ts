@@ -8,9 +8,21 @@
  * - font-bold (700) — primary CTAs (Add, commit actions)
  */
 
-/** Chalk/carbon commit label — Add on tiles and detail rows. */
+/** Chalk commit fill — Add and other primary actions. */
+export const OPERATE_CTA_FILL_CLASS = 'bg-cta';
+
+/** Commit label — Add on tiles and detail rows. */
 export const OPERATE_CTA_LABEL_CLASS =
-  'text-[13px] font-bold tracking-tight text-background';
+  'text-[13px] font-bold tracking-tight text-cta-foreground';
+
+/** Plus on chalk commit fills. */
+export const OPERATE_CTA_ICON_CLASS = 'text-cta-foreground';
+
+/** Spinner on chalk commit fills. */
+export const OPERATE_CTA_SPINNER_CLASS = 'accent-cta-foreground';
+
+/** Secondary instrument fill — Wishlist, Edit, not the primary action. */
+export const OPERATE_SECONDARY_FILL_CLASS = 'border border-border bg-card-panel';
 
 /** Catalog grid tile card name. */
 export const CARD_TILE_TITLE_CLASS =

@@ -1,10 +1,18 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
+import {
+  WEB_FONT_FACE_STYLE_ID,
+  getWebFontFaceCss,
+  getWebFontPreloadHrefs,
+} from '@/lib/web-font-faces';
 
 // This file is web-only and used to configure the root HTML for every
 // web page during static rendering.
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
 export default function Root({ children }: { children: React.ReactNode }) {
+  const fontCss = getWebFontFaceCss();
+  const fontHrefs = getWebFontPreloadHrefs();
+
   return (
     <html lang="en">
       <head>
@@ -21,9 +29,25 @@ export default function Root({ children }: { children: React.ReactNode }) {
         */}
         <ScrollViewStyleReset />
 
+        {fontHrefs.map((href) => (
+          <link
+            key={href}
+            rel="preload"
+            href={href}
+            as="font"
+            type="font/ttf"
+            crossOrigin="anonymous"
+          />
+        ))}
+
         {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
-        {/* Add any additional <head> elements that you want globally available on web... */}
+        {fontCss ? (
+          <style
+            id={WEB_FONT_FACE_STYLE_ID}
+            dangerouslySetInnerHTML={{ __html: fontCss }}
+          />
+        ) : null}
       </head>
       <body>{children}</body>
     </html>

@@ -94,7 +94,7 @@ This is an **Operate** surface (catalog, collection, decks, wishlist). Expressio
 - Chromatic color = data voice only (trends, live status, keyword badges)
 - Zero shadow dependency; hairline ash strokes instead
 
-**Migration note:** `global.css` still carries the legacy archive/lime token map. New and redesigned UI must follow this DESIGN.md. Prefer mapping Factory roles onto Uniwind tokens as they are retargeted (`background` → obsidian, `foreground` → bone, `border` → ash, `secondary`/`card-panel` → carbon, `success` → metric green, primary/status → signal for live pulses only). Until tokens land, implement with semantic classes that match these roles — do not reintroduce soft `primary/12` tint CTAs or champagne outline chrome.
+**Migration note:** `global.css` still carries the legacy archive/lime token map for `--primary` / ring. Commit chrome uses named Factory tokens: `bg-cta` (chalk fill) and `text-cta-foreground` (obsidian ink). Prefer mapping Factory roles onto Uniwind tokens as they are retargeted (`background` → obsidian, `foreground` → bone, `border` → ash, `secondary`/`card-panel` → carbon, `success` → metric green). Do not reintroduce soft `primary/12` tint CTAs or champagne outline chrome.
 
 ## Colors
 

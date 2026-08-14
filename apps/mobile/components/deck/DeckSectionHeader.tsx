@@ -1,6 +1,7 @@
 import { PlusIcon } from '@/components/icons';
 import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { OPERATE_CTA_FILL_CLASS, OPERATE_CTA_ICON_CLASS } from '@/constants/operateType';
 import { cn } from '@/lib/utils';
 
 interface DeckSectionHeaderProps {
@@ -59,11 +60,14 @@ export function DeckSectionHeader({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Add cards to ${title}`}
-              className="h-8 flex-row items-center gap-1 rounded-[3px] bg-foreground px-2.5 active:opacity-80"
+              className={cn(
+                'h-8 flex-row items-center gap-1 rounded-[3px] px-2.5 active:opacity-80',
+                OPERATE_CTA_FILL_CLASS
+              )}
               onPress={onAdd}
             >
-              <PlusIcon className="size-3.5 text-background" weight="bold" />
-              <Text className="text-[12px] font-medium tracking-tight text-background">Add</Text>
+              <PlusIcon className={cn('size-3.5', OPERATE_CTA_ICON_CLASS)} weight="bold" />
+              <Text className="text-[12px] font-medium tracking-tight text-cta-foreground">Add</Text>
             </Pressable>
           ) : null}
         </View>

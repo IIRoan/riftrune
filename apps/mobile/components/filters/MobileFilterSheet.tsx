@@ -80,11 +80,11 @@ export function MobileFilterSheet({
                   {hasActiveFilters ? (
                     <View
                       className={cn(
-                        'h-6 min-w-6 items-center justify-center bg-foreground px-1.5',
+                        'h-6 min-w-6 items-center justify-center border border-border bg-card-panel px-1.5',
                         FACTORY_RADIUS_CONTROL_CLASS
                       )}
                     >
-                      <Text className="font-mono text-[11px] font-normal text-background">
+                      <Text className="font-mono text-[11px] font-normal text-foreground">
                         {activeCount}
                       </Text>
                     </View>
@@ -117,12 +117,12 @@ export function MobileFilterSheet({
           <BottomSheetFooter className="border-border border-t bg-card-panel pt-3">
             <Button
               className={cn(
-                'h-10 w-full bg-foreground active:opacity-80',
+                'h-10 w-full active:opacity-80',
                 FACTORY_RADIUS_CONTROL_CLASS
               )}
               onPress={onClose}
             >
-              <ButtonText className="text-sm font-medium text-background">{doneLabel}</ButtonText>
+              <ButtonText className="text-sm font-medium text-foreground">{doneLabel}</ButtonText>
             </Button>
           </BottomSheetFooter>
         </BottomSheetContent>
@@ -210,7 +210,7 @@ export function FilterOptionChip({
       <Text
         className={cn(
           'text-sm font-normal',
-          active ? 'text-background' : 'text-muted-foreground'
+          active ? 'text-foreground' : 'text-muted-foreground'
         )}
         numberOfLines={1}
       >

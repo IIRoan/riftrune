@@ -51,7 +51,10 @@ function ThemeSwatch({ mode }: { mode: 'light' | 'dark' | 'system' }) {
     return (
       <View className="h-16 w-full flex-row overflow-hidden rounded-[3px]">
         <View className="flex-1" style={{ backgroundColor: SPECIMEN.light.bg }}>
-          <View className="m-1.5 h-2 w-8 rounded-sm" style={{ backgroundColor: SPECIMEN.light.ink }} />
+          <View
+            className="m-1.5 h-2 w-8 rounded-sm"
+            style={{ backgroundColor: SPECIMEN.light.ink }}
+          />
           <View
             className="mx-1.5 h-6 rounded-sm"
             style={{ backgroundColor: SPECIMEN.light.panel }}
@@ -59,7 +62,10 @@ function ThemeSwatch({ mode }: { mode: 'light' | 'dark' | 'system' }) {
         </View>
         <View className="w-px" style={{ backgroundColor: SPECIMEN.accent }} />
         <View className="flex-1" style={{ backgroundColor: SPECIMEN.dark.bg }}>
-          <View className="m-1.5 h-2 w-8 rounded-sm" style={{ backgroundColor: SPECIMEN.dark.ink }} />
+          <View
+            className="m-1.5 h-2 w-8 rounded-sm"
+            style={{ backgroundColor: SPECIMEN.dark.ink }}
+          />
           <View
             className="mx-1.5 h-6 rounded-sm"
             style={{ backgroundColor: SPECIMEN.dark.panel }}
@@ -71,14 +77,26 @@ function ThemeSwatch({ mode }: { mode: 'light' | 'dark' | 'system' }) {
 
   const paint = SPECIMEN[mode];
   return (
-    <View className="h-16 w-full overflow-hidden rounded-[3px]" style={{ backgroundColor: paint.bg }}>
+    <View
+      className="h-16 w-full overflow-hidden rounded-[3px]"
+      style={{ backgroundColor: paint.bg }}
+    >
       <View className="flex-row items-center justify-between px-2 pt-2">
         <View className="h-2 w-10 rounded-sm" style={{ backgroundColor: paint.ink }} />
-        <View className="size-2.5 rounded-sm" style={{ backgroundColor: SPECIMEN.accent }} />
+        <View
+          className="size-2.5 rounded-sm"
+          style={{ backgroundColor: SPECIMEN.accent }}
+        />
       </View>
       <View className="mt-2 flex-row gap-1 px-2">
-        <View className="h-7 flex-1 rounded-sm" style={{ backgroundColor: paint.panel }} />
-        <View className="h-7 flex-1 rounded-sm" style={{ backgroundColor: paint.panel }} />
+        <View
+          className="h-7 flex-1 rounded-sm"
+          style={{ backgroundColor: paint.panel }}
+        />
+        <View
+          className="h-7 flex-1 rounded-sm"
+          style={{ backgroundColor: paint.panel }}
+        />
       </View>
       <View className="mt-1.5 h-px w-full" style={{ backgroundColor: paint.line }} />
     </View>
@@ -153,13 +171,19 @@ function GridLayoutPreview({ cards }: { cards: CardListItem[] }) {
   const slots = Array.from({ length: GRID_CARD_COUNT }, (_, i) => cards[i] ?? null);
 
   return (
-    <ScaleToFitPreview contentWidth={GRID_CONTENT_WIDTH} layoutWidth={GRID_LAYOUT_WIDTH}>
+    <ScaleToFitPreview
+      contentWidth={GRID_CONTENT_WIDTH}
+      layoutWidth={GRID_LAYOUT_WIDTH}
+    >
       <View
         className="flex-row flex-wrap"
         style={{ width: GRID_LAYOUT_WIDTH, gap: GRID_GAP }}
       >
         {slots.map((card, index) => (
-          <View key={card?.variantNumber ?? `grid-slot-${index}`} style={{ width: GRID_TILE_WIDTH }}>
+          <View
+            key={card?.variantNumber ?? `grid-slot-${index}`}
+            style={{ width: GRID_TILE_WIDTH }}
+          >
             {card ? (
               <CardTile
                 card={card}
@@ -169,10 +193,10 @@ function GridLayoutPreview({ cards }: { cards: CardListItem[] }) {
                 collectionByVariant={EMPTY_OWNERSHIP}
               />
             ) : (
-              <View className="overflow-hidden rounded-[10px] border border-border bg-card p-2 opacity-40">
-                <View className="aspect-[5/7] w-full rounded-[3px] bg-card-panel" />
-                <View className="mt-2 h-3 w-[70%] rounded bg-card-panel" />
-                <View className="mt-1.5 h-2.5 w-[40%] rounded bg-card-panel" />
+              <View className="opacity-40">
+                <View className="aspect-[5/7] w-full rounded-[10px] bg-card" />
+                <View className="mt-2 h-3 w-[70%] rounded bg-card" />
+                <View className="mt-1.5 h-2.5 w-[40%] rounded bg-card" />
               </View>
             )}
           </View>
@@ -186,7 +210,10 @@ function ListLayoutPreview({ cards }: { cards: CardListItem[] }) {
   const slots = Array.from({ length: LIST_CARD_COUNT }, (_, i) => cards[i] ?? null);
 
   return (
-    <ScaleToFitPreview contentWidth={LIST_CONTENT_WIDTH} layoutWidth={LIST_LAYOUT_WIDTH}>
+    <ScaleToFitPreview
+      contentWidth={LIST_CONTENT_WIDTH}
+      layoutWidth={LIST_LAYOUT_WIDTH}
+    >
       <View style={{ width: LIST_LAYOUT_WIDTH }}>
         {slots.map((card, index) =>
           card ? (
@@ -262,9 +289,7 @@ export function AppearanceSpecimens() {
                     : 'border-border bg-card active:border-border'
                 )}
               >
-                <ThemeSwatch
-                  mode={item.value === 'system' ? 'system' : item.value}
-                />
+                <ThemeSwatch mode={item.value === 'system' ? 'system' : item.value} />
                 <Text
                   className={cn(
                     'px-0.5 text-sm font-normal',
@@ -296,9 +321,7 @@ export function AppearanceSpecimens() {
                 }}
                 className={cn(
                   'min-w-0 flex-1 gap-2 rounded-[3px] border p-2 active:opacity-90',
-                  selected
-                    ? 'border-foreground bg-card-panel'
-                    : 'border-border bg-card'
+                  selected ? 'border-foreground bg-card-panel' : 'border-border bg-card'
                 )}
               >
                 {layout === 'list' ? (
@@ -340,9 +363,7 @@ export function AppearanceSpecimens() {
                 }}
                 className={cn(
                   'min-w-0 flex-1 gap-1 rounded-[3px] border px-2 py-2.5 active:opacity-90',
-                  selected
-                    ? 'border-foreground bg-card-panel'
-                    : 'border-border bg-card'
+                  selected ? 'border-foreground bg-card-panel' : 'border-border bg-card'
                 )}
               >
                 <Text

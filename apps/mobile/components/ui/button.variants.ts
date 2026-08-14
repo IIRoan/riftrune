@@ -14,7 +14,7 @@ export const buttonVariants = cva(
         'icon-lg': 'size-14',
       },
       variant: {
-        default: 'bg-foreground active:opacity-80',
+        default: 'bg-cta active:opacity-80',
         destructive: 'bg-destructive active:bg-destructive/80 dark:bg-destructive/60',
         outline:
           'border border-border bg-transparent active:bg-card-panel dark:border-border',
@@ -33,7 +33,7 @@ export const buttonVariants = cva(
 export const buttonTextVariants = cva('whitespace-nowrap font-bold text-sm', {
   variants: {
     variant: {
-      default: 'text-background',
+      default: 'text-cta-foreground',
       destructive: 'text-white',
       outline: 'text-foreground',
       secondary: 'text-foreground',
@@ -58,7 +58,7 @@ export const buttonTextVariants = cva('whitespace-nowrap font-bold text-sm', {
 export const buttonIconVariants = cva('', {
   variants: {
     variant: {
-      default: 'text-background',
+      default: 'text-cta-foreground',
       destructive: 'text-white',
       outline: 'text-foreground',
       secondary: 'text-foreground',
@@ -83,7 +83,7 @@ export const buttonIconVariants = cva('', {
 export const buttonSpinnerVariants = cva('', {
   variants: {
     variant: {
-      default: 'accent-background',
+      default: 'accent-cta-foreground',
       destructive: 'accent-white',
       outline: 'accent-foreground',
       secondary: 'accent-foreground',

@@ -15,6 +15,7 @@ import {
   type PrintingWithOwned,
 } from '@/utils/collectionPrintingPicker';
 import { cn } from '@/lib/utils';
+import { OPERATE_CTA_FILL_CLASS, OPERATE_CTA_ICON_CLASS, OPERATE_CTA_SPINNER_CLASS } from '@/constants/operateType';
 
 interface OwnershipStepperProps {
   owned: number;
@@ -128,7 +129,8 @@ export function OwnershipStepper({
         accessibilityRole="button"
         accessibilityLabel={`Add ${name} to collection`}
         className={cn(
-          'flex-row items-center justify-center gap-1 rounded-[3px] bg-foreground px-2.5 active:opacity-80',
+          'flex-row items-center justify-center gap-1 rounded-[3px] px-2.5 active:opacity-80',
+          OPERATE_CTA_FILL_CLASS,
           gridSlot ? 'w-full' : 'w-auto shrink-0',
           controlWidth,
           controlHeight,
@@ -139,19 +141,19 @@ export function OwnershipStepper({
         disabled={busy}
       >
         {busy && !showAddPicker ? (
-          <ActivityIndicator size="small" className="accent-background" />
+          <ActivityIndicator size="small" className={OPERATE_CTA_SPINNER_CLASS} />
         ) : (
           <>
             <PlusIcon
               className={cn(
-                'text-background',
+                OPERATE_CTA_ICON_CLASS,
                 detailTouch ? 'size-4' : relaxed ? 'size-3.5' : 'size-3'
               )}
               weight="bold"
             />
             <Text
               className={cn(
-                'font-medium tracking-tight text-background',
+                'font-medium tracking-tight text-cta-foreground',
                 detailTouch ? 'text-[13px]' : 'text-[11px]'
               )}
             >

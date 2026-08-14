@@ -16,6 +16,7 @@ import type { DeckCard, DeckEntry, DeckSectionKey, DeckState } from '@/lib/deck-
 import { ownedCountForCardName } from '@/lib/deck-validation';
 import { openCard, type CardOpenSource } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
+import { OPERATE_CTA_FILL_CLASS, OPERATE_CTA_ICON_CLASS } from '@/constants/operateType';
 import { cn } from '@/lib/utils';
 
 export const DECK_COMPOSITION_LIST_WIDTH = 320;
@@ -104,13 +105,16 @@ function SectionHeader({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Add to ${title}`}
-          className="size-7 items-center justify-center rounded-[3px] bg-foreground active:opacity-80"
+          className={cn(
+            'size-7 items-center justify-center rounded-[3px] active:opacity-80',
+            OPERATE_CTA_FILL_CLASS
+          )}
           onPress={() => {
             hapticPress();
             onAdd();
           }}
         >
-          <PlusIcon className="size-3.5 text-background" weight="bold" />
+          <PlusIcon className={cn('size-3.5', OPERATE_CTA_ICON_CLASS)} weight="bold" />
         </Pressable>
       ) : null}
     </View>

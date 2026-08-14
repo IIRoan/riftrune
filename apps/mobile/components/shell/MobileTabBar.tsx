@@ -84,10 +84,10 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
     '--color-border',
     '--color-muted-foreground',
   ]);
-  const foreground = String(foregroundRaw ?? 'oklch(0.94 0 0)');
-  const card = String(cardRaw ?? 'oklch(0.175 0 0)');
-  const border = String(borderRaw ?? 'oklch(0.292 0 0)');
-  const mutedForeground = String(mutedForegroundRaw ?? 'oklch(0.720 0 0)');
+  const foreground = String(foregroundRaw ?? '#f0f0f4');
+  const card = String(cardRaw ?? '#15151e');
+  const border = String(borderRaw ?? '#404059');
+  const mutedForeground = String(mutedForegroundRaw ?? '#a6a6bf');
 
   const bottomOffset = Math.max(insets.bottom, Layout.tabBarBottomMargin);
 
@@ -97,7 +97,9 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
   const activeVisibleIndex = Math.max(
     0,
     visibleItems.findIndex((item) => {
-      const routeIndex = state.routes.findIndex((route) => route.name === item.routeName);
+      const routeIndex = state.routes.findIndex(
+        (route) => route.name === item.routeName
+      );
       return (
         state.index === routeIndex ||
         (item.routeName === 'decks' && pathname.startsWith('/decks'))
@@ -150,7 +152,9 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
           />
         ) : null}
         {visibleItems.map((item) => {
-          const routeIndex = state.routes.findIndex((route) => route.name === item.routeName);
+          const routeIndex = state.routes.findIndex(
+            (route) => route.name === item.routeName
+          );
           const route = state.routes[routeIndex]!;
           const isFocused =
             state.index === routeIndex ||

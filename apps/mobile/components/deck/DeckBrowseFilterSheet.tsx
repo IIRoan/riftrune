@@ -112,8 +112,8 @@ export function DeckBrowseFilterTrigger({
           activeCount === 1 ? (
             <CatalogToolbarBadgeDot />
           ) : (
-            <View className="size-5 items-center justify-center rounded-[3px] bg-foreground">
-              <Text className="font-mono text-[11px] font-normal text-background">
+            <View className="size-5 items-center justify-center rounded-[3px] border border-border bg-card-panel">
+              <Text className="font-mono text-[11px] font-normal text-foreground">
                 {activeCount}
               </Text>
             </View>

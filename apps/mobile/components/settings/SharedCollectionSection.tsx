@@ -125,8 +125,8 @@ export function SharedCollectionSection({ className }: SharedCollectionSectionPr
         <AuthSlabCorners />
         <View className="min-h-0 flex-1 flex-row items-stretch">
           <View className="w-[76px] items-center justify-center border-r border-border bg-background py-6">
-            <View className="size-12 items-center justify-center rounded-[3px] bg-foreground">
-              <Text className="font-mono text-xl font-normal text-background">{initial}</Text>
+            <View className="size-12 items-center justify-center rounded-[3px] border border-border bg-card-panel">
+              <Text className="font-mono text-xl font-normal text-foreground">{initial}</Text>
             </View>
           </View>
           <View className="min-w-0 flex-1 justify-between gap-4 px-4 py-4">

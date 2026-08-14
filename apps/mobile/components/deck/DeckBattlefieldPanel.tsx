@@ -13,6 +13,7 @@ import { isCardTournamentIllegal } from '@/lib/card-legality';
 import type { DeckEntry, DeckState } from '@/lib/deck-types';
 import { openCard, type CardOpenSource } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
+import { OPERATE_CTA_FILL_CLASS, OPERATE_CTA_ICON_CLASS } from '@/constants/operateType';
 import { cn } from '@/lib/utils';
 
 interface DeckBattlefieldPanelProps {
@@ -171,14 +172,17 @@ export function DeckBattlefieldPanel({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add battlefield"
-            className="h-8 shrink-0 flex-row items-center gap-1 rounded-[3px] bg-foreground px-2.5 active:opacity-80"
+            className={cn(
+              'h-8 shrink-0 flex-row items-center gap-1 rounded-[3px] px-2.5 active:opacity-80',
+              OPERATE_CTA_FILL_CLASS
+            )}
             onPress={() => {
               hapticPress();
               onAdd();
             }}
           >
-            <PlusIcon className="size-3.5 text-background" weight="bold" />
-            <Text className="text-[12px] font-medium tracking-tight text-background">Add</Text>
+            <PlusIcon className={cn('size-3.5', OPERATE_CTA_ICON_CLASS)} weight="bold" />
+            <Text className="text-[12px] font-medium tracking-tight text-cta-foreground">Add</Text>
           </Pressable>
         ) : null}
       </View>

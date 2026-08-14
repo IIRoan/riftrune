@@ -88,7 +88,7 @@ export function CatalogDetailHeader({
           </View>
           <Text className="font-mono text-xs text-archive-subtle">{activeVariantNumber}</Text>
           {watchedElsewhereCount > 0 ? (
-            <Text className="text-xs font-medium text-primary">
+            <Text className="text-xs font-medium text-foreground">
               Also on wishlist: {watchedElsewhereCount} other printing
               {watchedElsewhereCount === 1 ? '' : 's'}
             </Text>

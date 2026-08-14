@@ -1,12 +1,12 @@
 import { ActivityIndicator, Pressable } from 'react-native';
 import { PlusIcon } from '@/components/icons';
 import { Text } from '@/components/ui/text';
-import { OPERATE_CTA_LABEL_CLASS } from '@/constants/operateType';
+import { OPERATE_CTA_FILL_CLASS, OPERATE_CTA_ICON_CLASS, OPERATE_CTA_LABEL_CLASS, OPERATE_CTA_SPINNER_CLASS } from '@/constants/operateType';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
 /**
- * Card-detail printing-row Add — Factory chalk CTA (flashlit dispatch on dark).
+ * Card-detail printing-row Add — quiet panel commit.
  * See apps/mobile/DESIGN.md → Catalog detail actions.
  */
 export function CatalogDetailAddButton({
@@ -30,16 +30,17 @@ export function CatalogDetailAddButton({
         onPress();
       }}
       className={cn(
-        'h-8 shrink-0 flex-row items-center justify-center gap-1 rounded-[3px] bg-foreground px-3.5 web:cursor-pointer active:opacity-80',
+        'h-8 shrink-0 flex-row items-center justify-center gap-1 rounded-[3px] px-3.5 web:cursor-pointer active:opacity-80',
+        OPERATE_CTA_FILL_CLASS,
         busy && 'opacity-60',
         className
       )}
     >
       {busy ? (
-        <ActivityIndicator size="small" className="accent-background" />
+        <ActivityIndicator size="small" className={OPERATE_CTA_SPINNER_CLASS} />
       ) : (
         <>
-          <PlusIcon className="size-3.5 text-background" weight="bold" />
+          <PlusIcon className={cn('size-3.5', OPERATE_CTA_ICON_CLASS)} weight="bold" />
           <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
         </>
       )}

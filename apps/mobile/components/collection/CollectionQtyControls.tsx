@@ -5,7 +5,7 @@ import { Button, ButtonIcon, ButtonText } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
-import { OPERATE_CTA_LABEL_CLASS } from '@/constants/operateType';
+import { OPERATE_CTA_FILL_CLASS, OPERATE_CTA_ICON_CLASS, OPERATE_CTA_LABEL_CLASS, OPERATE_CTA_SPINNER_CLASS } from '@/constants/operateType';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
@@ -43,7 +43,8 @@ export function CollectionAddButton({
       <Pressable
         accessibilityLabel="Add to collection"
         className={cn(
-          'h-10 flex-row items-center justify-center gap-1.5 rounded-[3px] bg-foreground px-3.5 active:opacity-80',
+          'h-10 flex-row items-center justify-center gap-1.5 rounded-[3px] px-3.5 active:opacity-80',
+          OPERATE_CTA_FILL_CLASS,
           className
         )}
         onPress={() => {
@@ -53,10 +54,10 @@ export function CollectionAddButton({
         disabled={disabled || loading}
       >
         {loading ? (
-          <ActivityIndicator size="small" className="accent-background" />
+          <ActivityIndicator size="small" className={OPERATE_CTA_SPINNER_CLASS} />
         ) : (
           <>
-            <PlusIcon className="size-3.5 text-background" weight="bold" />
+            <PlusIcon className={cn('size-3.5', OPERATE_CTA_ICON_CLASS)} weight="bold" />
             <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
           </>
         )}
@@ -66,7 +67,6 @@ export function CollectionAddButton({
 
   return (
     <Button
-      variant="ghost"
       size="sm"
       className={cn('h-8 w-auto shrink-0 px-2.5', className)}
       onPress={onPress}
@@ -74,7 +74,7 @@ export function CollectionAddButton({
       busy={loading}
       accessibilityLabel="Add to collection"
     >
-      <ButtonText className="text-[13px] font-normal text-foreground">Add</ButtonText>
+      <ButtonText className="text-[13px] font-normal">Add</ButtonText>
     </Button>
   );
 }

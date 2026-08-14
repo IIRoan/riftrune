@@ -6,7 +6,7 @@ export const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-foreground',
+        default: 'border-transparent bg-card-panel',
         secondary: 'border-transparent bg-card-panel',
         destructive: 'border-transparent bg-destructive',
         outline: '',
@@ -23,7 +23,7 @@ export const badgeTextVariants = cva(
   {
     variants: {
       variant: {
-        default: 'text-background',
+        default: 'text-foreground',
         secondary: 'text-foreground',
         destructive: 'text-white',
         outline: 'text-foreground',
@@ -38,7 +38,7 @@ export const badgeTextVariants = cva(
 export const badgeIconVariants = cva('size-4', {
   variants: {
     variant: {
-      default: 'text-background',
+      default: 'text-foreground',
       secondary: 'text-foreground',
       destructive: 'text-white',
       outline: 'text-foreground',

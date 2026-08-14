@@ -120,7 +120,7 @@ export function SideRail() {
           <PressableScale
             accessibilityLabel="The Astral Grove home"
             className={cn(
-              'mb-2 size-8 items-center justify-center bg-foreground',
+              'mb-2 size-8 items-center justify-center border border-border bg-card-panel',
               FACTORY_RADIUS_CONTROL_CLASS
             )}
             contentClassName="items-center justify-center"
@@ -129,7 +129,7 @@ export function SideRail() {
               router.push('/(tabs)/search');
             }}
           >
-            <Text className="font-mono text-sm font-medium text-background">
+            <Text className="font-mono text-sm font-medium text-foreground">
               A
             </Text>
           </PressableScale>
@@ -158,7 +158,7 @@ export function SideRail() {
                   className={cn(
                     'size-9 items-center justify-center',
                     FACTORY_RADIUS_CONTROL_CLASS,
-                    isActive && 'bg-accent'
+                    isActive && 'bg-card-panel'
                   )}
                   contentClassName="items-center justify-center"
                   depth={0.92}
@@ -166,7 +166,7 @@ export function SideRail() {
                   <Icon
                     className={cn(
                       'size-4',
-                      isActive ? 'text-accent-foreground' : 'text-muted-foreground'
+                      isActive ? 'text-foreground' : 'text-muted-foreground'
                     )}
                   />
                 </PressableScale>
@@ -188,7 +188,7 @@ export function SideRail() {
               className={cn(
                 'size-9 items-center justify-center',
                 FACTORY_RADIUS_CONTROL_CLASS,
-                active === 'settings' && 'bg-accent'
+                active === 'settings' && 'bg-card-panel'
               )}
               contentClassName="items-center justify-center"
               onPress={() => {
@@ -200,7 +200,7 @@ export function SideRail() {
                 className={cn(
                   'font-mono text-xs font-normal',
                   active === 'settings'
-                    ? 'text-accent-foreground'
+                    ? 'text-foreground'
                     : 'text-muted-foreground'
                 )}
               >

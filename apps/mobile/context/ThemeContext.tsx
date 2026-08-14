@@ -89,7 +89,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     Uniwind.setTheme(settings.theme === 'system' ? 'system' : settings.theme);
   }, [settings.theme]);
 
-  // Archive palette uses fixed chartreuse accent from global.css — do not override.
+  // Quiet grey chrome with frost commit is owned by global.css — do not override.
 
   const value = useMemo<ThemeContextValue>(
     () => ({

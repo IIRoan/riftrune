@@ -43,11 +43,11 @@ export function DeckCreateMenu({ onCreate, children, className }: DeckCreateMenu
     (
       <Button className="w-auto" disabled={busy}>
         {busy ? (
-          <ActivityIndicator color="white" />
+          <ActivityIndicator />
         ) : (
           <>
             <ButtonIcon>
-              <CalendarPlusIcon className="size-4 text-background" />
+              <CalendarPlusIcon className="size-4 text-cta-foreground" />
             </ButtonIcon>
             <ButtonText>New</ButtonText>
           </>

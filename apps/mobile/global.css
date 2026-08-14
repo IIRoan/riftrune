@@ -23,6 +23,7 @@
     font-synthesis: none;
     font-synthesis-weight: none;
     font-synthesis-style: none;
+    background-color: var(--color-background);
   }
 
   body {
@@ -60,20 +61,20 @@
 
     @variant dark {
       /* The Astral Grove archive — matches design/app/globals.css */
-      --archive-bg: oklch(0.130 0 0);
+      --archive-bg: oklch(0.13 0 0);
       --archive-surface: oklch(0.175 0 0);
       --archive-panel: oklch(0.215 0 0);
       --archive-raised: oklch(0.258 0 0);
-      --archive-ink: oklch(0.960 0 0);
-      --archive-muted: oklch(0.720 0 0);
-      --archive-subtle: oklch(0.580 0 0);
+      --archive-ink: oklch(0.96 0 0);
+      --archive-muted: oklch(0.72 0 0);
+      --archive-subtle: oklch(0.58 0 0);
       --archive-line: oklch(0.292 0 0);
       --archive-soft-line: oklch(0.228 0 0);
       --archive-accent: oklch(0.976 0.063 111);
       --archive-accent-ink: oklch(0.14 0 0);
-      --archive-accent-text: oklch(0.940 0.055 111);
+      --archive-accent-text: oklch(0.94 0.055 111);
       --archive-success: oklch(0.74 0.18 152);
-      --archive-warning: oklch(0.70 0.08 55);
+      --archive-warning: oklch(0.7 0.08 55);
       /* Deck ownership borders — keep red / amber clearly separated */
       --ownership-missing: oklch(0.68 0.22 25);
       --ownership-partial: oklch(0.82 0.18 75);
@@ -94,18 +95,23 @@
       --muted-foreground: var(--archive-muted);
       --accent: var(--archive-panel);
       --accent-foreground: var(--archive-ink);
-      --destructive: oklch(0.60 0.12 50);
+      --destructive: oklch(0.6 0.12 50);
       --success: var(--archive-success);
       --warning: var(--archive-warning);
       --info: var(--archive-muted);
       --border: var(--archive-line);
       --input: var(--archive-line);
       --ring: var(--archive-accent);
+      --chalk: var(--archive-ink);
+      --cta: var(--foreground);
+      --cta-foreground: var(--background);
+      --dusk: var(--archive-muted);
+      --dusk-well: var(--archive-panel);
       --keyword-accelerate: oklch(0.492 0.083 177);
       --keyword-repeat: var(--keyword-accelerate);
-      --keyword-deathknell: oklch(0.690 0.145 122);
+      --keyword-deathknell: oklch(0.69 0.145 122);
       --keyword-combat: var(--keyword-accelerate);
-      --keyword-assault: oklch(0.570 0.183 3);
+      --keyword-assault: oklch(0.57 0.183 3);
       --keyword-weaponmaster: oklch(0.36 0 0);
       --keyword-reaction: var(--keyword-accelerate);
       --keyword-vision: oklch(0.489 0.002 93);
@@ -122,12 +128,12 @@
       --archive-muted: oklch(0.48 0 0);
       --archive-subtle: oklch(0.58 0 0);
       --archive-line: oklch(0.86 0 0);
-      --archive-soft-line: oklch(0.90 0 0);
-      --archive-accent: oklch(0.82 0.20 112);
+      --archive-soft-line: oklch(0.9 0 0);
+      --archive-accent: oklch(0.82 0.2 112);
       --archive-accent-ink: oklch(0.14 0 0);
       --archive-accent-text: oklch(0.45 0.14 112);
       --archive-success: oklch(0.55 0.16 152);
-      --archive-warning: oklch(0.58 0.10 55);
+      --archive-warning: oklch(0.58 0.1 55);
       --ownership-missing: oklch(0.52 0.22 25);
       --ownership-partial: oklch(0.68 0.17 70);
       --ownership-complete: var(--archive-success);
@@ -147,19 +153,24 @@
       --muted-foreground: var(--archive-muted);
       --accent: var(--archive-panel);
       --accent-foreground: var(--archive-ink);
-      --destructive: oklch(0.55 0.20 25);
+      --destructive: oklch(0.55 0.2 25);
       --success: var(--archive-success);
       --warning: var(--archive-warning);
       --info: var(--archive-muted);
       --border: var(--archive-line);
       --input: var(--archive-line);
       --ring: var(--archive-accent);
+      --chalk: var(--archive-ink);
+      --cta: var(--foreground);
+      --cta-foreground: var(--background);
+      --dusk: var(--archive-muted);
+      --dusk-well: var(--archive-panel);
       /* Printed keyword banners — sampled from OGN/SFD card art */
       --keyword-accelerate: oklch(0.492 0.083 177);
       --keyword-repeat: var(--keyword-accelerate);
-      --keyword-deathknell: oklch(0.690 0.145 122);
+      --keyword-deathknell: oklch(0.69 0.145 122);
       --keyword-combat: var(--keyword-accelerate);
-      --keyword-assault: oklch(0.570 0.183 3);
+      --keyword-assault: oklch(0.57 0.183 3);
       --keyword-weaponmaster: oklch(0.36 0 0);
       --keyword-reaction: var(--keyword-accelerate);
       --keyword-vision: oklch(0.489 0.002 93);
@@ -186,6 +197,11 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-chalk: var(--chalk);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
+  --color-dusk: var(--dusk);
+  --color-dusk-well: var(--dusk-well);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);

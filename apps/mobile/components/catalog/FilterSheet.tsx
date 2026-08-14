@@ -129,11 +129,11 @@ export function CatalogFilterTrigger({
           ) : (
             <View
               className={cn(
-                'size-5 items-center justify-center bg-foreground',
+                'size-5 items-center justify-center border border-border bg-card-panel',
                 FACTORY_RADIUS_CONTROL_CLASS
               )}
             >
-              <Text className="font-mono text-[11px] font-normal text-background">
+              <Text className="font-mono text-[11px] font-normal text-foreground">
                 {activeCount}
               </Text>
             </View>

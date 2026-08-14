@@ -5,7 +5,7 @@ import { CardRulesText } from '@/components/riftbound/CardRulesText';
 import { WishlistPriceHistoryPanel } from '@/components/wishlist/WishlistPriceHistoryPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
-import { OPERATE_CTA_LABEL_CLASS } from '@/constants/operateType';
+import { OPERATE_SECONDARY_FILL_CLASS } from '@/constants/operateType';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
 import type { PriceHistoryPanelItem } from '@/hooks/useVariantPriceHistory';
 import { cn } from '@/lib/utils';
@@ -83,19 +83,20 @@ export function CatalogDetailScrollBody({
             onWatchPress();
           }}
           className={cn(
-            'h-8 w-full flex-row items-center justify-center gap-1.5 rounded-[3px] bg-foreground px-3.5 web:cursor-pointer active:opacity-80',
+            'h-8 w-full flex-row items-center justify-center gap-1.5 rounded-[3px] px-3.5 web:cursor-pointer active:opacity-80',
+            OPERATE_SECONDARY_FILL_CLASS,
             watchBusy && 'opacity-60'
           )}
         >
           {watchBusy ? (
-            <ActivityIndicator size="small" className="accent-background" />
+            <ActivityIndicator size="small" className="accent-foreground" />
           ) : (
             <>
               <BookmarkIcon
-                className="size-3.5 text-background"
+                className="size-3.5 text-foreground"
                 weight={isWatchingActive ? 'fill' : 'bold'}
               />
-              <Text className={OPERATE_CTA_LABEL_CLASS}>
+              <Text className="text-[13px] font-bold tracking-tight text-foreground">
                 {isWatchingActive ? 'Wishlisted' : 'Wishlist'}
               </Text>
             </>

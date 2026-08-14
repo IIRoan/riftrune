@@ -64,7 +64,7 @@ export function PrintingPreviewStrip({
             className={cn(
               'border-2 bg-card',
               CARD_ART_RADIUS_CLASS,
-              selected ? 'border-primary' : 'border-transparent'
+              selected ? 'border-foreground' : 'border-transparent'
             )}
             contentFit="cover"
             cachePolicy="memory-disk"

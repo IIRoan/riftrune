@@ -4,7 +4,10 @@ import { useMemo } from 'react';
 import { PrintingPickerMenu } from '@/components/catalog/PrintingPickerMenu';
 import { Text } from '@/components/ui/text';
 import {
+  OPERATE_CTA_FILL_CLASS,
+  OPERATE_CTA_ICON_CLASS,
   OPERATE_CTA_LABEL_CLASS,
+  OPERATE_CTA_SPINNER_CLASS,
   OPERATE_QTY_CLASS,
 } from '@/constants/operateType';
 import {
@@ -50,7 +53,7 @@ function wrapWithPicker(
 const CONTROL_HEIGHT = 'h-9';
 const ICON_SIZE = 14;
 
-/** Collection control for tray tiles — Factory chalk Add / carbon −n+. */
+/** Collection control for tray tiles — quiet panel Add / −n+. */
 export function GridCollectionControl({
   owned,
   name,
@@ -102,17 +105,18 @@ export function GridCollectionControl({
         accessibilityLabel={`Add ${name} to collection`}
         className={cn(
           CONTROL_HEIGHT,
-          'w-full flex-row items-center justify-center gap-1.5 rounded-[3px] bg-foreground active:opacity-80',
+          'w-full flex-row items-center justify-center gap-1.5 rounded-[3px] active:opacity-80',
+          OPERATE_CTA_FILL_CLASS,
           busy && 'opacity-60'
         )}
         onPress={showAddPicker ? undefined : handleAdd}
         disabled={busy}
       >
         {busy && !showAddPicker ? (
-          <ActivityIndicator size="small" className="accent-background" />
+          <ActivityIndicator size="small" className={OPERATE_CTA_SPINNER_CLASS} />
         ) : (
           <>
-            <PlusIcon className="size-3.5 text-background" weight="bold" />
+            <PlusIcon className={cn('size-3.5', OPERATE_CTA_ICON_CLASS)} weight="bold" />
             <Text className={OPERATE_CTA_LABEL_CLASS}>Add</Text>
           </>
         )}

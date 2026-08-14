@@ -24,7 +24,7 @@ export const inputAddonButtonVariants = cva('w-fit gap-1 shadow-none', {
 export const inputAddonButtonIconVariants = cva('', {
   variants: {
     variant: {
-      default: 'text-primary-foreground',
+      default: 'text-cta-foreground',
       destructive: 'text-white',
       outline: 'text-muted-foreground',
       secondary: 'text-secondary-foreground',

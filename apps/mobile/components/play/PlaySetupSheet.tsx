@@ -139,7 +139,7 @@ export function PlaySetupSheet({
                     onOpenChange(false);
                   }}
                 >
-                  <ButtonText className="text-primary">Next game</ButtonText>
+                  <ButtonText>Next game</ButtonText>
                 </Button>
               ) : null}
 

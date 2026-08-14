@@ -79,7 +79,7 @@ export function ConfirmDialog({
                 {busy ? (
                   <ActivityIndicator
                     size="small"
-                    className={destructive ? 'accent-white' : 'accent-primary-foreground'}
+                    className={destructive ? 'accent-white' : 'accent-cta-foreground'}
                   />
                 ) : (
                   <ButtonText>{confirmLabel}</ButtonText>

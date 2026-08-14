@@ -191,7 +191,7 @@ function ModalHeader({
       >
         {wishlistContext ? (
           <View className="flex-row items-center gap-1.5 rounded-[3px] border border-border bg-card-panel px-2.5 py-1.5">
-            <BookmarkIcon className="size-[14px] text-primary" />
+            <BookmarkIcon className="size-[14px] text-foreground" />
             <Text className="text-xs font-normal text-foreground">
               {wishlistItem ? 'Wishlisted' : 'Wishlist'}
             </Text>
