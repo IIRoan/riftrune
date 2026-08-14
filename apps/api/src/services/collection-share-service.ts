@@ -68,7 +68,7 @@ export function mergeCollectionStacks(
 
 /** Native-app deep link for collection invite accept. */
 export function buildCollectionInviteDeepLink(token: string): string {
-  return `riftrune://collection/invite/${token}`;
+  return `astral-grove://collection/invite/${token}`;
 }
 
 /**

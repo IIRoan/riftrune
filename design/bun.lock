@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "riftrune.com",
+      "name": "astral-grove.com",
       "dependencies": {
         "@base-ui/react": "^1.5.0",
         "@vercel/analytics": "1.6.1",

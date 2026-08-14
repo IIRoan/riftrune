@@ -2,10 +2,10 @@
  * Riftbound table scoreboard — victory points + XP for live play.
  *
  * THESIS: Phone-as-table scoreboard for every official mode; big VP is the only hero.
- * OWN-WORLD: Riftrune Operate tokens — restrained surfaces, mono score numerals.
+ * OWN-WORLD: The Astral Grove Operate tokens — restrained surfaces, mono score numerals.
  * STORY: Pick a format → tap ± at each seat → win at that mode’s victory score.
  * FIRST VIEWPORT: Full-bleed seats facing the table; center strip for format/reset.
- * FORM: Established Riftrune Operate extension (no new brand world).
+ * FORM: Established The Astral Grove Operate extension (no new brand world).
  */
 
 export const PLAY_FORMATS = [

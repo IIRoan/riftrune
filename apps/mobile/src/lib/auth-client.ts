@@ -21,12 +21,12 @@ export const authClient = createAuthClient({
   plugins: isWeb
     ? []
     : [
-        expoClient({
-          scheme: 'riftrune',
-          storagePrefix: 'riftrune',
-          storage: secureStorage,
-        }),
-      ],
+      expoClient({
+        scheme: 'astral-grove',
+        storagePrefix: 'astral-grove',
+        storage: secureStorage,
+      }),
+    ],
 });
 
 export type AuthSession = typeof authClient.$Infer.Session;

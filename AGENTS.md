@@ -1,6 +1,6 @@
-# Agent instructions — Riftrune
+# Agent instructions — The Astral Grove
 
-> **Riftrune** is our product: a fast Riftbound companion app for managing your collection and building decks.
+> **The Astral Grove** is our product: a fast Riftbound companion app for managing your collection and building decks.
 > [**Piltover Archive**](https://piltoverarchive.com) is the upstream source of truth for card data, prices, and community decks — we are a separate product that sits on top of it, not a reskin of their site.
 >
 > Read this file first. For mobile UI work, also read [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md), [`apps/mobile/PRODUCT.md`](apps/mobile/PRODUCT.md), and [`apps/mobile/DESIGN.md`](apps/mobile/DESIGN.md) (Factory visual world).
@@ -9,17 +9,17 @@
 
 ## What we build
 
-Riftrune exists because listing and updating a collection on Piltover Archive can be slow. We optimize that workflow while still treating PA as authoritative for **what cards exist**, **what they cost**, and **what the community has published**.
+The Astral Grove exists because listing and updating a collection on Piltover Archive can be slow. We optimize that workflow while still treating PA as authoritative for **what cards exist**, **what they cost**, and **what the community has published**.
 
 ### Product goals
 
-| Area | What Riftrune does | Why it matters |
+| Area | What The Astral Grove does | Why it matters |
 |------|-------------------|----------------|
 | **Collection** | Fast browse, add, remove, and quantity edits with local persistence | Core daily-use flow — must feel snappier than PA |
 | **Catalog & prices** | Cached card index, search, filters, Cardmarket price history | Served from our DB after hash-based sync from PA |
 | **Decks** | Build and validate decks locally; browse community lists from PA | Full deck builder with Riftbound legality rules |
 | **Deck import** | Import PA deck text, browse PA decks, copy upstream decks into owned decks | Meet users where their data already lives |
-| **Accounts** | Our own auth (Better Auth) and per-user data | Riftrune users, not PA session passthrough |
+| **Accounts** | Our own auth (Better Auth) and per-user data | Astral Grove users, not PA session passthrough |
 
 ### What Piltover Archive owns (upstream)
 
@@ -32,7 +32,7 @@ PA remains source of truth for data we do not invent:
 
 Our API syncs this data into PostgreSQL (`sync-engine`, `card-cache`, `price-cache`) and re-serves it quickly. The mobile app **never** calls `piltoverarchive.com` directly.
 
-### What Riftrune owns (our product)
+### What The Astral Grove owns (our product)
 
 | Data | Stored in | Notes |
 |------|-----------|-------|
@@ -48,7 +48,7 @@ Our API syncs this data into PostgreSQL (`sync-engine`, `card-cache`, `price-cac
 
 ```mermaid
 flowchart TB
-  subgraph riftrune [Riftrune — our product]
+  subgraph astralGrove [The Astral Grove — our product]
     Mobile["apps/mobile\nExpo app"]
     API["apps/api\nElysia API"]
     DB[(PostgreSQL)]
@@ -68,14 +68,15 @@ The codebase uses several names — agents should understand the mapping:
 
 | Name | Meaning |
 |------|---------|
-| **Riftrune** | Product name (current working title) |
+| **The Astral Grove** | Product name (Expo app, user-facing copy) |
 | **Piltover Archive / PA** | Upstream card & deck platform we integrate with |
 | **`@riftbound/*` packages** | Internal npm scope (historical codename — same monorepo) |
-| **`RIFTRUNE_API_KEY`, `RiftruneClient`** | Env vars and code for the **PA external API** client |
+| **`RIFTRUNE_API_KEY`, `RiftruneClient`** | Env vars and code for the **PA external API** client (legacy names — not the product) |
 | **`piltoverarchive` repo folder** | Git checkout path — not the product name |
-| **`design/` (`riftrune.com`)** | Marketing site, separate from the Expo app |
+| **`design/`** | Marketing site, separate from the Expo app |
+| **EAS identifiers** | Expo slug `astral-grove`, scheme `astral-grove`, bundle/package `com.iroan.astralgrove` |
 
-When writing user-facing copy, prefer **Riftrune**. When reading upstream integration code, expect **Piltover Archive** terminology in comments and deck I/O (`importPiltoverArchive`, `exportPiltoverArchive`).
+When writing user-facing copy, prefer **The Astral Grove**. When reading upstream integration code, expect **Piltover Archive** terminology in comments and deck I/O (`importPiltoverArchive`, `exportPiltoverArchive`). Do not rename `RiftruneClient` / `RIFTRUNE_API_KEY` — those talk to PA, not our product.
 
 ---
 
@@ -83,14 +84,14 @@ When writing user-facing copy, prefer **Riftrune**. When reading upstream integr
 
 | Path | Package | Role |
 |------|---------|------|
-| `apps/mobile` | `@riftbound/mobile` | **Riftrune app** — Expo SDK 54 (iOS, Android, Web), Expo Router, TanStack Query, tetra-ui + Uniwind |
-| `apps/api` | `@riftbound/api` | Riftrune API — Elysia on Bun, Drizzle ORM, Better Auth, PA upstream sync |
+| `apps/mobile` | `@riftbound/mobile` | **The Astral Grove app** — Expo SDK 54 (iOS, Android, Web), Expo Router, TanStack Query, tetra-ui + Uniwind |
+| `apps/api` | `@riftbound/api` | The Astral Grove API — Elysia on Bun, Drizzle ORM, Better Auth, PA upstream sync |
 | `packages/contracts` | `@riftbound/contracts` | Shared Zod schemas + `z.infer` types for our API **and** PA payload shapes |
 | `packages/typescript-config` | `@riftbound/typescript-config` | Shared strict TS config |
-| `design/` | `riftrune.com` | Marketing / landing site (Next.js — not the mobile client) |
+| `design/` | `astral-grove.com` | Marketing / landing site (Next.js — not the mobile client) |
 | `SPEC.md` | — | Architecture spec (may lag implementation — trust the code) |
 
-**Data flow:** Riftrune mobile → our API → PostgreSQL → (sync) → Piltover Archive external API.
+**Data flow:** The Astral Grove mobile → our API → PostgreSQL → (sync) → Piltover Archive external API.
 
 ---
 
@@ -423,7 +424,7 @@ flowchart LR
 | Duplicate Zod shapes outside `contracts` | Import from `@riftbound/contracts` |
 | `any` or unchecked `as` on JSON | `.parse()` / `.safeParse()` |
 | Call piltoverarchive.com from mobile | Use our API client |
-| Treat Riftrune as a PA fork or mirror | We are our own product; PA is upstream data only |
+| Treat The Astral Grove as a PA fork or mirror | We are our own product; PA is upstream data only |
 | Edit imported/upstream decks in place | Import into an owned copy first |
 | `StyleSheet.create` / legacy theme in mobile | tetra-ui + Uniwind (see mobile AGENTS.md) |
 | Edit `dist/` or `drizzle/` generated output by hand | Regenerate from source |

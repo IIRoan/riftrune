@@ -15,7 +15,7 @@ index 97a597f47a9b4b0532a904229f5ebf827325db34..1ebb6fbf012980cba2e2d4ca457e7d4b
    document.body.appendChild(dummyParent);
    dummyParent.appendChild(dummy);
  }
-+// [riftrune patch] Memoize className -> style resolution. The stock
++// [astral-grove patch] Memoize className -> style resolution. The stock
 +// implementation rescans every active CSS rule (with CSS.escape per class)
 +// plus matches()/getPropertyValue on every call, which dominates frame time
 +// when recycled lists (FlashList) re-render many className'd views at once.
@@ -96,7 +96,7 @@ index f5c2a2d3082ed4a950716059e30595406bece4c4..f5ce3b3be79688d042b4010f571258f4
    document.body.appendChild(dummyParent);
    dummyParent.appendChild(dummy);
  }
-+// [riftrune patch] Memoize className -> style resolution. The stock
++// [astral-grove patch] Memoize className -> style resolution. The stock
 +// implementation rescans every active CSS rule (with CSS.escape per class)
 +// plus matches()/getPropertyValue on every call, which dominates frame time
 +// when recycled lists (FlashList) re-render many className'd views at once.
@@ -184,7 +184,7 @@ index c4510bf16101ef949f247d4ea50593b9676142e1..754215ec2b25c386ddd92d30a84b821d
      dummyParent.appendChild(dummy)
  }
  
-+// [riftrune patch] Memoize className -> style resolution. The stock
++// [astral-grove patch] Memoize className -> style resolution. The stock
 +// implementation rescans every active CSS rule (with CSS.escape per class)
 +// plus matches()/getPropertyValue on every call, which dominates frame time
 +// when recycled lists (FlashList) re-render many className'd views at once.

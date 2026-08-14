@@ -28,10 +28,10 @@ describe('buildCollectionInviteUrl', () => {
     );
   });
 
-  test('deep link remains riftrune scheme for native handoff', () => {
+  test('deep link remains astral-grove scheme for native handoff', () => {
     const token = 'deadbeefcafebabe0123456789abcdefdeadbeefcafebabe0123456789abcdef';
     expect(buildCollectionInviteDeepLink(token)).toBe(
-      `riftrune://collection/invite/${token}`
+      `astral-grove://collection/invite/${token}`
     );
   });
 });

@@ -118,7 +118,7 @@ export function SideRail() {
       >
         <HoverTooltip label="Home" description="Open the card catalog" side="right">
           <PressableScale
-            accessibilityLabel="riftrune home"
+            accessibilityLabel="The Astral Grove home"
             className={cn(
               'mb-2 size-8 items-center justify-center bg-foreground',
               FACTORY_RADIUS_CONTROL_CLASS
@@ -130,7 +130,7 @@ export function SideRail() {
             }}
           >
             <Text className="font-mono text-sm font-medium text-background">
-              r
+              A
             </Text>
           </PressableScale>
         </HoverTooltip>
@@ -210,7 +210,7 @@ export function SideRail() {
           </HoverTooltip>
           <HoverTooltip
             label="Sign out"
-            description="End your Riftrune session"
+            description="Sign out of The Astral Grove"
             side="right"
           >
             <PressableScale

@@ -61,9 +61,9 @@ function buildApp(env: Env): AppContext {
   const upstreamDeckWriteExtraHeader =
     env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME && env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE
       ? {
-          name: env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME,
-          value: env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE,
-        }
+        name: env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME,
+        value: env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE,
+      }
       : undefined;
 
   const deckService = new DeckService(db, riftrune, cardCache, upstreamDeckWriteExtraHeader);
@@ -92,7 +92,7 @@ function buildApp(env: Env): AppContext {
     .use(createDecksRoutes(deckService, auth))
     .use(createSyncRoutes(syncEngine, priceCache, cardCache, env))
     .get('/', () => ({
-      name: 'riftrune-api',
+      name: 'astral-grove-api',
       health: '/api/v1/health',
       auth: '/api/auth',
     }));

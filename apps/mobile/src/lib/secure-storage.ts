@@ -13,7 +13,7 @@ import type ExpoSecureStore from 'expo-secure-store';
  */
 
 const CHUNK_MARKER = 'ba-chunks:';
-const KNOWN_KEYS = ['riftrune_cookie', 'riftrune_session_data'];
+const KNOWN_KEYS = ['astral-grove_cookie', 'astral-grove_session_data'];
 const MAX_CHUNKS = 30;
 
 const isWeb = Platform.OS === 'web';

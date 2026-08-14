@@ -2,7 +2,7 @@
 
 ## System
 
-riftrune.com is a task-first card catalog with a pure monochrome dark aesthetic: a zero-chroma neutral ramp where card artwork and foils pop against the flat black. A single chartreuse accent carries selection and primary actions only. Navigation lives in a floating side rail. No hue tints, no red, no decorative color.
+The Astral Grove is a task-first card catalog with a pure monochrome dark aesthetic: a zero-chroma neutral ramp where card artwork and foils pop against the flat black. A single chartreuse accent carries selection and primary actions only. Navigation lives in a floating side rail. No hue tints, no red, no decorative color.
 
 ## Color
 

@@ -9,9 +9,9 @@ export function isLikelyMobileUserAgent(userAgent: string): boolean {
   );
 }
 
-/** Native scheme partners with Expo `scheme: riftrune`. */
+/** Native scheme partners with Expo `scheme: astral-grove`. */
 export function buildCollectionInviteDeepLink(token: string): string {
-  return `riftrune://collection/invite/${token}`;
+  return `astral-grove://collection/invite/${token}`;
 }
 
 /** In-app / Expo-web path for the accept UI (after linking page). */

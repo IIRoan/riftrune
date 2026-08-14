@@ -1,24 +1,24 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  buildRiftruneDeckUrl,
-  resolveRiftruneAppOrigin,
-  riftruneDeckPath,
+  buildDeckShareUrl,
+  resolveAppOrigin,
+  deckSharePath,
 } from '@/lib/deck-share-url';
 
 describe('deck-share-url', () => {
   test('builds path with encoded id', () => {
-    expect(riftruneDeckPath('abc')).toBe('/decks/abc');
-    expect(riftruneDeckPath('a/b')).toBe('/decks/a%2Fb');
+    expect(deckSharePath('abc')).toBe('/decks/abc');
+    expect(deckSharePath('a/b')).toBe('/decks/a%2Fb');
   });
 
   test('prefers explicit web origin over env', () => {
     const prevApp = process.env.EXPO_PUBLIC_APP_URL;
-    process.env.EXPO_PUBLIC_APP_URL = 'https://riftrune.com';
+    process.env.EXPO_PUBLIC_APP_URL = 'https://astral-grove.com';
 
-    expect(resolveRiftruneAppOrigin('https://riftbounddev.roan.dev/')).toBe(
+    expect(resolveAppOrigin('https://riftbounddev.roan.dev/')).toBe(
       'https://riftbounddev.roan.dev'
     );
-    expect(buildRiftruneDeckUrl('deck_1', 'https://riftbounddev.roan.dev')).toBe(
+    expect(buildDeckShareUrl('deck_1', 'https://riftbounddev.roan.dev')).toBe(
       'https://riftbounddev.roan.dev/decks/deck_1'
     );
 
@@ -31,8 +31,8 @@ describe('deck-share-url', () => {
     process.env.EXPO_PUBLIC_APP_URL = 'https://example.test/';
     delete process.env.EXPO_DEV_SERVER_ORIGIN;
 
-    expect(resolveRiftruneAppOrigin()).toBe('https://example.test');
-    expect(buildRiftruneDeckUrl('deck_9')).toBe('https://example.test/decks/deck_9');
+    expect(resolveAppOrigin()).toBe('https://example.test');
+    expect(buildDeckShareUrl('deck_9')).toBe('https://example.test/decks/deck_9');
 
     process.env.EXPO_PUBLIC_APP_URL = prevApp;
     process.env.EXPO_DEV_SERVER_ORIGIN = prevDev;
@@ -44,7 +44,7 @@ describe('deck-share-url', () => {
     delete process.env.EXPO_PUBLIC_APP_URL;
     delete process.env.EXPO_DEV_SERVER_ORIGIN;
 
-    expect(resolveRiftruneAppOrigin()).toBe('https://riftrune.com');
+    expect(resolveAppOrigin()).toBe('https://rift.solace.onl');
 
     process.env.EXPO_PUBLIC_APP_URL = prevApp;
     process.env.EXPO_DEV_SERVER_ORIGIN = prevDev;

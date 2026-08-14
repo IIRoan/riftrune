@@ -1,9 +1,9 @@
 /**
- * Public HTTPS origin for shareable Riftrune deck links.
+ * Public HTTPS origin for shareable The Astral Grove deck links.
  * Prefer an explicit web origin (from `window.location` on web); otherwise
  * EXPO_PUBLIC_APP_URL / EXPO_DEV_SERVER_ORIGIN; finally the production host.
  */
-export function resolveRiftruneAppOrigin(webOrigin?: string | null): string {
+export function resolveAppOrigin(webOrigin?: string | null): string {
   const fromWeb = String(webOrigin ?? '')
     .trim()
     .replace(/\/$/, '');
@@ -16,11 +16,11 @@ export function resolveRiftruneAppOrigin(webOrigin?: string | null): string {
   ).replace(/\/$/, '');
   if (fromEnv.length > 0) return fromEnv;
 
-  return 'https://riftrune.com';
+  return 'https://rift.solace.onl';
 }
 
 /** Path-only deck view href used inside the Expo Router app. */
-export function riftruneDeckPath(deckId: string): `/decks/${string}` {
+export function deckSharePath(deckId: string): `/decks/${string}` {
   return `/decks/${encodeURIComponent(deckId)}`;
 }
 
@@ -29,9 +29,9 @@ export function riftruneDeckPath(deckId: string): `/decks/${string}` {
  * Pass `webOrigin` on web (`window.location.origin`) so the link matches the
  * current host (e.g. riftbounddev.roan.dev).
  */
-export function buildRiftruneDeckUrl(
+export function buildDeckShareUrl(
   deckId: string,
   webOrigin?: string | null
 ): string {
-  return `${resolveRiftruneAppOrigin(webOrigin)}${riftruneDeckPath(deckId)}`;
+  return `${resolveAppOrigin(webOrigin)}${deckSharePath(deckId)}`;
 }

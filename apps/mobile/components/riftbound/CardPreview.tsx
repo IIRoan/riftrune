@@ -10,7 +10,7 @@ interface Props {
   minHeight?: number;
 }
 
-/** Compact spotlight pedestal for card art — matches riftrune archive detail panel. */
+/** Compact spotlight pedestal for card art — matches The Astral Grove archive detail panel. */
 export function CardPreview({ imageUrl, width, minHeight = 188 }: Props) {
   const imageMaxHeight = Math.max(80, minHeight - 28);
   const imageMaxWidth = width ? Math.max(80, width - 28) : undefined;

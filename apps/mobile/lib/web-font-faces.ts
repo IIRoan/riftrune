@@ -16,7 +16,7 @@ import {
   WEB_FONT_SANS_FAMILY,
 } from '@/lib/fonts';
 
-const STYLE_ID = 'riftrune-web-font-faces';
+const STYLE_ID = 'astral-grove-web-font-faces';
 
 type Face = {
   family: typeof WEB_FONT_SANS_FAMILY | typeof WEB_FONT_MONO_FAMILY;

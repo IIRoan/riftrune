@@ -25,8 +25,8 @@ export function resolveTrustedOrigins(env: Env): string[] {
   })();
 
   const origins = new Set<string>([
-    'riftrune://',
-    'riftrune://*',
+    'astral-grove://',
+    'astral-grove://*',
     ...EXPO_GO_ORIGINS,
     ...env.TRUSTED_ORIGINS,
     ...(baseOrigin ? [baseOrigin] : []),

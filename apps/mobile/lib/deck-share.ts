@@ -1,5 +1,5 @@
 import { exportDeckCode } from '@/lib/deck-codes';
-import { buildRiftruneDeckUrl } from '@/lib/deck-share-url';
+import { buildDeckShareUrl } from '@/lib/deck-share-url';
 import type { DeckState } from '@/lib/deck-types';
 
 export type DeckShareFormat = 'link' | 'code';
@@ -10,7 +10,7 @@ export function resolveDeckSharePayload(
   webOrigin?: string | null
 ): { ok: true; value: string } | { ok: false; error: string } {
   if (format === 'link') {
-    return { ok: true, value: buildRiftruneDeckUrl(deck.id, webOrigin) };
+    return { ok: true, value: buildDeckShareUrl(deck.id, webOrigin) };
   }
   try {
     return { ok: true, value: exportDeckCode(deck) };

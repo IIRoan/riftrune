@@ -5,7 +5,7 @@ export type UpstreamReconcileMode = 'sync' | 'skip';
 /** Hard cap so a broken upstream total cannot loop forever. */
 export const UPSTREAM_BACKFILL_PAGE_CAP = 100;
 
-/** Map our list query to riftrune.com external API params. */
+/** Map our list query to Piltover Archive external API params. */
 export function buildUpstreamListParams(
   query: CardsListQuery
 ): Record<string, string | number | undefined> {

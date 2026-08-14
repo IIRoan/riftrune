@@ -59,7 +59,7 @@
     --radius: 0.75rem;
 
     @variant dark {
-      /* riftrune archive — matches design/app/globals.css */
+      /* The Astral Grove archive — matches design/app/globals.css */
       --archive-bg: oklch(0.130 0 0);
       --archive-surface: oklch(0.175 0 0);
       --archive-panel: oklch(0.215 0 0);

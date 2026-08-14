@@ -12,9 +12,9 @@ function baseEnv(overrides: Partial<Env> = {}): Env {
     ADMIN_SYNC_TOKEN: 'sync-token-12345678',
     SYNC_CRON_ENABLED: true,
     BETTER_AUTH_SECRET: 'x'.repeat(32),
-    BETTER_AUTH_URL: 'https://api.riftrune.com',
-    TRUSTED_ORIGINS: ['https://riftrune.com'],
-    PUBLIC_APP_URL: 'https://riftrune.com',
+    BETTER_AUTH_URL: 'https://api.astral-grove.com',
+    TRUSTED_ORIGINS: ['https://astral-grove.com'],
+    PUBLIC_APP_URL: 'https://astral-grove.com',
     CATALOG_WARMUP_ON_START: false,
     CARDMARKET_GAME_ID: 22,
     DB_POOL_MAX: 5,
@@ -25,12 +25,12 @@ function baseEnv(overrides: Partial<Env> = {}): Env {
 describe('resolveTrustedOrigins', () => {
   test('includes app scheme, Expo Go, configured origins, and auth base URL', () => {
     const origins = resolveTrustedOrigins(baseEnv());
-    expect(origins).toContain('riftrune://');
+    expect(origins).toContain('astral-grove://');
     expect(origins).toContain('exp://');
     expect(origins).toContain('exp://**');
     expect(origins).toContain('https://u.expo.dev');
-    expect(origins).toContain('https://riftrune.com');
-    expect(origins).toContain('https://api.riftrune.com');
+    expect(origins).toContain('https://astral-grove.com');
+    expect(origins).toContain('https://api.astral-grove.com');
   });
 
   test('adds localhost origins in development', () => {
@@ -51,8 +51,8 @@ describe('resolveCorsOrigins', () => {
     expect(resolveCorsOrigins(baseEnv())).toEqual([
       'https://u.expo.dev',
       'https://*.u.expo.dev',
-      'https://riftrune.com',
-      'https://api.riftrune.com',
+      'https://astral-grove.com',
+      'https://api.astral-grove.com',
     ]);
   });
 });

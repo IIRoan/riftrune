@@ -22,7 +22,7 @@ function card(variantNumber: string, overrides: Partial<DeckCard> = {}): DeckCar
 }
 
 describe('resolveDeckSharePayload', () => {
-  test('builds a Riftrune link for the deck id', () => {
+  test('builds an Astral Grove link for the deck id', () => {
     const deck = createEmptyDeck('Test');
     deck.id = 'deck_abc';
     const result = resolveDeckSharePayload(deck, 'link', 'https://riftbounddev.roan.dev');

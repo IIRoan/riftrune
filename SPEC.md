@@ -1,6 +1,6 @@
 # Riftbound App — Implementation Specification
 
-> **Architecture:** Expo (mobile + web) → **Our Elysia API** → PostgreSQL cache → riftrune.com External API  
+> **Architecture:** Expo (mobile + web) → **Our Elysia API** → PostgreSQL cache → piltoverarchive.com External API  
 > **Goal:** Type-safe, fast card catalog + Cardmarket prices with local persistence and hash-based upstream sync.
 
 ---
@@ -13,7 +13,7 @@ Build a monorepo containing:
 2. **`apps/api`** — ElysiaJS backend (TypeScript strict, Zod validation)
 3. **`packages/contracts`** — Shared Zod schemas + inferred types (single source of truth)
 
-The client **never** calls riftrune.com directly. Our API mirrors all **card-related** upstream data locally (cards, variants, sets, colors metadata, prices) using a **cache-aside + content-hash** invalidation strategy.
+The client **never** calls piltoverarchive.com directly. Our API mirrors all **card-related** upstream data locally (cards, variants, sets, colors metadata, prices) using a **cache-aside + content-hash** invalidation strategy.
 
 Decks and collection are **out of scope for v1 upstream sync** — stored only in our DB when we build those features.
 
@@ -125,9 +125,9 @@ riftbound/
 
 ---
 
-## 4. Upstream: riftrune.com External API
+## 4. Upstream: piltoverarchive.com External API
 
-**Base URL:** `https://riftrune.com/api/external`  
+**Base URL:** `https://piltoverarchive.com/api/external`  
 **Auth:** `x-api-key: <RIFTRUNE_API_KEY>` (server env only — never in Expo app)
 
 ### 4.1 Endpoints we consume (v1)
@@ -267,7 +267,7 @@ PaPriceRow = {
 
 ### 5.1 Design principles
 
-1. **Client → us only** — Riftrune key stays server-side
+1. **Client → us only** — PA API key stays server-side
 2. **Stable response contracts** — Zod schemas in `packages/contracts`, versioned (`/v1`)
 3. **Fast reads from Postgres** — upstream is fallback + sync source
 4. **ETag on our responses** — `ETag: "<content_hash>"` for client conditional requests
@@ -625,7 +625,7 @@ sequenceDiagram
   participant App
   participant API
   participant DB
-  participant PA as riftrune.com
+  participant PA as piltoverarchive.com
 
   App->>API: GET /v1/cards/OGN-001
   API->>DB: SELECT card + variants + prices
@@ -777,7 +777,7 @@ const EnvSchema = z.object({
   RIFTRUNE_BASE_URL: z
     .string()
     .url()
-    .default('https://riftrune.com/api/external'),
+    .default('https://piltoverarchive.com/api/external'),
   SYNC_CRON_ENABLED: z.coerce.boolean().default(true),
   ADMIN_SYNC_TOKEN: z.string().min(32), // protects POST /v1/sync/*
 });
@@ -890,7 +890,7 @@ export async function apiGet<T>(path: string, schema: z.ZodType<T>): Promise<T> 
 
 | Rule             | Implementation                                            |
 | ---------------- | --------------------------------------------------------- |
-| Riftrune API key | `RIFTRUNE_API_KEY` env on server only                     |
+| PA API key       | `RIFTRUNE_API_KEY` env on server only (legacy name)       |
 | Sync endpoints   | `Authorization: Bearer <ADMIN_SYNC_TOKEN>`                |
 | Client auth      | None in v1 (add Clerk/JWT when collection syncs per-user) |
 | Input validation | Zod on every route                                        |
@@ -987,7 +987,7 @@ EXPO_PUBLIC_API_URL=http://localhost:3000 npx expo start
 
 ## 16. Success criteria (v1)
 
-- [ ] Client never contacts `riftrune.com` directly
+- [ ] Client never contacts `piltoverarchive.com` directly
 - [ ] 100% of card catalog stored locally after initial sync (~998 variants)
 - [ ] Card detail served from DB in < 50ms p95 after warm cache
 - [ ] Hash diff prevents unnecessary DB writes on unchanged upstream data
@@ -1035,7 +1035,7 @@ light: { background: '#F5F5F5', card: '#FFFFFF', text: '#333333', ... }
 dark:  { background: '#121212', card: '#121212', text: '#E0E0E0', ... }
 
 // Riftbound default accent (override manganess green #2E8B57)
-light.primary / tint / tabIconSelected → '#C89B3C'  // gold — Riftrune/Riftbound feel
+light.primary / tint / tabIconSelected → '#C89B3C'  // gold — The Astral Grove / Riftbound feel
 dark.primary  → '#F0E6D2'
 dark.tint     → '#463714'
 ```

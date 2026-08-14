@@ -24,7 +24,7 @@ function acceptHref(token: string): Href {
 /**
  * HTTPS invite landing page.
  * - Desktop web: continue straight to the web accept flow
- * - Mobile web: try opening the native riftrune:// deep link, with web fallback
+ * - Mobile web: try opening the native astral-grove:// deep link, with web fallback
  * - Native app: go straight to the in-app accept screen
  */
 export default function CollectionInviteLinkingScreen() {
@@ -74,12 +74,12 @@ export default function CollectionInviteLinkingScreen() {
 
   return (
     <ScreenLayout>
-      <ScreenHeader title="Open Riftrune" />
+      <ScreenHeader title="Open The Astral Grove" />
       <View className="mt-4 gap-4">
         <Text className="text-base text-foreground">
           {attemptedAppOpen
-            ? 'Opening the Riftrune app…'
-            : 'This invite opens in the Riftrune app.'}
+            ? 'Opening The Astral Grove…'
+            : 'This invite opens in The Astral Grove.'}
         </Text>
         <Text className="text-sm text-muted-foreground">
           If the app does not open, use one of the options below.
@@ -89,7 +89,7 @@ export default function CollectionInviteLinkingScreen() {
             void Linking.openURL(deepLink);
           }}
         >
-          <ButtonText>Open in Riftrune app</ButtonText>
+          <ButtonText>Open in The Astral Grove</ButtonText>
         </Button>
         <Button
           variant="outline"

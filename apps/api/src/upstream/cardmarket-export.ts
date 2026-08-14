@@ -47,7 +47,7 @@ export async function fetchCardmarketPriceGuide(
   const res = await fetch(url, {
     headers: {
       Accept: 'application/json',
-      'User-Agent': 'Riftrune/1.0 (+https://riftrune.com)',
+      'User-Agent': 'AstralGrove/1.0 (+https://rift.solace.onl)',
       Referer: 'https://www.cardmarket.com/',
     },
   });

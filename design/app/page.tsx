@@ -636,10 +636,10 @@ function SideRail({
         <a
           href="#"
           className="archive-focus archive-transition mb-2 grid size-8 place-items-center rounded-lg bg-archive-accent"
-          aria-label="riftrune home"
+          aria-label="The Astral Grove home"
         >
           <span aria-hidden="true" className="font-mono text-sm font-bold text-archive-accent-ink">
-            r
+            A
           </span>
         </a>
 

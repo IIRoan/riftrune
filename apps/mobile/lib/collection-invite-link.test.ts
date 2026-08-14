@@ -10,7 +10,7 @@ describe('collection invite link helpers', () => {
   test('deep link embeds the invite token for the native app', () => {
     const token = 'invite-token-xyz';
     expect(buildCollectionInviteDeepLink(token)).toBe(
-      `riftrune://collection/invite/${token}`
+      `astral-grove://collection/invite/${token}`
     );
   });
 

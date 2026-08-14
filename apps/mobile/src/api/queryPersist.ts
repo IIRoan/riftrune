@@ -8,7 +8,7 @@ import {
   wishlistQueryKeys,
 } from '@/src/api/queryKeys';
 
-export const QUERY_PERSIST_KEY = 'riftrune-react-query-v1';
+export const QUERY_PERSIST_KEY = 'astral-grove-react-query-v1';
 /** Keep restored queries warm for a full day. */
 export const QUERY_PERSIST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 

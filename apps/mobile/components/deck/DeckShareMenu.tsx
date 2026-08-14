@@ -104,12 +104,12 @@ export function DeckShareMenu({
             <PopoverClose asChild>
               <Pressable
                 accessibilityRole="menuitem"
-                accessibilityLabel="Copy Riftrune link"
+                accessibilityLabel="Copy The Astral Grove link"
                 className="flex-row items-center gap-2 rounded-[3px] px-2 py-1.5 active:bg-card-panel"
                 onPress={() => handleSelect('link')}
               >
                 <ThemedIcon icon={LinkIcon} size={16} color="muted-foreground" />
-                <Text className="text-sm text-popover-foreground">Riftrune link</Text>
+                <Text className="text-sm text-popover-foreground">The Astral Grove link</Text>
               </Pressable>
             </PopoverClose>
 

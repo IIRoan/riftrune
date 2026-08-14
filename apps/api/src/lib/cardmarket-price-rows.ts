@@ -53,6 +53,7 @@ export function normalizeGuideTrend(
 /** Stable UUID-shaped id for `(cardmarketId, isFoil)` upserts. */
 export function stablePriceRowId(cardmarketId: number, isFoil: boolean): string {
   const hex = createHash('sha256')
+    // Hash namespace is frozen so existing price row IDs stay stable across rebrands.
     .update(`riftrune:cardmarket-price:${String(cardmarketId)}:${isFoil ? 'foil' : 'plain'}`)
     .digest('hex')
     .slice(0, 32);

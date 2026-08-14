@@ -32,7 +32,7 @@ function countsToDeck(counts: Map<string, number>): DeckCodeCard[] {
 }
 
 /**
- * Flatten a Riftrune deck into the Piltover Archive encoder shape.
+ * Flatten an Astral Grove deck into the Piltover Archive encoder shape.
  * Legend, champion, main, runes, and battlefields all live in `mainDeck`;
  * `chosenChampion` is the champion slot's variant number when set.
  */
@@ -72,7 +72,7 @@ export function deckStateToCodePayload(deck: DeckState): {
   };
 }
 
-/** Encode a Riftrune deck as a Piltover Archive deck code (1:1 with upstream). */
+/** Encode an Astral Grove deck as a Piltover Archive deck code (1:1 with upstream). */
 export function exportDeckCode(deck: DeckState): string {
   const payload = deckStateToCodePayload(deck);
   return getCodeFromDeck(payload.mainDeck, payload.sideboard, payload.chosenChampion);
@@ -97,7 +97,7 @@ export function decodeDeckCode(
 }
 
 /**
- * Place decoded card codes into Riftrune sections.
+ * Place decoded card codes into The Astral Grove sections.
  * When `chosenChampion` is set, one copy of that code goes to the champion slot
  * and any remaining copies follow normal type routing (usually main deck).
  */

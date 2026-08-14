@@ -1,5 +1,5 @@
 ---
-name: Riftrune
+name: The Astral Grove
 description: Factory instrument panel — stark black control surface for Riftbound collection work
 colors:
   obsidian-canvas: "#101010"
@@ -75,13 +75,13 @@ components:
     height: "32px"
 ---
 
-# Design System: Riftrune (Factory)
+# Design System: The Astral Grove (Factory)
 
 ## Overview
 
 **Creative North Star: "Terminal war room at midnight"**
 
-Riftrune’s product UI follows Factory: a stark black control surface where the work itself is the only bright object in the room. Light bone panels and chalk CTAs land on obsidian like flashlit dispatch — depth from figure/ground contrast, not shadow or glow. Almost all interaction is monochrome; signal orange and metric green speak only as live data and status.
+The Astral Grove’s product UI follows Factory: a stark black control surface where the work itself is the only bright object in the room. Light bone panels and chalk CTAs land on obsidian like flashlit dispatch — depth from figure/ground contrast, not shadow or glow. Almost all interaction is monochrome; signal orange and metric green speak only as live data and status.
 
 This is an **Operate** surface (catalog, collection, decks, wishlist). Expression never obscures task, printing identity, or ownership state. Card art and Riftbound keyword/rarity marks remain product artifacts inside the Factory chrome — they are content, not a license to restyle buttons in game-UI accents.
 

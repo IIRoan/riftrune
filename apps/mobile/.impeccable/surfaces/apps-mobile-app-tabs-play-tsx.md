@@ -12,7 +12,7 @@ related_targets:
 
 ## Scope & mode
 
-Operate — live table scoreboard inside Riftrune mobile. Extends the incumbent tetra-ui / Uniwind world; no new brand system.
+Operate — live table scoreboard inside The Astral Grove mobile. Extends the incumbent tetra-ui / Uniwind world; no new brand system.
 
 ## Audience & job
 

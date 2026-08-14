@@ -10,7 +10,7 @@ Riftbound collectors and players using the app on mobile at shops, events, and t
 
 ## Product Purpose
 
-Riftbound is a card catalog and collection tracker. It should make card discovery, card details, variant comparison, price checks, and collection updates feel fast, trustworthy, and consistent across mobile and web.
+The Astral Grove is a card catalog and collection tracker. It should make card discovery, card details, variant comparison, price checks, and collection updates feel fast, trustworthy, and consistent across mobile and web.
 
 ## Brand Personality
 

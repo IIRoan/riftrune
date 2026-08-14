@@ -69,6 +69,6 @@ describe('queryPersist', () => {
   });
 
   test('uses a versioned storage key', () => {
-    expect(QUERY_PERSIST_KEY).toContain('riftrune-react-query');
+    expect(QUERY_PERSIST_KEY).toContain('astral-grove-react-query');
   });
 });

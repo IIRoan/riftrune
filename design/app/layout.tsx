@@ -10,10 +10,10 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'riftrune.com',
+  title: 'The Astral Grove',
   description:
     'A fast Riftbound card catalog for collectors and players.',
-  generator: 'riftrune.com',
+  generator: 'astral-grove',
   icons: {
     icon: [
       {

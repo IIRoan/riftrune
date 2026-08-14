@@ -64,7 +64,7 @@ export function AuthBrandLockup({
         )}
         accessibilityRole="header"
       >
-        Riftrune
+        The Astral Grove
       </Text>
       {showDomains ? <AuthDomainStrip size={24} /> : null}
     </View>

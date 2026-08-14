@@ -10,7 +10,7 @@ Riftbound collectors and players using the site on mobile at shops, events, and 
 
 ## Product Purpose
 
-riftrune.com is a card catalog and market reference for Riftbound. It should make card discovery, card details, variant comparison, and price checks feel fast, trustworthy, and pleasant across mobile and web.
+The Astral Grove is a card catalog and market reference for Riftbound. It should make card discovery, card details, variant comparison, and price checks feel fast, trustworthy, and pleasant across mobile and web.
 
 ## Brand Personality
 
