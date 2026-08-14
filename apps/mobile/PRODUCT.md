@@ -18,7 +18,7 @@ Instrument-panel precision. The app is a terminal war room for collection work: 
 
 ## Visual world
 
-**Factory** — deep black control surface where light panels and chalk CTAs land like flashlit dispatch. See [`DESIGN.md`](./DESIGN.md). Chromatic color is reserved for live data and status (trends, ownership completeness, keyword badges), never for button fills or decorative chrome.
+Deep black control surface where light panels and chalk CTAs land like flashlit dispatch. See [`DESIGN.md`](./DESIGN.md). Chromatic color is reserved for live data and status (trends, ownership completeness, keyword badges), never for button fills or decorative chrome.
 
 ## Anti-references
 

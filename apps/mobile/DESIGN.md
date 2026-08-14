@@ -1,6 +1,6 @@
 ---
 name: The Astral Grove
-description: Factory instrument panel — stark black control surface for Riftbound collection work
+description: Stark black control surface for Riftbound collection work
 colors:
   obsidian-canvas: "#101010"
   carbon-lift: "#1d1a18"
@@ -75,15 +75,15 @@ components:
     height: "32px"
 ---
 
-# Design System: The Astral Grove (Factory)
+# Design System: The Astral Grove
 
 ## Overview
 
 **Creative North Star: "Terminal war room at midnight"**
 
-The Astral Grove’s product UI follows Factory: a stark black control surface where the work itself is the only bright object in the room. Light bone panels and chalk CTAs land on obsidian like flashlit dispatch — depth from figure/ground contrast, not shadow or glow. Almost all interaction is monochrome; signal orange and metric green speak only as live data and status.
+The Astral Grove’s product UI is a stark black control surface where the work itself is the only bright object in the room. Light bone panels and chalk CTAs land on obsidian like flashlit dispatch — depth from figure/ground contrast, not shadow or glow. Almost all interaction is monochrome; signal orange and metric green speak only as live data and status.
 
-This is an **Operate** surface (catalog, collection, decks, wishlist). Expression never obscures task, printing identity, or ownership state. Card art and Riftbound keyword/rarity marks remain product artifacts inside the Factory chrome — they are content, not a license to restyle buttons in game-UI accents.
+This is an **Operate** surface (catalog, collection, decks, wishlist). Expression never obscures task, printing identity, or ownership state. Card art and Riftbound keyword/rarity marks remain product artifacts inside the app chrome — they are content, not a license to restyle buttons in game-UI accents.
 
 **Key Characteristics:**
 
@@ -94,7 +94,7 @@ This is an **Operate** surface (catalog, collection, decks, wishlist). Expressio
 - Chromatic color = data voice only (trends, live status, keyword badges)
 - Zero shadow dependency; hairline ash strokes instead
 
-**Migration note:** `global.css` still carries the legacy archive/lime token map for `--primary` / ring. Commit chrome uses named Factory tokens: `bg-cta` (chalk fill) and `text-cta-foreground` (obsidian ink). Prefer mapping Factory roles onto Uniwind tokens as they are retargeted (`background` → obsidian, `foreground` → bone, `border` → ash, `secondary`/`card-panel` → carbon, `success` → metric green). Do not reintroduce soft `primary/12` tint CTAs or champagne outline chrome.
+**Migration note:** `global.css` still carries the legacy archive/lime token map for `--primary` / ring. Commit chrome uses named tokens: `bg-cta` (chalk fill) and `text-cta-foreground` (obsidian ink). Prefer mapping these roles onto Uniwind tokens as they are retargeted (`background` → obsidian, `foreground` → bone, `border` → ash, `secondary`/`card-panel` → carbon, `success` → metric green). Do not reintroduce soft `primary/12` tint CTAs or champagne outline chrome.
 
 ## Colors
 

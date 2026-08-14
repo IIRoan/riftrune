@@ -46,18 +46,18 @@ import { cn } from '@/lib/utils';
 
 ### Styling conventions
 
-- **Visual authority:** [`PRODUCT.md`](./PRODUCT.md) + [`DESIGN.md`](./DESIGN.md) (Factory instrument panel). Prefer DESIGN.md over legacy soft-tint / archive-accent CTA habits when they conflict.
+- **Visual authority:** [`PRODUCT.md`](./PRODUCT.md) + [`DESIGN.md`](./DESIGN.md). Prefer DESIGN.md over legacy soft-tint / archive-accent CTA habits when they conflict.
 - Use Uniwind `className` props exclusively — never `StyleSheet.create` or inline color styles
 - Use `cn()` from `@/lib/utils` for conditional classes
-- Theme tokens are defined in `global.css` and mapped in `@theme inline` — Factory roles map to obsidian / carbon / ash / bone / chalk; signal + metric remain data only
-- Standard tokens today: `bg-background`, `bg-card`, `bg-card-panel`, `bg-cta`, `text-cta-foreground`, `text-foreground`, `text-muted-foreground`, `border-border`, `text-success` — map new work to Factory semantics in DESIGN.md
+- Theme tokens are defined in `global.css` and mapped in `@theme inline` — color roles map to obsidian / carbon / ash / bone / chalk; signal + metric remain data only
+- Standard tokens today: `bg-background`, `bg-card`, `bg-card-panel`, `bg-cta`, `text-cta-foreground`, `text-foreground`, `text-muted-foreground`, `border-border`, `text-success` — map new work to DESIGN.md semantics
 - Keyword badge colors: `bg-keyword-accelerate`, `bg-keyword-combat`, `bg-keyword-ability`, `bg-keyword-default` (see `lib/card-keywords.ts`) — domain content, not chrome
 - **Riftbound UI kit** (`components/riftbound/`): use `KeywordBadge`, `StatusKeywordBadge`, `ContentKeywordBadge`, `QuantityPip`, and `EnergyPip` for game-native labels instead of generic pills. Import from `@/components/riftbound/RiftboundBadges` or the specific component file.
 - Child `Text` elements must be styled directly; styles do not cascade from parent `View` classes
 - `ThemeContext` syncs accent color and light/dark/system mode to Uniwind via `Uniwind.setTheme` and `Uniwind.updateCSSVariables`
 - For React Navigation tab bar colors, use `useCSSVariable` from `uniwind`
 
-### Action language (Factory)
+### Action language
 
 - Primary commit: chalk (`bg-cta`) with `text-cta-foreground` — 3px radius, weight 500–700
 - Secondary: bordered `card-panel` or ash ghost — no soft `primary/12` tint chips
