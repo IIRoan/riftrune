@@ -6,6 +6,7 @@ import type {
 import { user as userTable } from '../db/auth-schema.js';
 import type { Database } from '../db/client.js';
 import {
+  collectionAuditEvents,
   collectionInvites,
   collectionItems,
   collectionMembers,
@@ -89,7 +90,7 @@ export class CollectionShareService {
   constructor(
     private readonly db: Database,
     private readonly publicAppUrl: string
-  ) {}
+  ) { }
 
   private inviteUrl(token: string): string {
     return buildCollectionInviteUrl(token, this.publicAppUrl);
@@ -287,17 +288,53 @@ export class CollectionShareService {
 
       const joinerCollectionId = joinerMembership.collectionId;
 
+      const joinerItems = await tx
+        .select()
+        .from(collectionItems)
+        .where(eq(collectionItems.collectionId, joinerCollectionId));
+
       if (mode === 'use_theirs') {
+        if (joinerItems.length > 0) {
+          await tx.insert(collectionAuditEvents).values(
+            joinerItems.map((item) => ({
+              collectionId: joinerCollectionId,
+              actorUserId: userId,
+              action: 'share_discard',
+              variantNumber: item.variantNumber,
+              condition: item.condition,
+              language: item.language,
+              isFoil: item.isFoil,
+              quantityBefore: item.quantity,
+              quantityAfter: 0,
+              quantityDelta: -item.quantity,
+              metadata: {
+                mode,
+                targetCollectionId: invite.collectionId,
+              },
+            }))
+          );
+        }
         await tx
           .delete(collectionItems)
           .where(eq(collectionItems.collectionId, joinerCollectionId));
       } else {
-        const joinerItems = await tx
-          .select()
-          .from(collectionItems)
-          .where(eq(collectionItems.collectionId, joinerCollectionId));
-
         for (const item of joinerItems) {
+          const [existing] = await tx
+            .select({ quantity: collectionItems.quantity })
+            .from(collectionItems)
+            .where(
+              and(
+                eq(collectionItems.collectionId, invite.collectionId),
+                eq(collectionItems.variantNumber, item.variantNumber),
+                eq(collectionItems.condition, item.condition),
+                eq(collectionItems.language, item.language),
+                eq(collectionItems.isFoil, item.isFoil)
+              )
+            )
+            .limit(1);
+
+          const quantityBefore = existing?.quantity ?? 0;
+
           await tx
             .insert(collectionItems)
             .values({
@@ -327,6 +364,23 @@ export class CollectionShareService {
                 updatedAt: new Date(),
               },
             });
+
+          await tx.insert(collectionAuditEvents).values({
+            collectionId: invite.collectionId,
+            actorUserId: userId,
+            action: 'share_merge',
+            variantNumber: item.variantNumber,
+            condition: item.condition,
+            language: item.language,
+            isFoil: item.isFoil,
+            quantityBefore,
+            quantityAfter: quantityBefore + item.quantity,
+            quantityDelta: item.quantity,
+            metadata: {
+              mode,
+              sourceCollectionId: joinerCollectionId,
+            },
+          });
         }
 
         await tx
@@ -422,6 +476,24 @@ export class CollectionShareService {
             gradeScore: item.gradeScore,
             acquiredAt: item.acquiredAt,
             acquiredPriceCents: item.acquiredPriceCents,
+          }))
+        );
+
+        await tx.insert(collectionAuditEvents).values(
+          items.map((item) => ({
+            collectionId: created.id,
+            actorUserId: userId,
+            action: 'share_leave',
+            variantNumber: item.variantNumber,
+            condition: item.condition,
+            language: item.language,
+            isFoil: item.isFoil,
+            quantityBefore: 0,
+            quantityAfter: item.quantity,
+            quantityDelta: item.quantity,
+            metadata: {
+              previousCollectionId: membership.collectionId,
+            },
           }))
         );
       }
@@ -546,10 +618,10 @@ export class CollectionShareService {
       role: role === 'member' ? 'member' : 'owner',
       partner: partnerRow
         ? {
-            userId: partnerRow.userId,
-            name: partnerRow.name,
-            email: partnerRow.email,
-          }
+          userId: partnerRow.userId,
+          name: partnerRow.name,
+          email: partnerRow.email,
+        }
         : null,
       pendingInvite,
     };

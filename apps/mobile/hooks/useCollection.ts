@@ -25,6 +25,10 @@ import { fetchRemoteCollectionQuantities } from '@/services/remoteCollectionServ
 import { useCollectionShareStatus } from '@/hooks/useCollectionShare';
 import { collectionMutationKey, collectionQueryKeys } from '@/src/api/queryKeys';
 import {
+  bumpCollectionMutationGeneration,
+  getCollectionMutationGeneration,
+} from '@/hooks/collectionMutationGeneration';
+import {
   findVariantByNumber,
   getCardPrintings,
   isFoilVariant,
@@ -115,7 +119,15 @@ export function useCollection(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: collectionQueryKeys.all,
     queryFn: async () => {
+      const generation = getCollectionMutationGeneration(queryClient);
       const entries = await getCollection();
+      // A +/- click may have optimistically rewritten the cache while this
+      // request was in flight — never replace that with a stale snapshot.
+      if (getCollectionMutationGeneration(queryClient) !== generation) {
+        return (
+          queryClient.getQueryData<CollectionEntry[]>(collectionQueryKeys.all) ?? entries
+        );
+      }
       syncOwnershipFromCollection(queryClient, entries);
       await persistCollection(entries);
       return entries;
@@ -149,7 +161,13 @@ export function useCollectionOwnership(variantNumbers: readonly string[]): {
       const toFetch = isShared ? normalized : missing;
       if (toFetch.length === 0) return cached;
 
+      const generation = getCollectionMutationGeneration(queryClient);
       const rows = await fetchRemoteCollectionQuantities(toFetch);
+      // Drop stale responses that raced a +/- optimistic write (including the
+      // window after mutate settled but before this await resolved).
+      if (getCollectionMutationGeneration(queryClient) !== generation) {
+        return getOwnershipRecord(queryClient);
+      }
       // Re-read after the await: an optimistic mutation may have filled these
       // keys while /quantities was in flight. Never clobber newer local values
       // on cold ownership fills. Shared refreshes take server truth unless a
@@ -207,6 +225,7 @@ interface CollectionMutationContext {
   previousAll?: CollectionEntry[];
   previousEntry?: CollectionEntry | null | undefined;
   previousEntries?: Map<string, CollectionEntry | null | undefined>;
+  previousOwnership?: OwnershipRecord;
 }
 
 function invalidateCollection(queryClient: QueryClient) {
@@ -262,16 +281,21 @@ function beginCollectionMutation(
   queryClient: QueryClient,
   variantNumber: string
 ): CollectionMutationContext {
+  bumpCollectionMutationGeneration(queryClient);
   const context: CollectionMutationContext = {
     previousAll: queryClient.getQueryData<CollectionEntry[]>(collectionQueryKeys.all),
     previousEntry: queryClient.getQueryData<CollectionEntry | null>(
       collectionQueryKeys.entry(variantNumber)
     ),
+    previousOwnership: getOwnershipRecord(queryClient),
   };
   void queryClient.cancelQueries({ queryKey: collectionQueryKeys.all, exact: true });
   void queryClient.cancelQueries({
     queryKey: collectionQueryKeys.entry(variantNumber),
   });
+  // Cancel in-flight /quantities so a stale response cannot overwrite the
+  // optimistic ownership write (critical for shared collections).
+  void queryClient.cancelQueries({ queryKey: collectionQueryKeys.ownershipRoot });
   return context;
 }
 
@@ -288,6 +312,16 @@ function rollbackCollectionCache(
     queryClient.setQueryData(
       collectionQueryKeys.entry(variantNumber),
       context.previousEntry
+    );
+  }
+  if (context.previousOwnership !== undefined) {
+    queryClient.setQueryData(
+      collectionQueryKeys.ownershipRoot,
+      context.previousOwnership
+    );
+    queryClient.setQueriesData<OwnershipRecord>(
+      { queryKey: collectionQueryKeys.ownershipRoot },
+      () => context.previousOwnership
     );
   }
 }
@@ -358,10 +392,10 @@ function entrySeedFromListCard(
     (isFoil === undefined
       ? undefined
       : printings.find(
-          (item) =>
-            variantNumbersMatch(item.variantNumber, variantNumber) &&
-            item.isFoil === isFoil
-        )) ??
+        (item) =>
+          variantNumbersMatch(item.variantNumber, variantNumber) &&
+          item.isFoil === isFoil
+      )) ??
     printings.find((item) => variantNumbersMatch(item.variantNumber, variantNumber)) ??
     printings[0];
   if (!printing) return null;
@@ -440,10 +474,10 @@ export function useCollectionMutations() {
         (vars.isFoil === undefined
           ? undefined
           : printings.find(
-              (p) =>
-                variantNumbersMatch(p.variantNumber, variantNumber) &&
-                p.isFoil === vars.isFoil
-            )) ??
+            (p) =>
+              variantNumbersMatch(p.variantNumber, variantNumber) &&
+              p.isFoil === vars.isFoil
+          )) ??
         printings.find((p) => variantNumbersMatch(p.variantNumber, variantNumber)) ??
         printings[0];
       const isFoil = vars.isFoil ?? printing?.isFoil ?? false;
@@ -614,9 +648,11 @@ export function useCollectionMutations() {
     mutationKey: collectionMutationKey,
     mutationFn: (variantNumbers: string[]) => removeManyFromCollection(variantNumbers),
     onMutate: (variantNumbers) => {
+      bumpCollectionMutationGeneration(queryClient);
       const previousAll = queryClient.getQueryData<CollectionEntry[]>(
         collectionQueryKeys.all
       );
+      const previousOwnership = getOwnershipRecord(queryClient);
       const previousEntries = new Map(
         variantNumbers.map((variantNumber) => [
           variantNumber,
@@ -642,13 +678,14 @@ export function useCollectionMutations() {
         queryKey: collectionQueryKeys.all,
         exact: true,
       });
+      void queryClient.cancelQueries({ queryKey: collectionQueryKeys.ownershipRoot });
       for (const variantNumber of variantNumbers) {
         void queryClient.cancelQueries({
           queryKey: collectionQueryKeys.entry(variantNumber),
         });
       }
 
-      return { previousAll, previousEntries };
+      return { previousAll, previousEntries, previousOwnership };
     },
     onError: (error, variantNumbers, context) => {
       if (context?.previousAll !== undefined) {
@@ -662,6 +699,16 @@ export function useCollectionMutations() {
             previousEntry
           );
         }
+      }
+      if (context?.previousOwnership !== undefined) {
+        queryClient.setQueryData(
+          collectionQueryKeys.ownershipRoot,
+          context.previousOwnership
+        );
+        queryClient.setQueriesData<OwnershipRecord>(
+          { queryKey: collectionQueryKeys.ownershipRoot },
+          () => context.previousOwnership
+        );
       }
       logMutationFailure('collection.remove_many', error, {
         count: variantNumbers.length,

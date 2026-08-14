@@ -318,6 +318,59 @@ export const collectionItems = pgTable(
   ]
 );
 
+/**
+ * Append-only collection mutation history.
+ * Survives collection delete (collection_id is nullable) so actor history remains queryable.
+ */
+export const COLLECTION_AUDIT_ACTIONS = [
+  'add',
+  'remove',
+  'upsert',
+  'delete',
+  'clear',
+  'batch',
+  'import',
+  'share_merge',
+  'share_discard',
+  'share_leave',
+] as const;
+
+export type CollectionAuditAction = (typeof COLLECTION_AUDIT_ACTIONS)[number];
+
+export const collectionAuditEvents = pgTable(
+  'collection_audit_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    collectionId: uuid('collection_id').references(() => collections.id, {
+      onDelete: 'set null',
+    }),
+    actorUserId: text('actor_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    action: text('action').notNull(),
+    variantNumber: text('variant_number'),
+    condition: text('condition'),
+    language: text('language'),
+    isFoil: boolean('is_foil'),
+    quantityBefore: integer('quantity_before'),
+    quantityAfter: integer('quantity_after'),
+    quantityDelta: integer('quantity_delta'),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('collection_audit_events_collection_created_idx').on(
+      t.collectionId,
+      t.createdAt
+    ),
+    index('collection_audit_events_actor_created_idx').on(t.actorUserId, t.createdAt),
+    index('collection_audit_events_variant_created_idx').on(
+      t.variantNumber,
+      t.createdAt
+    ),
+  ]
+);
+
 export const wishlistItems = pgTable(
   'wishlist_items',
   {

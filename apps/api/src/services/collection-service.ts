@@ -18,6 +18,10 @@ import { logActionFailure } from '../lib/logger.js';
 
 import type { CardCacheService } from './card-cache.js';
 import type { ImageStoreService } from './image-store.js';
+import {
+  CollectionAuditService,
+  type CollectionAuditActorRef,
+} from './collection-audit-service.js';
 import { VariantResolver } from './variant-resolver.js';
 
 /**
@@ -60,14 +64,17 @@ const STACK_CONFLICT_TARGET = [
 
 export class CollectionService {
   private readonly variantResolver: VariantResolver;
+  private readonly audit: CollectionAuditService;
 
   constructor(
     private readonly db: Database,
     cardCache: CardCacheService,
     private readonly images: ImageStoreService,
-    riftrune: ConstructorParameters<typeof VariantResolver>[2]
+    riftrune: ConstructorParameters<typeof VariantResolver>[2],
+    audit?: CollectionAuditService
   ) {
     this.variantResolver = new VariantResolver(db, cardCache, riftrune);
+    this.audit = audit ?? new CollectionAuditService(db);
   }
 
   async listForCollection(collectionId: string): Promise<{
@@ -200,9 +207,17 @@ export class CollectionService {
       gradeScore?: string | null;
       acquiredAt?: string | null;
       acquiredPriceCents?: number | null;
-    }
+    },
+    actor?: CollectionAuditActorRef
   ): Promise<CollectionItemDto | null> {
     const isFoil = await this.resolveStackIsFoil(input.variantNumber, input.isFoil);
+    const quantityBefore = await this.readStackQuantity(
+      collectionId,
+      input.variantNumber,
+      input.condition,
+      input.language,
+      isFoil
+    );
 
     if (input.quantity <= 0) {
       await this.remove(
@@ -210,7 +225,15 @@ export class CollectionService {
         input.variantNumber,
         input.condition,
         input.language,
-        isFoil
+        isFoil,
+        actor
+          ? {
+            userId: actor.userId,
+            action: actor.action === 'upsert' ? 'delete' : actor.action,
+            ...(actor.metadata ? { metadata: actor.metadata } : {}),
+          }
+          : undefined,
+        { skipAudit: false }
       );
       return null;
     }
@@ -248,6 +271,21 @@ export class CollectionService {
         },
       });
 
+    if (actor && quantityBefore !== input.quantity) {
+      await this.audit.record({
+        collectionId,
+        actorUserId: actor.userId,
+        action: actor.action,
+        variantNumber: input.variantNumber,
+        condition: input.condition,
+        language: input.language,
+        isFoil,
+        quantityBefore,
+        quantityAfter: input.quantity,
+        metadata: actor.metadata ?? null,
+      });
+    }
+
     return this.findStack(
       collectionId,
       input.variantNumber,
@@ -261,7 +299,8 @@ export class CollectionService {
     collectionId: string,
     variantNumber: string,
     delta: number,
-    options?: { condition?: CardCondition; language?: string; isFoil?: boolean }
+    options?: { condition?: CardCondition; language?: string; isFoil?: boolean },
+    actor?: CollectionAuditActorRef
   ): Promise<CollectionItemDto | null> {
     const condition = options?.condition ?? 'near_mint';
     const language = options?.language ?? 'en';
@@ -270,6 +309,14 @@ export class CollectionService {
     if (delta === 0) {
       return this.findStack(collectionId, variantNumber, condition, language, isFoil);
     }
+
+    const quantityBefore = await this.readStackQuantity(
+      collectionId,
+      variantNumber,
+      condition,
+      language,
+      isFoil
+    );
 
     if (delta < 0) {
       const [updated] = await this.db
@@ -291,8 +338,45 @@ export class CollectionService {
 
       if (!updated) return null;
       if (updated.quantity <= 0) {
-        await this.remove(collectionId, variantNumber, condition, language, isFoil);
+        await this.remove(
+          collectionId,
+          variantNumber,
+          condition,
+          language,
+          isFoil,
+          undefined,
+          { skipAudit: true }
+        );
+        if (actor) {
+          await this.audit.record({
+            collectionId,
+            actorUserId: actor.userId,
+            action: actor.action,
+            variantNumber,
+            condition,
+            language,
+            isFoil,
+            quantityBefore,
+            quantityAfter: 0,
+            metadata: actor.metadata ?? null,
+          });
+        }
         return null;
+      }
+
+      if (actor) {
+        await this.audit.record({
+          collectionId,
+          actorUserId: actor.userId,
+          action: actor.action,
+          variantNumber,
+          condition,
+          language,
+          isFoil,
+          quantityBefore,
+          quantityAfter: updated.quantity,
+          metadata: actor.metadata ?? null,
+        });
       }
       return this.findStack(collectionId, variantNumber, condition, language, isFoil);
     }
@@ -314,6 +398,22 @@ export class CollectionService {
           updatedAt: new Date(),
         },
       });
+
+    const quantityAfter = quantityBefore + delta;
+    if (actor) {
+      await this.audit.record({
+        collectionId,
+        actorUserId: actor.userId,
+        action: actor.action,
+        variantNumber,
+        condition,
+        language,
+        isFoil,
+        quantityBefore,
+        quantityAfter,
+        metadata: actor.metadata ?? null,
+      });
+    }
 
     return this.findStack(collectionId, variantNumber, condition, language, isFoil);
   }
@@ -378,10 +478,20 @@ export class CollectionService {
     variantNumber: string,
     condition = 'near_mint',
     language = 'en',
-    isFoil?: boolean
+    isFoil?: boolean,
+    actor?: CollectionAuditActorRef,
+    options?: { skipAudit?: boolean }
   ): Promise<void> {
     const finish =
       isFoil === undefined ? await this.resolveStackIsFoil(variantNumber) : isFoil;
+    const quantityBefore = await this.readStackQuantity(
+      collectionId,
+      variantNumber,
+      condition,
+      language,
+      finish
+    );
+
     await this.db
       .delete(collectionItems)
       .where(
@@ -393,6 +503,21 @@ export class CollectionService {
           eq(collectionItems.isFoil, finish)
         )
       );
+
+    if (actor && !options?.skipAudit && quantityBefore > 0) {
+      await this.audit.record({
+        collectionId,
+        actorUserId: actor.userId,
+        action: actor.action,
+        variantNumber,
+        condition,
+        language,
+        isFoil: finish,
+        quantityBefore,
+        quantityAfter: 0,
+        metadata: actor.metadata ?? null,
+      });
+    }
   }
 
   async removeMany(collectionId: string, variantNumbers: string[]): Promise<void> {
@@ -421,23 +546,28 @@ export class CollectionService {
       gradeScore?: string | null | undefined;
       acquiredAt?: string | null | undefined;
       acquiredPriceCents?: number | null | undefined;
-    }>
+    }>,
+    actor?: CollectionAuditActorRef
   ): Promise<{ synced: number }> {
     let synced = 0;
     for (const item of items) {
-      await this.upsert(collectionId, {
-        variantNumber: item.variantNumber,
-        quantity: item.quantity,
-        condition: item.condition,
-        language: item.language,
-        ...(item.isFoil === undefined ? {} : { isFoil: item.isFoil }),
-        notes: item.notes ?? null,
-        isGraded: item.isGraded ?? false,
-        gradeCompany: item.gradeCompany ?? null,
-        gradeScore: item.gradeScore ?? null,
-        acquiredAt: item.acquiredAt ?? null,
-        acquiredPriceCents: item.acquiredPriceCents ?? null,
-      });
+      await this.upsert(
+        collectionId,
+        {
+          variantNumber: item.variantNumber,
+          quantity: item.quantity,
+          condition: item.condition,
+          language: item.language,
+          ...(item.isFoil === undefined ? {} : { isFoil: item.isFoil }),
+          notes: item.notes ?? null,
+          isGraded: item.isGraded ?? false,
+          gradeCompany: item.gradeCompany ?? null,
+          gradeScore: item.gradeScore ?? null,
+          acquiredAt: item.acquiredAt ?? null,
+          acquiredPriceCents: item.acquiredPriceCents ?? null,
+        },
+        actor
+      );
       synced += 1;
     }
     return { synced };
@@ -492,14 +622,45 @@ export class CollectionService {
     return exportRowsToCsv(exportRows);
   }
 
-  async clearAll(collectionId: string): Promise<{ removed: number }> {
+  async clearAll(
+    collectionId: string,
+    actor?: CollectionAuditActorRef
+  ): Promise<{ removed: number }> {
     const rows = await this.db
-      .select({ id: collectionItems.id })
+      .select({
+        id: collectionItems.id,
+        variantNumber: collectionItems.variantNumber,
+        quantity: collectionItems.quantity,
+        condition: collectionItems.condition,
+        language: collectionItems.language,
+        isFoil: collectionItems.isFoil,
+      })
       .from(collectionItems)
       .where(eq(collectionItems.collectionId, collectionId));
     if (rows.length === 0) {
       return { removed: 0 };
     }
+
+    if (actor) {
+      await this.audit.recordMany(
+        rows.map((row) => ({
+          collectionId,
+          actorUserId: actor.userId,
+          action: 'clear' as const,
+          variantNumber: row.variantNumber,
+          condition: row.condition,
+          language: row.language,
+          isFoil: row.isFoil,
+          quantityBefore: row.quantity,
+          quantityAfter: 0,
+          metadata: {
+            ...actor.metadata,
+            removedStacks: rows.length,
+          },
+        }))
+      );
+    }
+
     await this.db
       .delete(collectionItems)
       .where(eq(collectionItems.collectionId, collectionId));
@@ -508,7 +669,8 @@ export class CollectionService {
 
   async importCsv(
     collectionId: string,
-    csv: string
+    csv: string,
+    actor?: CollectionAuditActorRef
   ): Promise<{
     imported: number;
     totalCopies: number;
@@ -529,7 +691,7 @@ export class CollectionService {
       };
     }
 
-    const result = await this.importItems(collectionId, parsed.items);
+    const result = await this.importItems(collectionId, parsed.items, actor);
     return {
       ...result,
       rowsProcessed: parsed.rowsProcessed,
@@ -540,7 +702,8 @@ export class CollectionService {
 
   async importItems(
     collectionId: string,
-    items: CollectionImportItem[]
+    items: CollectionImportItem[],
+    actor?: CollectionAuditActorRef
   ): Promise<{
     imported: number;
     totalCopies: number;
@@ -594,13 +757,43 @@ export class CollectionService {
 
     let imported = 0;
     let totalCopies = 0;
+    const importActor: CollectionAuditActorRef | undefined = actor
+      ? {
+        userId: actor.userId,
+        action: 'import',
+        ...(actor.metadata ? { metadata: actor.metadata } : {}),
+      }
+      : undefined;
     const chunks = chunkArray(validItems, COLLECTION_IMPORT_BATCH_SIZE);
     for (const chunk of chunks) {
-      const result = await this.batchSync(collectionId, chunk);
+      const result = await this.batchSync(collectionId, chunk, importActor);
       imported += result.synced;
       totalCopies += chunk.reduce((sum, item) => sum + item.quantity, 0);
     }
 
     return { imported, totalCopies, resolvedFromUpstream, failedRows, errors };
+  }
+
+  private async readStackQuantity(
+    collectionId: string,
+    variantNumber: string,
+    condition: string,
+    language: string,
+    isFoil: boolean
+  ): Promise<number> {
+    const [row] = await this.db
+      .select({ quantity: collectionItems.quantity })
+      .from(collectionItems)
+      .where(
+        and(
+          eq(collectionItems.collectionId, collectionId),
+          eq(collectionItems.variantNumber, variantNumber),
+          eq(collectionItems.condition, condition),
+          eq(collectionItems.language, language),
+          eq(collectionItems.isFoil, isFoil)
+        )
+      )
+      .limit(1);
+    return row?.quantity ?? 0;
   }
 }

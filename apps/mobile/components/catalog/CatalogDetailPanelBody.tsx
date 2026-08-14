@@ -221,7 +221,7 @@ export function CatalogDetailPanelBody({
     activeRarity: activeVariant.rarity,
     tags: card.tags,
     onAddPrinting: (vn, isFoil) => {
-      void detail.onAddToCollection(vn, isFoil);
+      detail.onAddToCollection(vn, isFoil);
     },
     onRemovePrinting: (vn, isFoil, qty) => {
       if (qty <= 0) return;
