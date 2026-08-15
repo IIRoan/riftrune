@@ -1,13 +1,14 @@
 import '../global.css';
+import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import {
   DarkTheme,
   DefaultTheme,
+  Stack,
   ThemeProvider as NavThemeProvider,
-} from '@react-navigation/native';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { Stack } from 'expo-router';
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Platform, StatusBar } from 'react-native';

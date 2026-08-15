@@ -2,7 +2,7 @@
 
 ## Expo
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v54.0.0/ before writing any code.
+Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
 
 ## UI: tetra-ui + Uniwind
 
@@ -12,7 +12,7 @@ This app uses [tetra-ui](https://tetra-ui.com) — shadcn/ui-style copy-paste co
 
 ### Requirements
 
-- React 19, React Native New Architecture (`newArchEnabled: true`)
+- React 19, React Native New Architecture (mandatory in SDK 57)
 - Uniwind + Tailwind CSS v4 (`global.css`, `metro.config.js`)
 - Components live in `components/ui/` (owned source, not an npm package)
 

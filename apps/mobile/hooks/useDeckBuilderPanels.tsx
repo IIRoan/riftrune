@@ -7,8 +7,10 @@ import { DeckCompositionList } from '@/components/deck/DeckCompositionList';
 import { DeckBuilderCatalogPanel } from '@/components/deck/DeckBuilderCatalogPanel';
 import { DeckDescriptionPanel } from '@/components/deck/DeckDescription';
 import { DeckShowcasePanel } from '@/components/deck/DeckShowcasePanel';
+import { DeckStatsPanel } from '@/components/deck/DeckStatsPanel';
 import type { DeckBuilderMiddlePanel } from '@/components/deck/DeckBuilderMiddlePanelToggle';
 import { useMobileLayout } from '@/hooks/useBreakpoint';
+import { getCatalogIndexItems, useCatalogIndex } from '@/hooks/useCatalogIndex';
 import { useCollectionByCardName } from '@/hooks/useDeckCardResolver';
 import { useDeckCardImages } from '@/hooks/useDeckCardImages';
 import {
@@ -19,6 +21,7 @@ import {
 import { adjustRuneCountForDomain } from '@/lib/deck-runes';
 import type { DeckSectionKey, DeckCard, DeckState } from '@/lib/deck-types';
 import { prefetchDeckAddCatalog } from '@/lib/prefetchDeckAddCatalog';
+import { catalogPowerByCard, computeDeckStats } from '@/lib/deck-stats';
 import { hapticPress } from '@/utils/haptics';
 
 const EMPTY_IMAGE_MAP = new Map<string, string>();
@@ -67,6 +70,15 @@ export function useDeckBuilderPanels({
   const queryClient = useQueryClient();
   const isMobile = useMobileLayout();
   const insets = useSafeAreaInsets();
+  const catalogIndex = useCatalogIndex();
+  const catalogPower = useMemo(
+    () => catalogPowerByCard(getCatalogIndexItems(catalogIndex.data)),
+    [catalogIndex.data]
+  );
+  const stats = useMemo(
+    () => computeDeckStats(deck, catalogPower),
+    [deck, catalogPower]
+  );
   const collectionByName = useCollectionByCardName(collection ?? []);
   const variantKey = deckVariantNumbersKey(deck);
   const { data: imageByVariant } = useDeckCardImages(variantKey);
@@ -111,6 +123,16 @@ export function useDeckBuilderPanels({
       setMobilePanel,
     ]
   );
+
+  const closeStats = useCallback(() => {
+    onMiddlePanelChange('catalog');
+    setMobilePanel(null);
+  }, [onMiddlePanelChange, setMobilePanel]);
+
+  const toggleStats = useCallback(() => {
+    onMiddlePanelChange(middlePanel === 'stats' ? 'catalog' : 'stats');
+    setMobilePanel(null);
+  }, [middlePanel, onMiddlePanelChange, setMobilePanel]);
 
   const handleAdjustRune = useCallback(
     (domain: string, delta: number) => {
@@ -217,6 +239,9 @@ export function useDeckBuilderPanels({
         }}
         onAddSection={(section) => openSpecialAdd(section)}
         onSectionPress={(section) => openSpecialAdd(section)}
+        stats={stats}
+        statsOpen={middlePanel === 'stats'}
+        onToggleStats={toggleStats}
         paddingBottom={isMobile ? sheetPaddingBottom : paddingBottomInline}
         bordered={false}
       />
@@ -229,6 +254,9 @@ export function useDeckBuilderPanels({
       onPersist,
       onChangeLegend,
       openSpecialAdd,
+      stats,
+      middlePanel,
+      toggleStats,
       isMobile,
       sheetPaddingBottom,
       paddingBottomInline,
@@ -270,6 +298,18 @@ export function useDeckBuilderPanels({
     [deck, images, collectionByName, runeCardsByDomain, paddingBottomInline]
   );
 
+  const statsPanel = useMemo(
+    () => (
+      <DeckStatsPanel
+        stats={stats}
+        paddingBottom={paddingBottomInline}
+        onClose={closeStats}
+        closeLabel={readOnly ? 'Deck' : 'Cards'}
+      />
+    ),
+    [stats, paddingBottomInline, closeStats, readOnly]
+  );
+
   return {
     sheetPaddingBottom,
     focusCatalogSection,
@@ -278,5 +318,6 @@ export function useDeckBuilderPanels({
     compositionList,
     catalogPanel,
     showcasePanel,
+    statsPanel,
   };
 }

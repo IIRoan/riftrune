@@ -5,8 +5,7 @@ import type ExpoSecureStore from 'expo-secure-store';
  * Storage wrapper that satisfies better-auth expo client's sync interface.
  *
  * - Web: uses localStorage (already sync + persistent)
- * - Native: uses expo-secure-store with in-memory cache for sync reads,
- *   since expo-secure-store v57 removed sync methods.
+ * - Native: uses expo-secure-store with an in-memory cache for sync reads.
  *
  * Call hydrateSecureStorage() on app start to pre-populate the native cache
  * from SecureStore so sessions survive app restarts.
@@ -21,11 +20,16 @@ const isWeb = Platform.OS === 'web';
 // In-memory cache for native (web uses localStorage directly)
 const cache = new Map<string, string>();
 
-// Lazy-load expo-secure-store only on native
+// Lazy-load expo-secure-store only on native. An older development client may
+// not include the native module until the next EAS binary rebuild.
 let SecureStore: typeof ExpoSecureStore | null = null;
 if (!isWeb) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  SecureStore = require('expo-secure-store');
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    SecureStore = require('expo-secure-store');
+  } catch {
+    SecureStore = null;
+  }
 }
 
 function webGetItem(key: string): string | null {

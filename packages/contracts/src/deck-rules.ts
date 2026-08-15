@@ -110,7 +110,8 @@ export const RIFTBOUND_DECK_RULES = {
     },
     {
       code: 'signature_cap',
-      message: 'At most 3 Signature cards total in the Main Deck, matching Legend champion tags.',
+      message:
+        'At most 3 Signature cards total in the Main Deck, matching Legend champion tags.',
     },
     {
       code: 'signature_sideboard',
@@ -153,7 +154,8 @@ export const RIFTBOUND_PRE_RIFT_DECK_RULES = {
       target: 25,
       minimum: 25,
       required: true,
-      description: 'At least 25 Main Deck cards. You may play more if your pool allows.',
+      description:
+        'At least 25 Main Deck cards. You may play more if your pool allows.',
     },
     runes: {
       key: 'runes',
@@ -171,8 +173,7 @@ export const RIFTBOUND_PRE_RIFT_DECK_RULES = {
       exact: false,
       required: false,
       uniqueNames: false,
-      description:
-        'Up to 3 Battlefield cards (optional). Duplicate names are allowed.',
+      description: 'Up to 3 Battlefield cards (optional). Duplicate names are allowed.',
     },
     sideboard: {
       key: 'sideboard',
@@ -216,8 +217,7 @@ export const RIFTBOUND_PRE_RIFT_DECK_RULES = {
 } as const;
 
 export type RiftboundDeckRules =
-  | typeof RIFTBOUND_DECK_RULES
-  | typeof RIFTBOUND_PRE_RIFT_DECK_RULES;
+  typeof RIFTBOUND_DECK_RULES | typeof RIFTBOUND_PRE_RIFT_DECK_RULES;
 
 export const RIFTBOUND_DECK_RULES_BY_FORMAT = {
   constructed: RIFTBOUND_DECK_RULES,
@@ -244,6 +244,8 @@ export const DeckCardInput = z.object({
   tags: z.array(z.string()),
   colors: z.array(z.string()),
   energy: z.number(),
+  /** Present on newly synced cards; omitted on older stored decks. */
+  power: z.number().int().optional(),
   setCode: z.string(),
   rarity: z.string(),
   variantType: z.string(),
@@ -327,7 +329,10 @@ export type DeckEntryInput = z.infer<typeof DeckEntryInput>;
 export type DeckValidateInput = z.infer<typeof DeckValidateInput>;
 export type DeckValidationMessage = z.infer<typeof DeckValidationMessage>;
 
-function domainIdentityMatch(cardDomains: string[], legendDomains: Set<string>): boolean {
+function domainIdentityMatch(
+  cardDomains: string[],
+  legendDomains: Set<string>
+): boolean {
   if (!cardDomains.length) return true;
   return cardDomains.every((domain) => legendDomains.has(domain));
 }
@@ -359,7 +364,9 @@ function collectDeckDomains(input: DeckValidateInput): Set<string> {
   return domains;
 }
 
-export function validateRiftboundDeck(input: DeckValidateInput): DeckValidationMessage[] {
+export function validateRiftboundDeck(
+  input: DeckValidateInput
+): DeckValidationMessage[] {
   const messages: DeckValidationMessage[] = [];
   const format = input.format ?? 'constructed';
   const rules = getDeckRules(format);
@@ -445,10 +452,13 @@ export function validateRiftboundDeck(input: DeckValidateInput): DeckValidationM
 
   const allNameCounts = new Map<string, number>();
   if (champion) increment(allNameCounts, champion.name, 1);
-  for (const { card, count } of input.mainDeck) increment(allNameCounts, card.name, count);
+  for (const { card, count } of input.mainDeck)
+    increment(allNameCounts, card.name, count);
   for (const { card, count } of input.runes) increment(allNameCounts, card.name, count);
-  for (const { card, count } of input.battlefields) increment(allNameCounts, card.name, count);
-  for (const { card, count } of input.sideboard) increment(allNameCounts, card.name, count);
+  for (const { card, count } of input.battlefields)
+    increment(allNameCounts, card.name, count);
+  for (const { card, count } of input.sideboard)
+    increment(allNameCounts, card.name, count);
 
   for (const [name, count] of allNameCounts) {
     const isRune = input.runes.some((entry) => entry.card.name === name);
@@ -581,7 +591,9 @@ export function runeNameForDomain(domain: string): string {
 }
 
 /** Legend domains used for the 12-rune split (first two identity colors). */
-export function legendRuneDomains(legend: Pick<DeckCardInput, 'colors'>): [string, string] {
+export function legendRuneDomains(
+  legend: Pick<DeckCardInput, 'colors'>
+): [string, string] {
   const [first, second] = legend.colors;
   return [first ?? 'Unknown', second ?? first ?? 'Unknown'];
 }

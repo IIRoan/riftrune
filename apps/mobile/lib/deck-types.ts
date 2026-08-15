@@ -12,6 +12,8 @@ export interface DeckCard {
   tags: string[];
   colors: string[];
   energy: number;
+  /** Omitted on older saved decks; stats hydrate from the catalog when missing. */
+  power?: number;
   setCode: string;
   rarity: string;
   variantType: string;
@@ -108,20 +110,24 @@ export const DECK_SECTIONS: Array<{
   isMin?: boolean;
   optional?: boolean;
 }> = [
-  { key: 'legend', title: 'Legend', target: 1, single: true },
-  { key: 'champion', title: 'Champion', target: 1, single: true },
-  { key: 'mainDeck', title: 'Main', target: 39, isMin: true },
-  { key: 'runes', title: 'Runes', target: 12 },
-  { key: 'battlefields', title: 'Fields', target: 3 },
-  { key: 'sideboard', title: 'Side', target: 8, optional: true },
-];
+    { key: 'legend', title: 'Legend', target: 1, single: true },
+    { key: 'champion', title: 'Champion', target: 1, single: true },
+    { key: 'mainDeck', title: 'Main', target: 39, isMin: true },
+    { key: 'runes', title: 'Runes', target: 12 },
+    { key: 'battlefields', title: 'Fields', target: 3 },
+    { key: 'sideboard', title: 'Side', target: 8, optional: true },
+  ];
 
 /** Section targets for the active deck format (Constructed vs Pre-Rift). */
 export function deckSectionsForFormat(format: DeckFormat = 'constructed') {
   if (format !== 'pre-rift') return DECK_SECTIONS;
   return DECK_SECTIONS.map((section) => {
     if (section.key === 'mainDeck') return { ...section, target: 25 };
-    if (section.key === 'legend' || section.key === 'champion' || section.key === 'battlefields') {
+    if (
+      section.key === 'legend' ||
+      section.key === 'champion' ||
+      section.key === 'battlefields'
+    ) {
       return { ...section, optional: true };
     }
     return section;

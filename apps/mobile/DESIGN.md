@@ -2,77 +2,77 @@
 name: The Astral Grove
 description: Stark black control surface for Riftbound collection work
 colors:
-  obsidian-canvas: "#101010"
-  carbon-lift: "#1d1a18"
-  ash-stroke: "#3d3a39"
-  graphite-mid: "#4d4947"
-  warm-granite: "#8a8380"
-  pale-stone: "#b8b3b0"
-  bone: "#eeeeee"
-  chalk: "#fafafa"
-  signal-orange: "#ee6018"
-  metric-green: "#a0ca92"
+  obsidian-canvas: '#101010'
+  carbon-lift: '#1d1a18'
+  ash-stroke: '#3d3a39'
+  graphite-mid: '#4d4947'
+  warm-granite: '#8a8380'
+  pale-stone: '#b8b3b0'
+  bone: '#eeeeee'
+  chalk: '#fafafa'
+  signal-orange: '#ee6018'
+  metric-green: '#a0ca92'
 typography:
   body:
-    fontFamily: "Lato, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "16px"
+    fontFamily: 'Lato, ui-sans-serif, system-ui, sans-serif'
+    fontSize: '16px'
     fontWeight: 400
     lineHeight: 1.5
   body-sm:
-    fontFamily: "Lato, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "14px"
+    fontFamily: 'Lato, ui-sans-serif, system-ui, sans-serif'
+    fontSize: '14px'
     fontWeight: 400
     lineHeight: 1.43
   caption:
-    fontFamily: "Geist Mono, ui-monospace, monospace"
-    fontSize: "12px"
+    fontFamily: 'Geist Mono, ui-monospace, monospace'
+    fontSize: '12px'
     fontWeight: 500
     lineHeight: 1
-    letterSpacing: "-0.24px"
+    letterSpacing: '-0.24px'
   title:
-    fontFamily: "Lato, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "36px"
+    fontFamily: 'Lato, ui-sans-serif, system-ui, sans-serif'
+    fontSize: '36px'
     fontWeight: 600
     lineHeight: 1.1
-    letterSpacing: "-1.12px"
+    letterSpacing: '-1.12px'
 rounded:
-  buttons: "3px"
-  nav: "3px"
-  cards: "10px"
-  large-panels: "20px"
+  buttons: '3px'
+  nav: '3px'
+  cards: '10px'
+  large-panels: '20px'
 spacing:
-  "8": "8px"
-  "16": "16px"
-  "24": "24px"
-  "32": "32px"
-  "40": "40px"
-  "56": "56px"
-  "80": "80px"
-  "96": "96px"
+  '8': '8px'
+  '16': '16px'
+  '24': '24px'
+  '32': '32px'
+  '40': '40px'
+  '56': '56px'
+  '80': '80px'
+  '96': '96px'
 components:
   button-primary:
-    backgroundColor: "{colors.carbon-lift}"
-    textColor: "{colors.bone}"
-    rounded: "{rounded.buttons}"
-    padding: "0 14px"
-    height: "40px"
+    backgroundColor: '{colors.carbon-lift}'
+    textColor: '{colors.bone}'
+    rounded: '{rounded.buttons}'
+    padding: '0 14px'
+    height: '40px'
   button-emphasis:
-    backgroundColor: "{colors.chalk}"
-    textColor: "{colors.obsidian-canvas}"
-    rounded: "{rounded.buttons}"
-    padding: "0 14px"
-    height: "40px"
+    backgroundColor: '{colors.chalk}'
+    textColor: '{colors.obsidian-canvas}'
+    rounded: '{rounded.buttons}'
+    padding: '0 14px'
+    height: '40px'
   button-ghost:
-    backgroundColor: "transparent"
-    textColor: "{colors.bone}"
-    rounded: "0px"
-    padding: "24px 16px"
+    backgroundColor: 'transparent'
+    textColor: '{colors.bone}'
+    rounded: '0px'
+    padding: '24px 16px'
   button-row-add:
-    backgroundColor: "{colors.chalk}"
-    textColor: "{colors.obsidian-canvas}"
-    rounded: "{rounded.buttons}"
-    padding: "0 14px"
-    height: "32px"
+    backgroundColor: '{colors.chalk}'
+    textColor: '{colors.obsidian-canvas}'
+    rounded: '{rounded.buttons}'
+    padding: '0 14px'
+    height: '32px'
 ---
 
 # Design System: The Astral Grove
@@ -213,6 +213,8 @@ Transparent or carbon well on obsidian. Labels weight 400–500. Active state vi
 ### Charts / price history
 
 Sparklines and bars use signal (attention/down) or metric green (up). Axes and labels stay pale-stone / warm-granite.
+
+Domain composition charts may use the six domain tokens (`domain-fury` … `domain-order`) as data fills, always paired with domain icons or names. They are domain content, not chrome.
 
 ## Do's and Don'ts
 

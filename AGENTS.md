@@ -74,7 +74,7 @@ The codebase uses several names — agents should understand the mapping:
 | **`PA_API_KEY`, `PaClient`** | Env vars and code for the **PA external API** client |
 | **`piltoverarchive` repo folder** | Git checkout path — not the product name |
 | **`design/`** | Marketing site, separate from the Expo app |
-| **EAS identifiers** | Expo slug `astral-grove`, scheme `astral-grove`, bundle/package `com.iroan.astralgrove` |
+| **EAS identifiers** | Expo owner `astralgrove`, slug `astral-grove`, project `84e78cd9-68b6-4642-964f-2212b036d515`, scheme `astral-grove`, bundle/package `com.iroan.astralgrove` |
 
 When writing user-facing copy, prefer **The Astral Grove**. When reading upstream integration code, expect **Piltover Archive** terminology in comments and deck I/O (`importPiltoverArchive`, `exportPiltoverArchive`).
 
@@ -84,7 +84,7 @@ When writing user-facing copy, prefer **The Astral Grove**. When reading upstrea
 
 | Path | Package | Role |
 |------|---------|------|
-| `apps/mobile` | `@riftbound/mobile` | **The Astral Grove app** — Expo SDK 54 (iOS, Android, Web), Expo Router, TanStack Query, tetra-ui + Uniwind |
+| `apps/mobile` | `@riftbound/mobile` | **The Astral Grove app** — Expo SDK 57 (iOS, Android, Web), Expo Router, TanStack Query, tetra-ui + Uniwind |
 | `apps/api` | `@riftbound/api` | The Astral Grove API — Elysia on Bun, Drizzle ORM, Better Auth, PA upstream sync |
 | `packages/contracts` | `@riftbound/contracts` | Shared Zod schemas + `z.infer` types for our API **and** PA payload shapes |
 | `packages/typescript-config` | `@riftbound/typescript-config` | Shared strict TS config |
@@ -148,7 +148,7 @@ bun run --cwd packages/contracts build
 | **Language** | TypeScript **strict** everywhere |
 | **Validation** | Zod 3 — shared via `@riftbound/contracts` |
 | **API** | Elysia + Drizzle + postgres.js |
-| **Mobile** | Expo 54, React 19, React Native New Architecture |
+| **Mobile** | Expo 57, React 19, React Native New Architecture |
 | **DB** | PostgreSQL 16 (Docker Compose on port **5433**) |
 
 Install dependencies from the repo root:
@@ -438,7 +438,7 @@ flowchart LR
 
 - [`SPEC.md`](SPEC.md) — product spec and architecture history
 - [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md) — Expo, tetra-ui, Uniwind
-- [Expo SDK 54 docs](https://docs.expo.dev/versions/v54.0.0/)
+- [Expo SDK 57 docs](https://docs.expo.dev/versions/v57.0.0/)
 - [Elysia docs](https://elysiajs.com/)
 - [Drizzle ORM docs](https://orm.drizzle.team/)
 - [Zod docs](https://zod.dev/)

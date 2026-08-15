@@ -23,11 +23,12 @@ function baseEnv(overrides: Partial<Env> = {}): Env {
 }
 
 describe('resolveTrustedOrigins', () => {
-  test('includes app scheme, Expo Go, configured origins, and auth base URL', () => {
+  test('includes app scheme, Expo Go, development client, configured origins, and auth base URL', () => {
     const origins = resolveTrustedOrigins(baseEnv());
     expect(origins).toContain('astral-grove://');
     expect(origins).toContain('exp://');
     expect(origins).toContain('exp://**');
+    expect(origins).toContain('exp+astral-grove://');
     expect(origins).toContain('https://u.expo.dev');
     expect(origins).toContain('https://astral-grove.com');
     expect(origins).toContain('https://api.astral-grove.com');

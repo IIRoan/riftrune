@@ -110,7 +110,7 @@ export function DeckBuilderCanvas({
 
   const handleMiddlePanelChange = useCallback((panel: DeckBuilderMiddlePanel) => {
     setMiddlePanel(panel);
-    if (panel === 'description') {
+    if (panel !== 'catalog') {
       setMobilePanel(null);
     }
   }, []);
@@ -130,6 +130,7 @@ export function DeckBuilderCanvas({
     compositionList,
     catalogPanel,
     showcasePanel,
+    statsPanel,
   } = useDeckBuilderPanels({
     deck,
     readOnly,
@@ -233,23 +234,21 @@ export function DeckBuilderCanvas({
               : undefined
           }
           catalogSection={
-            readOnly || middlePanel === 'description' ? undefined : catalogSection
+            readOnly || middlePanel !== 'catalog' ? undefined : catalogSection
           }
           onCatalogSectionChange={
-            readOnly || middlePanel === 'description' ? undefined : focusCatalogSection
+            readOnly || middlePanel !== 'catalog' ? undefined : focusCatalogSection
           }
           catalogSectionItems={
-            readOnly || middlePanel === 'description'
-              ? undefined
-              : browseSectionNavItems
+            readOnly || middlePanel !== 'catalog' ? undefined : browseSectionNavItems
           }
           catalogFilters={
-            readOnly || middlePanel === 'description'
+            readOnly || middlePanel !== 'catalog'
               ? undefined
               : mobileFilterChrome?.filters
           }
           onOpenCatalogFilters={
-            readOnly || middlePanel === 'description'
+            readOnly || middlePanel !== 'catalog'
               ? undefined
               : mobileFilterChrome?.onOpen
           }
@@ -260,10 +259,10 @@ export function DeckBuilderCanvas({
           isMobile={isMobile}
           infoDrawerOpen={infoDrawerOpen}
           middlePanel={middlePanel}
-          onMiddlePanelChange={handleMiddlePanelChange}
           infoDrawer={infoDrawer}
           descriptionPanel={descriptionPanel}
           catalogPanel={catalogPanel}
+          statsPanel={statsPanel}
           compositionList={compositionList}
           showcasePanel={showcasePanel}
         />

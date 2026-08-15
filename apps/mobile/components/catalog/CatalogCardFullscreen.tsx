@@ -30,11 +30,11 @@ export function CatalogCardFullscreen({
     <Portal name="catalog-card-fullscreen">
       <PortalOverlay>
         <View
-          style={[StyleSheet.absoluteFillObject, { zIndex: 1000 }]}
+          style={[StyleSheet.absoluteFill, { zIndex: 1000 }]}
           className="items-center justify-center bg-black/85"
         >
           <GesturePressable
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel="Close full size card"

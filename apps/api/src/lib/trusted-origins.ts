@@ -1,7 +1,7 @@
 import type { Env } from '../env.js';
 
-/** Expo Go scheme patterns — required while distributing via Expo Go / EAS Update previews. */
-const EXPO_GO_ORIGINS = [
+/** Expo Go + development-client scheme patterns for Metro, tunnels, and EAS Update. */
+const EXPO_DEV_ORIGINS = [
   'exp://',
   'exp://**',
   'exp://192.168.*.*:*/**',
@@ -10,6 +10,8 @@ const EXPO_GO_ORIGINS = [
   'exp://*.exp.direct',
   'exp://*.exp.direct:*',
   'exp://*.exp.direct:*/**',
+  'exp+astral-grove://',
+  'exp+astral-grove://*',
   'https://u.expo.dev',
   'https://*.u.expo.dev',
 ] as const;
@@ -27,7 +29,7 @@ export function resolveTrustedOrigins(env: Env): string[] {
   const origins = new Set<string>([
     'astral-grove://',
     'astral-grove://*',
-    ...EXPO_GO_ORIGINS,
+    ...EXPO_DEV_ORIGINS,
     ...env.TRUSTED_ORIGINS,
     ...(baseOrigin ? [baseOrigin] : []),
   ]);

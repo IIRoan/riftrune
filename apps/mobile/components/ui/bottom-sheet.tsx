@@ -4,7 +4,7 @@ import GorhomBottomSheet, {
   BottomSheetView,
   BottomSheetScrollView as GorhomBottomSheetScrollView,
   useBottomSheetInternal,
-} from "@gorhom/bottom-sheet";
+} from '@gorhom/bottom-sheet';
 import {
   Children,
   cloneElement,
@@ -18,8 +18,8 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import { onSheetIndexChange } from "@/lib/bottom-sheet-lifecycle";
+} from 'react';
+import { onSheetIndexChange } from '@/lib/bottom-sheet-lifecycle';
 import {
   BackHandler,
   Keyboard,
@@ -31,33 +31,33 @@ import {
   Text,
   useWindowDimensions,
   View,
-} from "react-native";
-import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+} from 'react-native';
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import Animated, {
   Extrapolation,
   interpolate,
   type SharedValue,
   useAnimatedStyle,
   useSharedValue,
-} from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Uniwind } from "uniwind";
-import { useReduceMotion } from "@/hooks/useReduceMotion";
-import { SHEET_REDUCED, SHEET_SPRING } from "@/lib/motion";
-import { cn } from "@/lib/utils";
-import { Button, ButtonIcon } from "./button";
-import { XIcon } from "@/components/icons";
-import { Portal, PortalOverlay } from "./portal";
-import { Slot } from "./slot";
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Uniwind } from 'uniwind';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { SHEET_REDUCED, SHEET_SPRING } from '@/lib/motion';
+import { cn } from '@/lib/utils';
+import { Button, ButtonIcon } from './button';
+import { XIcon } from '@/components/icons';
+import { Portal, PortalOverlay } from './portal';
+import { Slot } from './slot';
 
 // Constants
-const BOTTOM_SHEET_PORTAL_NAME = "bottom-sheet-portal";
-const BOTTOM_SHEET_KEYBOARD_BEHAVIOR = "extend" as const;
+const BOTTOM_SHEET_PORTAL_NAME = 'bottom-sheet-portal';
+const BOTTOM_SHEET_KEYBOARD_BEHAVIOR = 'extend' as const;
 const SHEET_TOP_GAP = 16;
 const KEYBOARD_SHOW_EVENT =
-  Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+  Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
 const KEYBOARD_HIDE_EVENT =
-  Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+  Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 const GORHOM_KEYBOARD_SHOWN = 1;
 const BOTTOM_SHEET_HEADER_HEIGHT_FALLBACK = 57;
 const BOTTOM_SHEET_SCROLL_CONTENT_TOP_PADDING = 16;
@@ -68,9 +68,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type SnapPointInput = number | string;
 
 type BottomSheetChildDisplayName =
-  | "BottomSheetFooter"
-  | "BottomSheetHeader"
-  | "BottomSheetScrollView";
+  'BottomSheetFooter' | 'BottomSheetHeader' | 'BottomSheetScrollView';
 
 type BottomSheetContentConfig = {
   snapPoints?: SnapPointInput[];
@@ -83,12 +81,22 @@ type BottomSheetContentConfig = {
   overDragResistanceFactor?: number;
   /** Pixels before pan activates — lower engages dismiss sooner. */
   activeOffsetY?: number;
-  keyboardBehavior?: BottomSheetProps["keyboardBehavior"];
+  keyboardBehavior?: BottomSheetProps['keyboardBehavior'];
   detached?: boolean;
   bottomInset?: number;
 };
 
-type BottomSheetScrollViewProps = React.ComponentProps<typeof GorhomBottomSheetScrollView>;
+type UniwindClassName = { className?: string };
+type BottomSheetScrollViewProps = React.ComponentProps<
+  typeof GorhomBottomSheetScrollView
+> &
+  UniwindClassName;
+type BottomSheetViewProps = React.ComponentProps<typeof BottomSheetView> &
+  UniwindClassName;
+
+const SheetView = BottomSheetView as React.ComponentType<BottomSheetViewProps>;
+const SheetScrollView =
+  GorhomBottomSheetScrollView as React.ComponentType<BottomSheetScrollViewProps>;
 
 type BottomSheetContextValue = {
   open: boolean;
@@ -119,10 +127,7 @@ type BottomSheetOverlayProps = {
   maxOpacity?: number;
 };
 
-type BottomSheetContentProps = Omit<
-  React.ComponentProps<typeof View>,
-  "children"
-> &
+type BottomSheetContentProps = Omit<React.ComponentProps<typeof View>, 'children'> &
   BottomSheetContentConfig & {
     children: React.ReactNode;
     /** Applied to the sheet shell (rounded top + fill). */
@@ -132,7 +137,7 @@ type BottomSheetContentProps = Omit<
     handleSurfaceClassName?: string;
     /** When true, handle chrome includes a bottom hairline (drawer / no sticky header). */
     handleDivider?: boolean;
-    onAnimate?: BottomSheetProps["onAnimate"];
+    onAnimate?: BottomSheetProps['onAnimate'];
   };
 
 type BottomSheetCloseProps = PressableProps & {
@@ -162,7 +167,7 @@ const BottomSheetStickyScrollContent = ({
     : 0;
 
   return (
-    <View className={cn("absolute inset-0 flex flex-col bg-background", className)}>
+    <View className={cn('absolute inset-0 flex flex-col bg-background', className)}>
       {header ? (
         <View
           className="absolute inset-x-0 top-0 z-10 border-border border-b bg-background"
@@ -173,12 +178,12 @@ const BottomSheetStickyScrollContent = ({
       ) : null}
       {body.map((child, index) => {
         if (
-          isBottomSheetChild(child, "BottomSheetScrollView") &&
+          isBottomSheetChild(child, 'BottomSheetScrollView') &&
           isValidElement(child)
         ) {
           const scrollChild = child as React.ReactElement<{
             headerInset?: number;
-            style?: BottomSheetScrollViewProps["style"];
+            style?: BottomSheetScrollViewProps['style'];
           }>;
 
           return cloneElement(scrollChild, {
@@ -187,7 +192,7 @@ const BottomSheetStickyScrollContent = ({
             style: StyleSheet.flatten([
               { flex: 1, minHeight: 0 },
               scrollChild.props.style,
-            ]) as BottomSheetScrollViewProps["style"],
+            ]) as BottomSheetScrollViewProps['style'],
           });
         }
 
@@ -214,8 +219,8 @@ const normalizeSnapPoints = (
   }
 
   return snapPoints.map((point) => {
-    if (typeof point === "string") {
-      if (point.endsWith("%")) {
+    if (typeof point === 'string') {
+      if (point.endsWith('%')) {
         const parsed = Number.parseFloat(point);
         if (!Number.isNaN(parsed)) {
           return `${Math.min(Math.round(parsed), maxSnapPercent)}%`;
@@ -257,13 +262,11 @@ const isBottomSheetChild = (
   displayName: BottomSheetChildDisplayName
 ) => getBottomSheetChildDisplayName(child) === displayName;
 
-const flattenBottomSheetChildren = (
-  children: React.ReactNode
-): React.ReactNode[] => {
+const flattenBottomSheetChildren = (children: React.ReactNode): React.ReactNode[] => {
   const flattened: React.ReactNode[] = [];
 
   Children.forEach(children, (child) => {
-    if (child === null || child === undefined || typeof child === "boolean") {
+    if (child === null || child === undefined || typeof child === 'boolean') {
       return;
     }
 
@@ -291,17 +294,17 @@ const splitBottomSheetChildren = (children: React.ReactNode) => {
   for (const child of flattenBottomSheetChildren(children)) {
     const displayName = getBottomSheetChildDisplayName(child);
 
-    if (displayName === "BottomSheetFooter") {
+    if (displayName === 'BottomSheetFooter') {
       footer = child;
       continue;
     }
 
-    if (displayName === "BottomSheetHeader") {
+    if (displayName === 'BottomSheetHeader') {
       header = child;
       continue;
     }
 
-    if (displayName === "BottomSheetScrollView") {
+    if (displayName === 'BottomSheetScrollView') {
       hasScrollView = true;
     }
 
@@ -325,8 +328,7 @@ const BottomSheetAnimatedFooter = ({
   animatedFooterPosition,
   children,
 }: BottomSheetAnimatedFooterProps) => {
-  const { animatedKeyboardState, animatedLayoutState } =
-    useBottomSheetInternal();
+  const { animatedKeyboardState, animatedLayoutState } = useBottomSheetInternal();
   const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
@@ -349,7 +351,7 @@ const BottomSheetAnimatedFooter = ({
       const height = event.nativeEvent.layout.height;
 
       animatedLayoutState.modify((state) => {
-        "worklet";
+        'worklet';
         state.footerHeight = height;
         return state;
       });
@@ -380,18 +382,13 @@ const BottomSheetHandleIndicator = ({
 }) => (
   <View
     className={cn(
-      "items-center pt-2.5",
+      'items-center pt-2.5',
       divider
-        ? cn("border-b border-border pb-3", surfaceClassName ?? "bg-card")
-        : "pb-1"
+        ? cn('border-b border-border pb-3', surfaceClassName ?? 'bg-card')
+        : 'pb-1'
     )}
   >
-    <View
-      className={cn(
-        "h-1.5 w-12 rounded-full bg-muted-foreground/60",
-        className
-      )}
-    />
+    <View className={cn('h-1.5 w-12 rounded-full bg-muted-foreground/60', className)} />
   </View>
 );
 
@@ -402,7 +399,7 @@ const BottomSheetBackground = ({
 }: BottomSheetBackgroundProps & { className?: string }) => (
   <View
     className={cn(
-      "overflow-hidden rounded-t-[20px] border-t border-border bg-background",
+      'overflow-hidden rounded-t-[20px] border-t border-border bg-background',
       className
     )}
     style={style}
@@ -418,7 +415,7 @@ const BottomSheetContext = createContext<BottomSheetContextValue | null>(null);
 const useBottomSheetContext = () => {
   const context = useContext(BottomSheetContext);
   if (!context) {
-    throw new Error("useBottomSheet must be used within a BottomSheet");
+    throw new Error('useBottomSheet must be used within a BottomSheet');
   }
   return context;
 };
@@ -431,9 +428,7 @@ export const BottomSheet = ({
 }: BottomSheetRootProps) => {
   const [internalOpen, setInternalOpen] = useState(openProp ?? false);
   const [mounted, setMounted] = useState(openProp ?? false);
-  const [contentConfig, setContentConfig] = useState<BottomSheetContentConfig>(
-    {}
-  );
+  const [contentConfig, setContentConfig] = useState<BottomSheetContentConfig>({});
   const [currentSnapIndex, setCurrentSnapIndex] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -506,9 +501,7 @@ export const BottomSheet = ({
   );
 
   return (
-    <BottomSheetContext.Provider value={ctx}>
-      {children}
-    </BottomSheetContext.Provider>
+    <BottomSheetContext.Provider value={ctx}>{children}</BottomSheetContext.Provider>
   );
 };
 
@@ -530,11 +523,11 @@ export const BottomSheetPortal = ({
       <BottomSheetContext.Provider value={ctx}>
         <PortalOverlay>
           <View
-            pointerEvents={ctx.open ? "box-none" : "none"}
-            style={StyleSheet.absoluteFillObject}
+            pointerEvents={ctx.open ? 'box-none' : 'none'}
+            style={StyleSheet.absoluteFill}
             // Web: absolute overlay can still capture clicks after open=false.
-            {...(Platform.OS === "web" && !ctx.open
-              ? ({ tabIndex: -1, "aria-hidden": true } as const)
+            {...(Platform.OS === 'web' && !ctx.open
+              ? ({ tabIndex: -1, 'aria-hidden': true } as const)
               : null)}
           >
             {children}
@@ -550,15 +543,10 @@ export const BottomSheetOverlay = ({
   className,
   maxOpacity: maxOpacityProp,
 }: BottomSheetOverlayProps) => {
-  const {
-    open,
-    onOpenChange,
-    animatedIndex,
-    contentConfig,
-    keyboardVisible,
-  } = useBottomSheetContext();
+  const { open, onOpenChange, animatedIndex, contentConfig, keyboardVisible } =
+    useBottomSheetContext();
 
-  const defaults = getOverlayOpacityRange(Uniwind.currentTheme === "dark");
+  const defaults = getOverlayOpacityRange(Uniwind.currentTheme === 'dark');
   const maxOpacity = maxOpacityProp ?? defaults.maxOpacity;
   const minOpacity = maxOpacity * 0.35;
   const maxSnapIndex = Math.max(0, (contentConfig.snapPoints?.length ?? 1) - 1);
@@ -584,9 +572,9 @@ export const BottomSheetOverlay = ({
 
   return (
     <AnimatedPressable
-      className={cn("absolute inset-0 bg-black", className)}
+      className={cn('absolute inset-0 bg-black', className)}
       disabled={!closeOnPress || !open}
-      pointerEvents={open ? "auto" : "none"}
+      pointerEvents={open ? 'auto' : 'none'}
       onPress={handlePress}
       style={animatedStyle}
     />
@@ -699,14 +687,11 @@ export const BottomSheetContent = ({
       return;
     }
 
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        bottomSheetRef.current?.close();
-        onOpenChange(false);
-        return true;
-      }
-    );
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      bottomSheetRef.current?.close();
+      onOpenChange(false);
+      return true;
+    });
 
     return () => subscription.remove();
   }, [open, enablePanDownToClose, onOpenChange, bottomSheetRef]);
@@ -769,14 +754,14 @@ export const BottomSheetContent = ({
       <>{body}</>
     )
   ) : (
-    <BottomSheetView
-      className={cn("bg-background", className)}
+    <SheetView
+      className={cn('bg-background', className)}
       enableFooterMarginAdjustment
       style={{ paddingBottom: footer ? 0 : bottom }}
     >
       {header}
       {body}
-    </BottomSheetView>
+    </SheetView>
   );
 
   return (
@@ -822,28 +807,28 @@ export const BottomSheetScrollView = ({
   contentContainerClassName?: string;
   headerInset?: number;
 }) => (
-  <GorhomBottomSheetScrollView
-    className={cn("min-h-0 flex-1", className)}
+  <SheetScrollView
+    className={cn('min-h-0 flex-1', className)}
     contentContainerStyle={
       StyleSheet.flatten([
         { paddingHorizontal: 16, paddingBottom: 16 },
         headerInset > 0 ? { paddingTop: headerInset } : null,
         contentContainerStyle,
-      ]) as BottomSheetScrollViewProps["contentContainerStyle"]
+      ]) as BottomSheetScrollViewProps['contentContainerStyle']
     }
     enableFooterMarginAdjustment
-    style={StyleSheet.flatten(style) as BottomSheetScrollViewProps["style"]}
+    style={StyleSheet.flatten(style) as BottomSheetScrollViewProps['style']}
     {...props}
   />
 );
 
-BottomSheetScrollView.displayName = "BottomSheetScrollView";
+BottomSheetScrollView.displayName = 'BottomSheetScrollView';
 
 export const BottomSheetBody = ({
   className,
   ...props
 }: React.ComponentProps<typeof View>) => (
-  <View className={cn("px-4", className)} {...props} />
+  <View className={cn('px-4', className)} {...props} />
 );
 
 export const BottomSheetHeader = ({
@@ -852,10 +837,7 @@ export const BottomSheetHeader = ({
   ...props
 }: React.ComponentProps<typeof View>) => (
   <View
-    className={cn(
-      "flex flex-row items-center gap-2 bg-background p-4",
-      className
-    )}
+    className={cn('flex flex-row items-center gap-2 bg-background p-4', className)}
     {...props}
   >
     <View className="min-w-0 flex-1">{children}</View>
@@ -869,17 +851,14 @@ export const BottomSheetHeader = ({
   </View>
 );
 
-BottomSheetHeader.displayName = "BottomSheetHeader";
+BottomSheetHeader.displayName = 'BottomSheetHeader';
 
 export const BottomSheetTitle = ({
   className,
   ...props
 }: React.ComponentProps<typeof Text>) => (
   <Text
-    className={cn(
-      "font-semibold text-foreground text-xl leading-none",
-      className
-    )}
+    className={cn('font-semibold text-foreground text-xl leading-none', className)}
     {...props}
   />
 );
@@ -892,10 +871,7 @@ export const BottomSheetFooter = ({
 }: React.ComponentProps<typeof View>) => {
   const { bottom } = useSafeAreaInsets();
   const { progress: keyboardProgress } = useReanimatedKeyboardAnimation();
-  const closedBottomPadding = Math.max(
-    bottom,
-    BOTTOM_SHEET_FOOTER_BASE_PADDING
-  );
+  const closedBottomPadding = Math.max(bottom, BOTTOM_SHEET_FOOTER_BASE_PADDING);
 
   const animatedStyle = useAnimatedStyle(
     () => ({
@@ -912,7 +888,7 @@ export const BottomSheetFooter = ({
   return (
     <Animated.View
       className={cn(
-        "flex w-full flex-col gap-2 border-border border-t bg-background px-4 pt-4",
+        'flex w-full flex-col gap-2 border-border border-t bg-background px-4 pt-4',
         className
       )}
       style={style}
@@ -929,12 +905,9 @@ export const BottomSheetFooter = ({
   );
 };
 
-BottomSheetFooter.displayName = "BottomSheetFooter";
+BottomSheetFooter.displayName = 'BottomSheetFooter';
 
-const BottomSheetClose = ({
-  asChild,
-  ...props
-}: BottomSheetCloseProps) => {
+const BottomSheetClose = ({ asChild, ...props }: BottomSheetCloseProps) => {
   const { onOpenChange, bottomSheetRef } = useBottomSheetContext();
 
   const Comp = asChild ? Slot.Pressable : Pressable;

@@ -1,4 +1,4 @@
-import type { Router } from 'expo-router';
+import type { ImperativeRouter } from 'expo-router';
 import type { QueryClient } from '@tanstack/react-query';
 import { ensureCardDetail } from '@/lib/prefetchCardDetail';
 
@@ -6,7 +6,7 @@ export type CardPresentMode = 'modal' | 'page';
 export type CardOpenSource = 'catalog' | 'collection' | 'wishlist' | 'deck-view';
 
 export function openCard(
-  router: Router,
+  router: ImperativeRouter,
   variantNumber: string,
   present: CardPresentMode = 'modal',
   source?: CardOpenSource,
@@ -31,7 +31,7 @@ export function parseCardOpenSource(
   return 'catalog';
 }
 
-export function closeCard(router: Router) {
+export function closeCard(router: ImperativeRouter) {
   if (router.canGoBack()) {
     router.back();
     return;

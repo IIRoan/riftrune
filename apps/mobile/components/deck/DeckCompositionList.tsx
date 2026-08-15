@@ -6,17 +6,22 @@ import { ListBottomSpacer } from '@/components/ui/list-bottom-spacer';
 import { CardArtHoverPreview } from '@/components/deck/CardArtHoverPreview';
 import { DeckCardArt } from '@/components/deck/DeckCardArt';
 import { DeckBuilderStatusStrip } from '@/components/deck/DeckBuilderStatusStrip';
+import { DeckStatsCompact } from '@/components/deck/DeckStatsCompact';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { Text } from '@/components/ui/text';
 import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { isCardTournamentIllegal } from '@/lib/card-legality';
 import { getSectionCount, resolveDeckCardImageUrl } from '@/lib/deck-card';
 import { deckSectionProgress } from '@/lib/deck-display';
+import type { DeckStats } from '@/lib/deck-stats';
 import type { DeckCard, DeckEntry, DeckSectionKey, DeckState } from '@/lib/deck-types';
 import { ownedCountForCardName } from '@/lib/deck-validation';
 import { openCard, type CardOpenSource } from '@/utils/cardNavigation';
 import { hapticPress } from '@/utils/haptics';
-import { OPERATE_CTA_FILL_CLASS, OPERATE_CTA_ICON_CLASS } from '@/constants/operateType';
+import {
+  OPERATE_CTA_FILL_CLASS,
+  OPERATE_CTA_ICON_CLASS,
+} from '@/constants/operateType';
 import { cn } from '@/lib/utils';
 
 export const DECK_COMPOSITION_LIST_WIDTH = 320;
@@ -49,6 +54,9 @@ interface DeckCompositionListProps {
   onRemove?: (section: DeckSectionKey, name?: string) => void;
   onAddSection?: (section: DeckSectionKey) => void;
   onSectionPress?: (section: DeckSectionKey) => void;
+  stats: DeckStats;
+  statsOpen?: boolean;
+  onToggleStats?: () => void;
   paddingBottom?: number;
   /** Hide left border when shown in a sheet / standalone column. */
   bordered?: boolean;
@@ -288,6 +296,9 @@ export function DeckCompositionList({
   onRemove,
   onAddSection,
   onSectionPress,
+  stats,
+  statsOpen = false,
+  onToggleStats,
   paddingBottom = 0,
   bordered = true,
 }: DeckCompositionListProps) {
@@ -401,6 +412,14 @@ export function DeckCompositionList({
           onSectionPress={onSectionPress}
           ownershipLabel={`${ownership.owned}/${ownership.required} owned`}
         />
+        <View className="border-t border-border pt-3">
+          <DeckStatsCompact
+            stats={stats}
+            statsOpen={statsOpen}
+            readOnly={readOnly}
+            onToggleStats={onToggleStats}
+          />
+        </View>
       </View>
 
       <ScrollView

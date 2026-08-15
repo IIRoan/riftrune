@@ -20,8 +20,7 @@ function isSignatureVariant(rarity: string, variantType: string): boolean {
 }
 
 export function deckCardFromDetail(card: CardDetail, variantNumber: string): DeckCard {
-  const variant =
-    findVariantByNumber(card.variants, variantNumber) ?? card.variants[0];
+  const variant = findVariantByNumber(card.variants, variantNumber) ?? card.variants[0];
   const setCode = variant.variantNumber.split('-')[0] ?? '';
 
   return {
@@ -33,6 +32,7 @@ export function deckCardFromDetail(card: CardDetail, variantNumber: string): Dec
     tags: card.tags,
     colors: card.colors.map((color) => color.name),
     energy: card.energy,
+    power: card.power,
     setCode,
     rarity: variant.rarity,
     variantType: variant.variantType,
@@ -53,6 +53,7 @@ export function deckCardFromListItem(card: CardListItem): DeckCard {
     tags: [],
     colors: card.colors,
     energy: card.energy,
+    power: card.power,
     setCode: card.setCode,
     rarity: card.rarity,
     variantType: 'Standard',
@@ -99,11 +100,16 @@ export function resolveDeckCardImageUrl(
 }
 
 /** Whitespace-delimited type tokens — dual types like "Unit Gear" are two tokens. */
-export function cardHasType(card: Pick<DeckCard, 'type'>, ...wanted: string[]): boolean {
+export function cardHasType(
+  card: Pick<DeckCard, 'type'>,
+  ...wanted: string[]
+): boolean {
   return cardHasAnyType(card.type, wanted);
 }
 
-export function sectionForCardType(card: Pick<DeckCard, 'type' | 'super'>): DeckSectionKey {
+export function sectionForCardType(
+  card: Pick<DeckCard, 'type' | 'super'>
+): DeckSectionKey {
   const supertype = (card.super ?? '').toLowerCase();
   if (cardHasType(card, 'legend')) return 'legend';
   if (cardHasType(card, 'battlefield')) return 'battlefields';

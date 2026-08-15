@@ -1,7 +1,7 @@
-import type { Router } from 'expo-router';
+import type { ImperativeRouter } from 'expo-router';
 
 /** Leave the deck-add picker and land on the deck editor (never a random prior tab). */
-export function leaveDeckAddScreen(router: Router, deckId: string) {
+export function leaveDeckAddScreen(router: ImperativeRouter, deckId: string) {
   router.dismissTo(deckEditHref(deckId));
 }
 
@@ -10,7 +10,7 @@ export function leaveDeckAddScreen(router: Router, deckId: string) {
  * Edit is pushed on top of the viewer, so dismiss pops with the reverse slide
  * (replace would animate forward — the wrong direction).
  */
-export function leaveDeckEditMode(router: Router, deckId: string) {
+export function leaveDeckEditMode(router: ImperativeRouter, deckId: string) {
   if (router.canDismiss()) {
     router.dismiss(1);
     return;
@@ -19,7 +19,7 @@ export function leaveDeckEditMode(router: Router, deckId: string) {
 }
 
 /** Leave the deck editor / viewer and land on My decks. */
-export function leaveDeckEditor(router: Router) {
+export function leaveDeckEditor(router: ImperativeRouter) {
   router.dismissTo('/decks');
 }
 
@@ -39,7 +39,7 @@ export function isDeckEditMode(mode: string | string[] | undefined): boolean {
 }
 
 /** After creating a deck, land in the editor with the viewer under it so back pops correctly. */
-export function enterCreatedDeckEditor(router: Router, deckId: string) {
+export function enterCreatedDeckEditor(router: ImperativeRouter, deckId: string) {
   router.replace(deckViewHref(deckId));
   router.push(deckEditHref(deckId));
 }

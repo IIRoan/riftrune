@@ -4,9 +4,9 @@ import {
   type CatalogSegmentOption,
 } from '@/components/catalog/CatalogSegmentedControl';
 
-export type DeckBuilderMiddlePanel = 'catalog' | 'description';
+export type DeckBuilderMiddlePanel = 'catalog' | 'description' | 'stats';
 
-const OPTIONS: readonly CatalogSegmentOption<DeckBuilderMiddlePanel>[] = [
+const EDIT_OPTIONS: readonly CatalogSegmentOption<DeckBuilderMiddlePanel>[] = [
   {
     id: 'catalog',
     label: 'Cards',
@@ -27,7 +27,7 @@ interface DeckBuilderMiddlePanelToggleProps {
   className?: string;
 }
 
-/** Left-rail control that swaps the middle builder column — same chrome as catalog segments. */
+/** Cards / Desc switcher for the middle column — lives under battlefields. */
 export function DeckBuilderMiddlePanelToggle({
   value,
   onChange,
@@ -37,7 +37,7 @@ export function DeckBuilderMiddlePanelToggle({
     <CatalogSegmentedControl
       value={value}
       onChange={onChange}
-      options={OPTIONS}
+      options={EDIT_OPTIONS}
       fill
       className={className}
     />

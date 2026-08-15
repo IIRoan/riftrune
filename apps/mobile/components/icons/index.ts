@@ -1,4 +1,9 @@
-export type { AppIcon, AppIconProps, IconWeight, LucideIcon } from './styled-icon.types';
+export type {
+  AppIcon,
+  AppIconProps,
+  IconWeight,
+  LucideIcon,
+} from './styled-icon.types';
 export { createStyledSvg } from './createStyledSvg';
 
 import {
@@ -11,6 +16,7 @@ import {
   CardholderIcon as PhosphorCardholder,
   CardsIcon as PhosphorCards,
   CardsThreeIcon as PhosphorCardsThree,
+  ChartBarIcon as PhosphorChartBar,
   CaretDownIcon as PhosphorCaretDown,
   CaretLeftIcon as PhosphorCaretLeft,
   CaretRightIcon as PhosphorCaretRight,
@@ -71,6 +77,7 @@ export const CardholderIcon = createStyledSvg(PhosphorCardholder);
 export const CardsIcon = createStyledSvg(PhosphorCards);
 /** Fanned hand — Collection tab. */
 export const CardsThreeIcon = createStyledSvg(PhosphorCardsThree);
+export const ChartBarIcon = createStyledSvg(PhosphorChartBar);
 export const CheckIcon = createStyledSvg(PhosphorCheck);
 export const ChevronDownIcon = createStyledSvg(PhosphorCaretDown);
 export const ChevronLeftIcon = createStyledSvg(PhosphorCaretLeft);

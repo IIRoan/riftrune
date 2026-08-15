@@ -3,7 +3,7 @@ import * as Updates from 'expo-updates';
 import { Text } from '@/components/ui/text';
 
 const EXPO_UPDATES_URL =
-  'https://expo.dev/accounts/iroan/projects/astral-grove/updates';
+  'https://expo.dev/accounts/astralgrove/projects/astral-grove/updates';
 
 function formatUpdateStamp(value: Date | null | undefined): string {
   if (!value) return 'Embedded build';

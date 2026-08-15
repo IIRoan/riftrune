@@ -32,7 +32,7 @@ interface DeckBuilderInfoDrawerProps {
   onAddBattlefield: () => void;
   onRemoveBattlefield: (name: string) => void;
   onAdjustBattlefield?: (name: string, delta: number) => void;
-  /** When set, shows Cards / Desc toggle that drives the middle column. */
+  /** Cards / Desc switcher for the middle column. Hidden in view mode. */
   middlePanel?: DeckBuilderMiddlePanel;
   onMiddlePanelChange?: (panel: DeckBuilderMiddlePanel) => void;
   paddingBottom?: number;
@@ -60,14 +60,11 @@ export function DeckBuilderInfoDrawer({
   paddingBottom = 0,
   scrollEnabled = true,
 }: DeckBuilderInfoDrawerProps) {
-  const identityInnerWidth =
-    DECK_INFO_DRAWER_WIDTH - DECK_INFO_DRAWER_PAD * 2;
+  const identityInnerWidth = DECK_INFO_DRAWER_WIDTH - DECK_INFO_DRAWER_PAD * 2;
   const identityPairColumns = deck.legend != null || deck.format === 'pre-rift';
   const legendTileWidth = identityPairColumns
     ? Math.floor((identityInnerWidth - DECK_INFO_SLOT_GAP) / 2)
     : identityInnerWidth;
-  const showMiddleToggle =
-    !readOnly && middlePanel != null && onMiddlePanelChange != null;
 
   const body = (
     <>
@@ -98,13 +95,11 @@ export function DeckBuilderInfoDrawer({
         />
       </View>
 
-      {showMiddleToggle ? (
-        <View className="border-t border-border pt-4">
-          <DeckBuilderMiddlePanelToggle
-            value={middlePanel}
-            onChange={onMiddlePanelChange}
-          />
-        </View>
+      {!readOnly && middlePanel != null && onMiddlePanelChange != null ? (
+        <DeckBuilderMiddlePanelToggle
+          value={middlePanel}
+          onChange={onMiddlePanelChange}
+        />
       ) : null}
 
       {readOnly ? (

@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import type { Router } from 'expo-router';
+import type { ImperativeRouter } from 'expo-router';
 import {
   deckEditHref,
   deckViewHref,
@@ -23,10 +23,10 @@ describe('deck-navigation', () => {
   });
 
   test('leaveDeckEditMode dismisses one screen when possible (pop animation)', () => {
-    const dismiss = mock(() => {});
-    const replace = mock(() => {});
+    const dismiss = mock(() => { });
+    const replace = mock(() => { });
     leaveDeckEditMode(
-      { canDismiss: () => true, dismiss, replace } as unknown as Router,
+      { canDismiss: () => true, dismiss, replace } as unknown as ImperativeRouter,
       'abc'
     );
     expect(dismiss).toHaveBeenCalledWith(1);
@@ -34,10 +34,10 @@ describe('deck-navigation', () => {
   });
 
   test('leaveDeckEditMode replaces to viewer when nothing to dismiss', () => {
-    const dismiss = mock(() => {});
-    const replace = mock(() => {});
+    const dismiss = mock(() => { });
+    const replace = mock(() => { });
     leaveDeckEditMode(
-      { canDismiss: () => false, dismiss, replace } as unknown as Router,
+      { canDismiss: () => false, dismiss, replace } as unknown as ImperativeRouter,
       'abc'
     );
     expect(dismiss).not.toHaveBeenCalled();
@@ -45,9 +45,9 @@ describe('deck-navigation', () => {
   });
 
   test('enterCreatedDeckEditor stacks viewer under editor', () => {
-    const replace = mock(() => {});
-    const push = mock(() => {});
-    enterCreatedDeckEditor({ replace, push } as unknown as Router, 'abc');
+    const replace = mock(() => { });
+    const push = mock(() => { });
+    enterCreatedDeckEditor({ replace, push } as unknown as ImperativeRouter, 'abc');
     expect(replace).toHaveBeenCalledWith('/decks/abc');
     expect(push).toHaveBeenCalledWith('/decks/abc?mode=edit');
   });

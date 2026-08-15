@@ -1,8 +1,4 @@
-import {
-  useMemo,
-  type ComponentProps,
-  type ReactNode,
-} from 'react';
+import { useMemo, type ComponentProps, type ReactNode } from 'react';
 import {
   Modal,
   Pressable,
@@ -137,7 +133,9 @@ export function AppSheetPortal({
             if (dismissible) onOpenChange(false);
           }}
         >
-          <View className="flex-1 items-center justify-center px-6 py-8">{portaled}</View>
+          <View className="flex-1 items-center justify-center px-6 py-8">
+            {portaled}
+          </View>
         </Modal>
       </PortalOverlay>
     </Portal>
@@ -145,7 +143,8 @@ export function AppSheetPortal({
 }
 
 export function AppSheetOverlay({ className }: { className?: string }) {
-  const { mode, onOpenChange, dismissible, presence, reduceMotion } = useAppSheetContext();
+  const { mode, onOpenChange, dismissible, presence, reduceMotion } =
+    useAppSheetContext();
 
   if (mode === 'sheet') {
     return <BottomSheetOverlay className={className} closeOnPress={dismissible} />;
@@ -403,6 +402,7 @@ export function AppSheetFooter({ className, ...props }: ComponentProps<typeof Vi
 AppSheetFooter.displayName = 'BottomSheetFooter';
 
 type AppSheetScrollViewProps = ComponentProps<typeof BottomSheetScrollView> & {
+  className?: string;
   contentContainerClassName?: string;
   headerInset?: number;
 };

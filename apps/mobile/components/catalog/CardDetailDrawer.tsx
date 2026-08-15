@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  type ComponentProps,
+  type ComponentType,
+} from 'react';
 import {
   BackHandler,
   Platform,
@@ -7,7 +15,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import GorhomBottomSheet, {
-  BottomSheetScrollView,
+  BottomSheetScrollView as GorhomBottomSheetScrollView,
   type BottomSheetBackgroundProps,
 } from '@gorhom/bottom-sheet';
 import Animated, {
@@ -36,6 +44,9 @@ export const CARD_DETAIL_SNAP_RATIO = 0.94;
 /** Activate vertical pan after a short drag — easier grab, not early dismiss. */
 const PAN_ACTIVE_OFFSET_Y = Platform.OS === 'web' ? 3 : 4;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const BottomSheetScrollView = GorhomBottomSheetScrollView as ComponentType<
+  ComponentProps<typeof GorhomBottomSheetScrollView> & { className?: string }
+>;
 
 /**
  * Mobile card detail — Gorhom sheet (Expo Go compatible).
