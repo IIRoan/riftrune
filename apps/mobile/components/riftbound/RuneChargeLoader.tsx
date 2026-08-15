@@ -11,21 +11,21 @@ import Animated, {
 import { useCSSVariable } from 'uniwind';
 import { runeIcon } from '@/constants/gameAssets';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { RUNE_SIZE_PX, type RuneChargeSize } from '@/lib/rune-size';
 import { cn } from '@/lib/utils';
 
-const SIZE_PX = {
-  sm: 22,
-  md: 40,
-  lg: 64,
-  xl: 96,
-} as const;
-
-export type RuneChargeSize = keyof typeof SIZE_PX;
+export {
+  RUNE_SIZE_PX,
+  runeSizeForShortSide,
+  type RuneChargeSize,
+} from '@/lib/rune-size';
 
 type RuneChargeLoaderProps = {
   size?: RuneChargeSize;
   className?: string;
   accessibilityLabel?: string;
+  /** 0–1 fill. When set, the rune tracks this instead of looping. */
+  progress?: number;
 };
 
 const FILL_MS = 1400;
@@ -37,17 +37,28 @@ export function RuneChargeLoader({
   size = 'md',
   className,
   accessibilityLabel = 'Loading',
+  progress,
 }: RuneChargeLoaderProps) {
   const reduceMotion = useReduceMotion();
-  const px = SIZE_PX[size];
+  const px = RUNE_SIZE_PX[size];
   const glyph = Math.round(px * 0.86);
+  const tracked =
+    progress === undefined ? undefined : Math.max(0, Math.min(1, progress));
 
-  const [muted] = useCSSVariable(['--color-muted-foreground']) as (string | undefined)[];
+  const [muted] = useCSSVariable(['--color-muted-foreground']) as (
+    string | undefined
+  )[];
   const emptyTint = muted ?? '#888888';
 
-  const fill = useSharedValue(reduceMotion ? 0.55 : 0);
+  const fill = useSharedValue(tracked ?? (reduceMotion ? 0.55 : 0));
 
   useEffect(() => {
+    if (tracked !== undefined) {
+      fill.value = reduceMotion
+        ? tracked
+        : withTiming(tracked, { duration: 180, easing: Easing.out(Easing.cubic) });
+      return;
+    }
     if (reduceMotion) {
       fill.value = 0.55;
       return;
@@ -58,7 +69,7 @@ export function RuneChargeLoader({
       -1,
       true
     );
-  }, [fill, reduceMotion]);
+  }, [fill, reduceMotion, tracked]);
 
   const clipStyle = useAnimatedStyle(() => ({
     height: Math.max(0, glyph * fill.value),
@@ -71,6 +82,11 @@ export function RuneChargeLoader({
       accessibilityRole="progressbar"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ busy: true }}
+      accessibilityValue={
+        tracked === undefined
+          ? undefined
+          : { min: 0, max: 100, now: Math.round(tracked * 100) }
+      }
     >
       <View style={{ width: glyph, height: glyph }}>
         {/* Empty / drained rune */}

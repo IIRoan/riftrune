@@ -103,22 +103,14 @@ export function DeckStatsCompact({
         </Text>
       ) : null}
 
-      {showGlance && !empty ? (
-        <View className="mb-3 gap-2">
-          {stats.domains.length > 0 ? (
-            <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
-              {stats.domains.map((item) => (
-                <MixChip key={item.key} item={item} />
-              ))}
-            </View>
-          ) : null}
-          {stats.types.length > 0 ? (
-            <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
-              {stats.types.map((item) => (
-                <MixChip key={item.key} item={item} />
-              ))}
-            </View>
-          ) : null}
+      {showGlance && !empty && (stats.domains.length > 0 || stats.types.length > 0) ? (
+        <View className="mb-3 flex-row flex-wrap items-center gap-x-3 gap-y-1">
+          {stats.domains.map((item) => (
+            <MixChip key={item.key} item={item} />
+          ))}
+          {stats.types.map((item) => (
+            <MixChip key={item.key} item={item} />
+          ))}
         </View>
       ) : null}
 

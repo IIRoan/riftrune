@@ -14,8 +14,10 @@ import { useEffect, useState } from 'react';
 import { Platform, StatusBar } from 'react-native';
 import { AppBootstrap } from '@/components/AppBootstrap';
 import { TetraProvider } from '@/components/TetraProvider';
+import { AppUpdateScreen } from '@/components/settings/AppUpdateScreen';
 import { AppLoadingScreen } from '@/components/ui/app-loader';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { AppUpdateProvider } from '@/hooks/useAppUpdate';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { useAppFonts } from '@/hooks/useAppFonts';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
@@ -64,7 +66,7 @@ function RootNav() {
   }, [bootReady]);
 
   if (!bootReady) {
-    return <AppLoadingScreen size="lg" />;
+        return <AppLoadingScreen />;
   }
 
   return (
@@ -77,13 +79,20 @@ function RootNav() {
           fullScreenGestureEnabled: Platform.OS === 'ios',
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'none' }} />
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false, animation: 'none' }}
+        />
         <Stack.Screen
           name="loading"
           options={{
-            title: 'Rift Channel',
-            headerShown: true,
-            headerBackTitle: 'Back',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="update"
+          options={{
+            headerShown: false,
           }}
         />
         <Stack.Screen
@@ -130,7 +139,10 @@ export default function RootLayout() {
         <AppBootstrap>
           <ThemeProvider>
             <TetraProvider>
-              <RootNav />
+              <AppUpdateProvider>
+                <RootNav />
+                <AppUpdateScreen />
+              </AppUpdateProvider>
             </TetraProvider>
           </ThemeProvider>
         </AppBootstrap>

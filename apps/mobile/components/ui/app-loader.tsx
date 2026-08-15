@@ -1,6 +1,7 @@
-import { Modal, View } from 'react-native';
+import { Modal, useWindowDimensions, View } from 'react-native';
 import {
   RuneChargeLoader,
+  runeSizeForShortSide,
   type RuneChargeSize,
 } from '@/components/riftbound/RuneChargeLoader';
 import { Text } from '@/components/ui/text';
@@ -31,7 +32,9 @@ export function AppLoader({
       />
       {label ? (
         <View className="items-center gap-1 px-4">
-          <Text className="text-center text-base font-semibold text-foreground">{label}</Text>
+          <Text className="text-center text-base font-semibold text-foreground">
+            {label}
+          </Text>
           {detail ? (
             <Text className="text-center text-sm text-muted-foreground">{detail}</Text>
           ) : null}
@@ -42,21 +45,19 @@ export function AppLoader({
 }
 
 /** Full-screen / flex-fill blocking loader — rune only by default. */
-export function AppLoadingScreen({
-  size = 'lg',
-  label,
-  detail,
-  className,
-}: AppLoaderProps) {
+export function AppLoadingScreen({ size, label, detail, className }: AppLoaderProps) {
+  const { width, height } = useWindowDimensions();
+  const stageSize = size ?? runeSizeForShortSide(Math.min(width, height));
+
   return (
     <View
       className={cn(
-        'min-h-0 w-full flex-1 items-center justify-center bg-background',
+        'min-h-0 w-full flex-1 items-center justify-center bg-background px-6',
         className
       )}
       style={{ flex: 1 }}
     >
-      <AppLoader size={size} label={label} detail={detail} />
+      <AppLoader size={stageSize} label={label} detail={detail} />
     </View>
   );
 }
@@ -78,15 +79,13 @@ export function AppLoadingOverlay({
   return (
     <Modal
       visible={visible}
-      transparent
+      transparent={false}
       animationType="fade"
       statusBarTranslucent
       onRequestClose={onRequestClose}
     >
-      <View className="flex-1 items-center justify-center bg-background/80 px-6">
-        <View className="w-full max-w-sm items-center gap-4 rounded-2xl border border-border bg-card px-8 py-7 shadow-lg">
-          <AppLoader size="lg" label={message} detail={detail} />
-        </View>
+      <View className="flex-1 bg-background">
+        <AppLoadingScreen label={message} detail={detail} />
       </View>
     </Modal>
   );

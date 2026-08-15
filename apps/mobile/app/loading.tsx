@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, useWindowDimensions, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RuneChargeLoader } from '@/components/riftbound/RuneChargeLoader';
-import { ScreenLayout } from '@/components/shell/ScreenLayout';
+import {
+  RUNE_SIZE_PX,
+  runeSizeForShortSide,
+  type RuneChargeSize,
+} from '@/components/riftbound/RuneChargeLoader';
 import { AppLoader, AppLoadingOverlay } from '@/components/ui/app-loader';
 import { Button, ButtonText } from '@/components/ui/button';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
-const SIZES = ['sm', 'md', 'lg', 'xl'] as const;
+const SIZES: RuneChargeSize[] = ['sm', 'md', 'lg', 'xl'];
 
-/** Design playground for the unified rune loading mark. */
+/** Design playground: boot-scale rune on a full phone field. */
 export default function LoadingPreviewScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const autoSize = runeSizeForShortSide(Math.min(width, height));
+  const [selectedSize, setSelectedSize] = useState<RuneChargeSize | 'auto'>('auto');
   const [overlayOpen, setOverlayOpen] = useState(false);
-  const [selectedSize, setSelectedSize] = useState<(typeof SIZES)[number]>('lg');
+  const stageSize = selectedSize === 'auto' ? autoSize : selectedSize;
 
   useEffect(() => {
     if (!overlayOpen) return;
@@ -25,21 +31,40 @@ export default function LoadingPreviewScreen() {
   }, [overlayOpen]);
 
   return (
-    <ScreenLayout>
-      <ScreenHeader title="Preview" subtitle="Rune fills with color — no status copy" />
-
-      <View
-        className="mt-4 items-center justify-center rounded-[10px] border border-border bg-card py-14"
-        style={{ minHeight: 220 }}
-      >
-        <AppLoader size={selectedSize} />
-      </View>
-
-      <SectionLabel className="mt-8">Size</SectionLabel>
+    <View
+      className="flex-1 bg-background"
+      style={{
+        paddingTop: Math.max(insets.top, 16),
+        paddingBottom: Math.max(insets.bottom, 16),
+        paddingHorizontal: 24,
+      }}
+    >
       <View className="flex-row flex-wrap gap-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Use auto size for this screen"
+          onPress={() => setSelectedSize('auto')}
+          className={cn(
+            'rounded-[3px] border px-3 py-2',
+            selectedSize === 'auto'
+              ? 'border-foreground bg-card-panel'
+              : 'border-border bg-card'
+          )}
+        >
+          <Text
+            className={cn(
+              'font-mono text-[11px] uppercase tracking-wide',
+              selectedSize === 'auto' ? 'text-foreground' : 'text-muted-foreground'
+            )}
+          >
+            auto
+          </Text>
+        </Pressable>
         {SIZES.map((size) => (
           <Pressable
             key={size}
+            accessibilityRole="button"
+            accessibilityLabel={`Use ${size} rune size`}
             onPress={() => setSelectedSize(size)}
             className={cn(
               'rounded-[3px] border px-3 py-2',
@@ -50,7 +75,7 @@ export default function LoadingPreviewScreen() {
           >
             <Text
               className={cn(
-                'font-mono text-xs uppercase tracking-wide',
+                'font-mono text-[11px] uppercase tracking-wide',
                 selectedSize === size ? 'text-foreground' : 'text-muted-foreground'
               )}
             >
@@ -60,34 +85,34 @@ export default function LoadingPreviewScreen() {
         ))}
       </View>
 
-      <SectionLabel className="mt-8">Scale strip</SectionLabel>
-      <View className="flex-row items-end justify-between rounded-[10px] border border-border bg-card px-6 py-8">
-        {SIZES.map((size) => (
-          <View key={size} className="items-center gap-2">
-            <RuneChargeLoader size={size} />
-            <Text className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-              {size}
-            </Text>
-          </View>
-        ))}
+      <View className="min-h-0 flex-1 items-center justify-center gap-4">
+        <AppLoader size={stageSize} />
+        <Text className="font-mono text-[11px] text-muted-foreground">
+          {selectedSize === 'auto'
+            ? `AUTO · ${autoSize.toUpperCase()}`
+            : stageSize.toUpperCase()}{' '}
+          · {RUNE_SIZE_PX[stageSize]}px
+        </Text>
       </View>
 
-      <SectionLabel className="mt-8">Overlay</SectionLabel>
-      <Button onPress={() => setOverlayOpen(true)}>
-        <ButtonText>Preview overlay</ButtonText>
-      </Button>
-
-      <Text
-        className="mt-8 text-sm text-muted-foreground"
-        style={{ paddingBottom: Math.max(insets.bottom, 24) }}
-      >
-        Reduced motion: holds a partial fill.
-      </Text>
+      <View className="w-full max-w-[400px] self-center gap-3">
+        <Button onPress={() => setOverlayOpen(true)}>
+          <ButtonText>Preview overlay</ButtonText>
+        </Button>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to settings"
+          onPress={() => router.back()}
+          className="items-center py-3 active:opacity-70"
+        >
+          <Text className="text-base font-medium text-foreground">Back</Text>
+        </Pressable>
+      </View>
 
       <AppLoadingOverlay
         visible={overlayOpen}
         onRequestClose={() => setOverlayOpen(false)}
       />
-    </ScreenLayout>
+    </View>
   );
 }

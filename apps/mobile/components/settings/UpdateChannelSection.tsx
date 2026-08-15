@@ -1,6 +1,8 @@
 import { Linking, Pressable, View } from 'react-native';
-import * as Updates from 'expo-updates';
 import { Text } from '@/components/ui/text';
+import { useAppUpdate } from '@/hooks/useAppUpdate';
+import { formatChannelLabel, formatUpdateId } from '@/lib/app-update';
+import * as Updates from 'expo-updates';
 
 const EXPO_UPDATES_URL =
   'https://expo.dev/accounts/astralgrove/projects/astral-grove/updates';
@@ -14,16 +16,35 @@ function formatUpdateStamp(value: Date | null | undefined): string {
   }
 }
 
-function resolveChannelLabel(): string {
-  const channel = Updates.channel;
-  if (channel === 'preview' || channel === 'main') return channel.toUpperCase();
-  if (channel) return channel.toUpperCase();
-  return 'MAIN';
+function actionLabel(
+  enabled: boolean,
+  phase: ReturnType<typeof useAppUpdate>['phase']
+): string {
+  if (!enabled) return 'Updates off in this build';
+  if (phase === 'downloading' || phase === 'restarting') return 'Installing…';
+  if (phase === 'ready') return 'Restart to apply';
+  if (phase === 'available' || phase === 'error') return 'Install update';
+  return 'Check for update';
 }
 
 export function UpdateChannelSection() {
-  const updateId = Updates.updateId ?? 'embedded';
-  const shortId = updateId.length > 12 ? `${updateId.slice(0, 8)}…` : updateId;
+  const { enabled, action, check, install, restart } = useAppUpdate();
+  const updateId = formatUpdateId(Updates.updateId);
+  const label = actionLabel(enabled, action);
+  const busy = action === 'downloading' || action === 'restarting';
+
+  const onAction = () => {
+    if (!enabled || busy) return;
+    if (action === 'ready') {
+      void restart();
+      return;
+    }
+    if (action === 'available' || action === 'error') {
+      void install();
+      return;
+    }
+    void check();
+  };
 
   return (
     <View className="overflow-hidden rounded-[10px] border border-border bg-card">
@@ -33,7 +54,7 @@ export function UpdateChannelSection() {
             Active
           </Text>
           <Text className="font-mono text-2xl font-normal tabular-nums leading-none text-foreground">
-            {resolveChannelLabel()}
+            {formatChannelLabel(Updates.channel)}
           </Text>
         </View>
         <View className="w-hairline self-stretch bg-archive-soft-line" />
@@ -45,7 +66,7 @@ export function UpdateChannelSection() {
             className="font-mono text-base font-normal tabular-nums text-foreground"
             numberOfLines={1}
           >
-            {shortId}
+            {updateId}
           </Text>
           <Text className="text-xs text-muted-foreground" numberOfLines={1}>
             {formatUpdateStamp(Updates.createdAt)}
@@ -54,13 +75,37 @@ export function UpdateChannelSection() {
       </View>
 
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: !enabled || busy, busy }}
+        disabled={!enabled || busy}
+        onPress={onAction}
+        className="h-11 flex-row items-center justify-between border-t border-border px-4 active:bg-card-panel sm:h-12"
+      >
+        <Text
+          className="text-sm font-medium leading-5 text-foreground"
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+        <Text className="font-mono text-xs font-normal text-foreground">
+          {action === 'ready' ? '↻' : '↓'}
+        </Text>
+      </Pressable>
+
+      <Pressable
         accessibilityRole="link"
         onPress={() => {
           void Linking.openURL(EXPO_UPDATES_URL);
         }}
-        className="flex-row items-center justify-between border-t border-border px-4 py-3 active:bg-card-panel"
+        className="h-11 flex-row items-center justify-between border-t border-border px-4 active:bg-card-panel sm:h-12"
       >
-        <Text className="text-sm font-medium text-foreground">Browse Expo updates</Text>
+        <Text
+          className="text-sm font-medium leading-5 text-foreground"
+          numberOfLines={1}
+        >
+          Browse Expo updates
+        </Text>
         <Text className="font-mono text-xs font-normal text-foreground">↗</Text>
       </Pressable>
     </View>
