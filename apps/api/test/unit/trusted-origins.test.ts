@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { resolveCorsOrigins, resolveTrustedOrigins } from '../../src/lib/trusted-origins.js';
+import {
+  resolveCorsOrigins,
+  resolveTrustedOrigins,
+} from '../../src/lib/trusted-origins.js';
 import type { Env } from '../../src/env.js';
 
 function baseEnv(overrides: Partial<Env> = {}): Env {
@@ -26,6 +29,7 @@ describe('resolveTrustedOrigins', () => {
   test('includes app scheme, Expo Go, development client, configured origins, and auth base URL', () => {
     const origins = resolveTrustedOrigins(baseEnv());
     expect(origins).toContain('astral-grove://');
+    expect(origins).toContain('astral-grove-dev://');
     expect(origins).toContain('exp://');
     expect(origins).toContain('exp://**');
     expect(origins).toContain('exp+astral-grove://');

@@ -12,6 +12,8 @@ const EXPO_DEV_ORIGINS = [
   'exp://*.exp.direct:*/**',
   'exp+astral-grove://',
   'exp+astral-grove://*',
+  'astral-grove-dev://',
+  'astral-grove-dev://*',
   'https://u.expo.dev',
   'https://*.u.expo.dev',
 ] as const;
