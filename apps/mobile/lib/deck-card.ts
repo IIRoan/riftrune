@@ -1,5 +1,5 @@
 import type { CardDetail, CardListItem, DeckFormat } from '@riftbound/contracts';
-import { cardHasAnyType, isUnresolvedDeckVariant } from '@riftbound/contracts';
+import { cardHasAnyType, getDeckRules, isUnresolvedDeckVariant } from '@riftbound/contracts';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { findVariantByNumber } from '@/utils/variants';
 import type {
@@ -242,7 +242,8 @@ export function addCardToDeck(
 function resolveAddSection(deck: DeckState, card: DeckCard): DeckSectionKey {
   const inferred = sectionForCardType(card);
   if (inferred !== 'mainDeck') return inferred;
-  if (deck.addToSideboard && getSectionCount(deck, 'sideboard') < 8) {
+  const sideboardMax = getDeckRules(deck.format).sections.sideboard.target;
+  if (deck.addToSideboard && getSectionCount(deck, 'sideboard') < sideboardMax) {
     return 'sideboard';
   }
   return 'mainDeck';

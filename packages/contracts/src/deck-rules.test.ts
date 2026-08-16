@@ -74,7 +74,8 @@ describe('RIFTBOUND_DECK_RULES', () => {
     expect(RIFTBOUND_DECK_RULES.sections.mainDeck.target).toBe(39);
     expect(RIFTBOUND_DECK_RULES.sections.runes.target).toBe(12);
     expect(RIFTBOUND_DECK_RULES.sections.battlefields.target).toBe(3);
-    expect(RIFTBOUND_DECK_RULES.sections.sideboard.target).toBe(8);
+    expect(RIFTBOUND_DECK_RULES.sections.sideboard.target).toBe(10);
+    expect(RIFTBOUND_PRE_RIFT_DECK_RULES.sections.sideboard.target).toBe(8);
   });
 
   test('DeckRulesResponse schema matches contract shape', () => {
@@ -120,6 +121,40 @@ describe('validateRiftboundDeck', () => {
 
     const messages = validateRiftboundDeck(input);
     expect(messages.some((m) => m.code === 'champion_tag_mismatch')).toBe(true);
+  });
+
+  test('Constructed allows 10 sideboard cards and rejects 11', () => {
+    const sideCards = (count: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        card: {
+          ...jinxChampion,
+          cardId: `side-${String(index)}`,
+          variantNumber: `OGN-S${String(index + 1).padStart(2, '0')}`,
+          name: `Side Card ${String(index)}`,
+          super: null,
+          type: 'Spell',
+          isSignature: false,
+        },
+        count: 1,
+      }));
+
+    const allowed = DeckValidateInput.parse({
+      legend: jinxLegend,
+      champion: jinxChampion,
+      mainDeck: [],
+      runes: [],
+      battlefields: [],
+      sideboard: sideCards(10),
+    });
+    expect(validateRiftboundDeck(allowed).some((m) => m.code === 'sideboard_count')).toBe(
+      false
+    );
+
+    const over = DeckValidateInput.parse({
+      ...allowed,
+      sideboard: sideCards(11),
+    });
+    expect(validateRiftboundDeck(over).some((m) => m.code === 'sideboard_count')).toBe(true);
   });
 
   test('accepts Darius legend and champion when tags are domain-only', () => {

@@ -1,3 +1,4 @@
+import { getDeckRules } from '@riftbound/contracts';
 import { getSectionCount } from '@/lib/deck-card';
 import type { DeckEntry, DeckState } from '@/lib/deck-types';
 
@@ -65,7 +66,7 @@ export function deckSectionProgress(
   if (section === 'sideboard') {
     return {
       current: getSectionCount(deck, 'sideboard'),
-      target: 8,
+      target: getDeckRules(deck.format).sections.sideboard.target,
       hint: deck.addToSideboard ? 'Sideboard enabled' : undefined,
     };
   }

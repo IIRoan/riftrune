@@ -37,6 +37,17 @@ describe('deckSectionProgress', () => {
     expect(progress.current).toBe(0);
     expect(progress.target).toBe(25);
   });
+
+  it('uses a 10-card Constructed sideboard target', () => {
+    const deck = createEmptyDeck();
+    expect(deckSectionProgress(deck, 'sideboard').target).toBe(10);
+  });
+
+  it('keeps an 8-card Pre-Rift sideboard target', () => {
+    const deck = createEmptyDeck();
+    deck.format = 'pre-rift';
+    expect(deckSectionProgress(deck, 'sideboard').target).toBe(8);
+  });
 });
 
 describe('deckMainCompositionLines', () => {

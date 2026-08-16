@@ -1,4 +1,4 @@
-import type { DeckFormat } from '@riftbound/contracts';
+import { getDeckRules, type DeckFormat } from '@riftbound/contracts';
 
 export type DeckSectionKey =
   'legend' | 'champion' | 'mainDeck' | 'runes' | 'battlefields' | 'sideboard';
@@ -115,21 +115,18 @@ export const DECK_SECTIONS: Array<{
     { key: 'mainDeck', title: 'Main', target: 39, isMin: true },
     { key: 'runes', title: 'Runes', target: 12 },
     { key: 'battlefields', title: 'Fields', target: 3 },
-    { key: 'sideboard', title: 'Side', target: 8, optional: true },
+    { key: 'sideboard', title: 'Side', target: 10, optional: true },
   ];
 
 /** Section targets for the active deck format (Constructed vs Pre-Rift). */
 export function deckSectionsForFormat(format: DeckFormat = 'constructed') {
-  if (format !== 'pre-rift') return DECK_SECTIONS;
+  const rules = getDeckRules(format);
   return DECK_SECTIONS.map((section) => {
-    if (section.key === 'mainDeck') return { ...section, target: 25 };
-    if (
-      section.key === 'legend' ||
-      section.key === 'champion' ||
-      section.key === 'battlefields'
-    ) {
-      return { ...section, optional: true };
-    }
-    return section;
+    const rule = rules.sections[section.key];
+    return {
+      ...section,
+      target: rule.target,
+      optional: !rule.required,
+    };
   });
 }

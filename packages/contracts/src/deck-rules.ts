@@ -74,10 +74,10 @@ export const RIFTBOUND_DECK_RULES = {
     sideboard: {
       key: 'sideboard',
       title: 'Sideboard',
-      target: 8,
-      maximum: 8,
+      target: 10,
+      maximum: 10,
       required: false,
-      description: 'Up to 8 Main Deck cards. Signature cards cannot be sideboarded.',
+      description: 'Up to 10 Main Deck cards. Signature cards cannot be sideboarded.',
     },
   },
   copyLimits: {
