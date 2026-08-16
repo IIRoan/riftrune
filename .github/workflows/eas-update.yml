@@ -57,5 +57,5 @@ jobs:
         env:
           EXPO_PUBLIC_API_URL: https://riftapi.solace.onl
         run: |
-          eas update --branch main --environment production --message "${{ github.sha }}" --non-interactive
-          eas update --branch preview --environment production --message "preview ${{ github.sha }}" --non-interactive
+          APP_VARIANT=production eas update --branch main --environment production --message "${{ github.sha }}" --non-interactive
+          APP_VARIANT=preview eas update --branch preview --environment preview --message "preview ${{ github.sha }}" --non-interactive
