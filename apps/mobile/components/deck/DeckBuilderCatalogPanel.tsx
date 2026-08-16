@@ -190,7 +190,7 @@ export function DeckBuilderCatalogPanel({
   useEffect(() => () => publishDeckBuilderMobileFilterChrome(null), []);
 
   return (
-    <View className="min-h-0 flex-1 gap-2" onLayout={onLayout}>
+    <View className="min-h-0 flex-1" onLayout={onLayout}>
       <DeckBuilderCatalogBrowse
         key={`${controlledSection}-${legendKey}`}
         deck={deck}
@@ -285,17 +285,13 @@ function DeckBuilderCatalogBrowse({
     : catalog.sectionMeta.placeholder;
   const contextLine = readOnly ? null : catalog.sectionMeta.contextLine;
 
-  const {
-    drawDistance,
-    viewabilityConfig,
-    handleViewableItemsChanged,
-    handleScroll,
-  } = useCatalogArtLookahead({
-    items: displayCards,
-    numColumns,
-    layout: 'grid',
-    tileWidth,
-  });
+  const { drawDistance, viewabilityConfig, handleViewableItemsChanged, handleScroll } =
+    useCatalogArtLookahead({
+      items: displayCards,
+      numColumns,
+      layout: 'grid',
+      tileWidth,
+    });
 
   const requestNextPage = useCallback(() => {
     if (readOnly) return;
@@ -408,8 +404,8 @@ function DeckBuilderCatalogBrowse({
   );
 
   return (
-    <>
-      <View className="shrink-0 gap-1.5">
+    <View className="min-h-0 flex-1">
+      <View className="shrink-0 gap-1.5 pb-2">
         <SearchInput
           value={query}
           onChangeText={setQuery}
@@ -423,7 +419,7 @@ function DeckBuilderCatalogBrowse({
           />
         ) : null}
 
-        {filterActive ? (
+        {filterActive && !isMobile ? (
           <CatalogActiveFilterChips
             filters={catalogFilters}
             onFiltersChange={applyCatalogFilters}
@@ -435,44 +431,46 @@ function DeckBuilderCatalogBrowse({
         ) : null}
       </View>
 
-      <FlashList
-        data={displayCards}
-        key={`${section}-${numColumns}-${readOnly ? 'browse' : 'add'}`}
-        keyExtractor={(item) => item.variantNumber}
-        numColumns={numColumns}
-        renderItem={renderItem}
-        extraData={membershipRevision}
-        ListEmptyComponent={showBlockingLoader ? null : emptyState}
-        ListFooterComponent={
-          <>
-            {!readOnly && catalog.isFetchingNextPage ? (
-              <View className="items-center py-4">
-                <AppLoader size="sm" />
-              </View>
-            ) : null}
-            <ListBottomSpacer height={paddingBottom} />
-          </>
-        }
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        onEndReached={requestNextPage}
-        onEndReachedThreshold={CATALOG_END_REACHED_THRESHOLD}
-        drawDistance={drawDistance}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          flexGrow: displayCards.length === 0 ? 1 : undefined,
-        }}
-        keyboardShouldPersistTaps="handled"
-        style={listStyle}
-      />
+      <View className="relative min-h-0 flex-1">
+        <FlashList
+          data={displayCards}
+          key={`${section}-${numColumns}-${readOnly ? 'browse' : 'add'}`}
+          keyExtractor={(item) => item.variantNumber}
+          numColumns={numColumns}
+          renderItem={renderItem}
+          extraData={membershipRevision}
+          ListEmptyComponent={showBlockingLoader ? null : emptyState}
+          ListFooterComponent={
+            <>
+              {!readOnly && catalog.isFetchingNextPage ? (
+                <View className="items-center py-4">
+                  <AppLoader size="sm" />
+                </View>
+              ) : null}
+              <ListBottomSpacer height={paddingBottom} />
+            </>
+          }
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onEndReached={requestNextPage}
+          onEndReachedThreshold={CATALOG_END_REACHED_THRESHOLD}
+          drawDistance={drawDistance}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            flexGrow: displayCards.length === 0 ? 1 : undefined,
+          }}
+          keyboardShouldPersistTaps="handled"
+          style={listStyle}
+        />
 
-      {showBlockingLoader ? (
-        <View className="absolute inset-0 items-center justify-center">
-          <AppLoader size="md" />
-        </View>
-      ) : null}
+        {showBlockingLoader ? (
+          <View className="absolute inset-0 items-center justify-center">
+            <AppLoader size="md" />
+          </View>
+        ) : null}
+      </View>
 
       {!readOnly ? (
         <CatalogFilterSheet
@@ -482,6 +480,6 @@ function DeckBuilderCatalogBrowse({
           onFiltersChange={applyCatalogFilters}
         />
       ) : null}
-    </>
+    </View>
   );
 }

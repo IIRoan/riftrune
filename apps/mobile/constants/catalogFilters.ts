@@ -102,12 +102,12 @@ export function catalogFiltersActive(filters: CatalogFilters): boolean {
 export function countCatalogFilters(filters: CatalogFilters): number {
   let count = 0;
   if (filters.collection !== 'all') count += 1;
-  if (filters.colors.length > 0) count += 1;
-  if (filters.sets.length > 0) count += 1;
-  if (filters.types.length > 0) count += 1;
-  if (filters.supertypes.length > 0) count += 1;
-  if (filters.variants.length > 0) count += 1;
-  if (filters.rarities.length > 0) count += 1;
+  count += filters.colors.length;
+  count += filters.sets.length;
+  count += filters.types.length;
+  count += filters.supertypes.length;
+  count += filters.variants.length;
+  count += filters.rarities.length;
   if (filters.energy !== undefined) count += 1;
   if (filters.power !== undefined) count += 1;
   if (filters.might !== undefined) count += 1;

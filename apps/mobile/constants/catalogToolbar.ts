@@ -74,14 +74,16 @@ export const FILTER_CHIP_DISMISS_COMPACT_CLASS = cn(
   CONTROL_RADIUS
 );
 
-/** Popover / sheet option chips — panel well when selected. */
+/** Popover / sheet option chips — bone invert when selected (DESIGN.md). */
 export const FILTER_OPTION_CHIP_CLASS = cn(
   'min-h-10 flex-row items-center gap-1.5 border px-3 py-2 active:opacity-90',
   CONTROL_RADIUS
 );
 
-export const FILTER_OPTION_CHIP_ACTIVE_CLASS = 'border-border bg-card-panel';
+export const FILTER_OPTION_CHIP_ACTIVE_CLASS = 'border-foreground bg-foreground';
 export const FILTER_OPTION_CHIP_IDLE_CLASS = 'border-border bg-transparent';
+export const FILTER_OPTION_CHIP_ACTIVE_TEXT_CLASS = 'font-medium text-background';
+export const FILTER_OPTION_CHIP_IDLE_TEXT_CLASS = 'font-normal text-muted-foreground';
 
 /** Embedded filter trigger — borderless inside the shell. */
 export const CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS = cn(

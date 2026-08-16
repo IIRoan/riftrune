@@ -180,79 +180,83 @@ export function DeckBuilderCanvas({
 
   return (
     <>
-      <View className="relative min-h-0 flex-1 gap-3">
+      <View className="relative min-h-0 flex-1">
         {permanentReadOnly ? (
-          <DeckBuilderImportedBanner
-            importBusy={importBusy}
-            onImportToMyDecks={onImportToMyDecks}
-          />
+          <View className="shrink-0">
+            <DeckBuilderImportedBanner
+              importBusy={importBusy}
+              onImportToMyDecks={onImportToMyDecks}
+            />
+          </View>
         ) : null}
 
-        <DeckBuilderToolbar
-          deck={deck}
-          deckName={deck.name}
-          readOnly={readOnly}
-          validation={validation}
-          onBack={handleBack}
-          backAccessibilityLabel={readOnly ? 'Back to decks' : 'Back to deck'}
-          onNameChange={
-            readOnly
-              ? undefined
-              : (name) =>
-                  onPersist((prev) => ({ ...prev, name, updatedAt: Date.now() }))
-          }
-          onToggleValidation={() => setValidationExpanded((v) => !v)}
-          validationExpanded={validationExpanded}
-          onImport={readOnly ? undefined : () => onIoModeChange('import')}
-          onDuplicate={permanentReadOnly ? undefined : onDuplicate}
-          onDelete={permanentReadOnly ? undefined : onDelete}
-          duplicateBusy={duplicateBusy}
-          onEdit={canEdit ? onEdit : undefined}
-          infoDrawerOpen={infoDrawerOpen}
-          onToggleInfoDrawer={
-            isMobile || readOnly
-              ? undefined
-              : () => {
-                  hapticPress();
-                  setInfoDrawerOpen((open) => !open);
-                }
-          }
-          onOpenInfo={
-            isMobile && !readOnly
-              ? () => {
-                  hapticPress();
-                  setMobilePanel('info');
-                }
-              : undefined
-          }
-          onOpenList={
-            isMobile
-              ? () => {
-                  hapticPress();
-                  setMobilePanel('list');
-                }
-              : undefined
-          }
-          catalogSection={
-            readOnly || middlePanel !== 'catalog' ? undefined : catalogSection
-          }
-          onCatalogSectionChange={
-            readOnly || middlePanel !== 'catalog' ? undefined : focusCatalogSection
-          }
-          catalogSectionItems={
-            readOnly || middlePanel !== 'catalog' ? undefined : browseSectionNavItems
-          }
-          catalogFilters={
-            readOnly || middlePanel !== 'catalog'
-              ? undefined
-              : mobileFilterChrome?.filters
-          }
-          onOpenCatalogFilters={
-            readOnly || middlePanel !== 'catalog'
-              ? undefined
-              : mobileFilterChrome?.onOpen
-          }
-        />
+        <View className="shrink-0 pb-3">
+          <DeckBuilderToolbar
+            deck={deck}
+            deckName={deck.name}
+            readOnly={readOnly}
+            validation={validation}
+            onBack={handleBack}
+            backAccessibilityLabel={readOnly ? 'Back to decks' : 'Back to deck'}
+            onNameChange={
+              readOnly
+                ? undefined
+                : (name) =>
+                    onPersist((prev) => ({ ...prev, name, updatedAt: Date.now() }))
+            }
+            onToggleValidation={() => setValidationExpanded((v) => !v)}
+            validationExpanded={validationExpanded}
+            onImport={readOnly ? undefined : () => onIoModeChange('import')}
+            onDuplicate={permanentReadOnly ? undefined : onDuplicate}
+            onDelete={permanentReadOnly ? undefined : onDelete}
+            duplicateBusy={duplicateBusy}
+            onEdit={canEdit ? onEdit : undefined}
+            infoDrawerOpen={infoDrawerOpen}
+            onToggleInfoDrawer={
+              isMobile || readOnly
+                ? undefined
+                : () => {
+                    hapticPress();
+                    setInfoDrawerOpen((open) => !open);
+                  }
+            }
+            onOpenInfo={
+              isMobile && !readOnly
+                ? () => {
+                    hapticPress();
+                    setMobilePanel('info');
+                  }
+                : undefined
+            }
+            onOpenList={
+              isMobile
+                ? () => {
+                    hapticPress();
+                    setMobilePanel('list');
+                  }
+                : undefined
+            }
+            catalogSection={
+              readOnly || middlePanel !== 'catalog' ? undefined : catalogSection
+            }
+            onCatalogSectionChange={
+              readOnly || middlePanel !== 'catalog' ? undefined : focusCatalogSection
+            }
+            catalogSectionItems={
+              readOnly || middlePanel !== 'catalog' ? undefined : browseSectionNavItems
+            }
+            catalogFilters={
+              readOnly || middlePanel !== 'catalog'
+                ? undefined
+                : mobileFilterChrome?.filters
+            }
+            onOpenCatalogFilters={
+              readOnly || middlePanel !== 'catalog'
+                ? undefined
+                : mobileFilterChrome?.onOpen
+            }
+          />
+        </View>
 
         <DeckBuilderWorkspace
           readOnly={readOnly}

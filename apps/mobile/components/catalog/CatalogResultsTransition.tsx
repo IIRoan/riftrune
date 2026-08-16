@@ -54,8 +54,10 @@ export function CatalogResultsTransition({
   }));
 
   return (
-    <Animated.View className={cn('min-h-0 flex-1', className)} style={[style, animatedStyle]}>
-      <View className="min-h-0 flex-1">{children}</View>
-    </Animated.View>
+    <View className={cn('min-h-0 flex-1 overflow-hidden', className)} style={style}>
+      <Animated.View className="min-h-0 flex-1" style={animatedStyle}>
+        {children}
+      </Animated.View>
+    </View>
   );
 }

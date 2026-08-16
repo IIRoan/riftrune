@@ -25,7 +25,11 @@ interface LegendPickerProps {
   paddingBottom?: number;
 }
 
-export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPickerProps) {
+export function LegendPicker({
+  onSelect,
+  onBack,
+  paddingBottom = 0,
+}: LegendPickerProps) {
   const { contentWidth } = useScreenLayout();
   const { tileWidth, gap, numColumns } = useResponsiveColumns('grid', {
     measuredWidth: contentWidth,
@@ -49,7 +53,10 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
   });
 
   const listItems = useMemo(
-    () => (cardsQuery.data?.data ?? []).filter((item) => item.type.toLowerCase() === 'legend'),
+    () =>
+      (cardsQuery.data?.data ?? []).filter(
+        (item) => item.type.toLowerCase() === 'legend'
+      ),
     [cardsQuery.data?.data]
   );
   const variantNumbers = useMemo(
@@ -86,12 +93,10 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
     return results;
   }, [detailsQuery.data, listItems]);
 
-  const loading = cardsQuery.isLoading || (variantNumbers.length > 0 && detailsQuery.isLoading);
+  const loading =
+    cardsQuery.isLoading || (variantNumbers.length > 0 && detailsQuery.isLoading);
 
-  const columnWrapperStyle = useMemo(
-    () => ({ gap, marginBottom: gap }),
-    [gap]
-  );
+  const columnWrapperStyle = useMemo(() => ({ gap, marginBottom: gap }), [gap]);
 
   const listContentStyle = useMemo(
     () => ({ flexGrow: legends.length === 0 ? 1 : undefined }),
@@ -131,7 +136,9 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
           {item.name}
         </Text>
         {item.colors.length > 0 ? (
-          <Text className="text-[11px] text-muted-foreground">{item.colors.join(' · ')}</Text>
+          <Text className="text-[11px] text-muted-foreground">
+            {item.colors.join(' · ')}
+          </Text>
         ) : null}
       </Pressable>
     ),
@@ -139,8 +146,8 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
   );
 
   return (
-    <View className="min-h-0 flex-1 gap-4">
-      <View className="gap-2">
+    <View className="min-h-0 flex-1">
+      <View className="shrink-0 gap-2 pb-4">
         {onBack ? (
           <View className="flex-row items-center gap-2">
             <Pressable
@@ -154,13 +161,18 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
             >
               <ThemedIcon icon={ChevronLeftIcon} size={22} color="foreground" />
             </Pressable>
-            <Text className="text-lg font-normal text-foreground">Choose your Legend</Text>
+            <Text className="text-lg font-normal text-foreground">
+              Choose your Legend
+            </Text>
           </View>
         ) : (
-          <Text className="text-lg font-normal text-foreground">Choose your Legend</Text>
+          <Text className="text-lg font-normal text-foreground">
+            Choose your Legend
+          </Text>
         )}
         <Text className="text-[13px] leading-snug text-muted-foreground">
-          Your Legend sets domain identity, rune colors, and signature rules for the entire deck.
+          Your Legend sets domain identity, rune colors, and signature rules for the
+          entire deck.
         </Text>
         <SearchInput
           value={query}
@@ -171,7 +183,7 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
       </View>
 
       {loading && legends.length === 0 ? (
-        <View className="flex-1 items-center justify-center py-16">
+        <View className="min-h-0 flex-1 items-center justify-center py-16">
           <AppLoader size="md" />
         </View>
       ) : (
@@ -183,10 +195,13 @@ export function LegendPicker({ onSelect, onBack, paddingBottom = 0 }: LegendPick
           contentContainerStyle={listContentStyle}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          style={{ flex: 1, minHeight: 0 }}
           ListEmptyComponent={
             <View className="items-center gap-2 py-16">
               <ThemedIcon icon={SearchIcon} size={28} color="muted-foreground" />
-              <Text className="text-sm text-muted-foreground">No legends match your search</Text>
+              <Text className="text-sm text-muted-foreground">
+                No legends match your search
+              </Text>
             </View>
           }
           ListFooterComponent={<ListBottomSpacer height={paddingBottom} />}

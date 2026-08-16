@@ -5,12 +5,12 @@ import {
 } from '@/components/filters/MobileFilterSheet';
 import { FilterStatChip, FilterToggleRow } from '@/components/filters/FilterPrimitives';
 import { Text } from '@/components/ui/text';
+import type { CatalogFilterSegmentCommonProps } from '@/components/catalog/catalogFilterPanels.shared';
 import {
   CATALOG_ENERGY_VALUES,
   CATALOG_MIGHT_VALUES,
   CATALOG_POWER_VALUES,
 } from '@/constants/catalogFilters';
-import type { CatalogFilterSegmentCommonProps } from '@/components/catalog/catalogFilterPanels.shared';
 
 export function CatalogFilterStatsPanel({
   filters,

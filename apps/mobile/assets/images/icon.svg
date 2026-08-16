@@ -1,18 +1,6 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <style>
-    .background { fill: #101010; }
-    .foreground { fill: #eeeeee; }
-    @media (prefers-color-scheme: light) {
-      .background { fill: #101010; }
-      .foreground { fill: #eeeeee; }
-    }
-    @media (prefers-color-scheme: dark) {
-      .background { fill: #eeeeee; }
-      .foreground { fill: #101010; }
-    }
-  </style>
-  <rect class="background" width="180" height="180" rx="37"/>
-  <g class="foreground" transform="translate(31.7690 120.9953) scale(0.04272266 -0.04272266)" fill-rule="evenodd">
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#121212"/>
+  <g transform="translate(196.1709 680.1101) scale(0.23171615 -0.23171615)" fill="#EEEEEE" fill-rule="evenodd">
     <path d="M918 551 761 995Q747 1030 731.5 1077.0Q716 1124 702 1179Q688 1123 672.5 1075.5Q657 1028 643 993L487 551ZM1422 0H1189Q1150 0 1125.5 18.5Q1101 37 1089 66L991 343H413L315 66Q305 41 280.0 20.5Q255 0 217 0H-18L549 1451H856Z"/>
     <path d="M858 739H1356V140Q1245 59 1119.5 21.5Q994 -16 854 -16Q675 -16 530.0 39.5Q385 95 282.0 194.0Q179 293 123.0 429.0Q67 565 67 726Q67 889 120.5 1025.0Q174 1161 273.0 1259.0Q372 1357 512.5 1412.0Q653 1467 827 1467Q917 1467 995.0 1452.5Q1073 1438 1139.0 1412.5Q1205 1387 1260.0 1352.0Q1315 1317 1360 1275L1273 1141Q1253 1109 1221.0 1102.0Q1189 1095 1151 1118Q1115 1140 1080.5 1157.5Q1046 1175 1007.0 1188.0Q968 1201 922.0 1208.0Q876 1215 816 1215Q715 1215 633.0 1180.0Q551 1145 493.5 1081.0Q436 1017 405.0 927.0Q374 837 374 726Q374 606 408.0 511.5Q442 417 504.0 352.0Q566 287 652.5 253.0Q739 219 845 219Q917 219 973.5 233.5Q1030 248 1084 273V517H920Q891 517 874.5 532.5Q858 548 858 572Z" transform="translate(1384 0)"/>
   </g>

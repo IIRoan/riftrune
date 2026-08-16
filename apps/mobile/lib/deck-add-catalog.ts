@@ -72,11 +72,10 @@ export function getDeckAddSectionMeta(
           deck.format === 'pre-rift'
             ? 'Any champion unit'
             : deck.legend
-              ? `Champion units for ${deck.legend.name}${
-                  legendChampionTags(deck.legend).length
-                    ? ` · ${legendChampionTags(deck.legend).join(', ')}`
-                    : ''
-                }`
+              ? `Champion units for ${deck.legend.name}${legendChampionTags(deck.legend).length
+                ? ` · ${legendChampionTags(deck.legend).join(', ')}`
+                : ''
+              }`
               : 'Choose a Legend first',
         requiresLegend: deck.format !== 'pre-rift',
         limit: 80,
@@ -86,12 +85,7 @@ export function getDeckAddSectionMeta(
     case 'runes':
       return {
         placeholder: 'Search runes',
-        contextLine:
-          deck.format === 'pre-rift'
-            ? 'Runes from any domain'
-            : deck.legend
-              ? `Runes matching ${deck.legend.colors.join(' · ')}`
-              : null,
+        contextLine: null,
         requiresLegend: false,
         limit: 40,
         pageSize: 40,
@@ -115,12 +109,7 @@ export function getDeckAddSectionMeta(
     case 'sideboard':
       return {
         placeholder: 'Search sideboard cards',
-        contextLine:
-          deck.format === 'pre-rift'
-            ? 'Any main deck card'
-            : deck.legend
-              ? `Sideboard · ${deck.legend.colors.join(' · ')} identity`
-              : null,
+        contextLine: null,
         requiresLegend: false,
         limit: MAIN_DECK_PAGE_SIZE,
         pageSize: MAIN_DECK_PAGE_SIZE,
@@ -129,12 +118,7 @@ export function getDeckAddSectionMeta(
     default:
       return {
         placeholder: 'Search main deck cards',
-        contextLine:
-          deck.format === 'pre-rift'
-            ? 'Any main deck card'
-            : deck.legend
-              ? `Main deck · ${deck.legend.colors.join(' · ')} identity`
-              : null,
+        contextLine: null,
         requiresLegend: false,
         limit: MAIN_DECK_PAGE_SIZE,
         pageSize: MAIN_DECK_PAGE_SIZE,

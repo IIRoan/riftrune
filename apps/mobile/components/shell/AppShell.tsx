@@ -6,7 +6,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showRail = useShowSideRail();
 
   if (!showRail) {
-    return <View className="flex-1 bg-background">{children}</View>;
+    return (
+      <View className="min-h-0 flex-1 bg-background web:h-screen web:max-h-screen">
+        {children}
+      </View>
+    );
   }
 
   return (

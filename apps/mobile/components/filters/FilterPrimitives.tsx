@@ -16,8 +16,10 @@ import {
   CATALOG_TOOLBAR_EMBEDDED_TRIGGER_CLASS,
   CATALOG_TOOLBAR_LABELED_CONTROL_CLASS,
   FILTER_OPTION_CHIP_ACTIVE_CLASS,
+  FILTER_OPTION_CHIP_ACTIVE_TEXT_CLASS,
   FILTER_OPTION_CHIP_CLASS,
   FILTER_OPTION_CHIP_IDLE_CLASS,
+  FILTER_OPTION_CHIP_IDLE_TEXT_CLASS,
 } from '@/constants/catalogToolbar';
 import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { cn } from '@/lib/utils';
@@ -99,8 +101,8 @@ export function FilterStatChip({
     >
       <Text
         className={cn(
-          'font-mono text-sm font-normal',
-          active ? 'text-foreground' : 'text-muted-foreground'
+          'font-mono text-sm',
+          active ? FILTER_OPTION_CHIP_ACTIVE_TEXT_CLASS : FILTER_OPTION_CHIP_IDLE_TEXT_CLASS
         )}
       >
         {label}

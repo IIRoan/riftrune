@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { XIcon } from '@/components/icons';
 import { DomainIcon } from '@/components/riftbound/CardIcons';
 import { Text } from '@/components/ui/text';
@@ -17,9 +17,10 @@ import {
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
-function parseCatalogFilterChipDisplay(
-  chip: CatalogFilterChip
-): { category: string; value?: string } {
+function parseCatalogFilterChipDisplay(chip: CatalogFilterChip): {
+  category: string;
+  value?: string;
+} {
   if (chip.colorNames && chip.colorNames.length > 0) {
     return { category: chip.label };
   }
@@ -141,26 +142,25 @@ export function CatalogActiveFilterChip({
     ) : null;
 
   return (
-    <View
-      className={cn(
-        FILTER_CHIP_SHELL_CLASS,
-        // Multi-color pills wrap instead of clipping inside the fixed-height shell.
-        hasColorPills && 'h-auto min-h-8'
-      )}
-    >
+    <View className={FILTER_CHIP_SHELL_CLASS}>
       <View className={FILTER_CHIP_CATEGORY_CLASS}>
         <Text className={FILTER_CHIP_CATEGORY_LABEL_CLASS}>{category}</Text>
       </View>
 
       {valueContent ? (
-        <View
-          className={cn(
-            FILTER_CHIP_VALUE_CLASS,
-            hasColorPills && 'flex-wrap gap-1 py-1'
-          )}
-        >
-          {valueContent}
-        </View>
+        hasColorPills ? (
+          <ScrollView
+            horizontal
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator={false}
+            className="min-w-0 flex-1"
+            contentContainerClassName="h-8 flex-row items-center gap-1 px-2"
+          >
+            {valueContent}
+          </ScrollView>
+        ) : (
+          <View className={FILTER_CHIP_VALUE_CLASS}>{valueContent}</View>
+        )
       ) : null}
 
       <View className="justify-center border-l border-border">

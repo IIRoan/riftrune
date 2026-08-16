@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Accordion,
   AccordionContent,
@@ -22,8 +23,10 @@ import { Text } from '@/components/ui/text';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import {
   FILTER_OPTION_CHIP_ACTIVE_CLASS,
+  FILTER_OPTION_CHIP_ACTIVE_TEXT_CLASS,
   FILTER_OPTION_CHIP_CLASS,
   FILTER_OPTION_CHIP_IDLE_CLASS,
+  FILTER_OPTION_CHIP_IDLE_TEXT_CLASS,
 } from '@/constants/catalogToolbar';
 import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
 import { cn } from '@/lib/utils';
@@ -48,13 +51,15 @@ export function MobileFilterSheet({
   activeCount,
   hasActiveFilters,
   onClear,
-  doneLabel = 'Done',
+  doneLabel = 'Filter',
   portalName,
   stickyHeader,
   children,
 }: MobileFilterSheetProps) {
   const reduceMotion = useReduceMotion();
-  const snapPoints = reduceMotion ? ['94%'] : ['94%'];
+  const insets = useSafeAreaInsets();
+  const snapPoints = ['100%'];
+  const scrollPaddingBottom = Math.max(insets.bottom, 16) + 56;
 
   return (
     <BottomSheet
@@ -107,7 +112,7 @@ export function MobileFilterSheet({
           </BottomSheetHeader>
 
           <BottomSheetScrollView
-            contentContainerClassName="px-4 pb-6 pt-2"
+            contentContainerStyle={{ paddingBottom: scrollPaddingBottom }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
@@ -122,7 +127,9 @@ export function MobileFilterSheet({
               )}
               onPress={onClose}
             >
-              <ButtonText className="text-sm font-medium text-foreground">{doneLabel}</ButtonText>
+              <ButtonText className="text-sm font-medium text-cta-foreground">
+                {doneLabel}
+              </ButtonText>
             </Button>
           </BottomSheetFooter>
         </BottomSheetContent>
@@ -205,12 +212,13 @@ export function FilterOptionChip({
       accessibilityRole="checkbox"
       accessibilityState={{ checked: active }}
       accessibilityLabel={accessibilityLabel ?? label}
+      {...(Platform.OS === 'web' ? { 'aria-checked': active } : null)}
     >
       {leading}
       <Text
         className={cn(
-          'text-sm font-normal',
-          active ? 'text-foreground' : 'text-muted-foreground'
+          'text-sm',
+          active ? FILTER_OPTION_CHIP_ACTIVE_TEXT_CLASS : FILTER_OPTION_CHIP_IDLE_TEXT_CLASS
         )}
         numberOfLines={1}
       >

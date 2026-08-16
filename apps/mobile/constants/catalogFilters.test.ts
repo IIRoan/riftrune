@@ -174,3 +174,15 @@ describe('simple add preference', () => {
     ).toBe(catalogFiltersQueryKey(DEFAULT_CATALOG_FILTERS));
   });
 });
+
+describe('countCatalogFilters', () => {
+  test('counts each selected color and token toggle', () => {
+    expect(
+      countCatalogFilters({
+        ...DEFAULT_CATALOG_FILTERS,
+        colors: ['Calm', 'Chaos'],
+        excludeTokens: true,
+      })
+    ).toBe(3);
+  });
+});

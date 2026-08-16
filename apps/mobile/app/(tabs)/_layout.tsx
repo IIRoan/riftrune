@@ -5,17 +5,13 @@ import { AppShell } from '@/components/shell/AppShell';
 import { MobileTabBar, type MobileTabBarProps } from '@/components/shell/MobileTabBar';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
+import { mobileTabBarVisible } from '@/lib/mobile-chrome';
 import { Tabs } from 'expo-router';
 
 export default function TabLayout() {
   const pathname = usePathname();
   const showRail = useShowSideRail();
-  const isDeepDeckRoute =
-    pathname.startsWith('/decks/') && pathname !== '/decks/browse';
-  const isPlayRoute = pathname === '/play' || pathname.startsWith('/play/');
-  // Hide the floating tab bar on Play so the phone can sit flat as a scoreboard.
-  const showTabBar =
-    !pathname.startsWith('/card/') && !showRail && !isDeepDeckRoute && !isPlayRoute;
+  const showTabBar = mobileTabBarVisible(pathname, showRail);
   const [backgroundRaw] = useCSSVariable(['--color-background']);
   const background = String(backgroundRaw ?? 'oklch(0.130 0 0)');
 
@@ -26,7 +22,9 @@ export default function TabLayout() {
           <Tabs
             tabBar={
               showTabBar
-                ? (props) => <MobileTabBar {...(props as unknown as MobileTabBarProps)} />
+                ? (props) => (
+                    <MobileTabBar {...(props as unknown as MobileTabBarProps)} />
+                  )
                 : () => null
             }
             screenOptions={{

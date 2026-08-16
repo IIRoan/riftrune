@@ -1,7 +1,12 @@
 import { Image } from 'expo-image';
 import { Platform, View } from 'react-native';
 import { useCSSVariable } from 'uniwind';
-import { typeIconFor, rarityIconFor, domainIconFor, mightIcon } from '@/constants/gameAssets';
+import {
+  typeIconFor,
+  rarityIconFor,
+  domainIconFor,
+  mightIcon,
+} from '@/constants/gameAssets';
 import { Text } from '@/components/ui/text';
 import { resolveImageUrl } from '@/utils/resolveImageUrl';
 import { cn } from '@/lib/utils';
@@ -23,7 +28,9 @@ function gameIconClassName(tone: GameIconTone, className?: string): string | und
 }
 
 function gameIconStyle(size: number, tint?: string) {
-  return tint ? { width: size, height: size, tintColor: tint } : { width: size, height: size };
+  return tint
+    ? { width: size, height: size, tintColor: tint }
+    : { width: size, height: size };
 }
 
 interface PipProps {
@@ -38,14 +45,23 @@ export function EnergyPip({ value, size = 32 }: PipProps) {
       style={{ width: size, height: size }}
       accessibilityLabel={`${String(value)} energy`}
     >
-      <Text className="font-extrabold text-foreground" style={{ fontSize: size * 0.42 }}>
+      <Text
+        className="font-extrabold text-foreground"
+        style={{ fontSize: size * 0.42 }}
+      >
         {value}
       </Text>
     </View>
   );
 }
 
-export function MightIcon({ size = 20, className }: { size?: number; className?: string }) {
+export function MightIcon({
+  size = 20,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
     <View className={className} style={{ width: size, height: size }}>
       <Image
@@ -70,29 +86,32 @@ export function DomainIcon({
   size?: number;
   className?: string;
 }) {
+  const frame = { width: size, height: size };
   if (imageUrl) {
     return (
-      <Image
-        source={{ uri: resolveImageUrl(imageUrl) }}
-        className={className}
-        style={{ width: size, height: size }}
-        contentFit="contain"
-        accessibilityIgnoresInvertColors
-        accessibilityLabel={name}
-      />
+      <View className={cn('shrink-0 overflow-hidden', className)} style={frame}>
+        <Image
+          source={{ uri: resolveImageUrl(imageUrl) }}
+          style={frame}
+          contentFit="contain"
+          accessibilityIgnoresInvertColors
+          accessibilityLabel={name}
+        />
+      </View>
     );
   }
   const source = domainIconFor(name);
   if (!source) return null;
   return (
-    <Image
-      source={source}
-      className={className}
-      style={{ width: size, height: size }}
-      contentFit="contain"
-      accessibilityIgnoresInvertColors
-      accessibilityLabel={name}
-    />
+    <View className={cn('shrink-0 overflow-hidden', className)} style={frame}>
+      <Image
+        source={source}
+        style={frame}
+        contentFit="contain"
+        accessibilityIgnoresInvertColors
+        accessibilityLabel={name}
+      />
+    </View>
   );
 }
 

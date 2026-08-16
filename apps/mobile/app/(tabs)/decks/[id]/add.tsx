@@ -238,35 +238,37 @@ function DeckAddScreenBody({
   }, [deckId, onFlushSave, router]);
 
   return (
-    <View className="flex-1 gap-2">
-      <DeckAddScreenHeader
-        deck={deck}
-        section={activeSection}
-        onBack={() => void handleBack()}
-      />
-      <DeckAddCatalogWorkspace
-        deck={deck}
-        activeSection={activeSection}
-        lockedSection={lockedSection}
-        onSectionChange={setTabSection}
-        onPersist={onPersist}
-      />
+    <View className="min-h-0 flex-1">
+      <View className="shrink-0 pb-2">
+        <DeckAddScreenHeader
+          deck={deck}
+          section={activeSection}
+          onBack={() => void handleBack()}
+        />
+      </View>
+      <View className="min-h-0 flex-1">
+        <DeckAddCatalogWorkspace
+          deck={deck}
+          activeSection={activeSection}
+          lockedSection={lockedSection}
+          onSectionChange={setTabSection}
+          onPersist={onPersist}
+        />
+      </View>
     </View>
   );
 }
 
-function DeckAddCatalogWorkspace(
-  props: {
-    deck: DeckState;
-    activeSection: DeckSectionKey;
-    lockedSection: boolean;
-    onSectionChange: (section: DeckSectionKey) => void;
-    onPersist: (
-      deck: DeckState | ((previous: DeckState) => DeckState),
-      options?: { immediate?: boolean }
-    ) => void;
-  }
-) {
+function DeckAddCatalogWorkspace(props: {
+  deck: DeckState;
+  activeSection: DeckSectionKey;
+  lockedSection: boolean;
+  onSectionChange: (section: DeckSectionKey) => void;
+  onPersist: (
+    deck: DeckState | ((previous: DeckState) => DeckState),
+    options?: { immediate?: boolean }
+  ) => void;
+}) {
   return <DeckAddCatalogBrowse key={props.activeSection} {...props} />;
 }
 
@@ -388,17 +390,13 @@ function DeckAddCatalogBrowse({
   const membershipRevision = deckMembershipRevision(deck);
   const sectionFull = activeSection === 'battlefields' && battlefieldsAtCapacity(deck);
 
-  const {
-    drawDistance,
-    viewabilityConfig,
-    handleViewableItemsChanged,
-    handleScroll,
-  } = useCatalogArtLookahead({
-    items: catalog.cards,
-    numColumns,
-    layout: 'grid',
-    tileWidth,
-  });
+  const { drawDistance, viewabilityConfig, handleViewableItemsChanged, handleScroll } =
+    useCatalogArtLookahead({
+      items: catalog.cards,
+      numColumns,
+      layout: 'grid',
+      tileWidth,
+    });
 
   const requestNextPage = useCallback(() => {
     if (catalog.hasNextPage && !catalog.isFetchingNextPage) {
@@ -410,7 +408,10 @@ function DeckAddCatalogBrowse({
     () => ({ paddingHorizontal: gap / 2, marginBottom: gap }),
     [gap]
   );
-  const listStyle = useMemo(() => ({ flex: 1, marginHorizontal: -gap / 2 }), [gap]);
+  const listStyle = useMemo(
+    () => ({ flex: 1, minHeight: 0, marginHorizontal: -gap / 2 }),
+    [gap]
+  );
 
   const renderItem = useCallback<ListRenderItem<DeckCard>>(
     ({ item }) => (
@@ -473,8 +474,8 @@ function DeckAddCatalogBrowse({
   const filterActive = catalogFiltersActive(catalogFilters);
 
   return (
-    <>
-      <View className="shrink-0 gap-1.5">
+    <View className="min-h-0 flex-1">
+      <View className="shrink-0 gap-1.5 pb-2">
         <View className={cn('gap-2', !isMobile && 'flex-row items-center gap-3')}>
           <View className={cn('min-w-0 flex-1', !isMobile && 'flex-1')}>
             <SearchInput
@@ -501,7 +502,7 @@ function DeckAddCatalogBrowse({
           />
         ) : null}
 
-        {filterActive ? (
+        {filterActive && !isMobile ? (
           <CatalogActiveFilterChips
             filters={catalogFilters}
             onFiltersChange={applyCatalogFilters}
@@ -523,35 +524,37 @@ function DeckAddCatalogBrowse({
         ) : null}
       </View>
 
-      <FlashList
-        data={catalog.cards}
-        key={`${activeSection}-${numColumns}`}
-        keyExtractor={(item) => item.variantNumber}
-        numColumns={numColumns}
-        renderItem={renderItem}
-        extraData={membershipRevision}
-        ListEmptyComponent={showBlockingLoader ? null : emptyState}
-        ListFooterComponent={listFooter}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        onEndReached={requestNextPage}
-        onEndReachedThreshold={CATALOG_END_REACHED_THRESHOLD}
-        drawDistance={drawDistance}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          flexGrow: catalog.cards.length === 0 ? 1 : undefined,
-        }}
-        keyboardShouldPersistTaps="handled"
-        style={listStyle}
-      />
+      <View className="relative min-h-0 flex-1">
+        <FlashList
+          data={catalog.cards}
+          key={`${activeSection}-${numColumns}`}
+          keyExtractor={(item) => item.variantNumber}
+          numColumns={numColumns}
+          renderItem={renderItem}
+          extraData={membershipRevision}
+          ListEmptyComponent={showBlockingLoader ? null : emptyState}
+          ListFooterComponent={listFooter}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onEndReached={requestNextPage}
+          onEndReachedThreshold={CATALOG_END_REACHED_THRESHOLD}
+          drawDistance={drawDistance}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            flexGrow: catalog.cards.length === 0 ? 1 : undefined,
+          }}
+          keyboardShouldPersistTaps="handled"
+          style={listStyle}
+        />
 
-      {showBlockingLoader ? (
-        <View className="absolute inset-0 items-center justify-center">
-          <AppLoader size="md" />
-        </View>
-      ) : null}
+        {showBlockingLoader ? (
+          <View className="absolute inset-0 items-center justify-center">
+            <AppLoader size="md" />
+          </View>
+        ) : null}
+      </View>
 
       <CatalogFilterSheet
         visible={filterSheetOpen}
@@ -559,6 +562,6 @@ function DeckAddCatalogBrowse({
         onClose={() => setFilterSheetOpen(false)}
         onFiltersChange={applyCatalogFilters}
       />
-    </>
+    </View>
   );
 }
