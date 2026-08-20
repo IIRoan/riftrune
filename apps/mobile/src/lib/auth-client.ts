@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { createAuthClient } from 'better-auth/react';
 import { expoClient } from '@better-auth/expo/client';
+import { emailOTPClient } from 'better-auth/client/plugins';
 import { fetchWithApiWake } from '@/lib/api-fetch';
 import { getApiUrl } from '@/lib/api-url';
 import { secureStorage } from './secure-storage';
@@ -28,15 +29,18 @@ export const authClient = createAuthClient({
     credentials: 'include',
     customFetchImpl: fetchWithApiWake,
   },
-  plugins: isWeb
-    ? []
-    : [
-      expoClient({
-        scheme: nativeAuthScheme(),
-        storagePrefix: 'astral-grove',
-        storage: secureStorage,
-      }),
-    ],
+  plugins: [
+    emailOTPClient(),
+    ...(isWeb
+      ? []
+      : [
+        expoClient({
+          scheme: nativeAuthScheme(),
+          storagePrefix: 'astral-grove',
+          storage: secureStorage,
+        }),
+      ]),
+  ],
 });
 
 export type AuthSession = typeof authClient.$Infer.Session;

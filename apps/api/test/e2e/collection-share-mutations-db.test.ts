@@ -305,7 +305,7 @@ describe('shared collection add/remove mutations', () => {
     const partnerCollectionId = await collectionIdForUser(partnerId);
     expect(ownerCollectionId).not.toBe(partnerCollectionId);
 
-    // Partner still has a copy of OGN-295 from leave, then changes their personal copy.
+    // Partner starts empty after leave, then changes their personal collection.
     await authFetch('/api/v1/collection/OGN-295/add', {
       method: 'POST',
       cookie: cookiePartner,
@@ -313,7 +313,7 @@ describe('shared collection add/remove mutations', () => {
     });
 
     const partnerQty = await quantitiesFor(cookiePartner, ['OGN-295']);
-    expect(partnerQty.get('OGN-295')).toBe(14);
+    expect(partnerQty.get('OGN-295')).toBe(10);
 
     const ownerQty = await quantitiesFor(cookieOwner, ['OGN-295']);
     expect(ownerQty.get('OGN-295')).toBe(4);
@@ -325,6 +325,6 @@ describe('shared collection add/remove mutations', () => {
       body: JSON.stringify({ delta: 4 }),
     });
     expect((await quantitiesFor(cookieOwner, ['OGN-295'])).get('OGN-295')).toBe(0);
-    expect((await quantitiesFor(cookiePartner, ['OGN-295'])).get('OGN-295')).toBe(14);
+    expect((await quantitiesFor(cookiePartner, ['OGN-295'])).get('OGN-295')).toBe(10);
   });
 });

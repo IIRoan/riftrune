@@ -7,9 +7,9 @@ export const CDN_BASE_URL = 'https://cdn.piltoverarchive.com';
 export function hasS3Config(env: Env): boolean {
   return Boolean(
     env.S3_ACCESS_KEY_ID &&
-      env.S3_SECRET_ACCESS_KEY &&
-      env.S3_BUCKET &&
-      env.S3_ENDPOINT
+    env.S3_SECRET_ACCESS_KEY &&
+    env.S3_BUCKET &&
+    env.S3_ENDPOINT
   );
 }
 
@@ -44,6 +44,7 @@ export function cdnImageUrl(key: string): string {
 export function isSafeImageKey(key: string): boolean {
   const normalized = key.replace(/^\//, '');
   if (!normalized || normalized.includes('..')) return false;
+  if (normalized.toLowerCase().endsWith('.svg')) return false;
   if (normalized.startsWith('cards/') || normalized.startsWith('colors/')) return true;
   // Cached resize derivatives written by ImageStoreService.
   return /^thumbs\/w(96|160|240|320)\/(cards|colors)\//.test(normalized);
@@ -67,11 +68,24 @@ export function contentTypeForKey(key: string): string {
       return 'image/jpeg';
     case 'gif':
       return 'image/gif';
-    case 'svg':
-      return 'image/svg+xml';
     default:
       return 'application/octet-stream';
   }
+}
+
+export function safeServedContentType(raw: string | undefined, key: string): string {
+  const fallback = contentTypeForKey(key);
+  if (!raw) return fallback;
+  const normalized = raw.toLowerCase();
+  if (
+    normalized.includes('svg') ||
+    normalized.includes('html') ||
+    normalized.includes('javascript') ||
+    normalized.includes('xml')
+  ) {
+    return fallback;
+  }
+  return raw;
 }
 
 /** Rewrite a CDN URL to our API image route (sync, no network). */

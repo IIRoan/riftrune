@@ -12,23 +12,28 @@ describe('resolveAuthAdvanced', () => {
     ]);
   });
 
-  test('omits cookie domain settings when none is configured', () => {
+  test('always sets HttpOnly SameSite cookies, even without a shared domain', () => {
     expect(resolveAuthAdvanced(undefined)).toEqual({
       ipAddress: { ipAddressHeaders: ['x-real-ip'] },
+      defaultCookieAttributes: {
+        secure: false,
+        httpOnly: true,
+        sameSite: 'lax',
+      },
     });
   });
 
   test('keeps cross-subdomain cookies alongside IP headers', () => {
     expect(resolveAuthAdvanced('solace.onl')).toEqual({
       ipAddress: { ipAddressHeaders: ['x-real-ip'] },
-      crossSubDomainCookies: {
-        enabled: true,
-        domain: 'solace.onl',
-      },
       defaultCookieAttributes: {
         secure: true,
         httpOnly: true,
         sameSite: 'lax',
+      },
+      crossSubDomainCookies: {
+        enabled: true,
+        domain: 'solace.onl',
       },
     });
   });

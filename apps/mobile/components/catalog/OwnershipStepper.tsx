@@ -182,6 +182,7 @@ export function OwnershipStepper({
 
     const button = (
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel={label}
         className={cn(
           'items-center justify-center rounded-[3px] active:bg-foreground/10',

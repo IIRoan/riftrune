@@ -11,6 +11,8 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import { Layout } from '@/constants/Layout';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { MOTION, TAB_SCENE } from '@/lib/motion';
+import { tabIdFromPathname, type AppTabId } from '@/lib/tab-route';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 import { usePathname } from 'expo-router';
@@ -18,8 +20,10 @@ import { useEffect } from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,7 +57,7 @@ export type MobileTabBarProps = {
 };
 
 const TAB_ITEMS: {
-  routeName: string;
+  routeName: AppTabId;
   label: string;
   icon: LucideIcon;
 }[] = [
@@ -65,8 +69,59 @@ const TAB_ITEMS: {
   { routeName: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-const INDICATOR_MS = 220;
 const INDICATOR_EASE = Easing.out(Easing.cubic);
+
+function TabGlyph({
+  focused,
+  color,
+  Icon,
+  label,
+}: {
+  focused: boolean;
+  color: string;
+  Icon: LucideIcon;
+  label: string;
+}) {
+  const reduceMotion = useReduceMotion();
+  const progress = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      progress.value = focused ? 1 : 0;
+      return;
+    }
+    progress.value = focused
+      ? withSpring(1, MOTION.snappy)
+      : withTiming(0, { duration: TAB_SCENE.durationMs, easing: INDICATOR_EASE });
+  }, [focused, progress, reduceMotion]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(progress.value, [0, 1], [0.92, 1]) }],
+  }));
+
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 1], [0.72, 1]),
+  }));
+
+  return (
+    <>
+      <Animated.View style={iconStyle}>
+        <Icon size={20} color={color} />
+      </Animated.View>
+      <Animated.View style={labelStyle}>
+        <Text
+          className={cn(
+            'text-[10px] font-normal',
+            focused ? 'text-foreground' : 'text-muted-foreground'
+          )}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      </Animated.View>
+    </>
+  );
+}
 
 export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarProps) {
   const pathname = usePathname();
@@ -94,36 +149,38 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
   const visibleItems = TAB_ITEMS.filter((item) =>
     state.routes.some((route) => route.name === item.routeName)
   );
+  // Pathname is the source of truth — state.index can lag during tab fade transitions.
+  const activeRoute = tabIdFromPathname(pathname);
   const activeVisibleIndex = Math.max(
     0,
-    visibleItems.findIndex((item) => {
-      const routeIndex = state.routes.findIndex(
-        (route) => route.name === item.routeName
-      );
-      return (
-        state.index === routeIndex ||
-        (item.routeName === 'decks' && pathname.startsWith('/decks'))
-      );
-    })
+    visibleItems.findIndex((item) => item.routeName === activeRoute)
   );
 
   const indicatorX = useSharedValue(0);
-  const segmentWidth = visibleItems.length > 0 ? tabBarWidth / visibleItems.length : 0;
+  const segmentWidth = useSharedValue(0);
+  const nextSegmentWidth = visibleItems.length > 0 ? tabBarWidth / visibleItems.length : 0;
 
   useEffect(() => {
-    const nextX = segmentWidth * activeVisibleIndex;
+    segmentWidth.value = nextSegmentWidth;
+    const nextX = nextSegmentWidth * activeVisibleIndex;
     if (reduceMotion) {
       indicatorX.value = nextX;
       return;
     }
     indicatorX.value = withTiming(nextX, {
-      duration: INDICATOR_MS,
+      duration: TAB_SCENE.durationMs,
       easing: INDICATOR_EASE,
     });
-  }, [activeVisibleIndex, indicatorX, reduceMotion, segmentWidth]);
+  }, [
+    activeVisibleIndex,
+    indicatorX,
+    nextSegmentWidth,
+    reduceMotion,
+    segmentWidth,
+  ]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
-    width: segmentWidth,
+    width: segmentWidth.value,
     transform: [{ translateX: indicatorX.value }],
   }));
 
@@ -144,7 +201,7 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
           backgroundColor: card,
         }}
       >
-        {segmentWidth > 0 ? (
+        {nextSegmentWidth > 0 ? (
           <Animated.View
             pointerEvents="none"
             className="absolute bottom-1 top-1 rounded-[3px] bg-card-panel"
@@ -156,9 +213,7 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
             (route) => route.name === item.routeName
           );
           const route = state.routes[routeIndex]!;
-          const isFocused =
-            state.index === routeIndex ||
-            (item.routeName === 'decks' && pathname.startsWith('/decks'));
+          const isFocused = item.routeName === activeRoute;
           const { options } = descriptors[route.key]!;
           const label = options.title ?? item.label;
 
@@ -196,16 +251,7 @@ export function MobileTabBar({ state, descriptors, navigation }: MobileTabBarPro
               contentClassName="items-center justify-center gap-0.5"
               depth={0.94}
             >
-              <Icon size={20} color={color} />
-              <Text
-                className={cn(
-                  'text-[10px] font-normal',
-                  isFocused ? 'text-foreground' : 'text-muted-foreground'
-                )}
-                numberOfLines={1}
-              >
-                {label}
-              </Text>
+              <TabGlyph focused={isFocused} color={color} Icon={Icon} label={label} />
             </PressableScale>
           );
         })}

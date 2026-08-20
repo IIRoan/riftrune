@@ -26,36 +26,34 @@ function baseEnv(overrides: Partial<Env> = {}): Env {
 }
 
 describe('resolveTrustedOrigins', () => {
-  test('includes app scheme, Expo Go, development client, configured origins, and auth base URL', () => {
+  test('production includes app scheme and configured origins, not Expo tunnels', () => {
     const origins = resolveTrustedOrigins(baseEnv());
     expect(origins).toContain('astral-grove://');
-    expect(origins).toContain('astral-grove-dev://');
-    expect(origins).toContain('exp://');
-    expect(origins).toContain('exp://**');
-    expect(origins).toContain('exp+astral-grove://');
-    expect(origins).toContain('https://u.expo.dev');
     expect(origins).toContain('https://astral-grove.com');
     expect(origins).toContain('https://api.astral-grove.com');
+    expect(origins).not.toContain('exp://');
+    expect(origins).not.toContain('https://u.expo.dev');
+    expect(origins).not.toContain('https://*.u.expo.dev');
   });
 
-  test('adds localhost origins in development', () => {
+  test('adds localhost and Expo origins outside production', () => {
     const origins = resolveTrustedOrigins(baseEnv({ NODE_ENV: 'development' }));
     expect(origins).toContain('http://localhost:7000');
     expect(origins).toContain('http://localhost:7001');
     expect(origins).toContain('http://localhost:7011');
     expect(origins).toContain('exp://');
+    expect(origins).toContain('astral-grove-dev://');
   });
 });
 
 describe('resolveCorsOrigins', () => {
-  test('allows all origins in development', () => {
+  test('allows all origins outside production', () => {
     expect(resolveCorsOrigins(baseEnv({ NODE_ENV: 'development' }))).toBe(true);
+    expect(resolveCorsOrigins(baseEnv({ NODE_ENV: 'test' }))).toBe(true);
   });
 
   test('returns browser origins in production', () => {
     expect(resolveCorsOrigins(baseEnv())).toEqual([
-      'https://u.expo.dev',
-      'https://*.u.expo.dev',
       'https://astral-grove.com',
       'https://api.astral-grove.com',
     ]);

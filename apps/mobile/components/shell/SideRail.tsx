@@ -11,6 +11,9 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { HoverTooltip } from '@/components/ui/hover-tooltip';
 import { Text } from '@/components/ui/text';
 import { FACTORY_RADIUS_CONTROL_CLASS } from '@/constants/factoryShape';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { TAB_SCENE } from '@/lib/motion';
+import { tabIdFromPathname, type AppTabId } from '@/lib/tab-route';
 import { cn } from '@/lib/utils';
 import { authClient } from '@/src/lib/auth-client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,10 +26,17 @@ import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 import { clearLastCachedUserId } from '@/services/userCacheScope';
 import { hapticPress } from '@/utils/haptics';
 import { usePathname, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-type NavId = 'search' | 'collection' | 'wishlist' | 'decks' | 'play' | 'settings';
+type NavId = Exclude<AppTabId, 'settings'>;
 
 const NAV_ITEMS: {
   id: NavId;
@@ -72,23 +82,45 @@ const NAV_ITEMS: {
   },
 ];
 
-function routeToNav(pathname: string): NavId {
-  if (pathname.includes('/collection')) return 'collection';
-  if (pathname.includes('/wishlist')) return 'wishlist';
-  if (pathname.includes('/decks')) return 'decks';
-  if (pathname.includes('/play')) return 'play';
-  if (pathname.includes('/settings')) return 'settings';
-  return 'search';
-}
+/** size-9 (36) + gap-0.5 (2) — deterministic so HoverTooltip wrappers cannot skew measure. */
+const RAIL_ITEM_STRIDE = 38;
+const RAIL_ITEM_HEIGHT = 36;
+const INDICATOR_EASE = Easing.out(Easing.cubic);
 
 export function SideRail() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const active = routeToNav(pathname);
+  const active = tabIdFromPathname(pathname);
   const sessionQuery = authClient.useSession();
   const { data: session } = sessionQuery;
   const queryClient = useQueryClient();
+  const reduceMotion = useReduceMotion();
+
+  const activeNavIndex = NAV_ITEMS.findIndex((item) => item.id === active);
+  const showNavIndicator = activeNavIndex >= 0;
+
+  const hasPositioned = useRef(false);
+  const indicatorY = useSharedValue(0);
+
+  useEffect(() => {
+    if (!showNavIndicator) return;
+    const nextY = activeNavIndex * RAIL_ITEM_STRIDE;
+    if (reduceMotion || !hasPositioned.current) {
+      indicatorY.value = nextY;
+      hasPositioned.current = true;
+      return;
+    }
+    indicatorY.value = withTiming(nextY, {
+      duration: TAB_SCENE.durationMs,
+      easing: INDICATOR_EASE,
+    });
+  }, [activeNavIndex, indicatorY, reduceMotion, showNavIndicator]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    height: RAIL_ITEM_HEIGHT,
+    transform: [{ translateY: indicatorY.value }],
+  }));
 
   const handleSignOut = async () => {
     await authClient.signOut();
@@ -129,24 +161,27 @@ export function SideRail() {
               router.push('/(tabs)/search');
             }}
           >
-            <Text className="font-mono text-sm font-medium text-foreground">
-              A
-            </Text>
+            <Text className="font-mono text-sm font-medium text-foreground">A</Text>
           </PressableScale>
         </HoverTooltip>
 
         <View className="h-px w-6 bg-border" />
 
-        <View className="mt-1 gap-0.5" accessibilityRole="tablist">
+        <View className="relative mt-1 gap-0.5" accessibilityRole="tablist">
+          {showNavIndicator ? (
+            <Animated.View
+              pointerEvents="none"
+              className={cn(
+                'absolute top-0 left-0 right-0 bg-card-panel',
+                FACTORY_RADIUS_CONTROL_CLASS
+              )}
+              style={indicatorStyle}
+            />
+          ) : null}
           {NAV_ITEMS.map(({ id, href, label, description, icon: Icon }) => {
             const isActive = active === id;
             return (
-              <HoverTooltip
-                key={id}
-                label={label}
-                description={description}
-                side="right"
-              >
+              <HoverTooltip key={id} label={label} description={description} side="right">
                 <PressableScale
                   accessibilityRole="tab"
                   accessibilityState={{ selected: isActive }}
@@ -155,11 +190,7 @@ export function SideRail() {
                     void hapticPress();
                     router.push(href as '/(tabs)/search');
                   }}
-                  className={cn(
-                    'size-9 items-center justify-center',
-                    FACTORY_RADIUS_CONTROL_CLASS,
-                    isActive && 'bg-card-panel'
-                  )}
+                  className={cn('size-9 items-center justify-center', FACTORY_RADIUS_CONTROL_CLASS)}
                   contentClassName="items-center justify-center"
                   depth={0.92}
                 >
@@ -199,26 +230,17 @@ export function SideRail() {
               <Text
                 className={cn(
                   'font-mono text-xs font-normal',
-                  active === 'settings'
-                    ? 'text-foreground'
-                    : 'text-muted-foreground'
+                  active === 'settings' ? 'text-foreground' : 'text-muted-foreground'
                 )}
               >
                 {userInitial}
               </Text>
             </PressableScale>
           </HoverTooltip>
-          <HoverTooltip
-            label="Sign out"
-            description="Sign out of The Astral Grove"
-            side="right"
-          >
+          <HoverTooltip label="Sign out" description="Sign out of The Astral Grove" side="right">
             <PressableScale
               accessibilityLabel="Sign out"
-              className={cn(
-                'size-9 items-center justify-center',
-                FACTORY_RADIUS_CONTROL_CLASS
-              )}
+              className={cn('size-9 items-center justify-center', FACTORY_RADIUS_CONTROL_CLASS)}
               contentClassName="items-center justify-center"
               onPress={() => {
                 void hapticPress();

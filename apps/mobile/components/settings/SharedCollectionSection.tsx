@@ -45,7 +45,9 @@ export function SharedCollectionSection({ className }: SharedCollectionSectionPr
   }
 
   const status = statusQuery.data;
-  const pendingUrl = status?.pendingInvite?.url;
+  const pendingInvite = status?.pendingInvite;
+  const pendingUrl = pendingInvite?.url;
+  const invitePending = Boolean(pendingInvite);
   const busy =
     createInvite.isPending || revokeInvite.isPending || leave.isPending || statusQuery.isLoading;
 
@@ -74,7 +76,7 @@ export function SharedCollectionSection({ className }: SharedCollectionSectionPr
   const onLeave = () => {
     confirmAction(
       'Leave shared collection',
-      'You will keep a full copy of the current shared inventory as your personal collection. Your partner keeps the shared list.',
+      'You will start a new empty personal collection. Your partner keeps the shared list. Export first if you want a copy of the cards.',
       () => {
         leave.mutate(undefined, {
           onError: (error) => {
@@ -173,27 +175,25 @@ export function SharedCollectionSection({ className }: SharedCollectionSectionPr
         </Text>
       </View>
 
-      {pendingUrl ? (
+      {invitePending ? (
         <View className="gap-3">
-          <View className="gap-2 rounded-[3px] border border-border bg-card-panel px-3 py-3">
-            <Text className="text-[10px] font-normal uppercase tracking-[1.6px] text-muted-foreground">
-              Invite link
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Copy invite link"
-              disabled={busy}
-              onPress={onCopyOrCreate}
-              className="active:opacity-80"
-            >
+          {pendingUrl ? (
+            <View className="gap-2 rounded-[3px] border border-border bg-card-panel px-3 py-3">
+              <Text className="text-[10px] font-normal uppercase tracking-[1.6px] text-muted-foreground">
+                Invite link
+              </Text>
               <Text className="font-mono text-sm leading-5 text-foreground" selectable>
                 {pendingUrl}
               </Text>
-            </Pressable>
-          </View>
+            </View>
+          ) : (
+            <Text className="text-sm text-muted-foreground">
+              An invite is pending. Create a new link to copy it again — that replaces the old one.
+            </Text>
+          )}
           <View className="flex-row items-center gap-3">
             <Button size="sm" disabled={busy} onPress={onCopyOrCreate} className="flex-1">
-              <ButtonText>Copy link</ButtonText>
+              <ButtonText>{pendingUrl ? 'Copy link' : 'Create new link'}</ButtonText>
             </Button>
             <Pressable
               accessibilityRole="button"

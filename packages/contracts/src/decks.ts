@@ -2,10 +2,16 @@ import { z } from 'zod';
 import { Pagination } from './cards.js';
 import { DeckCardInput, DeckEntryInput, DeckFormat } from './deck-rules.js';
 
-export const DeckSortField = z.enum(['trending', 'likes', 'views', 'createdAt', 'editedAt']);
+export const DeckSortField = z.enum([
+  'trending',
+  'likes',
+  'views',
+  'createdAt',
+  'editedAt',
+]);
 
 export const DecksListQuery = z.object({
-  q: z.string().optional(),
+  q: z.string().max(200).optional(),
   /** Legend name — forwarded upstream as `legend:<name>` in the search query. */
   legend: z.string().optional(),
   /** Comma-separated set prefixes — each forwarded as `set:<prefix>`. */
@@ -52,8 +58,10 @@ export const StoredDeckPayload = z.object({
   runes: z.array(DeckEntryInput),
   battlefields: z.array(DeckEntryInput),
   sideboard: z.array(DeckEntryInput),
-  /** Piltover Archive deck id after a successful upstream sync. */
+  /** Piltover Archive deck id after a successful upstream sync of *our* copy. */
   upstreamId: z.string().optional(),
+  /** Community deck this owned copy was imported from (duplicate-import detection; never a write/delete target). */
+  importedFromId: z.string().optional(),
   /** Warnings from upstream import when cards could not be fully resolved. */
   syncWarnings: z.array(z.string()).optional(),
 });

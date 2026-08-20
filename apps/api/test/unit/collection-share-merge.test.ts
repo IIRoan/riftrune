@@ -210,7 +210,6 @@ describe('collection share contracts', () => {
       inviter: {
         userId: 'u1',
         name: 'Alice',
-        email: 'alice@test.riftbound.dev',
       },
       theirItemCount: 2,
       theirTotalQuantity: 5,

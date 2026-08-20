@@ -6,7 +6,7 @@ import { apiJson } from './support.js';
 describe('cards printing grouping', () => {
   test('search rows keep alternate printings on separate list items', async () => {
     const json = await apiJson<unknown>(
-      '/api/v1/cards?q=OGN-253&limit=20&page=1&sortBy=name&dir=asc&refresh=true'
+      '/api/v1/cards?q=OGN-253&limit=20&page=1&sortBy=name&dir=asc'
     );
     const parsed = CardsListResponse.parse(json);
     expect(parsed.data.length).toBeGreaterThan(0);

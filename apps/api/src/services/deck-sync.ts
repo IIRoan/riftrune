@@ -740,7 +740,9 @@ export class DeckSyncService {
     }
 
     const upstreamTargetId =
-      deck.upstreamId ?? (deck.id.startsWith('deck_') ? undefined : deck.id);
+      deck.importedFromId && deck.upstreamId === deck.importedFromId
+        ? undefined
+        : deck.upstreamId;
 
     const payload = {
       ...(upstreamTargetId ? { id: upstreamTargetId } : {}),

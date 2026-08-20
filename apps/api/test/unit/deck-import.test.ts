@@ -50,6 +50,7 @@ describe('DeckService.importFromUpstream', () => {
     expect(upsertCalls[0]?.id).toMatch(/^deck_/);
     expect(upsertCalls[0]?.id).not.toBe('upstream-deck-1');
     expect(upsertCalls[0]?.upstreamId).toBe('upstream-deck-1');
+    expect(upsertCalls[0]?.importedFromId).toBe('upstream-deck-1');
     expect(upsertCalls[0]?.name).toBe('Imported Deck');
   });
 

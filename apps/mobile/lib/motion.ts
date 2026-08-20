@@ -45,6 +45,15 @@ export const FADE_TRANSITION = {
   durationMs: 220,
 } as const;
 
+/** Expo-out curve for height collapses and polished settles (near GSAP power3.out). */
+export const EASE_OUT_EXPO = Easing.bezier(0.16, 1, 0.3, 1);
+
+/** Bottom-tab scene crossfade — mechanical, matches tab indicator. */
+export const TAB_SCENE = {
+  durationMs: 220,
+  easing: Easing.out(Easing.cubic),
+} as const;
+
 /** Ambient pulse loops (final-point cue, etc.). */
 export const PULSE_MS = 1400;
 

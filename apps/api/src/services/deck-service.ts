@@ -1,5 +1,9 @@
 import { and, desc, eq } from 'drizzle-orm';
-import type { DeckListItem, DecksListQuery, StoredDeckPayload } from '@riftbound/contracts';
+import type {
+  DeckListItem,
+  DecksListQuery,
+  StoredDeckPayload,
+} from '@riftbound/contracts';
 import type { Database } from '../db/client.js';
 import { userDecks } from '../db/schema.js';
 import type { PaClient } from '../upstream/pa-client.js';
@@ -17,7 +21,10 @@ function toOwnedItem(payload: StoredDeckPayload): DeckListItem {
   return { ...payload, source: 'owned', readOnly: false };
 }
 
-function matchesDeckQuery(deck: Pick<StoredDeckPayload, 'name' | 'description' | 'legend' | 'champion'>, q: string): boolean {
+function matchesDeckQuery(
+  deck: Pick<StoredDeckPayload, 'name' | 'description' | 'legend' | 'champion'>,
+  q: string
+): boolean {
   const needle = q.trim().toLowerCase();
   if (!needle) return true;
   const haystack = [
@@ -33,6 +40,41 @@ function matchesDeckQuery(deck: Pick<StoredDeckPayload, 'name' | 'description' |
 
 function createOwnedDeckId(): string {
   return `deck_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+type PersistOptions = {
+  /** Import path: keep server-assigned provenance. Client PUTs must omit this. */
+  trustIncomingProvenance?: boolean;
+};
+
+/** Never persist client-supplied PA ids; only reuse stored or trusted import provenance. */
+export function deckPayloadForPersist(
+  incoming: StoredDeckPayload,
+  stored: StoredDeckPayload | null,
+  options?: PersistOptions
+): StoredDeckPayload {
+  const {
+    upstreamId: incomingUpstreamId,
+    importedFromId: incomingImportedFromId,
+    ...rest
+  } = incoming;
+  const next: StoredDeckPayload = {
+    ...rest,
+    description: rest.description ?? '',
+  };
+
+  const importedFromId =
+    stored?.importedFromId ??
+    (options?.trustIncomingProvenance ? incomingImportedFromId : undefined);
+  const upstreamId =
+    stored?.upstreamId ??
+    (options?.trustIncomingProvenance ? incomingUpstreamId : undefined);
+
+  return {
+    ...next,
+    ...(importedFromId ? { importedFromId } : {}),
+    ...(upstreamId ? { upstreamId } : {}),
+  };
 }
 
 export class DeckService {
@@ -60,7 +102,10 @@ export class DeckService {
     return rows.map((row) => row.payload as StoredDeckPayload);
   }
 
-  private async getOwnedPayload(userId: string, deckId: string): Promise<StoredDeckPayload | null> {
+  private async getOwnedPayload(
+    userId: string,
+    deckId: string
+  ): Promise<StoredDeckPayload | null> {
     const row = await this.db.query.userDecks.findFirst({
       where: and(eq(userDecks.userId, userId), eq(userDecks.id, deckId)),
     });
@@ -106,13 +151,13 @@ export class DeckService {
     const importedItems: DeckListItem[] = [];
     let pagination:
       | {
-          total: number;
-          page: number;
-          limit: number;
-          totalPages: number;
-          hasNext: boolean;
-          hasPrevious: boolean;
-        }
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrevious: boolean;
+      }
       | undefined;
 
     if (this.deckSync && source !== 'owned') {
@@ -139,10 +184,16 @@ export class DeckService {
   }
 
   /** Copy a read-only upstream deck into the user's owned decks. */
-  async importFromUpstream(userId: string, sourceDeckId: string): Promise<DeckListItem | null> {
+  async importFromUpstream(
+    userId: string,
+    sourceDeckId: string
+  ): Promise<DeckListItem | null> {
     const ownedPayloads = await this.listOwnedPayloads(userId);
     const existing = ownedPayloads.find(
-      (deck) => deck.upstreamId === sourceDeckId || deck.id === sourceDeckId
+      (deck) =>
+        deck.importedFromId === sourceDeckId ||
+        deck.upstreamId === sourceDeckId ||
+        deck.id === sourceDeckId
     );
     if (existing) return toOwnedItem(existing);
 
@@ -156,11 +207,15 @@ export class DeckService {
       ...imported,
       id: createOwnedDeckId(),
       upstreamId: sourceDeckId,
+      importedFromId: sourceDeckId,
       createdAt: now,
       updatedAt: now,
     };
 
-    return this.upsert(userId, copy);
+    return this.upsert(userId, copy, {
+      trustIncomingProvenance: true,
+      skipUpstreamSync: true,
+    });
   }
 
   async getForUser(userId: string, deckId: string): Promise<DeckListItem | null> {
@@ -178,7 +233,11 @@ export class DeckService {
     }
   }
 
-  async upsert(userId: string, deck: StoredDeckPayload): Promise<DeckListItem> {
+  async upsert(
+    userId: string,
+    deck: StoredDeckPayload,
+    options?: PersistOptions & { skipUpstreamSync?: boolean }
+  ): Promise<DeckListItem> {
     const owned = await this.getOwnedPayload(userId, deck.id);
     if (!owned && this.deckSync) {
       try {
@@ -189,15 +248,18 @@ export class DeckService {
       }
     }
 
-    let next: StoredDeckPayload = { ...deck, description: deck.description ?? '' };
+    const nextBase = deckPayloadForPersist(deck, owned, options);
+    let next: StoredDeckPayload = nextBase;
 
-    if (this.deckSync) {
+    if (this.deckSync && !options?.skipUpstreamSync) {
       try {
         const synced = await this.deckSync.upsertUpstreamDeck(next);
+        const upstreamId =
+          synced.id !== next.id ? synced.id : (next.upstreamId ?? synced.upstreamId);
         next = {
           ...next,
-          upstreamId: synced.id !== next.id ? synced.id : next.upstreamId ?? synced.id,
           updatedAt: Math.max(next.updatedAt, synced.updatedAt),
+          ...(upstreamId ? { upstreamId } : {}),
         };
       } catch {
         // Local save still succeeds when upstream write is unavailable.
@@ -228,7 +290,11 @@ export class DeckService {
         },
       });
 
-    return toOwnedItem({ ...next, description: next.description ?? '', updatedAt: now.getTime() });
+    return toOwnedItem({
+      ...next,
+      description: next.description ?? '',
+      updatedAt: now.getTime(),
+    });
   }
 
   async delete(userId: string, deckId: string): Promise<boolean> {
@@ -245,14 +311,15 @@ export class DeckService {
       return false;
     }
 
-    if (this.deckSync) {
-      const upstreamDeleteId = owned.upstreamId ?? (!owned.id.startsWith('deck_') ? owned.id : null);
-      if (upstreamDeleteId) {
-        try {
-          await this.deckSync.deleteUpstreamDeck(upstreamDeleteId);
-        } catch {
-          // Still remove the local copy when upstream delete fails.
-        }
+    if (
+      this.deckSync &&
+      owned.upstreamId &&
+      owned.upstreamId !== owned.importedFromId
+    ) {
+      try {
+        await this.deckSync.deleteUpstreamDeck(owned.upstreamId);
+      } catch {
+        // Still remove the local copy when upstream delete fails.
       }
     }
 

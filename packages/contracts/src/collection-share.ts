@@ -3,18 +3,23 @@ import { z } from 'zod';
 export const CollectionShareAcceptMode = z.enum(['use_theirs', 'merge']);
 export type CollectionShareAcceptMode = z.infer<typeof CollectionShareAcceptMode>;
 
-export const CollectionSharePartner = z.object({
+export const CollectionSharePerson = z.object({
   userId: z.string(),
   name: z.string(),
+});
+
+export type CollectionSharePerson = z.infer<typeof CollectionSharePerson>;
+
+export const CollectionSharePartner = CollectionSharePerson.extend({
   email: z.string().email(),
 });
 
 export type CollectionSharePartner = z.infer<typeof CollectionSharePartner>;
 
 export const CollectionSharePendingInvite = z.object({
-  token: z.string(),
-  url: z.string(),
   expiresAt: z.string().datetime(),
+  token: z.string().optional(),
+  url: z.string().optional(),
 });
 
 export type CollectionSharePendingInvite = z.infer<typeof CollectionSharePendingInvite>;
@@ -36,8 +41,16 @@ export const CollectionShareStatusResponse = z.object({
 
 export type CollectionShareStatusResponse = z.infer<typeof CollectionShareStatusResponse>;
 
+export const CollectionShareInviteCreate = z.object({
+  token: z.string(),
+  url: z.string(),
+  expiresAt: z.string().datetime(),
+});
+
+export type CollectionShareInviteCreate = z.infer<typeof CollectionShareInviteCreate>;
+
 export const CollectionShareInviteCreateResponse = z.object({
-  data: CollectionSharePendingInvite,
+  data: CollectionShareInviteCreate,
 });
 
 export type CollectionShareInviteCreateResponse = z.infer<
@@ -47,7 +60,7 @@ export type CollectionShareInviteCreateResponse = z.infer<
 export const CollectionShareInvitePreview = z.object({
   token: z.string(),
   expiresAt: z.string().datetime(),
-  inviter: CollectionSharePartner,
+  inviter: CollectionSharePerson,
   theirItemCount: z.number().int().nonnegative(),
   theirTotalQuantity: z.number().int().nonnegative(),
   yourItemCount: z.number().int().nonnegative(),

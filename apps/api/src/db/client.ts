@@ -8,21 +8,25 @@ import * as schema from './schema.js';
 
 const fullSchema = { ...authSchema, ...schema };
 
-function resolveSsl(databaseUrl: string): Options<Record<string, never>>['ssl'] | undefined {
+export function resolveSsl(
+  databaseUrl: string,
+  isProduction: boolean
+): Options<Record<string, never>>['ssl'] | undefined {
   try {
     const sslmode = new URL(databaseUrl).searchParams.get('sslmode');
+    if (sslmode === 'disable') return undefined;
     if (sslmode === 'require' || sslmode === 'verify-full' || sslmode === 'verify-ca') {
       return 'require';
     }
   } catch {
-    // Fall back to the driver's default parsing.
+    // Fall back to production default below.
   }
-  return undefined;
+  return isProduction ? 'require' : undefined;
 }
 
 export function createPostgresOptions(env: Env): Options<Record<string, never>> {
   const isProduction = env.NODE_ENV === 'production';
-  const ssl = resolveSsl(env.DATABASE_URL);
+  const ssl = resolveSsl(env.DATABASE_URL, isProduction);
 
   return {
     max: env.DB_POOL_MAX ?? (isProduction ? 10 : 20),

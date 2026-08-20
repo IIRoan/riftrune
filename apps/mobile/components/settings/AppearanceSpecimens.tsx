@@ -181,7 +181,7 @@ function GridLayoutPreview({ cards }: { cards: CardListItem[] }) {
       >
         {slots.map((card, index) => (
           <View
-            key={card?.variantNumber ?? `grid-slot-${index}`}
+            key={card ? `${card.variantNumber}-grid-${String(index)}` : `grid-slot-${index}`}
             style={{ width: GRID_TILE_WIDTH }}
           >
             {card ? (
@@ -218,7 +218,7 @@ function ListLayoutPreview({ cards }: { cards: CardListItem[] }) {
         {slots.map((card, index) =>
           card ? (
             <CardTile
-              key={card.variantNumber}
+              key={`${card.variantNumber}-list-${String(index)}`}
               card={card}
               layout="list"
               mode="search"
@@ -311,25 +311,32 @@ export function AppearanceSpecimens() {
           {(['list', 'grid'] as const).map((layout) => {
             const selected = defaultLayout === layout;
             return (
-              <Pressable
+              <View
                 key={layout}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={`${layout} layout`}
-                onPress={() => {
-                  setDefaultLayout(layout);
-                }}
                 className={cn(
-                  'min-w-0 flex-1 gap-2 rounded-[3px] border p-2 active:opacity-90',
+                  'relative min-w-0 flex-1 gap-2 rounded-[3px] border p-2',
                   selected ? 'border-foreground bg-card-panel' : 'border-border bg-card'
                 )}
               >
-                {layout === 'list' ? (
-                  <ListLayoutPreview cards={previewCards} />
-                ) : (
-                  <GridLayoutPreview cards={previewCards} />
-                )}
+                {/* Overlay hit target — CardTile previews render their own buttons. */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`${layout} layout`}
+                  onPress={() => {
+                    setDefaultLayout(layout);
+                  }}
+                  className="absolute inset-0 z-10 rounded-[3px] active:opacity-90"
+                />
+                <View pointerEvents="none">
+                  {layout === 'list' ? (
+                    <ListLayoutPreview cards={previewCards} />
+                  ) : (
+                    <GridLayoutPreview cards={previewCards} />
+                  )}
+                </View>
                 <Text
+                  pointerEvents="none"
                   className={cn(
                     'px-0.5 text-sm font-normal capitalize',
                     selected ? 'text-foreground' : 'text-muted-foreground'
@@ -337,7 +344,7 @@ export function AppearanceSpecimens() {
                 >
                   {layout}
                 </Text>
-              </Pressable>
+              </View>
             );
           })}
         </View>

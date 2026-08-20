@@ -25,6 +25,7 @@ import type { CollectionService } from '../services/collection-service.js';
 import { CollectionAuditService } from '../services/collection-audit-service.js';
 import {
   collectionLiveHub,
+  CollectionLiveLimitError,
   type CollectionLiveHub,
 } from '../services/collection-live-hub.js';
 
@@ -80,7 +81,7 @@ function notifyLive(
   hub.publish(collectionId, reason, actorUserId);
 }
 
-async function* streamCollectionLiveEvents(
+function streamCollectionLiveEvents(
   request: Request,
   collectionId: string,
   liveHub: CollectionLiveHub
@@ -97,48 +98,50 @@ async function* streamCollectionLiveEvents(
   };
   request.signal.addEventListener('abort', onAbort);
 
-  try {
-    yield sse({
-      event: 'ready',
-      data: { type: 'ready', collectionId },
-    });
+  return (async function* () {
+    try {
+      yield sse({
+        event: 'ready',
+        data: { type: 'ready', collectionId },
+      });
 
-    while (!request.signal.aborted) {
-      const waited = await Promise.race([
-        new Promise<'event'>((resolve) => {
-          wake = () => {
-            resolve('event');
-          };
-          if (queue.length > 0) resolve('event');
-        }),
-        new Promise<'heartbeat'>((resolve) => {
-          setTimeout(() => {
-            resolve('heartbeat');
-          }, HEARTBEAT_MS);
-        }),
-      ]);
-      wake = null;
+      while (!request.signal.aborted) {
+        const waited = await Promise.race([
+          new Promise<'event'>((resolve) => {
+            wake = () => {
+              resolve('event');
+            };
+            if (queue.length > 0) resolve('event');
+          }),
+          new Promise<'heartbeat'>((resolve) => {
+            setTimeout(() => {
+              resolve('heartbeat');
+            }, HEARTBEAT_MS);
+          }),
+        ]);
+        wake = null;
 
-      while (queue.length > 0) {
-        const event = queue.shift();
-        if (!event) break;
-        yield sse({
-          event: event.type,
-          data: event,
-        });
+        while (queue.length > 0) {
+          const event = queue.shift();
+          if (!event) break;
+          yield sse({
+            event: event.type,
+            data: event,
+          });
+        }
+
+        if (waited === 'heartbeat' && !request.signal.aborted) {
+          yield sse({
+            event: 'heartbeat',
+            data: { type: 'heartbeat', at: new Date().toISOString() },
+          });
+        }
       }
-
-      if (waited === 'heartbeat' && !request.signal.aborted) {
-        yield sse({
-          event: 'heartbeat',
-          data: { type: 'heartbeat', at: new Date().toISOString() },
-        });
-      }
+    } finally {
+      request.signal.removeEventListener('abort', onAbort);
+      unsub();
     }
-  } finally {
-    request.signal.removeEventListener('abort', onAbort);
-    unsub();
-  }
+  })();
 }
 
 export function createCollectionRoutes(
@@ -209,7 +212,15 @@ export function createCollectionRoutes(
         return unauthorized();
       }
       const { collectionId } = await ensureCollectionMembership(db, user.id);
-      return streamCollectionLiveEvents(request, collectionId, liveHub);
+      try {
+        return streamCollectionLiveEvents(request, collectionId, liveHub);
+      } catch (error) {
+        if (error instanceof CollectionLiveLimitError) {
+          set.status = 429;
+          return { error: 'RATE_LIMITED', message: 'Too many live listeners' };
+        }
+        throw error;
+      }
     })
     .post(
       '/quantities',

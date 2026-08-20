@@ -16,6 +16,7 @@ import {
   PricesListResponse,
 } from '@riftbound/contracts';
 import { authFetch, cleanupTestUsers, signUpTestUser } from './helpers/auth.js';
+import { getEnv } from './support.js';
 import { assertMaxMs, readBudget, timedJson } from './helpers/timing.js';
 
 setDefaultTimeout(180_000);
@@ -189,7 +190,9 @@ describe('API response times (cached catalog)', () => {
 
   test(`GET /api/v1/sync/status ≤ ${String(BUDGET.syncStatus)}ms`, async () => {
     const { ms, data } = await timedJson<unknown>('sync status', () =>
-      authFetch('/api/v1/sync/status')
+      authFetch('/api/v1/sync/status', {
+        headers: { Authorization: `Bearer ${getEnv().ADMIN_SYNC_TOKEN}` },
+      })
     );
     expect(data).toBeTruthy();
     assertMaxMs('sync status', ms, BUDGET.syncStatus);

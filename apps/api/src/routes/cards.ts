@@ -2,18 +2,22 @@ import { Elysia } from 'elysia';
 import { CardsBatchRequest, CardsListQuery } from '@riftbound/contracts';
 import type { CardCacheService } from '../services/card-cache.js';
 import type { Env } from '../env.js';
+import { isAdminAuthorization } from '../lib/admin-token.js';
 
-export function createCardsRoutes(cards: CardCacheService, _env: Env) {
+export function createCardsRoutes(cards: CardCacheService, env: Env) {
   return new Elysia({ prefix: '/api/v1/cards' })
-    .get('/', { detail: { tags: ['cards'] } }, async ({ query, set }) => {
+    .get('/', { detail: { tags: ['cards'] } }, async ({ query, set, request }) => {
       const parsed = CardsListQuery.parse(query);
-      const result = await cards.search(parsed);
+      const refresh =
+        parsed.refresh === true &&
+        isAdminAuthorization(env, request.headers.get('authorization'));
+      const result = await cards.search({ ...parsed, refresh });
       const totalPages = Math.ceil(result.total / parsed.limit) || 1;
-    
-      if (!parsed.refresh) {
+
+      if (!refresh) {
         set.headers['cache-control'] = 'public, max-age=300, stale-while-revalidate=60';
       }
-    
+
       return {
         data: result.items,
         meta: {
@@ -43,8 +47,10 @@ export function createCardsRoutes(cards: CardCacheService, _env: Env) {
         },
       };
     })
-    .get('/:variantNumber', { detail: { tags: ['cards'] } }, async ({ params, query }) => {
-      const refresh = query.refresh === 'true';
+    .get('/:variantNumber', { detail: { tags: ['cards'] } }, async ({ params, query, request }) => {
+      const refresh =
+        query.refresh === 'true' &&
+        isAdminAuthorization(env, request.headers.get('authorization'));
       const result = await cards.getByVariantNumber(params.variantNumber, {
         refresh,
       });

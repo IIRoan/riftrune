@@ -1,4 +1,4 @@
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type {
   CollectionShareAcceptMode,
   CollectionShareStatus,
@@ -13,6 +13,11 @@ import {
   collections,
 } from '../db/schema.js';
 import { ensureCollectionMembership } from './collection-membership.js';
+import {
+  createInviteToken,
+  hashInviteToken,
+  inviteLookupKeys,
+} from '../lib/invite-token.js';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_MEMBERS = 2;
@@ -125,12 +130,11 @@ export class CollectionShareService {
         )
       );
 
-    const token =
-      crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+    const token = createInviteToken();
     const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
 
     await this.db.insert(collectionInvites).values({
-      token,
+      token: hashInviteToken(token),
       collectionId: membership.collectionId,
       inviterUserId: userId,
       status: 'pending',
@@ -162,7 +166,6 @@ export class CollectionShareService {
       .select({
         userId: userTable.id,
         name: userTable.name,
-        email: userTable.email,
       })
       .from(userTable)
       .where(eq(userTable.id, invite.inviterUserId))
@@ -200,12 +203,11 @@ export class CollectionShareService {
     }
 
     return {
-      token: invite.token,
+      token,
       expiresAt: toIso(invite.expiresAt),
       inviter: {
         userId: inviter.userId,
         name: inviter.name,
-        email: inviter.email,
       },
       theirItemCount: theirStats.itemCount,
       theirTotalQuantity: theirStats.totalQuantity,
@@ -228,7 +230,7 @@ export class CollectionShareService {
       const [invite] = await tx
         .select()
         .from(collectionInvites)
-        .where(eq(collectionInvites.token, token))
+        .where(inArray(collectionInvites.token, inviteLookupKeys(token)))
         .limit(1);
 
       if (!invite || invite.status !== 'pending') {
@@ -448,11 +450,6 @@ export class CollectionShareService {
         );
       }
 
-      const items = await tx
-        .select()
-        .from(collectionItems)
-        .where(eq(collectionItems.collectionId, membership.collectionId));
-
       const [created] = await tx
         .insert(collections)
         .values({})
@@ -461,42 +458,14 @@ export class CollectionShareService {
         throw new Error('Failed to create personal collection');
       }
 
-      if (items.length > 0) {
-        await tx.insert(collectionItems).values(
-          items.map((item) => ({
-            collectionId: created.id,
-            variantNumber: item.variantNumber,
-            quantity: item.quantity,
-            condition: item.condition,
-            language: item.language,
-            isFoil: item.isFoil,
-            notes: item.notes,
-            isGraded: item.isGraded,
-            gradeCompany: item.gradeCompany,
-            gradeScore: item.gradeScore,
-            acquiredAt: item.acquiredAt,
-            acquiredPriceCents: item.acquiredPriceCents,
-          }))
-        );
-
-        await tx.insert(collectionAuditEvents).values(
-          items.map((item) => ({
-            collectionId: created.id,
-            actorUserId: userId,
-            action: 'share_leave',
-            variantNumber: item.variantNumber,
-            condition: item.condition,
-            language: item.language,
-            isFoil: item.isFoil,
-            quantityBefore: 0,
-            quantityAfter: item.quantity,
-            quantityDelta: item.quantity,
-            metadata: {
-              previousCollectionId: membership.collectionId,
-            },
-          }))
-        );
-      }
+      await tx.insert(collectionAuditEvents).values({
+        collectionId: created.id,
+        actorUserId: userId,
+        action: 'share_leave',
+        metadata: {
+          previousCollectionId: membership.collectionId,
+        },
+      });
 
       await tx
         .update(collectionMembers)
@@ -526,7 +495,7 @@ export class CollectionShareService {
     const [invite] = await this.db
       .select()
       .from(collectionInvites)
-      .where(eq(collectionInvites.token, token))
+      .where(inArray(collectionInvites.token, inviteLookupKeys(token)))
       .limit(1);
 
     if (!invite) {
@@ -604,8 +573,6 @@ export class CollectionShareService {
         .limit(1);
       if (invite && invite.expiresAt.getTime() >= Date.now()) {
         pendingInvite = {
-          token: invite.token,
-          url: this.inviteUrl(invite.token),
           expiresAt: toIso(invite.expiresAt),
         };
       }

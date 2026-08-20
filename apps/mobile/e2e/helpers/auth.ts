@@ -15,7 +15,7 @@ export function uniqueTestUser(prefix = 'ui-e2e'): UiE2eUser {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   return {
     email: `${prefix}-${stamp}@test.riftbound.dev`,
-    password: 'password123',
+    password: 'Password1234',
     name: `UI E2E ${stamp}`,
   };
 }

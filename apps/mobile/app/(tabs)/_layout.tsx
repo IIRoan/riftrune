@@ -5,13 +5,16 @@ import { AppShell } from '@/components/shell/AppShell';
 import { MobileTabBar, type MobileTabBarProps } from '@/components/shell/MobileTabBar';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { mobileTabBarVisible } from '@/lib/mobile-chrome';
+import { TAB_SCENE } from '@/lib/motion';
 import { Tabs } from 'expo-router';
 
 export default function TabLayout() {
   const pathname = usePathname();
   const showRail = useShowSideRail();
   const showTabBar = mobileTabBarVisible(pathname, showRail);
+  const reduceMotion = useReduceMotion();
   const [backgroundRaw] = useCSSVariable(['--color-background']);
   const background = String(backgroundRaw ?? 'oklch(0.130 0 0)');
 
@@ -20,6 +23,8 @@ export default function TabLayout() {
       <AppShell>
         <View className="min-h-0 min-w-0 flex-1 bg-background">
           <Tabs
+            // Avoid intermittent blank scenes with animated bottom tabs (RN Screens).
+            detachInactiveScreens={false}
             tabBar={
               showTabBar
                 ? (props) => (
@@ -29,8 +34,14 @@ export default function TabLayout() {
             }
             screenOptions={{
               headerShown: false,
-              // iOS/Android tab apps swap instantly — motion lives in the tab bar indicator.
-              animation: 'none',
+              animation: reduceMotion ? 'none' : 'fade',
+              transitionSpec: {
+                animation: 'timing',
+                config: {
+                  duration: TAB_SCENE.durationMs,
+                  easing: TAB_SCENE.easing,
+                },
+              },
               sceneStyle: { backgroundColor: background, flex: 1 },
             }}
           >

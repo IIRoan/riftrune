@@ -118,6 +118,20 @@ function RootNav() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="verify-email"
+          options={{
+            title: 'Verify email',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="reset-password"
+          options={{
+            title: 'Reset password',
+            headerShown: false,
+          }}
+        />
       </Stack>
     </NavThemeProvider>
   );

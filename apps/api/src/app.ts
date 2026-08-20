@@ -7,6 +7,8 @@ import type { Env } from './env.js';
 import { resolveCorsOrigins } from './lib/trusted-origins.js';
 import { createAuthPlugin } from './plugins/auth.js';
 import { errorPlugin } from './plugins/error-handler.js';
+import { createRateLimitPlugin } from './plugins/rate-limit.js';
+import { createSecurityHeadersPlugin } from './plugins/security-headers.js';
 import { createCardsRoutes } from './routes/cards.js';
 import { createImagesRoutes } from './routes/images.js';
 import { createCollectionRoutes } from './routes/collection.js';
@@ -59,7 +61,8 @@ function buildApp(env: Env): AppContext {
   const collectionShareService = new CollectionShareService(db, env.PUBLIC_APP_URL);
   const wishlistService = new WishlistService(db, imageStore);
   const upstreamDeckWriteExtraHeader =
-    env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME && env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE
+    env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME &&
+      env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE
       ? {
         name: env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME,
         value: env.UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE,
@@ -77,9 +80,11 @@ function buildApp(env: Env): AppContext {
         allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
       })
     )
+    .use(createSecurityHeadersPlugin(env))
+    .use(createRateLimitPlugin(env))
     .use(errorPlugin)
     .use(authPlugin)
-    .use(createHealthRoutes(db, syncEngine))
+    .use(createHealthRoutes(db, syncEngine, env))
     .use(createImagesRoutes(imageStore))
     .use(createCardsRoutes(cardCache, env))
     .use(createSearchRoutes(cardCache))
@@ -152,7 +157,9 @@ export function startSyncCrons(ctx: AppContext, env: Env): void {
           console.log('[prices] Search cache invalidated after cron price change');
         } else if (result.cardmarketIdsBackfilled > 0) {
           ctx.cardCache.invalidateSearchCache();
-          console.log('[prices] Search cache invalidated after cron Cardmarket id backfill');
+          console.log(
+            '[prices] Search cache invalidated after cron Cardmarket id backfill'
+          );
         }
       })
       .catch((err: unknown) => {

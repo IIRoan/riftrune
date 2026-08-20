@@ -6,14 +6,26 @@ export type CollectionLiveListener = (event: CollectionLiveChangedEvent) => void
  * In-process fan-out for shared-collection SSE subscribers.
  * Fine for a single API instance; multi-instance would need Redis or LISTEN/NOTIFY.
  */
+export class CollectionLiveLimitError extends Error {
+  constructor() {
+    super('Too many live listeners');
+    this.name = 'CollectionLiveLimitError';
+  }
+}
+
 export class CollectionLiveHub {
   private readonly listeners = new Map<string, Set<CollectionLiveListener>>();
+
+  constructor(private readonly maxPerCollection = 8) { }
 
   subscribe(collectionId: string, listener: CollectionLiveListener): () => void {
     let set = this.listeners.get(collectionId);
     if (!set) {
       set = new Set();
       this.listeners.set(collectionId, set);
+    }
+    if (set.size >= this.maxPerCollection) {
+      throw new CollectionLiveLimitError();
     }
     set.add(listener);
     return () => {

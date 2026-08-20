@@ -90,7 +90,7 @@ export const CardDetail = z.object({
 });
 
 export const CardsListQuery = z.object({
-  q: z.string().optional(),
+  q: z.string().max(200).optional(),
   sets: z.string().optional(),
   colors: z.string().optional(),
   /**

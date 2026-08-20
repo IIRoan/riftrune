@@ -43,6 +43,23 @@ function loadDotEnvFile(): void {
 
 loadDotEnvFile();
 
+/** E2E auth expects immediate sessions; Stalwart mail is covered by unit mocks. */
+function disableTransactionalEmailForE2E(): void {
+  delete process.env.STALWART_JMAP_URL;
+  delete process.env.STALWART_JMAP_USERNAME;
+  delete process.env.STALWART_JMAP_PASSWORD;
+  delete process.env.EMAIL_FROM;
+  delete process.env.EMAIL_FROM_NAME;
+}
+
+/** Keep invite / reset link hosts deterministic in e2e (ignore developer PUBLIC_APP_URL). */
+function pinPublicAppUrlForE2E(): void {
+  process.env.PUBLIC_APP_URL = process.env.E2E_PUBLIC_APP_URL ?? 'http://localhost:7001';
+}
+
+disableTransactionalEmailForE2E();
+pinPublicAppUrlForE2E();
+
 let ctx: AppContext | null = null;
 let ownsServer = false;
 let baseUrl = '';
@@ -235,10 +252,16 @@ export async function syncPricesForE2E(): Promise<void> {
   });
 }
 
+export function adminAuthHeaders(): HeadersInit {
+  return { Authorization: `Bearer ${getEnv().ADMIN_SYNC_TOKEN}` };
+}
+
 export async function ensurePricesSynced(): Promise<void> {
   const status = await apiJson<{
     data: { prices: { rowCount: number } };
-  }>('/api/v1/sync/status');
+  }>('/api/v1/sync/status', {
+    headers: { Authorization: `Bearer ${getEnv().ADMIN_SYNC_TOKEN}` },
+  });
 
   if (status.data.prices.rowCount > 0) return;
 

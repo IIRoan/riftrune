@@ -42,17 +42,17 @@ export const CollectionUpsertRequest = z.object({
   variantNumber: z.string().min(1),
   quantity: z.number().int().min(0).default(1),
   condition: CardCondition.default('near_mint'),
-  language: z.string().default('en'),
+  language: z.string().max(16).default('en'),
   /**
    * Finish stack to write. Required to distinguish standard vs foil when a single
    * upstream SKU has `foilMode=both` without a distinct `-Foil` sibling.
    * When omitted, the API derives finish from catalog metadata.
    */
   isFoil: z.boolean().optional(),
-  notes: z.string().nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
   isGraded: z.boolean().optional(),
-  gradeCompany: z.string().nullable().optional(),
-  gradeScore: z.string().nullable().optional(),
+  gradeCompany: z.string().max(64).nullable().optional(),
+  gradeScore: z.string().max(32).nullable().optional(),
   acquiredAt: z.string().datetime().nullable().optional(),
   acquiredPriceCents: z.number().int().nullable().optional(),
 });
@@ -60,7 +60,7 @@ export const CollectionUpsertRequest = z.object({
 export type CollectionUpsertRequest = z.infer<typeof CollectionUpsertRequest>;
 
 export const CollectionBatchSyncRequest = z.object({
-  items: z.array(CollectionUpsertRequest),
+  items: z.array(CollectionUpsertRequest).max(500),
 });
 
 export const CollectionListResponse = z.object({
@@ -115,7 +115,7 @@ export const WishlistUpsertRequest = z.object({
   variantNumber: z.string().min(1),
   priority: z.number().int().min(0).max(3).default(0),
   targetPriceCents: z.number().int().nullable().optional(),
-  notes: z.string().nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
 });
 
 export const WishlistListResponse = z.object({
@@ -128,21 +128,22 @@ export const WishlistItemResponse = z.object({
 });
 
 export const CollectionImportRequest = z.object({
-  csv: z.string().min(1).optional(),
+  csv: z.string().min(1).max(512_000).optional(),
   items: z
     .array(
       z.object({
         variantNumber: z.string().min(1),
         quantity: z.number().int().positive(),
         condition: CardCondition.default('near_mint'),
-        language: z.string().default('en'),
+        language: z.string().max(16).default('en'),
         isFoil: z.boolean().optional(),
-        notes: z.string().nullable().optional(),
+        notes: z.string().max(2000).nullable().optional(),
         isGraded: z.boolean().optional(),
-        gradeCompany: z.string().nullable().optional(),
-        gradeScore: z.string().nullable().optional(),
+        gradeCompany: z.string().max(64).nullable().optional(),
+        gradeScore: z.string().max(32).nullable().optional(),
       })
     )
+    .max(2000)
     .optional(),
 });
 

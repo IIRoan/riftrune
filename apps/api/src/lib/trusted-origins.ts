@@ -31,12 +31,14 @@ export function resolveTrustedOrigins(env: Env): string[] {
   const origins = new Set<string>([
     'astral-grove://',
     'astral-grove://*',
-    ...EXPO_DEV_ORIGINS,
     ...env.TRUSTED_ORIGINS,
     ...(baseOrigin ? [baseOrigin] : []),
   ]);
 
-  if (env.NODE_ENV === 'development') {
+  if (env.NODE_ENV !== 'production') {
+    for (const origin of EXPO_DEV_ORIGINS) {
+      origins.add(origin);
+    }
     for (const origin of [
       'http://localhost:7000',
       'http://localhost:7001',
@@ -53,7 +55,7 @@ export function resolveTrustedOrigins(env: Env): string[] {
 }
 
 export function resolveCorsOrigins(env: Env): true | string[] {
-  if (env.NODE_ENV === 'development') return true;
+  if (env.NODE_ENV !== 'production') return true;
 
   const browserOrigins = resolveTrustedOrigins(env).filter(
     (origin) => origin.startsWith('http://') || origin.startsWith('https://')

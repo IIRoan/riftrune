@@ -88,8 +88,9 @@ describe('shared collection invite flows', () => {
       await (await authFetch('/api/v1/collection/share', { cookie })).json()
     );
     expect(statusAfter.data.pendingInvite).not.toBeNull();
-    expect(statusAfter.data.pendingInvite?.token).toBe(created.data.token);
-    expect(statusAfter.data.pendingInvite?.url).toBe(created.data.url);
+    expect(statusAfter.data.pendingInvite?.expiresAt).toBe(created.data.expiresAt);
+    expect(statusAfter.data.pendingInvite?.token).toBeUndefined();
+    expect(statusAfter.data.pendingInvite?.url).toBeUndefined();
 
     const recreate = CollectionShareInviteCreateResponse.parse(
       await (
@@ -268,7 +269,7 @@ describe('shared collection invite flows', () => {
     expect(wishlistC.data.some((i) => i.variantNumber === 'OGN-210')).toBe(false);
   });
 
-  test('leave copies inventory to a personal collection', async () => {
+  test('leave starts an empty personal collection and leaves shared inventory behind', async () => {
     const stamp3 = Date.now();
     const cookieE = await signUpTestUser({
       email: `test-db-share-e-${stamp3}@test.riftbound.dev`,
@@ -317,9 +318,7 @@ describe('shared collection invite flows', () => {
     const listF = CollectionListResponse.parse(
       await (await authFetch('/api/v1/collection', { cookie: cookieF })).json()
     );
-    expect(listF.data.some((i) => i.variantNumber === 'OGN-220' && i.quantity === 4)).toBe(
-      true
-    );
+    expect(listF.data.some((i) => i.variantNumber === 'OGN-220')).toBe(false);
 
     const sessionF = await (await authFetch('/api/auth/get-session', { cookie: cookieF })).json();
     const sessionE = await (await authFetch('/api/auth/get-session', { cookie: cookieE })).json();

@@ -39,4 +39,12 @@ describe('CollectionLiveHub', () => {
     hub.publish(collectionId, 'add', 'u1');
     expect(count).toBe(1);
   });
+
+  test('rejects additional subscribers past the per-collection cap', () => {
+    const hub = new CollectionLiveHub(1);
+    const collectionId = '44444444-4444-4444-4444-444444444444';
+    const unsub = hub.subscribe(collectionId, () => undefined);
+    expect(() => hub.subscribe(collectionId, () => undefined)).toThrow('Too many live listeners');
+    unsub();
+  });
 });

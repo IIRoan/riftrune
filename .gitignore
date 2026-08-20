@@ -23,6 +23,9 @@ apps/mobile/.env
 # Dev tunnel (ephemeral quick-tunnel URL)
 .dev/
 
+# Impeccable local question heartbeats (pid/port/lastBeat — machine runtime)
+.impeccable/questions/
+
 # Cloudflare Tunnel credentials (never commit)
 cloudflared/credentials.json
 cloudflared/config.yml

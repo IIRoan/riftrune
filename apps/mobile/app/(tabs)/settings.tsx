@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { AuthPanel } from '@/components/auth/AuthPanel';
 import { AppearanceSpecimens } from '@/components/settings/AppearanceSpecimens';
+import { CredentialsSection } from '@/components/settings/CredentialsSection';
+import { EmailVerificationSection } from '@/components/settings/EmailVerificationSection';
 import { SharedCollectionSection } from '@/components/settings/SharedCollectionSection';
 import { UpdateChannelSection } from '@/components/settings/UpdateChannelSection';
 import { ScreenLayout } from '@/components/shell/ScreenLayout';
@@ -10,6 +12,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Text } from '@/components/ui/text';
 import { useShowSideRail } from '@/hooks/useBreakpoint';
+import { useEmailVerificationRequired } from '@/hooks/useEmailVerificationRequired';
 import { authClient } from '@/src/lib/auth-client';
 import { cn } from '@/lib/utils';
 
@@ -82,6 +85,9 @@ export default function SettingsScreen() {
   const showRail = useShowSideRail();
   const showDesign = __DEV__ || Updates.channel === 'preview';
   const accountShareRow = signedIn && showRail;
+  const verificationRequired = useEmailVerificationRequired().data === true;
+  const emailVerified = sessionQuery.data?.user?.emailVerified === true;
+  const showEmailVerification = signedIn && verificationRequired && !emailVerified;
 
   return (
     <ScreenLayout>
@@ -103,6 +109,18 @@ export default function SettingsScreen() {
             </SettingsSection>
           ) : null}
         </View>
+
+        {showEmailVerification ? (
+          <SettingsSection label="Email verification">
+            <EmailVerificationSection />
+          </SettingsSection>
+        ) : null}
+
+        {signedIn ? (
+          <SettingsSection label="Credentials">
+            <CredentialsSection />
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection label="Display">
           <AppearanceSpecimens />

@@ -10,12 +10,12 @@ import {
 import { TtlCache } from '../lib/ttl-cache.js';
 import {
   cdnImageUrl,
-  contentTypeForKey,
   createS3Client,
   hasS3Config,
   isSafeImageKey,
   rewriteCardImageUrls,
   rewriteImageUrl,
+  safeServedContentType,
 } from '../lib/s3.js';
 
 type CachedImage = {
@@ -26,12 +26,12 @@ type CachedImage = {
 
 export type ServeImageResult =
   | {
-      kind: 'body';
-      body: ArrayBuffer;
-      contentType: string;
-      source: 's3' | 'memory';
-      etag: string;
-    }
+    kind: 'body';
+    body: ArrayBuffer;
+    contentType: string;
+    source: 's3' | 'memory';
+    etag: string;
+  }
   | { kind: 'redirect'; url: string };
 
 export type ServeImageOptions = {
@@ -61,6 +61,39 @@ export class ImageStoreService {
     } else {
       this.client = null;
       console.log('[s3] Image cache disabled (S3 env vars not fully configured)');
+    }
+  }
+
+  private sharpRunning = 0;
+  private sharpQueued = 0;
+  private readonly sharpWaiters: Array<() => void> = [];
+
+  private static readonly SHARP_MAX = 2;
+  private static readonly SHARP_MAX_QUEUE = 8;
+
+  private async resizeWithLimit(
+    body: ArrayBuffer,
+    width: AllowedThumbWidth
+  ): Promise<ArrayBuffer | null> {
+    if (this.sharpQueued >= ImageStoreService.SHARP_MAX_QUEUE) {
+      return null;
+    }
+    this.sharpQueued += 1;
+    try {
+      while (this.sharpRunning >= ImageStoreService.SHARP_MAX) {
+        await new Promise<void>((resolve) => {
+          this.sharpWaiters.push(resolve);
+        });
+      }
+      this.sharpRunning += 1;
+      try {
+        return await resizeImageToWebp(body, width);
+      } finally {
+        this.sharpRunning -= 1;
+        this.sharpWaiters.shift()?.();
+      }
+    } finally {
+      this.sharpQueued -= 1;
     }
   }
 
@@ -122,7 +155,11 @@ export class ImageStoreService {
     const original = await this.loadOriginalBody(sourceKey);
     if (!original) return null;
 
-    const resized = await resizeImageToWebp(original.body, width);
+    const resized = await this.resizeWithLimit(original.body, width);
+    if (!resized) {
+      return this.storeInMemoryCache(sourceKey, original.body, original.contentType, 'memory');
+    }
+
     const contentType = 'image/webp';
 
     if (this.client) {
@@ -192,9 +229,10 @@ export class ImageStoreService {
       if (res.ok) {
         const body = await res.arrayBuffer();
         if (body.byteLength > 0) {
-          const contentType =
-            res.headers.get('content-type')?.split(';')[0]?.trim() ??
-            contentTypeForKey(key);
+          const contentType = safeServedContentType(
+            res.headers.get('content-type')?.split(';')[0]?.trim(),
+            key
+          );
           return this.storeInMemoryCache(key, body, contentType, 'memory');
         }
       }
@@ -215,8 +253,10 @@ export class ImageStoreService {
       if (!res.ok) return null;
       const body = await res.arrayBuffer();
       if (body.byteLength === 0) return null;
-      const contentType =
-        res.headers.get('content-type')?.split(';')[0]?.trim() ?? contentTypeForKey(key);
+      const contentType = safeServedContentType(
+        res.headers.get('content-type')?.split(';')[0]?.trim(),
+        key
+      );
       if (this.client) {
         this.scheduleBackgroundStore(key, cdnUrl);
       }
@@ -235,10 +275,10 @@ export class ImageStoreService {
         const body = await file.arrayBuffer();
         if (body.byteLength > 0) {
           const stat = await this.client.stat(key);
-          const contentType =
-            typeof stat.type === 'string' && stat.type.length > 0
-              ? stat.type
-              : contentTypeForKey(key);
+          const contentType = safeServedContentType(
+            typeof stat.type === 'string' && stat.type.length > 0 ? stat.type : undefined,
+            key
+          );
           return { body, contentType };
         }
       } catch {
@@ -282,9 +322,10 @@ export class ImageStoreService {
     }
 
     const body = await res.arrayBuffer();
-    const contentType =
-      res.headers.get('content-type')?.split(';')[0]?.trim() ??
-      contentTypeForKey(key);
+    const contentType = safeServedContentType(
+      res.headers.get('content-type')?.split(';')[0]?.trim(),
+      key
+    );
 
     await this.client.write(key, body, {
       type: contentType,

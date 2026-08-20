@@ -45,6 +45,8 @@ describe('s3 helpers', () => {
   test('isSafeImageKey allows cached thumb derivatives', () => {
     expect(isSafeImageKey('thumbs/w160/cards/UNL-099.webp')).toBe(true);
     expect(isSafeImageKey('thumbs/w999/cards/UNL-099.webp')).toBe(false);
+    expect(isSafeImageKey('cards/evil.svg')).toBe(false);
+    expect(isSafeImageKey('colors/logo.svg')).toBe(false);
   });
 
   test('contentTypeForKey maps webp extension', () => {

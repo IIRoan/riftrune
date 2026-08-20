@@ -17,12 +17,21 @@ import Animated, {
 import { useQueryClient } from '@tanstack/react-query';
 import type { AuthPanelVariant, AuthScreenLayout, Mode } from '@/components/auth/auth-types';
 import { AuthSlabCorners } from '@/components/auth/AuthArtifacts';
+import { EmailVerificationForm } from '@/components/auth/EmailVerificationForm';
+import { PasswordRequirementsIndicator } from '@/components/auth/PasswordRequirementsIndicator';
+import {
+  MIN_PASSWORD_LENGTH,
+  signUpPasswordIssues,
+} from '@/components/auth/password-requirements';
 import { Button, ButtonText } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { useEmailVerificationRequired } from '@/hooks/useEmailVerificationRequired';
 import { useValueChangeFlag } from '@/hooks/useValueChangeFlag';
+import { normalizeVerificationEmail } from '@/lib/email-verification';
+import { resolvePasswordResetRedirectTo } from '@/lib/password-reset';
 import { cn } from '@/lib/utils';
 import { clearPersistedCatalogIndex } from '@/services/catalogIndexService';
 import { clearPersistedCollection } from '@/services/collectionCacheService';
@@ -45,6 +54,8 @@ type AuthPanelProps = {
   screenLayout?: AuthScreenLayout;
   mode?: Mode;
   onModeChange?: (mode: Mode) => void;
+  pendingVerificationEmail?: string | null;
+  onPendingVerificationEmailChange?: (email: string | null) => void;
   className?: string;
 };
 
@@ -230,13 +241,15 @@ function AuthPasswordField({
         }
         textContentType={isSignUp ? 'newPassword' : 'password'}
         passwordRules={
-          isSignUp ? 'minlength: 8; required: lower; required: upper; required: digit;' : undefined
+          isSignUp
+            ? `minlength: ${String(MIN_PASSWORD_LENGTH)}; required: lower; required: upper; required: digit;`
+            : undefined
         }
         importantForAutofill="yes"
         returnKeyType="go"
         submitBehavior="submit"
         enablesReturnKeyAutomatically
-        placeholder={isSignUp ? 'At least 8 characters' : 'Password'}
+        placeholder={isSignUp ? `At least ${String(MIN_PASSWORD_LENGTH)} characters` : 'Password'}
         accessibilityLabel="Password"
         accessibilityLabelledBy={labelId}
         {...webFieldProps(
@@ -248,6 +261,7 @@ function AuthPasswordField({
           onSubmitEditing?.(event);
         }}
       />
+      {isSignUp ? <PasswordRequirementsIndicator password={value} /> : null}
     </View>
   );
 }
@@ -270,11 +284,14 @@ export function AuthPanel({
   screenLayout = 'mobile',
   mode: controlledMode,
   onModeChange,
+  pendingVerificationEmail: controlledPendingEmail,
+  onPendingVerificationEmailChange,
   className,
 }: AuthPanelProps) {
   const queryClient = useQueryClient();
   const sessionQuery = authClient.useSession();
   const { data: session, isPending, isRefetching } = sessionQuery;
+  const verificationRequired = useEmailVerificationRequired().data === true;
   const [internalMode, setInternalMode] = useState<Mode>('sign-in');
   const mode = controlledMode ?? internalMode;
   const isScreen = variant === 'screen';
@@ -287,14 +304,38 @@ export function AuthPanel({
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  // Better Auth sendOnSignUp / sendOnSignIn already deliver an OTP; avoid a second
+  // sendOnMount that would invalidate the code in the first email.
+  const [otpSentWithAuth, setOtpSentWithAuth] = useState(false);
+  const [internalPendingEmail, setInternalPendingEmail] = useState<string | null>(null);
+  const pendingVerificationEmail =
+    controlledPendingEmail !== undefined ? controlledPendingEmail : internalPendingEmail;
+
+  const setPendingVerificationEmail = (next: string | null) => {
+    if (controlledPendingEmail === undefined) {
+      setInternalPendingEmail(next);
+    }
+    onPendingVerificationEmailChange?.(next);
+  };
+
+  const verificationEmail =
+    pendingVerificationEmail ??
+    (verificationRequired && session?.user?.emailVerified === false && session.user.email
+      ? normalizeVerificationEmail(session.user.email)
+      : null);
 
   // Clear credentials when mode changes — including external controlledMode updates
   // that never go through setMode (ModeSwitch only covers in-panel clicks).
+  // Do not clear an in-progress email verification.
   const modeChanged = useValueChangeFlag(mode);
-  if (modeChanged) {
+  if (modeChanged && !verificationEmail) {
     setError(null);
     setEmail('');
     setPassword('');
+    setForgotPassword(false);
+    setResetSent(false);
   }
 
   const setMode = (next: Mode) => {
@@ -302,6 +343,14 @@ export function AuthPanel({
       setInternalMode(next);
     }
     onModeChange?.(next);
+  };
+
+  const finishAuthenticated = async () => {
+    setOtpSentWithAuth(false);
+    setPendingVerificationEmail(null);
+    await sessionQuery.refetch();
+    await migrateLocalCollectionToRemote();
+    await invalidateUserDataQueries(queryClient);
   };
 
   const handleSubmit = async () => {
@@ -314,6 +363,13 @@ export function AuthPanel({
     if (emailValue.length === 0 || passwordValue.length === 0) {
       setError('Enter email and password');
       return;
+    }
+    if (mode === 'sign-up') {
+      const issues = signUpPasswordIssues(passwordValue);
+      if (issues.length > 0) {
+        setError(`Password needs: ${issues.join(', ').toLowerCase()}`);
+        return;
+      }
     }
     setBusy(true);
     try {
@@ -328,21 +384,72 @@ export function AuthPanel({
           setError(result.error.message ?? 'Sign up failed');
           return;
         }
+        // token=null when requireEmailVerification is on — stay on the playmat for OTP.
+        if (!result.data?.token) {
+          setOtpSentWithAuth(true);
+          setPendingVerificationEmail(normalizeVerificationEmail(emailValue));
+          setPassword('');
+          return;
+        }
       } else {
         const result = await authClient.signIn.email({
           email: emailValue,
           password: passwordValue,
         });
         if (result.error) {
-          setError(result.error.message ?? 'Sign in failed');
+          const message = result.error.message ?? 'Sign in failed';
+          const needsVerification =
+            result.error.status === 403 ||
+            /email.*verif|verif.*email|not verified/i.test(message);
+          if (needsVerification) {
+            setOtpSentWithAuth(true);
+            setPendingVerificationEmail(normalizeVerificationEmail(emailValue));
+            setPassword('');
+            setError(null);
+            return;
+          }
+          setError(message);
+          return;
+        }
+        if (result.data?.user?.emailVerified === false) {
+          setOtpSentWithAuth(true);
+          setPendingVerificationEmail(normalizeVerificationEmail(emailValue));
+          setPassword('');
           return;
         }
       }
-      await sessionQuery.refetch();
-      await migrateLocalCollectionToRemote();
-      await invalidateUserDataQueries(queryClient);
+      await finishAuthenticated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    Keyboard.dismiss();
+    setError(null);
+    const emailValue = readNativeInputValue(emailRef, email).trim();
+    setEmail(emailValue);
+    if (emailValue.length === 0) {
+      setError('Enter your email');
+      return;
+    }
+    setBusy(true);
+    try {
+      const webOrigin =
+        Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : null;
+      const result = await authClient.requestPasswordReset({
+        email: emailValue,
+        redirectTo: resolvePasswordResetRedirectTo(webOrigin, emailValue),
+      });
+      if (result.error) {
+        setError(result.error.message ?? 'Could not send reset email');
+        return;
+      }
+      setResetSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send reset email');
     } finally {
       setBusy(false);
     }
@@ -383,7 +490,7 @@ export function AuthPanel({
     );
   }
 
-  if (session?.user) {
+  if (session?.user && !verificationEmail) {
     const initial = session.user.name?.charAt(0).toUpperCase() || '?';
     return isScreen ? null : (
       <View
@@ -429,7 +536,86 @@ export function AuthPanel({
     );
   }
 
-  const formBody = (
+  const formBody = verificationEmail ? (
+    <EmailVerificationForm
+      email={verificationEmail}
+      // Session restore / AuthGate hold: no recent auth send — request one.
+      // Fresh sign-up / sign-in: server already sent via sendOnSignUp / sendOnSignIn.
+      autoSendOnMount={!otpSentWithAuth}
+      onVerified={finishAuthenticated}
+      onChangeEmail={() => {
+        setOtpSentWithAuth(false);
+        setPendingVerificationEmail(null);
+        setError(null);
+        setPassword('');
+        void authClient.signOut().then(() => sessionQuery.refetch());
+      }}
+    />
+  ) : forgotPassword ? (
+    <View className={cn('gap-5', isWideScreen && 'gap-6')}>
+      <View className="gap-2">
+        <Text className="text-xl font-semibold tracking-tight text-foreground">
+          Reset password
+        </Text>
+        <Text className="text-sm leading-5 text-muted-foreground">
+          {resetSent
+            ? 'If that email is on an account, a reset link is on the way.'
+            : 'We will email a link to choose a new password.'}
+        </Text>
+      </View>
+
+      {!resetSent ? (
+        <AuthEmailField
+          value={email}
+          onChangeText={setEmail}
+          inputRef={emailRef}
+          disabled={busy}
+          onSubmitEditing={() => {
+            void handleForgotPassword();
+          }}
+        />
+      ) : null}
+
+      {error ? (
+        <View className="rounded-[3px] border border-destructive/30 bg-destructive/10 px-3 py-2.5">
+          <Text
+            className="text-sm text-destructive"
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+          >
+            {error}
+          </Text>
+        </View>
+      ) : null}
+
+      {!resetSent ? (
+        <Button
+          onPress={() => {
+            void handleForgotPassword();
+          }}
+          disabled={busy}
+          busy={busy}
+          size="lg"
+        >
+          <ButtonText>Send reset link</ButtonText>
+        </Button>
+      ) : null}
+
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={busy}
+        onPress={() => {
+          setForgotPassword(false);
+          setResetSent(false);
+          setError(null);
+        }}
+        className="self-start"
+      >
+        <ButtonText>Back to sign in</ButtonText>
+      </Button>
+    </View>
+  ) : (
     <View
       className={cn('gap-5', isWideScreen && 'gap-6')}
       {...(Platform.OS === 'web' ? ({ role: 'form' } as Record<string, string>) : null)}
@@ -479,6 +665,23 @@ export function AuthPanel({
         >
           <ButtonText>{mode === 'sign-in' ? 'Sign in' : 'Create account'}</ButtonText>
         </Button>
+
+        {mode === 'sign-in' && verificationRequired ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={busy}
+            onPress={() => {
+              setForgotPassword(true);
+              setResetSent(false);
+              setError(null);
+              setPassword('');
+            }}
+            className="self-start"
+          >
+            <ButtonText>Forgot password?</ButtonText>
+          </Button>
+        ) : null}
       </View>
     </View>
   );

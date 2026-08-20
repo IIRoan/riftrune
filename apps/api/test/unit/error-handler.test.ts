@@ -32,6 +32,6 @@ describe('errorPlugin', () => {
     expect(res.status).toBe(500);
     const body = (await res.json()) as { error: string; message: string };
     expect(body.error).toBe('INTERNAL_ERROR');
-    expect(body.message).toBe('database exploded');
+    expect(body.message).toBe('An unexpected error occurred');
   });
 });

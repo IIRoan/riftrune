@@ -5,6 +5,8 @@ export const HealthResponse = z.object({
     status: z.literal('ok'),
     db: z.enum(['ok', 'error']),
     lastCatalogSync: z.string().datetime().nullable(),
+    /** True when Stalwart mail is configured and signup/sign-in require verification. */
+    emailVerificationRequired: z.boolean(),
   }),
 });
 

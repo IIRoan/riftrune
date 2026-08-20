@@ -17,32 +17,29 @@ describe('sync admin routes', () => {
 
   test('POST /api/v1/sync/catalog rejects missing bearer token', async () => {
     const response = await postSync('/api/v1/sync/catalog');
-    expect(response.status).toBe(500);
-    const body = (await response.json()) as { detail: string };
-    expect(body.detail).toBe('Unauthorized');
+    expect(response.status).toBe(401);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toBe('UNAUTHORIZED');
   });
 
   test('POST /api/v1/sync/catalog rejects invalid bearer token', async () => {
     const response = await postSync('/api/v1/sync/catalog', {
       Authorization: 'Bearer wrong-token',
     });
-    expect(response.status).toBe(500);
-    const body = (await response.json()) as { detail: string };
-    expect(body.detail).toBe('Unauthorized');
+    expect(response.status).toBe(401);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toBe('UNAUTHORIZED');
   });
 
   test('POST /api/v1/sync/prices rejects missing bearer token', async () => {
     const response = await postSync('/api/v1/sync/prices');
-    expect(response.status).toBe(500);
-    const body = (await response.json()) as { detail: string };
-    expect(body.detail).toBe('Unauthorized');
+    expect(response.status).toBe(401);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toBe('UNAUTHORIZED');
   });
 
-  test('GET /api/v1/sync/status is public', async () => {
+  test('GET /api/v1/sync/status requires admin bearer token', async () => {
     const response = await app.handle(new Request('http://localhost/api/v1/sync/status'));
-    expect(response.status).toBe(200);
-    const body = (await response.json()) as { data: { catalog: unknown; prices: unknown } };
-    expect(body.data).toHaveProperty('catalog');
-    expect(body.data).toHaveProperty('prices');
+    expect(response.status).toBe(401);
   });
 });

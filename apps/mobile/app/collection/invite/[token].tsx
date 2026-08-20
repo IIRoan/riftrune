@@ -112,7 +112,6 @@ function InviteAcceptBody({ token }: { token: string }) {
           <Text className="text-base text-foreground">
             {preview.inviter.name} invited you to share a collection.
           </Text>
-          <Text className="text-sm text-muted-foreground">{preview.inviter.email}</Text>
 
           <View className="gap-1 rounded-[10px] border border-border bg-card px-4 py-3">
             <Text className="text-sm font-medium text-foreground">Their collection</Text>
