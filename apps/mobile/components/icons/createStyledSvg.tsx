@@ -41,13 +41,7 @@ const styledSvgOptionMapping = {
   },
 } as const;
 
-/**
- * Wrap a Phosphor icon so Uniwind `className` can drive size + color.
- * Phosphor paints via the `color` prop (not CSS currentColor alone).
- *
- * Important: resolve `size` from className box metrics and pass that to Phosphor.
- * Scaling a 24px SVG down to 14px via CSS is what made Firefox icons look mushy.
- */
+/** Pass resolved className size to Phosphor — CSS-scaling 24→14px mushifies Firefox icons. */
 export const createStyledSvg = (Icon: Icon): AppIcon => {
   const UniwindBridge = withUniwind(
     ({ color, style, size, weight, ...rest }: AppIconProps) => {

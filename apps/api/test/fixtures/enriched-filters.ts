@@ -1,7 +1,6 @@
 import type { FilterSnapshot } from '@riftbound/contracts';
 import { computeCatalogTotal, sumSetPrintCounts } from '../../src/lib/catalog-total.js';
 
-/** Minimal filter snapshot with expanded print counts for e2e seeding. */
 export const enrichedFilterSnapshot: FilterSnapshot = {
   colors: [
     { id: 'body', name: 'Body', count: 179 },

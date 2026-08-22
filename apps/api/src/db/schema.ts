@@ -201,7 +201,6 @@ export const filterSnapshots = pgTable('filter_snapshots', {
   capturedAt: timestamp('captured_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** Standard TCG card condition grades */
 export const CARD_CONDITIONS = [
   'mint',
   'near_mint',
@@ -225,17 +224,14 @@ export const COLLECTION_INVITE_STATUSES = [
 ] as const;
 export type CollectionInviteStatus = (typeof COLLECTION_INVITE_STATUSES)[number];
 
-/** Shared (or solo) inventory container. Items hang off this, not directly off user. */
+/** Inventory container; items hang off collection, not directly off user. */
 export const collections = pgTable('collections', {
   id: uuid('id').primaryKey().defaultRandom(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-/**
- * Exactly one active membership per user. A collection may have at most 2 members
- * (enforced in application logic).
- */
+/** Exactly one active membership per user; collections cap at 2 members (app-enforced). */
 export const collectionMembers = pgTable(
   'collection_members',
   {
@@ -277,11 +273,7 @@ export const collectionInvites = pgTable(
   ]
 );
 
-/**
- * Owned stack of a specific printing within a collection.
- * Uniqueness is per collection + variant + condition + language so you can track
- * NM vs LP copies of the same card separately.
- */
+/** Owned stack uniqueness: collection + variant + condition + language (NM vs LP separately). */
 export const collectionItems = pgTable(
   'collection_items',
   {
@@ -318,10 +310,7 @@ export const collectionItems = pgTable(
   ]
 );
 
-/**
- * Append-only collection mutation history.
- * Survives collection delete (collection_id is nullable) so actor history remains queryable.
- */
+/** Append-only mutation history; collection_id nullable so actor history survives collection delete. */
 export const COLLECTION_AUDIT_ACTIONS = [
   'add',
   'remove',

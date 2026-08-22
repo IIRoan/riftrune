@@ -58,7 +58,6 @@ interface DeckBuilderCatalogPanelProps {
     deck: DeckState | ((previous: DeckState) => DeckState),
     options?: { immediate?: boolean }
   ) => void;
-  /** Controlled section when parent wants to jump to main/side (e.g. status strip). */
   section?: BuilderCatalogSection;
   onSectionChange?: (section: BuilderCatalogSection) => void;
   paddingBottom?: number;

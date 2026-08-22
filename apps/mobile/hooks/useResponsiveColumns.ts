@@ -104,11 +104,7 @@ type ResponsiveColumnOptions = {
 export type ResponsiveColumnResult = ReturnType<typeof useResponsiveColumns>;
 
 type StableResponsiveColumnOptions = ResponsiveColumnOptions & {
-  /**
-   * When false, follow live layout measurements (e.g. before the catalog column
-   * has been measured). Once true, values are frozen until the window resizes
-   * or the layout mode changes.
-   */
+  /** When true, freeze column math until window resize or layout mode change. */
   measurementReady?: boolean;
 };
 
@@ -189,11 +185,7 @@ export function useResponsiveColumns(
   ]);
 }
 
-/**
- * Like {@link useResponsiveColumns}, but freezes column math after the catalog
- * column has been measured so search/filter transitions do not resize tiles.
- * Recalculates when the window width, grid/list mode, or card size setting changes.
- */
+/** Like useResponsiveColumns, but freezes after measure so search/filter transitions don't resize tiles. */
 export function useStableResponsiveColumns(
   layout: 'grid' | 'list',
   options?: StableResponsiveColumnOptions

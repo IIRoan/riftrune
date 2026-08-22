@@ -83,8 +83,7 @@ export function SearchCatalogList({
     () =>
       ({ item, index }) => {
         const tileSelected = cardListItemMatchesVariant(item, selectedVariant);
-        // Phone drawer: no tile selection chrome — it lingered as a “stuck”
-        // cue after close. Desktop split panel still highlights the active card.
+        // Phone drawer: no selection chrome (lingered after close); desktop split still highlights.
         const showSelected = splitLayout && tileSelected;
         const familyContextVariantNumber =
           showSelected && selectedVariant != null

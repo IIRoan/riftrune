@@ -73,10 +73,7 @@ export function getOwnedPrintingsForPicker(
   return (printings ?? []).filter((printing) => (printing.owned ?? 0) > 0);
 }
 
-/**
- * Resolve which finish to decrement when the UI calls remove without a picker choice.
- * Prefer the single owned finish (e.g. foil-only) over the card's primary/standard printing.
- */
+/** Resolve finish to decrement without a picker — prefer the single owned finish over primary/std. */
 export function resolveQuickRemoveSelection(
   printings: readonly PrintingWithOwned[] | undefined,
   preferredId?: string
@@ -88,10 +85,7 @@ export function resolveQuickRemoveSelection(
   return { variantNumber: printing.variantNumber, isFoil: printing.isFoil };
 }
 
-/**
- * Resolve a detail +/- action only when its finish is unambiguous.
- * Once both finishes are owned, callers should ask which finish to change.
- */
+/** Resolve detail +/- only when finish is unambiguous; if both owned, caller must ask. */
 export function resolveUnambiguousQuantitySelection(
   printings: readonly PrintingWithOwned[],
   delta: number
@@ -116,10 +110,7 @@ export function resolveQuickRemoveVariantNumber(
   return resolveQuickRemoveSelection(printings, preferredVariantNumber)?.variantNumber;
 }
 
-/**
- * Resolve which finish to increment when add is pressed without a picker choice.
- * Single printing → that finish; multiple → non-foil primary (matches catalog list primary).
- */
+/** Resolve finish to increment without a picker — single printing, else non-foil primary. */
 export function resolveQuickAddSelection(
   printings: readonly CardListPrinting[] | undefined,
   preferredId?: string
@@ -172,10 +163,7 @@ export function attachOwnedToPrintings(
   }));
 }
 
-/**
- * Printings exposed on catalog quick-add controls.
- * Scoped to the active variant family (std + foil finishes, not alt art).
- */
+/** Quick-add printings: active variant family only (std + foil, not alt art). */
 export function resolveQuickAddPrintings(
   card: CardListItem,
   familyContextVariantNumber?: string | null

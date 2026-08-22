@@ -140,10 +140,7 @@ export class CardmarketIdBackfillService {
     return { updated, skipped: unmapped.length - updated, syntheticsCreated };
   }
 
-  /**
-   * Cardmarket often lists Signed Overnumbered SKUs before Piltover Archive catalogs
-   * them (e.g. Akali VEN-189*). Materialize local `{vn}*` rows for leftover products.
-   */
+  /** Materialize local `{vn}*` for Cardmarket Signed Overnumbered leftovers not yet in PA (e.g. VEN-189*). */
   private async materializeMissingSignedOvernumbered(
     productsByExpansion: Map<string, CardmarketProduct[]>,
     setExpansionMap: Map<string, number>,

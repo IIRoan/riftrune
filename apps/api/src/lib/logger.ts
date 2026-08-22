@@ -21,7 +21,6 @@ function write(level: LogLevel, event: string, fields?: LogFields): void {
   console.log(line);
 }
 
-/** Structured log for failed mutations and imports. */
 export function logActionFailure(
   action: string,
   error: unknown,

@@ -21,14 +21,12 @@ interface OwnershipStepperProps {
   owned: number;
   name: string;
   compact?: boolean;
-  /** Slightly larger targets for mobile list rows. */
   relaxed?: boolean;
   /** Fill a fixed-width grid tile slot — Add and stepper share the same footprint. */
   gridSlot?: boolean;
   busy?: boolean;
   printings?: PrintingWithOwned[];
   fixedVariantNumber?: string;
-  /** When set with fixedVariantNumber, pins add/remove to that finish. */
   fixedIsFoil?: boolean;
   /** Skip foil/standard picker on add; inserts the default (non-foil) finish. */
   simpleAdd?: boolean;

@@ -1,12 +1,4 @@
-/**
- * Shared Operate typography for dense catalog/collection chrome.
- *
- * Lato weight usage (professional app convention — Regular body, SemiBold
- * structure, Bold commit):
- * - font-normal (400) — body / secondary
- * - font-semibold (600) — titles, prices, instrument tags
- * - font-bold (700) — primary CTAs (Add, commit actions)
- */
+/** Operate type: font-normal body, font-semibold structure, font-bold CTAs. */
 
 /** Chalk commit fill — Add and other primary actions. */
 export const OPERATE_CTA_FILL_CLASS = 'bg-cta';

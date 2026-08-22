@@ -1,10 +1,4 @@
-/**
- * One catalog drawer presentation. Every tap creates a new session id, even
- * when reopening the same card, so callbacks from an older close are harmless.
- *
- * Dismiss-start flips `open` off to release hit-testing. The presentation stays
- * mounted until Gorhom completes its close motion.
- */
+/** Catalog drawer session: new id per tap; dismiss-start clears hit-testing but stays mounted until Gorhom finishes close. */
 export type CatalogDrawerPresentation = {
   sessionId: number;
   variantNumber: string;
@@ -48,10 +42,7 @@ export function onSheetIndexChange(index: number, notifyClosed: () => void): voi
   }
 }
 
-/**
- * Legacy behavior: unmount portal immediately on swipe dismiss while `open` is still true.
- * Leaves the sheet unable to reopen until `open` toggles false → true again.
- */
+/** Legacy buggy dismiss: unmounts portal while `open` is still true, blocking reopen until open toggles. */
 export function simulateBuggyDismissBeforeParentUpdates(
   state: BottomSheetMountState
 ): BottomSheetMountState {
@@ -100,10 +91,7 @@ export function isCatalogDrawerClosing(
   return presentation != null && !presentation.open;
 }
 
-/**
- * Close-start is monotonic for one session. A stale callback cannot close a
- * replacement presentation, including a new session for the same card.
- */
+/** Close-start is session-monotonic — a stale callback cannot close a replacement presentation. */
 export function beginCatalogDrawerDismiss(
   presentation: CatalogDrawerPresentation | null,
   dismissedSessionId: number

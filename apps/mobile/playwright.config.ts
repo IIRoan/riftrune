@@ -1,14 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * UI e2e in Playwright's bundled Chromium against Expo web + local API.
- *
- * Uses port 7011 so a tunneled `expo start --web` on :7001 can keep running.
- * Specs call installLocalApiOverride() so the app talks to localhost:7000
- * even when apps/mobile/.env points at the tunnel (Metro inlines .env).
- *
- * Prerequisite: API on :7000 with a synced catalog (`bun run dev:api`).
- */
+/** UI e2e on Playwright Chromium + Expo web :7011; specs override API to :7000 (Metro inlines .env). Needs `bun run dev:api`. */
 const API_URL = process.env.UI_E2E_API_URL ?? 'http://localhost:7000';
 const WEB_PORT = process.env.UI_E2E_WEB_PORT ?? '7011';
 const WEB_URL = process.env.UI_E2E_WEB_URL ?? `http://localhost:${WEB_PORT}`;

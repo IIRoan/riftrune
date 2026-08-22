@@ -3,7 +3,6 @@ interface CacheEntry<V> {
   expiresAt: number;
 }
 
-/** Simple in-memory TTL cache with a max entry cap. */
 export class TtlCache<V> {
   private readonly store = new Map<string, CacheEntry<V>>();
 

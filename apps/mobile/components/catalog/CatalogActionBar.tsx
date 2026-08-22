@@ -19,13 +19,11 @@ interface CatalogActionBarProps {
   simpleAdd: boolean;
   onSimpleAddChange: (simpleAdd: boolean) => void;
   showFilterTrigger?: boolean;
-  /** Desktop unified bar: render only the action cluster. */
   inline?: boolean;
   leading?: ReactNode;
   className?: string;
 }
 
-/** Catalog toolbar: collection/simple-add/sort/filter controls. */
 export function CatalogActionBar({
   activeSort,
   onSortPress,

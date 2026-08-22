@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { Env } from '../env.js';
 
-/** Compare secrets in constant time via SHA-256 digests (equal length). */
+/** Constant-time compare via equal-length SHA-256 digests. */
 export function tokensMatch(provided: string, expected: string): boolean {
   const left = createHash('sha256').update(provided).digest();
   const right = createHash('sha256').update(expected).digest();

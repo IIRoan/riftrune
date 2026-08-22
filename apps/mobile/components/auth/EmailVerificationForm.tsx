@@ -19,12 +19,8 @@ type EmailVerificationFormProps = {
   className?: string;
   initialOtp?: string;
   autoSubmit?: boolean;
-  /**
-   * Send a fresh OTP once on mount. Use for settings / session restore only —
-   * not after sign-up or sign-in when Better Auth already sent via sendOnSignUp / sendOnSignIn.
-   */
+  /** Send OTP on mount for settings/restore only — not after sign-up/sign-in (already sent). */
   autoSendOnMount?: boolean;
-  /** Compact copy for settings panels. */
   compact?: boolean;
   submitLabel?: string;
 };

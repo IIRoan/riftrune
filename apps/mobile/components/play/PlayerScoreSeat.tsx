@@ -1,10 +1,3 @@
-/**
- * THESIS: The seat half is the control — refuse floating ± discs and bordered chips.
- * OWN-WORLD: Soft typographic etch marks + bare legend identity inside tetra-ui tokens.
- * STORY: Tap left to lose a point, right to gain; legend is quiet identity, not chrome.
- * FIRST VIEWPORT: Hero VP numeral; etched −/+ in each half; legend name or art without a ring.
- * FORM: Etched halves (chosen direction).
- */
 import { TypeIcon } from '@/components/riftbound/CardIcons';
 import { CardArtImage } from '@/components/cards/CardArtImage';
 import { Text } from '@/components/ui/text';
@@ -80,7 +73,6 @@ function XpStepper({
   );
 }
 
-/** Soft typographic etch in a seat half — no plate, no Phosphor disc. */
 function ScoreEtch({
   kind,
   compact,
@@ -110,7 +102,6 @@ function ScoreEtch({
   );
 }
 
-/** Directional score tick — subtle lift/drop matching +/−, not a cartoon pop. */
 function useScoreTick(value: number, reduceMotion: boolean) {
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);

@@ -19,7 +19,6 @@ export function resolveSsl(
       return 'require';
     }
   } catch {
-    // Fall back to production default below.
   }
   return isProduction ? 'require' : undefined;
 }

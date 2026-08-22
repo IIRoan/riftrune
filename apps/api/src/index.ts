@@ -18,8 +18,7 @@ async function main() {
   startSyncCrons(ctx, env);
 
   const shutdown = () => {
-    // Avoid calling client.end() during bun --watch reloads: a closing pool rejects
-    // in-flight queries and can crash the replacement process on hot reload.
+    // Avoid client.end() on bun --watch: closing pool rejects in-flight queries and can crash hot reload.
     if (process.env.BUN_WATCH !== 'true') {
       void ctx.client.end({ timeout: 5 });
     }

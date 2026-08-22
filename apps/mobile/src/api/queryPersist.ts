@@ -19,11 +19,7 @@ const PERSISTABLE_ROOTS = new Set<string>([
   wishlistQueryKeys.all[0],
 ]);
 
-/**
- * Only persist JSON-safe, high-value caches.
- * Skip: catalog index (custom AsyncStorage, large), decks (Map sections),
- * infinite browse/search pages, card detail floods.
- */
+/** Persist JSON-safe high-value caches only — skip catalog index, decks Maps, infinite pages, card-detail floods. */
 export function shouldPersistQuery(query: Pick<Query, 'queryKey' | 'state'>): boolean {
   if (query.state.status !== 'success') return false;
   const root = query.queryKey[0];

@@ -76,8 +76,7 @@ export function useCardDetail(
         | undefined;
       if (isHydratedDetail(cached)) return cached;
 
-      // Kick background batch flush but never wait on it — that queue was
-      // delaying rules text behind unrelated catalog prefetches.
+      // Flush batch prefetch without awaiting — waiting delayed rules text behind unrelated work.
       void flushCardDetailPrefetch();
       return fetchCardDetailNow(queryClient, variantNumber);
     },

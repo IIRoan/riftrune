@@ -192,8 +192,7 @@ export function useSearchScreenBody(): React.ReactElement {
   );
 
   const ownedFilterActive = catalogFilters.collection === 'owned';
-  // Keep full collection warm so list tiles show owned counts without waiting
-  // for a detail click / per-variant quantities round-trip.
+  // Warm full collection so list tiles show owned counts without a quantities round-trip.
   const { data: collectionEntries = [] } = useCollection();
 
   const ownershipVariants = useMemo(() => {
@@ -617,8 +616,7 @@ export function useSearchScreenBody(): React.ReactElement {
         query={query}
         onQueryChange={setQuery}
         onClearSearch={clearSearch}
-        // Spinner uses isLoading only — isFetching is a subset and must not
-        // flip chrome while the user is mid-keystroke on the same term.
+        // Spinner uses isLoading only — isFetching must not flip chrome mid-keystroke.
         searchLoading={searchLoading}
         onSubmitSearch={handleSubmitSearch}
         isMobile={isMobile}
@@ -774,8 +772,7 @@ export function useSearchScreenBody(): React.ReactElement {
         onSortChange={applyCatalogSort}
       />
 
-      {/* Selection clears at dismiss-start; the non-interactive visual host
-          remains only until Gorhom reports that its close motion completed. */}
+      {/* Selection clears at dismiss-start; visual host stays until Gorhom finishes close. */}
       {!splitLayout && drawerPresentation && drawerVariant ? (
         <CardDetailDrawer
           key={drawerPresentation.sessionId}

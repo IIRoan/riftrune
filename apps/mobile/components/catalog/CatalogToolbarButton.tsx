@@ -20,7 +20,6 @@ interface CatalogToolbarButtonProps {
   className?: string;
 }
 
-/** Unified catalog toolbar icon button — sort, filter, and similar controls. */
 export function CatalogToolbarButton({
   icon,
   onPress,
@@ -75,7 +74,6 @@ export function CatalogToolbarButton({
   );
 }
 
-/** Status pulse when a filter is active — bone on dark (Factory). */
 export function CatalogToolbarBadgeDot() {
   return <View className="absolute right-2 top-2 size-1.5 rounded-full bg-foreground" />;
 }

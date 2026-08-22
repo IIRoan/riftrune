@@ -9,7 +9,6 @@ interface ScreenHeaderProps {
   className?: string;
 }
 
-/** Standard screen title + optional subtitle, shared across top-level tab screens. */
 export function ScreenHeader({ title, subtitle, className }: ScreenHeaderProps) {
   return (
     <Stack gap="xs" className={cn('mb-2 min-w-0 shrink', className)}>

@@ -33,10 +33,7 @@ export const CATALOG_TOOLBAR_DESKTOP_SHELL_CLASS = cn(
 export const CATALOG_TOOLBAR_DESKTOP_PRIMARY_ROW_CLASS =
   'min-h-10 flex-row items-center gap-2 px-1.5 py-1';
 
-/**
- * Active-filter tray — sibling under the bordered shell (shell height stays fixed).
- * Same gap rhythm as the toolbar stack (`gap-1.5` parent) / instrument row.
- */
+/** Active-filter tray under the bordered shell (shell height fixed); gap matches toolbar stack. */
 export const CATALOG_TOOLBAR_DESKTOP_CHIP_TRAY_CLASS =
   'w-full flex-row flex-wrap items-center gap-2';
 

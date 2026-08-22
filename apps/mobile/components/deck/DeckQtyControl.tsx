@@ -21,7 +21,6 @@ interface DeckQtyControlProps {
   onRemove: () => void;
 }
 
-/** Deck row quantity control — Factory 3px chrome (no soft tint / pills). */
 export function DeckQtyControl({
   count,
   name,

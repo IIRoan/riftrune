@@ -10,11 +10,7 @@ type UseWebSlashFocusOptions = {
   onClearWhileFocused: () => void;
 };
 
-/**
- * Web-only `/` for catalog search (window capture):
- * - Outside fields → focus search
- * - Already focused → clear (also guarded in onChangeText — RN-web inserts `/` eagerly)
- */
+/** Web `/` capture: outside fields focuses search; focused clears (RN-web inserts `/` eagerly). */
 export function useWebSlashFocus(
   inputRef: RefObject<TextInput | null>,
   { enabled = true, searchFocusedRef, onClearWhileFocused }: UseWebSlashFocusOptions

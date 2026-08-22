@@ -15,10 +15,6 @@ interface CatalogSimpleAddToggleProps {
   className?: string;
 }
 
-/**
- * Toolbar preference next to All/Owned — skips foil picker on quick-add
- * and inserts the standard finish.
- */
 export function CatalogSimpleAddToggle({
   active,
   onChange,

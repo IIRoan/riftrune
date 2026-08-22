@@ -43,7 +43,7 @@ function loadDotEnvFile(): void {
 
 loadDotEnvFile();
 
-/** E2E auth expects immediate sessions; Stalwart mail is covered by unit mocks. */
+/** E2E auth expects immediate sessions; Stalwart mail covered by unit mocks. */
 function disableTransactionalEmailForE2E(): void {
   delete process.env.STALWART_JMAP_URL;
   delete process.env.STALWART_JMAP_USERNAME;
@@ -167,7 +167,6 @@ export async function setupE2E(): Promise<void> {
       const res = await fetch(`${baseUrl}/api/v1/health`);
       if (res.ok) break;
     } catch {
-      // retry
     }
     await Bun.sleep(200);
   }

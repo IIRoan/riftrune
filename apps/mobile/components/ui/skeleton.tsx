@@ -8,12 +8,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { cn } from "@/lib/utils";
 
-// Constants
 const ANIMATION_DURATION = 1000;
 const MIN_OPACITY = 0.4;
 const MAX_OPACITY = 1;
 
-// Types
 type InternalSkeletonGroupContextType = {
   opacity: SharedValue<number>;
 };
@@ -24,13 +22,11 @@ type SkeletonGroupProps = {
 
 type SkeletonProps = React.ComponentProps<typeof Animated.View>;
 
-// Context
 const SkeletonGroupContext =
   createContext<InternalSkeletonGroupContextType | null>(null);
 
 const useSkeletonGroupContext = () => useContext(SkeletonGroupContext);
 
-// Components
 export const SkeletonGroup = ({ children }: SkeletonGroupProps) => {
   const opacity = useSharedValue(MIN_OPACITY);
 

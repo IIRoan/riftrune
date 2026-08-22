@@ -12,7 +12,6 @@ interface CardArtInfoPreviewButtonProps {
   orientation?: CardArtHoverOrientation;
 }
 
-/** Web-only hover preview trigger shown on deck builder card art. */
 export function CardArtInfoPreviewButton({
   imageUri,
   variantNumber,

@@ -101,7 +101,6 @@ interface CatalogActiveFilterChipProps {
   onRemoveColor?: (name: string) => void;
 }
 
-/** Shared active-filter chip — Factory instrument chrome (matches toolbar). */
 export function CatalogActiveFilterChip({
   chip,
   colorImageByName,

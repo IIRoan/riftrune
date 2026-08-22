@@ -1,6 +1,5 @@
 import { cva } from 'class-variance-authority';
 
-/** Factory control chrome — 3px radius, chalk commit, ash ghost (DESIGN.md). */
 export const buttonVariants = cva(
   'flex w-full shrink-0 flex-row items-center justify-center gap-2 whitespace-nowrap rounded-[3px] font-bold text-sm',
   {

@@ -53,7 +53,6 @@ function wrapWithPicker(
 const CONTROL_HEIGHT = 'h-9';
 const ICON_SIZE = 14;
 
-/** Collection control for tray tiles — quiet panel Add / −n+. */
 export function GridCollectionControl({
   owned,
   name,

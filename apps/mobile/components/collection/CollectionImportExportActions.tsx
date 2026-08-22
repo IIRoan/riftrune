@@ -106,7 +106,6 @@ function ToolbarIconButton({
   );
 }
 
-/** Compact import/export actions — place beside a section heading. */
 export function CollectionImportExportToolbar({ disabled = false }: { disabled?: boolean }) {
   const {
     importCsv,
@@ -150,7 +149,6 @@ export function CollectionImportExportToolbar({ disabled = false }: { disabled?:
   );
 }
 
-/** Import/export feedback — only visible while something is in progress or just finished. */
 export function CollectionImportExportStatus({ disabled = false }: { disabled?: boolean }) {
   const {
     importProgress,

@@ -33,7 +33,7 @@ async function findMembership(
   return existing ?? null;
 }
 
-/** Resolve (and lazily create) the active collection membership; one row per authenticated user. */
+/** Lazily create active collection membership; one row per authenticated user. */
 export async function ensureCollectionMembership(
   db: DbExecutor,
   userId: string

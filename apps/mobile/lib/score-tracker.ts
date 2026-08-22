@@ -1,12 +1,4 @@
-/**
- * Riftbound table scoreboard — victory points + XP for live play.
- *
- * THESIS: Phone-as-table scoreboard for every official mode; big VP is the only hero.
- * OWN-WORLD: The Astral Grove Operate tokens — restrained surfaces, mono score numerals.
- * STORY: Pick a format → tap ± at each seat → win at that mode’s victory score.
- * FIRST VIEWPORT: Full-bleed seats facing the table; center strip for format/reset.
- * FORM: Established The Astral Grove Operate extension (no new brand world).
- */
+/** Riftbound table scoreboard — VP + XP for live play. */
 
 export const PLAY_FORMATS = [
   {
@@ -152,8 +144,7 @@ export function evaluateWinners(
     const b = teamPoints(state.seats, 'b');
     if (a >= format.victoryScore && a > b) return { winnerSeatId: null, winnerTeam: 'a' };
     if (b >= format.victoryScore && b > a) return { winnerSeatId: null, winnerTeam: 'b' };
-    // Further taps can bring the trailing team to the threshold (or a tie). Keep the
-    // already-declared winner while they still sit at/above the victory score.
+    // Keep the declared winner while they still sit at/above the victory score (trailing team can catch up).
     if (
       state.winnerTeam &&
       teamPoints(state.seats, state.winnerTeam) >= format.victoryScore
@@ -250,10 +241,7 @@ export function resetGame(state: ScoreTrackerState): ScoreTrackerState {
   });
 }
 
-/**
- * After a game win in Match (Bo3), credit the winner and clear VP/XP for the next game.
- * No-op when there is no winner or format does not track match wins.
- */
+/** After a Match (Bo3) game win, credit the winner and clear VP/XP; no-op if no winner / non-match format. */
 export function advanceMatchGame(state: ScoreTrackerState): ScoreTrackerState {
   const format = getPlayFormat(state.format);
   if (!format.trackMatchWins || !state.winnerSeatId) return state;

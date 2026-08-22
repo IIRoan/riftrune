@@ -44,8 +44,7 @@ export class SyncEngine {
         existing?.rowCount ?? 0
       );
       const localVariantCount = await this.cards.countVariants();
-      // Fingerprint alone is not enough — a truncated SYNC_MAX_PAGES run can
-      // write the full hash while the DB is still missing printings.
+      // Fingerprint alone is not enough — truncated SYNC_MAX_PAGES can write full hash while DB still incomplete.
       const catalogLooksComplete =
         localVariantCount > 0 &&
         (catalogPrintTotal <= 0 || localVariantCount >= catalogPrintTotal);

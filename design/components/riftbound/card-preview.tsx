@@ -1,10 +1,5 @@
 import Image from "next/image"
 
-/**
- * The official card image fills the entire left column of the modal.
- * No wrapper border or frame — the card already carries its own border.
- * A right-side shadow bleeds into the panel divider for depth.
- */
 export function CardPreview() {
   return (
     <div className="relative h-full min-h-[520px] w-full">
@@ -16,7 +11,6 @@ export function CardPreview() {
         sizes="300px"
         className="object-contain object-center"
       />
-      {/* Right edge fade to blend into the panel */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 right-0 w-8"

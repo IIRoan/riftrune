@@ -125,10 +125,7 @@ export function catalogLookaheadCount(
   return layout === 'list' ? 48 : numColumns * 14;
 }
 
-/**
- * FlashList draw buffer (px). Default native is 250 — too small for tall
- * card tiles; keep ~1.5 viewports mounted so art can warm before it enters view.
- */
+/** FlashList draw buffer (~1.5 viewports); native default 250 is too small for tall card tiles. */
 export function catalogDrawDistance(viewportHeight: number): number {
   const height = Math.max(320, viewportHeight);
   return Math.max(900, Math.round(height * 1.5));

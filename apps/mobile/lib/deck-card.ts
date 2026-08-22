@@ -227,8 +227,7 @@ export function addCardToDeck(
   const map = new Map(deck[targetSection]);
   const existing = map.get(card.name);
   if (existing) {
-    // Same card name can have multiple arts in the catalog; keep the printing
-    // the user just added when they pick a different variant.
+    // Same name can have multiple arts — keep the printing the user just added.
     const nextCard =
       existing.card.variantNumber === card.variantNumber ? existing.card : card;
     map.set(card.name, { card: nextCard, count: existing.count + count });

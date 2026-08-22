@@ -50,7 +50,6 @@ function InlineDomainIcon({ name, size }: { name: string; size: number }) {
   return <InlineAssetIcon source={source} size={size} label={name} />;
 }
 
-/** White energy disc — open rules text (reminders, costs outside badges). */
 function InlineEnergyText({ value, compact }: { value: string; compact?: boolean }) {
   const size = iconSize(compact);
 
@@ -70,7 +69,6 @@ function InlineEnergyText({ value, compact }: { value: string; compact?: boolean
   );
 }
 
-/** White energy disc inside keyword banners (REPEAT / EQUIP). */
 function BannerBadgeEnergy({ value, compact }: { value: string; compact?: boolean }) {
   const size = compact ? 12 : 14;
 
@@ -95,10 +93,7 @@ function BannerBadgeEnergy({ value, compact }: { value: string; compact?: boolea
   );
 }
 
-/**
- * Domain / rune icons inside keyword banners are printed white.
- * Reminder restatements stay full-color via InlineDomainIcon.
- */
+/** Keyword-banner domain icons print white; reminder restatements stay full-color. */
 function KeywordBannerCostIcon({
   source,
   size,
@@ -224,7 +219,6 @@ function RulesPartView({
   );
 }
 
-/** Keyword badge with trailing costs nested inside (REPEAT, EQUIP). */
 function KeywordBannerCluster({
   label,
   keywordBase,

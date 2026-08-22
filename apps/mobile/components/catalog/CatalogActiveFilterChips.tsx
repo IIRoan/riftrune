@@ -13,16 +13,10 @@ import { CATALOG_TOOLBAR_DESKTOP_CHIP_TRAY_CLASS } from '@/constants/catalogTool
 interface CatalogActiveFilterChipsProps {
   filters: CatalogFilters;
   onFiltersChange: (filters: CatalogFilters) => void;
-  /**
-   * @deprecated All call sites use the in-flow tray. Kept for API stability.
-   */
+  /** @deprecated In-flow tray is the only placement; kept for API stability. */
   layout?: 'scroll' | 'inline' | 'wrap';
 }
 
-/**
- * Active catalog filters as Factory instrument chips.
- * Parent owns placement (under desktop toolbar / under mobile action bar).
- */
 export function CatalogActiveFilterChips({
   filters,
   onFiltersChange,

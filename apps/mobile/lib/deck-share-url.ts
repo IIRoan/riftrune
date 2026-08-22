@@ -1,8 +1,4 @@
-/**
- * Public HTTPS origin for shareable The Astral Grove deck links.
- * Prefer an explicit web origin (from `window.location` on web); otherwise
- * EXPO_PUBLIC_APP_URL / EXPO_DEV_SERVER_ORIGIN; finally the production host.
- */
+/** Share origin: explicit web origin, else EXPO_PUBLIC_APP_URL / EXPO_DEV_SERVER_ORIGIN, else production. */
 export function resolveAppOrigin(webOrigin?: string | null): string {
   const fromWeb = String(webOrigin ?? '')
     .trim()
@@ -24,11 +20,7 @@ export function deckSharePath(deckId: string): `/decks/${string}` {
   return `/decks/${encodeURIComponent(deckId)}`;
 }
 
-/**
- * Absolute shareable URL for a deck.
- * Pass `webOrigin` on web (`window.location.origin`) so the link matches the
- * current host (e.g. riftbounddev.roan.dev).
- */
+/** Absolute deck share URL; pass `webOrigin` on web so the link matches the current host. */
 export function buildDeckShareUrl(
   deckId: string,
   webOrigin?: string | null

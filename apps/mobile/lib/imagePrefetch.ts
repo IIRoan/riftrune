@@ -18,10 +18,7 @@ function normalizePrefetchUri(
   return null;
 }
 
-/**
- * Warm the expo-image disk+memory cache for remote (or resolved) URIs.
- * Uses the Expo Image API — no extra package required beyond expo-image.
- */
+/** Warm expo-image disk+memory cache for remote/resolved URIs. */
 export async function prefetchImageUris(
   uris: Array<string | null | undefined>,
   options?: { limit?: number; width?: number }
@@ -58,10 +55,7 @@ export async function prefetchImageUris(
   }
 }
 
-/**
- * Prefetch catalog tile art the way CardArtImage paints it: ?w=thumb first,
- * then optional full URI so progressive upgrade is already warm.
- */
+/** Prefetch like CardArtImage: ?w=thumb first, then optional full URI. */
 export function prefetchCatalogArt(
   items: Array<{ imageUrl?: string | null }>,
   options?: { limit?: number; includeFull?: boolean }

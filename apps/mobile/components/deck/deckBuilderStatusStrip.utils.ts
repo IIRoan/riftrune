@@ -3,7 +3,6 @@ import { getSectionCount } from '@/lib/deck-card';
 import { deckSectionProgress } from '@/lib/deck-display';
 import type { DeckState } from '@/lib/deck-types';
 
-/** One-line deck stats for headers (add flow, etc.). */
 export function deckBuilderHeadlineStats(deck: DeckState): string {
   const formatLabel = deck.format === 'pre-rift' ? 'Pre-Rift' : 'Constructed';
   const main = deckSectionProgress(deck, 'mainDeck');

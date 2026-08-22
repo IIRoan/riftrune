@@ -127,8 +127,7 @@ export function useCollection(options?: { enabled?: boolean }) {
     queryFn: async () => {
       const generation = getCollectionMutationGeneration(queryClient);
       const entries = await getCollection();
-      // A +/- click may have optimistically rewritten the cache while this
-      // request was in flight — never replace that with a stale snapshot.
+      // +/- may have rewritten cache while in flight — never replace with a stale snapshot.
       if (getCollectionMutationGeneration(queryClient) !== generation) {
         return (
           queryClient.getQueryData<CollectionEntry[]>(collectionQueryKeys.all) ??
@@ -170,15 +169,11 @@ export function useCollectionOwnership(variantNumbers: readonly string[]): {
 
       const generation = getCollectionMutationGeneration(queryClient);
       const rows = await fetchRemoteCollectionQuantities(toFetch);
-      // Drop stale responses that raced a +/- optimistic write (including the
-      // window after mutate settled but before this await resolved).
+      // Drop responses that raced a +/- optimistic write (incl. post-mutate pre-await window).
       if (getCollectionMutationGeneration(queryClient) !== generation) {
         return getOwnershipRecord(queryClient);
       }
-      // Re-read after the await: an optimistic mutation may have filled these
-      // keys while /quantities was in flight. Never clobber newer local values
-      // on cold ownership fills. Shared refreshes take server truth unless a
-      // collection mutation is still in flight (SSE/focus refetch race).
+      // Re-read after await: don't clobber newer optimistic values on cold fills; shared refresh takes server truth unless a mutation is in flight.
       const cachedNow = getOwnershipRecord(queryClient);
       const mutating =
         queryClient.isMutating({ mutationKey: collectionMutationKey }) > 0;
@@ -243,9 +238,7 @@ function invalidateRecentAdds(queryClient: QueryClient) {
 }
 
 function invalidateCollection(queryClient: QueryClient) {
-  // `collectionQueryKeys.all` is `['collection']` — use exact so we do not
-  // also mark every ownership slice stale (that re-POSTs /quantities for the
-  // visible catalog window on every +/- click).
+  // exact: don't also stale ownership slices (re-POSTs /quantities on every +/-).
   void queryClient.invalidateQueries({
     queryKey: collectionQueryKeys.all,
     exact: true,
@@ -278,8 +271,7 @@ function reconcileCollectionEntries(
   }
 
   commitCollectionLocal(queryClient);
-  // Cancel in onMutate aborts an in-flight first fetch; refetch so the log is
-  // not left empty (or on a synthetic one-event cache) until staleTime.
+  // onMutate cancel aborts first fetch — refetch so the log isn't empty/synthetic until staleTime.
   invalidateRecentAdds(queryClient);
 }
 
@@ -291,10 +283,7 @@ function logMutationFailure(
   logActionFailure(action, error, context);
 }
 
-/**
- * Snapshot + cancel without blocking the optimistic write.
- * Awaiting cancelQueries before setQueryData made Add feel ~0.5s laggy.
- */
+/** Snapshot + cancel without awaiting — awaiting cancelQueries before setQueryData lagged Add ~0.5s. */
 function beginCollectionMutation(
   queryClient: QueryClient,
   variantNumber: string
@@ -312,8 +301,7 @@ function beginCollectionMutation(
   void queryClient.cancelQueries({
     queryKey: collectionQueryKeys.entry(variantNumber),
   });
-  // Cancel in-flight /quantities so a stale response cannot overwrite the
-  // optimistic ownership write (critical for shared collections).
+  // Cancel in-flight /quantities so stale responses cannot overwrite optimistic ownership.
   void queryClient.cancelQueries({ queryKey: collectionQueryKeys.ownershipRoot });
   void queryClient.cancelQueries({ queryKey: collectionQueryKeys.recentAddsRoot });
   return context;

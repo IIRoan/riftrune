@@ -1,13 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
-/**
- * iOS FullWindowOverlay is a window-level view. SFSafariViewController
- * (expo-web-browser) presents under that overlay, so an open card drawer
- * paints on top of Cardmarket. Suspend the overlay for the browser session
- * — the drawer stays mounted in the React tree and returns when Safari
- * dismisses.
- */
+/** Suspend iOS FullWindowOverlay during expo-web-browser so SFSafariViewController isn't covered by the card drawer. */
 let suspended = false;
 const listeners = new Set<() => void>();
 

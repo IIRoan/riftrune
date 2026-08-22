@@ -74,8 +74,7 @@ export function useCatalogBrowseInfinite(
     return sortCatalogItems(filtered, sort);
   }, [indexReady, catalogItems, filters, ownedOnly, ownershipForFilter, sort]);
 
-  // Background reconciliation. Owned browse must filter the full local index —
-  // paginated API pages would drop unowned rows and look empty.
+  // Owned browse filters the full local index — paginated API pages would drop unowned rows.
   const listQuery = useInfiniteQuery({
     queryKey: cardQueryKeys.browse(filters, sort.sortBy, sort.dir),
     queryFn: async ({ pageParam }) => {

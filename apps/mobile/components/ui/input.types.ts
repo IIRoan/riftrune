@@ -13,7 +13,6 @@ export type InputPressableProps = React.ComponentProps<typeof Pressable> & {
   disabled?: boolean;
   invalid?: boolean;
   focused?: boolean;
-  /** Use a static border instead of the animated outline (toolbar fields). */
   bordered?: boolean;
 };
 

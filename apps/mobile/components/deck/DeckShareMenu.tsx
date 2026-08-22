@@ -29,13 +29,9 @@ async function copySharePayload(value: string, format: DeckShareFormat): Promise
 interface DeckShareMenuProps {
   deck: DeckState;
   className?: string;
-  /** Matches other toolbar 36×36 controls. */
   triggerClassName?: string;
 }
 
-/**
- * Share control: shadcn-style dropdown; selecting a format copies immediately.
- */
 export function DeckShareMenu({
   deck,
   className,

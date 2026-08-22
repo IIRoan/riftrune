@@ -159,7 +159,6 @@ function getSidePosition({
   const insetLeft = insets?.left ?? 0;
   const insetRight = insets?.right ?? 0;
 
-  // Handle vertical sides (top/bottom)
   if (side === "top" || side === "bottom") {
     return getVerticalSidePosition({
       side,
@@ -173,7 +172,6 @@ function getSidePosition({
     });
   }
 
-  // Handle horizontal sides (left/right)
   return getHorizontalSidePosition({
     side,
     triggerPosition,
@@ -452,7 +450,6 @@ function getAlignPosition({
   const insetLeft = insets?.left ?? 0;
   const insetRight = insets?.right ?? 0;
 
-  // For top/bottom sides, align horizontally
   if (side === "top" || side === "bottom") {
     const maxContentWidth = dimensions.width - insetLeft - insetRight;
     const contentWidth = Math.min(contentLayout.width, maxContentWidth);
@@ -471,8 +468,6 @@ function getAlignPosition({
     return { left, maxWidth: maxContentWidth };
   }
 
-  // For left/right sides, align vertically and constrain width
-  // Default to "center" alignment for left/right sides for better UX
   const verticalAlign =
     (side === "left" || side === "right") && align === "start"
       ? "center"
@@ -509,8 +504,6 @@ function getEstimatedPosition({
   sideOffset: number;
   alignOffset: number;
 }): { top: number; left: number } {
-  // Position near trigger but invisible until layout is measured
-  // Use a rough estimate for positioning
   const estimatedHeight = 100; // Rough estimate, will be corrected after layout
   const estimatedWidth = 200;
 
@@ -523,7 +516,6 @@ function getEstimatedPosition({
         ? triggerPosition.pageY - sideOffset - estimatedHeight
         : triggerPosition.pageY + triggerPosition.height + sideOffset;
 
-    // Calculate horizontal alignment
     if (align === "start") {
       left = triggerPosition.pageX;
     } else if (align === "center") {
@@ -539,7 +531,6 @@ function getEstimatedPosition({
         ? triggerPosition.pageX - sideOffset - estimatedWidth
         : triggerPosition.pageX + triggerPosition.width + sideOffset;
 
-    // Calculate vertical alignment
     if (align === "start") {
       top = triggerPosition.pageY;
     } else if (align === "center") {

@@ -5,10 +5,6 @@ import { OPERATE_CTA_FILL_CLASS, OPERATE_CTA_ICON_CLASS, OPERATE_CTA_LABEL_CLASS
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
-/**
- * Card-detail printing-row Add — quiet panel commit.
- * See apps/mobile/DESIGN.md → Catalog detail actions.
- */
 export function CatalogDetailAddButton({
   name,
   busy = false,

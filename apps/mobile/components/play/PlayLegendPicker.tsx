@@ -23,10 +23,6 @@ type PlayLegendPickerProps = {
 
 type LegendCatalogItem = ReturnType<typeof useLegendCatalog>['legends'][number];
 
-/**
- * Art-forward legend grid for the Play scoreboard — same picking language as
- * deck `LegendPicker`, sized for an AppSheet body.
- */
 export function PlayLegendPicker({
   selectedVariantNumber,
   onSelect,

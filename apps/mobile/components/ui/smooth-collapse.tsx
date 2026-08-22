@@ -8,10 +8,7 @@ import Animated, {
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { EASE_OUT_EXPO } from '@/lib/motion';
 
-/**
- * Measured-height collapse on the UI thread.
- * Pure Reanimated (no Moti/framer-motion — those break Expo web SSR via tslib).
- */
+/** Measured-height collapse via Reanimated (Moti/framer-motion break Expo web SSR). */
 const OPEN_MS = 420;
 const CLOSE_MS = 320;
 
@@ -21,11 +18,7 @@ type SmoothCollapseProps = {
   style?: ViewProps['style'];
 };
 
-/**
- * Motion/GSAP-quality accordion body: animates measured height + opacity.
- * Content stays mounted (absolutely positioned) so height reflows stay smooth
- * when form steps change (e.g. email → OTP).
- */
+/** Measured height+opacity collapse; content stays mounted for smooth form-step reflows. */
 export function SmoothCollapse({ open, children, style }: SmoothCollapseProps) {
   const reduceMotion = useReduceMotion();
   const [measured, setMeasured] = useState(0);
@@ -73,7 +66,6 @@ type SmoothChevronProps = {
   children: React.ReactNode;
 };
 
-/** Rotates children 180° with the same expo-out timing as SmoothCollapse. */
 export function SmoothChevron({ open, children }: SmoothChevronProps) {
   const reduceMotion = useReduceMotion();
   const rotation = useSharedValue(0);

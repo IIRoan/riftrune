@@ -29,10 +29,7 @@ function hasPriceData(values: Array<number | null | undefined>): boolean {
   return values.some((value) => value !== null && value !== undefined);
 }
 
-/**
- * Cardmarket uses `trend: 0` with null averages when no non-foil price guide exists
- * (foil-only products, signed showcase printings, etc.).
- */
+/** Cardmarket uses trend:0 + null averages when no non-foil guide exists (foil-only / signed showcase). */
 export function hasNonFoilPriceGuide(entry: CardmarketPriceGuideEntry): boolean {
   if (entry.avg !== null || entry.avg1 !== null || entry.avg7 !== null || entry.avg30 !== null) {
     return true;
@@ -50,7 +47,6 @@ export function normalizeGuideTrend(
   return trend;
 }
 
-/** Stable UUID-shaped id for `(cardmarketId, isFoil)` upserts. */
 export function stablePriceRowId(cardmarketId: number, isFoil: boolean): string {
   const hex = createHash('sha256')
     .update(`astral-grove:cardmarket-price:${String(cardmarketId)}:${isFoil ? 'foil' : 'plain'}`)

@@ -251,10 +251,8 @@ describe('version selection via library', () => {
   test('normal decks encode as v3', () => {
     const code = getCodeFromDeck([{ cardCode: 'OGN-004', count: 3 }], []);
     const bytes = Buffer.from(
-      // Re-decode via library path — first nibble of first base32 char encodes version.
-      // Version lives in low nibble of first byte after base32 decode; library tests use this.
+      // Smoke: version 3 encodes as base32 prefix CM… (first nibble of first char).
       (() => {
-        // Use getDeckFromCode round-trip presence as smoke; version checked via prefix char.
         return code;
       })()
     );

@@ -5,11 +5,7 @@ export function leaveDeckAddScreen(router: ImperativeRouter, deckId: string) {
   router.dismissTo(deckEditHref(deckId));
 }
 
-/**
- * Leave edit mode and land on the deck viewer.
- * Edit is pushed on top of the viewer, so dismiss pops with the reverse slide
- * (replace would animate forward — the wrong direction).
- */
+/** Leave edit via pop (not replace) so the reverse slide matches the push onto the viewer. */
 export function leaveDeckEditMode(router: ImperativeRouter, deckId: string) {
   if (router.canDismiss()) {
     router.dismiss(1);

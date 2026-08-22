@@ -1,6 +1,5 @@
 import type { DecksListQuery } from '@riftbound/contracts';
 
-/** Build the upstream `q` search string from browse query parts. */
 export function buildUpstreamDeckSearchQuery(
   query: Pick<DecksListQuery, 'q' | 'legend' | 'sets'>
 ): string | undefined {
@@ -23,7 +22,6 @@ export function buildUpstreamDeckSearchQuery(
   return parts.length > 0 ? parts.join(' ') : undefined;
 }
 
-/** Map our deck list query to Piltover Archive external API params. */
 export function buildUpstreamDeckListParams(
   query: DecksListQuery
 ): Record<string, string | number | boolean | undefined> {

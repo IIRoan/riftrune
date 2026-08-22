@@ -1,10 +1,7 @@
 /** Floor so dense grids stay readable and tappable (px). */
 export const GRID_TILE_MIN_WIDTH = 96;
 
-/**
- * Preferred upper bound for the densest preset (px).
- * Kept as the historical compact cap for callers that do not pass a size.
- */
+/** Historical compact max tile width (px) for callers that omit a size preset. */
 export const GRID_TILE_MAX_WIDTH = 148;
 
 export type GridCardSize = 'large' | 'medium' | 'small';
@@ -39,10 +36,7 @@ export function resolveGridTileMaxWidth(size: GridCardSize = DEFAULT_GRID_CARD_S
   return GRID_CARD_SIZE_MAX_WIDTH[size];
 }
 
-/**
- * Pack columns so filled tile width stays ≤ maxTileWidth.
- * Uses ceil so mid-widths gain columns instead of stretching cards past the max.
- */
+/** Pack columns with ceil so tile width stays ≤ maxTileWidth instead of stretching past it. */
 export function computeMaxCappedGridColumns(
   available: number,
   gap: number,

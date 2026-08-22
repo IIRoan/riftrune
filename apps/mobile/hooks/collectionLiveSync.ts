@@ -29,10 +29,7 @@ export function invalidateCollectionFromLive(queryClient: QueryClient): void {
   });
 }
 
-/**
- * Handle a remote collection.changed signal.
- * Returns whether invalidate should stay deferred until mutations settle.
- */
+/** Handle remote collection.changed; returns whether invalidate stays deferred until mutations settle. */
 export function onCollectionLiveChanged(queryClient: QueryClient): boolean {
   if (collectionMutationsPending(queryClient)) return true;
   invalidateCollectionFromLive(queryClient);

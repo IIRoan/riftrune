@@ -24,7 +24,6 @@ interface CatalogCollectionPillNavProps {
   className?: string;
 }
 
-/** Catalog All / Owned switch — inline compact control for the cards toolbar. */
 export function CatalogCollectionPillNav({
   value,
   onChange,

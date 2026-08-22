@@ -56,10 +56,6 @@ interface DeckValidationMenuProps {
   className?: string;
 }
 
-/**
- * Quiet validation disclosure for the deck toolbar.
- * Trigger stays compact; details open as a popover list (not nested status cards).
- */
 export function DeckValidationMenu({
   messages,
   open,

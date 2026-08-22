@@ -71,11 +71,8 @@ export const ArrowUpDownIcon = createStyledSvg(PhosphorArrowsDownUp);
 export const BookOpenIcon = createStyledSvg(PhosphorBookOpenText);
 export const BookmarkIcon = createStyledSvg(PhosphorBookmarkSimple);
 export const CalendarPlusIcon = createStyledSvg(PhosphorCalendarPlus);
-/** Personal holdings — catalog "Owned" filter. */
 export const CardholderIcon = createStyledSvg(PhosphorCardholder);
-/** Single card face — catalog "All" / empty browse. */
 export const CardsIcon = createStyledSvg(PhosphorCards);
-/** Fanned hand — Collection tab. */
 export const CardsThreeIcon = createStyledSvg(PhosphorCardsThree);
 export const ChartBarIcon = createStyledSvg(PhosphorChartBar);
 export const CheckIcon = createStyledSvg(PhosphorCheck);
@@ -98,10 +95,8 @@ export const ImageIcon = createStyledSvg(PhosphorImage);
 export const InboxIcon = createStyledSvg(PhosphorTray);
 export const InfoIcon = createStyledSvg(PhosphorInfo);
 export const LayersIcon = createStyledSvg(PhosphorStack);
-/** Cards / catalog grid — Phosphor SquaresFour reads clearer than Lucide LayoutGrid. */
 export const LayoutGridIcon = createStyledSvg(PhosphorSquaresFour);
 export const LibraryIcon = createStyledSvg(PhosphorBooks);
-/** Quick/simple add — skip foil picker, insert standard finish. */
 export const LightningIcon = createStyledSvg(PhosphorLightning);
 export const ListIcon = createStyledSvg(PhosphorList);
 export const LockIcon = createStyledSvg(PhosphorLock);

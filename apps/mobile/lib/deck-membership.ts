@@ -2,10 +2,7 @@ import type { DeckCard, DeckEntry, DeckSectionKey, DeckState } from '@/lib/deck-
 
 type DeckCardRef = Pick<DeckCard, 'cardId' | 'variantNumber' | 'name'>;
 
-/**
- * Whether two cards are the same printing (deck-builder “in deck” UI).
- * Alternate arts share a name/cardId but must not count as the same tile.
- */
+/** Same printing for “in deck” UI — alt arts share name/cardId but are not the same tile. */
 export function deckCardsMatch(a: DeckCardRef, b: DeckCardRef): boolean {
   if (a.variantNumber && b.variantNumber) {
     return a.variantNumber === b.variantNumber;

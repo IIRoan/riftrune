@@ -5,10 +5,7 @@ export const MAX_MARKDOWN_LENGTH = 12_000;
 
 const SAFE_URL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
 
-/**
- * Allow only absolute http(s)/mailto URLs. Rejects javascript:, data:,
- * protocol-relative (`//…`), and relative paths.
- */
+/** Allow only absolute http(s)/mailto; reject javascript:, data:, protocol-relative, and relative paths. */
 export function isSafeMarkdownUrl(raw: string): boolean {
   const trimmed = raw.trim();
   if (!trimmed || trimmed.startsWith('//')) return false;
@@ -26,11 +23,7 @@ export function clampMarkdownSource(source: string): string {
   return source.slice(0, MAX_MARKDOWN_LENGTH);
 }
 
-/**
- * Soften common authoring mistakes before parse.
- * CommonMark requires a space after `#` for headings (`# Title`);
- * users often write `#Title` — normalize that so preview matches intent.
- */
+/** Normalize `#Title` → `# Title` before parse (CommonMark requires the space). */
 export function normalizeMarkdownSource(source: string): string {
   return source.replace(/^(#{1,6})([^\s#].*)$/gm, '$1 $2');
 }

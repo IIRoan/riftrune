@@ -2,11 +2,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 
-// Types
 export type HeadingProps = React.ComponentProps<typeof Text> &
   VariantProps<typeof headingVariants>;
 
-// Components
 export const Heading = ({
   children,
   className,
@@ -20,7 +18,6 @@ export const Heading = ({
   );
 };
 
-// Styles
 const headingVariants = cva("font-sans font-bold text-foreground tracking-tight", {
   variants: {
     level: {

@@ -114,7 +114,6 @@ function AuthWidePlaymat({
   );
 }
 
-/** Shared register / sign-in / reset playmat shell. */
 export function AuthPlaymat({
   children,
   mode = 'sign-in',

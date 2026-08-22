@@ -27,7 +27,6 @@ export const CollectionItem = z.object({
   acquiredPriceCents: z.number().int().nullable(),
   addedAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-  // Denormalized card metadata for list views
   name: z.string(),
   imageUrl: z.string(),
   setCode: z.string(),
@@ -43,11 +42,7 @@ export const CollectionUpsertRequest = z.object({
   quantity: z.number().int().min(0).default(1),
   condition: CardCondition.default('near_mint'),
   language: z.string().max(16).default('en'),
-  /**
-   * Finish stack to write. Required to distinguish standard vs foil when a single
-   * upstream SKU has `foilMode=both` without a distinct `-Foil` sibling.
-   * When omitted, the API derives finish from catalog metadata.
-   */
+  /** Finish stack; required when foilMode=both has no `-Foil` sibling; omitted → API derives from catalog. */
   isFoil: z.boolean().optional(),
   notes: z.string().max(2000).nullable().optional(),
   isGraded: z.boolean().optional(),

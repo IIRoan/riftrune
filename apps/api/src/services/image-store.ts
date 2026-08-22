@@ -312,7 +312,6 @@ export class ImageStoreService {
         return;
       }
     } catch {
-      // not in bucket yet
     }
 
     console.log(`[s3] Background download: ${cdnUrl}`);

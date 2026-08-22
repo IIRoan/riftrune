@@ -53,7 +53,6 @@ function RailButton({
   );
 }
 
-/** Shared strip between seat halves — controls sit mid-left so both players can reach them. */
 export function PlayCenterRail({
   formatLabel,
   formatDescription,

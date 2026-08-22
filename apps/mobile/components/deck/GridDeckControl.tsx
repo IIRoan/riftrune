@@ -27,7 +27,6 @@ interface GridDeckControlProps {
   onRemove: () => void;
 }
 
-/** Deck control for tray tiles — quiet panel Add / −n+ (matches collection). */
 export function GridDeckControl({
   count,
   name,

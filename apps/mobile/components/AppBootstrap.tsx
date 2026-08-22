@@ -7,10 +7,6 @@ function AppBootstrapEffects({ signedIn }: { signedIn: boolean }) {
   return null;
 }
 
-/**
- * Orchestrates phased app warm-up after TanStack Query AsyncStorage restore.
- * Mount once inside PersistQueryClientProvider.
- */
 export function AppBootstrap({ children }: { children?: React.ReactNode }) {
   const { data: session } = authClient.useSession();
   const signedInUserId = session?.user?.id ?? null;

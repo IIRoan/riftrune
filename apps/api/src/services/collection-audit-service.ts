@@ -137,7 +137,6 @@ export class CollectionAuditService {
     return this.page(filters, query.limit);
   }
 
-  /** Events performed by this user across any collection (personal history). */
   async listForActor(
     actorUserId: string,
     query: CollectionAuditListQuery
@@ -157,7 +156,6 @@ export class CollectionAuditService {
     return this.page(filters, query.limit);
   }
 
-  /** Latest quantity changes (adds and removes) across the requested printings. */
   async recentAddsForVariants(
     collectionId: string,
     variantNumbers: string[]

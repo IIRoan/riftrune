@@ -1,7 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { View } from "react-native";
 
-// Components
 export const Separator = ({
   className,
   orientation,
@@ -18,7 +17,6 @@ export const Separator = ({
   );
 };
 
-// Styles
 const separatorVariants = cva("h-10 bg-border", {
   variants: {
     thickness: {

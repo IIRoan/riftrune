@@ -1,15 +1,7 @@
 import { Platform } from 'react-native';
 import type ExpoSecureStore from 'expo-secure-store';
 
-/**
- * Storage wrapper that satisfies better-auth expo client's sync interface.
- *
- * - Web: uses localStorage (already sync + persistent)
- * - Native: uses expo-secure-store with an in-memory cache for sync reads.
- *
- * Call hydrateSecureStorage() on app start to pre-populate the native cache
- * from SecureStore so sessions survive app restarts.
- */
+/** better-auth sync storage: web=localStorage; native=SecureStore + memory cache (call hydrateSecureStorage on start). */
 
 const CHUNK_MARKER = 'ba-chunks:';
 const KNOWN_KEYS = ['astral-grove_cookie', 'astral-grove_session_data'];
@@ -20,8 +12,7 @@ const isWeb = Platform.OS === 'web';
 // In-memory cache for native (web uses localStorage directly)
 const cache = new Map<string, string>();
 
-// Lazy-load expo-secure-store only on native. An older development client may
-// not include the native module until the next EAS binary rebuild.
+// Lazy-load expo-secure-store on native (older dev clients may lack the module until EAS rebuild).
 let SecureStore: typeof ExpoSecureStore | null = null;
 if (!isWeb) {
   try {
@@ -85,10 +76,7 @@ export const secureStorage = {
   },
 };
 
-/**
- * Pre-populate the in-memory cache from SecureStore on native so sync reads
- * work after an app restart. No-op on web (localStorage is already sync).
- */
+/** Prefill native SecureStore→memory cache for sync reads after restart; no-op on web. */
 export async function hydrateSecureStorage(): Promise<void> {
   if (isWeb || !SecureStore) return;
 

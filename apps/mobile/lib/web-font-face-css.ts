@@ -1,11 +1,4 @@
-/**
- * Pure @font-face helpers — no Asset / DOM imports so unit tests and +html
- * can share the same rule shape.
- *
- * `font-display: block` hides text until the face is ready (or ~3s) instead of
- * flashing a system fallback. Combined with waiting on `document.fonts` before
- * first UI paint, Firefox/Zen no longer FOUT on cold load.
- */
+/** Pure @font-face helpers (no Asset/DOM); `font-display: block` + `document.fonts` wait avoids Firefox FOUT. */
 
 import { WEB_FONT_MONO_FAMILY, WEB_FONT_SANS_FAMILY } from '@/lib/fonts';
 

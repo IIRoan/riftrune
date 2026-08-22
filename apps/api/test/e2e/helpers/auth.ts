@@ -63,6 +63,5 @@ export async function cleanupTestUsers(emailLike: string): Promise<void> {
       await db.delete(userTable).where(eq(userTable.id, user.id));
     }
   } catch {
-    // External API mode
   }
 }

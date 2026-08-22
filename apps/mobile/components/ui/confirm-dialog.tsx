@@ -24,9 +24,6 @@ interface ConfirmDialogProps {
   onConfirm: () => void | Promise<void>;
 }
 
-/**
- * Confirm action — uses AppSheet (bottom sheet on mobile, centered dialog on desktop).
- */
 export function ConfirmDialog({
   open,
   onOpenChange,

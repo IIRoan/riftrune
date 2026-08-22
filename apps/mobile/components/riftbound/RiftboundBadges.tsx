@@ -21,7 +21,6 @@ const STATUS_KEYWORDS: Record<StatusKeyword, { label: string; keywordBase: strin
   imported: { label: 'IMPORTED', keywordBase: 'VISION' },
 };
 
-/** Deck / validation status — printed keyword styling. */
 export function StatusKeywordBadge({
   status,
   compact = false,
@@ -43,7 +42,6 @@ const CONTENT_KEYWORDS = {
 
 export type ContentKeyword = keyof typeof CONTENT_KEYWORDS;
 
-/** Browse content flags — keyword tags for video, guide, matchups. */
 export function ContentKeywordBadge({
   type,
   compact = true,
@@ -57,7 +55,6 @@ export function ContentKeywordBadge({
   );
 }
 
-/** Active browse filter chip with keyword styling. */
 export function FilterKeywordChip({
   label,
   keywordBase,
@@ -88,7 +85,6 @@ export function FilterKeywordChip({
   );
 }
 
-/** White energy-disc quantity marker — matches printed card copy counts. */
 export function QuantityPip({
   value,
   size = 22,

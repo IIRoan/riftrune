@@ -17,11 +17,7 @@ type OverlayPresence = {
   reduceMotion: boolean;
 };
 
-/**
- * Enter/exit progress for centered dialogs and card modals.
- * Open → MOTION.smooth spring (or opacity timing when reduced motion).
- * Close → snappy timing, then unmount via `visible`.
- */
+/** Dialog/modal enter (smooth spring) / exit (snappy timing then unmount via `visible`). */
 export function useOverlayPresence(open: boolean): OverlayPresence {
   const reduceMotion = useReduceMotion();
   const [visible, setVisible] = useState(open);

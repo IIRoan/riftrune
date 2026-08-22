@@ -8,7 +8,7 @@ function hostnameFromUrl(url: string): string | undefined {
   }
 }
 
-/** Shared registrable suffix (e.g. api.foo.example + app.foo.example → example.com). */
+/** Shared registrable suffix (api.foo.example + app.foo.example → example.com). */
 function sharedParentDomain(hosts: string[]): string | undefined {
   const partsList = hosts
     .map((host) => host.split('.').filter(Boolean))

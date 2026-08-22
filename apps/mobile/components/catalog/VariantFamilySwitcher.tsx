@@ -10,7 +10,6 @@ interface VariantFamilySwitcherProps {
   total: number;
   onPrevious: () => void;
   onNext: () => void;
-  /** Larger chevron hit targets for mobile drawer (≥44px). */
   prominent?: boolean;
 }
 

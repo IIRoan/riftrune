@@ -38,10 +38,7 @@ export function prefetchPlayLegendCatalog(queryClient: QueryClient): Promise<voi
   return queryClient.prefetchInfiniteQuery(legendListQueryOptions('')).then(() => undefined);
 }
 
-/**
- * Catalog search for Champion Legends — grouped like browse, list art first,
- * deferred detail hydrate, long-lived cache + previous-result placeholders.
- */
+/** Legend catalog search: browse grouping, list art first, deferred hydrate, previous-result placeholders. */
 export function useLegendCatalog() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');

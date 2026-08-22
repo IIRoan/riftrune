@@ -1,4 +1,4 @@
-/** Token printings use variant numbers like SFD-T03 or UNL-T05. */
+/** Token printings use numbers like SFD-T03 / UNL-T05. */
 const TOKEN_VARIANT_SUFFIX = /-T\d+$/i;
 
 export function isTokenVariantNumber(variantNumber: string): boolean {

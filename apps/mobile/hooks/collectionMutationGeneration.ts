@@ -1,9 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 
-/**
- * Bumped on every collection mutation start so in-flight list/quantities
- * responses cannot clobber optimistic cache after the await.
- */
+/** Bumped on mutation start so in-flight list/quantities responses cannot clobber optimistic cache. */
 const collectionMutationGeneration = new WeakMap<QueryClient, number>();
 
 export function bumpCollectionMutationGeneration(queryClient: QueryClient): number {

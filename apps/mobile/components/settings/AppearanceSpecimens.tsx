@@ -24,7 +24,6 @@ const THEMES: { value: ThemeType; label: string }[] = [
   { value: 'system', label: 'System' },
 ];
 
-/** Full-size desktop catalog chrome, then scale-to-fit the specimen width. */
 const GRID_COLS = 3;
 const GRID_ROWS = 2;
 const GRID_CARD_COUNT = GRID_COLS * GRID_ROWS;
@@ -33,13 +32,9 @@ const GRID_GAP = Layout.gridGap;
 const GRID_LAYOUT_WIDTH = GRID_COLS * GRID_TILE_WIDTH + (GRID_COLS - 1) * GRID_GAP;
 
 const LIST_CARD_COUNT = 4;
-/** Typical desktop catalog list column width for a 1:1 scaled sample. */
 const LIST_LAYOUT_WIDTH = 420;
 
-/**
- * Specimens fill their panel width. Inflating the virtual canvas makes the
- * same chrome render smaller while gaps/type stay proportionally identical.
- */
+/** Inflate virtual canvas so chrome scales down while gaps/type stay proportional. */
 const PREVIEW_SCALE_FACTOR = 0.38;
 const GRID_CONTENT_WIDTH = GRID_LAYOUT_WIDTH / PREVIEW_SCALE_FACTOR;
 const LIST_CONTENT_WIDTH = LIST_LAYOUT_WIDTH / PREVIEW_SCALE_FACTOR;
@@ -103,10 +98,7 @@ function ThemeSwatch({ mode }: { mode: 'light' | 'dark' | 'system' }) {
   );
 }
 
-/**
- * Renders real catalog tiles at full size inside a wider virtual canvas, then
- * scales the canvas to the specimen width so chrome reads as a compact miniature.
- */
+/** Full-size catalog chrome in a wider canvas, scaled down to specimen width. */
 function ScaleToFitPreview({
   contentWidth,
   layoutWidth,

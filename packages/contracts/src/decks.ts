@@ -12,9 +12,9 @@ export const DeckSortField = z.enum([
 
 export const DecksListQuery = z.object({
   q: z.string().max(200).optional(),
-  /** Legend name — forwarded upstream as `legend:<name>` in the search query. */
+  /** Forwarded upstream as `legend:<name>` in the search query. */
   legend: z.string().optional(),
-  /** Comma-separated set prefixes — each forwarded as `set:<prefix>`. */
+  /** Each set prefix forwarded as `set:<prefix>`. */
   sets: z.string().optional(),
   isLegal: z
     .union([z.literal('true'), z.literal('false')])
@@ -37,7 +37,6 @@ export const DecksListQuery = z.object({
   sort: DeckSortField.default('trending'),
   dir: z.enum(['asc', 'desc']).default('desc'),
   source: z.enum(['owned', 'imported', 'all']).default('all'),
-  /** When true, imported list items include main-deck cards for browse previews. */
   preview: z
     .union([z.literal('true'), z.literal('false')])
     .transform((v) => v === 'true')
@@ -48,7 +47,7 @@ export const StoredDeckPayload = z.object({
   id: z.string().min(1),
   name: z.string(),
   description: z.string().optional(),
-  /** Deckbuilding format / ruleset. Defaults to Constructed for older payloads. */
+  /** Defaults to Constructed for older payloads. */
   format: DeckFormat.default('constructed'),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
@@ -58,11 +57,10 @@ export const StoredDeckPayload = z.object({
   runes: z.array(DeckEntryInput),
   battlefields: z.array(DeckEntryInput),
   sideboard: z.array(DeckEntryInput),
-  /** Piltover Archive deck id after a successful upstream sync of *our* copy. */
+  /** PA deck id after successful upstream sync of *our* copy. */
   upstreamId: z.string().optional(),
   /** Community deck this owned copy was imported from (duplicate-import detection; never a write/delete target). */
   importedFromId: z.string().optional(),
-  /** Warnings from upstream import when cards could not be fully resolved. */
   syncWarnings: z.array(z.string()).optional(),
 });
 
@@ -71,7 +69,6 @@ export const DeckSource = z.enum(['owned', 'imported']);
 export const DeckListItem = StoredDeckPayload.extend({
   source: DeckSource,
   readOnly: z.boolean(),
-  /** Piltover Archive browse metadata (imported public decks). */
   authorName: z.string().optional(),
   views: z.number().int().nonnegative().optional(),
   likes: z.number().int().nonnegative().optional(),

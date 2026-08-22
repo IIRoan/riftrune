@@ -19,10 +19,7 @@ type UseFocusedTextDraftOptions = {
   commitMs?: number;
 };
 
-/**
- * Controlled input value that stays local while focused.
- * Parent/`value` updates are ignored until blur so mid-edit carets do not jump.
- */
+/** Local draft while focused; ignore parent `value` until blur so carets don't jump. */
 export function useFocusedTextDraft(
   value: string,
   onChange: (next: string) => void,

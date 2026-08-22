@@ -1,7 +1,4 @@
-/**
- * Detects phones/tablets from a browser user-agent string.
- * Used by the HTTPS invite linking page to choose app deep-link vs web accept.
- */
+/** Mobile UA check for invite linking page (app deep-link vs web accept). */
 export function isLikelyMobileUserAgent(userAgent: string): boolean {
   if (!userAgent.trim()) return false;
   return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(

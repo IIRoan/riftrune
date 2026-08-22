@@ -55,10 +55,9 @@ const UPSTREAM_CHECK_TTL_MS = 15 * 60 * 1000;
 const VARIANT_ID_RESOLVE_TTL_MS = 30 * 60 * 1000;
 /** Cap variant rows loaded before in-memory printing grouping + pagination. */
 const SEARCH_VARIANT_FETCH_CAP = 500;
-/** Filtered browse (deck builder) materializes the full matching set, then pages. */
+/** Deck-builder browse materializes the full matching set, then pages. */
 const FILTERED_BROWSE_VARIANT_FETCH_CAP = 5000;
 
-/** Highest Cardmarket market trend across a list row and its printings. */
 function listItemMaxMarketPrice(item: CardListItem): number {
   let max = item.priceEur?.market ?? 0;
   for (const printing of item.printings) {
@@ -357,8 +356,7 @@ export class CardCacheService {
     const fromCard = rewritten.variants.find(
       (v) => v.variantNumber === variant.variantNumber
     );
-    // Prefer marketplace IDs from the caller — DB overlays / Cardmarket backfill
-    // live on `variant`, while `upstreamRaw` often still has null ids (e.g. VEN).
+    // Prefer caller marketplace IDs — DB overlays live on variant; upstreamRaw often still null (e.g. VEN).
     const rewrittenVariant: PaVariant = {
       ...(fromCard ?? variant),
       imageUrl: this.images.rewriteImageUrl((fromCard ?? variant).imageUrl),
@@ -394,10 +392,7 @@ export class CardCacheService {
         },
       });
 
-    // Synthetic Signed rows use a random UUID. When PA later catalogs the same
-    // variant_number with a different id, inserting on id would violate the unique
-    // variant_number constraint. Keep the local primary key (collection FKs and
-    // delete+insert are unsafe) and overlay upstream fields onto the existing row.
+    // Synthetic Signed rows keep local PK when PA later catalogs same variant_number (unique VN; collection FKs unsafe to delete+insert).
     const existingByNumber = await tx.query.variants.findFirst({
       where: eq(variants.variantNumber, variant.variantNumber),
       columns: { id: true, cardmarketId: true },
@@ -419,7 +414,6 @@ export class CardCacheService {
           showInLibrary: variant.showInLibrary,
           isCollectible: variant.isCollectible,
           contentHash: vHash,
-          // Persist PA payload (including upstream id) while DB PK stays local.
           upstreamRaw: variant,
           cardmarketId: variant.cardmarketId ?? existingByNumber.cardmarketId ?? null,
           tcgplayerId: variant.tcgplayerId ?? null,
@@ -526,8 +520,7 @@ export class CardCacheService {
         contentHash: paCardHash(upstream),
       };
     } catch (err) {
-      // Local-only synthetics (e.g. VEN-189*) are absent from PA — serve cache on 404.
-      // Do not hide refresh/network failures for real upstream cards.
+      // Local-only synthetics (VEN-189*) absent from PA — serve cache on 404; do not hide failures for real cards.
       const notFound = err instanceof PaApiError && err.status === 404;
       const localOnlySynthetic = variantNumber.trim().endsWith('*');
       if (cached && notFound && localOnlySynthetic) {
@@ -541,9 +534,6 @@ export class CardCacheService {
     }
   }
 
-  /**
-   * Resolve an upstream variant UUID to a local variant number, refreshing the card cache when needed.
-   */
   async resolveVariantNumbersFromUpstream(
     refs: Array<{ variantId: string; cardId: string }>,
     resolved: Map<string, string>
@@ -621,7 +611,6 @@ export class CardCacheService {
             return match.variantNumber;
           }
         } catch {
-          // Fall through to sibling lookup.
         }
       }
     }
@@ -830,8 +819,7 @@ export class CardCacheService {
 
     if (!query.refresh) {
       const cached = this.searchCache.get(cacheKey);
-      // Never serve a cached miss — a newly added upstream card must be
-      // discoverable on the next search. Positive hits may still re-reconcile below.
+      // Never serve a cached miss — newly added upstream cards must be discoverable on next search.
       if (cached && cached.total > 0 && !hasSearchQuery) {
         logSearchCacheHit({
           path: 'cards_list',
@@ -866,7 +854,6 @@ export class CardCacheService {
     }
 
     const response: SearchResult = { ...result, source };
-    // Cache confirmed hits (and confirmed upstream empties) briefly.
     if (response.total > 0 || response.source === 'upstream') {
       this.searchCache.set(cacheKey, response);
     } else {
@@ -921,8 +908,7 @@ export class CardCacheService {
     const localEmpty =
       (localResult?.total ?? 0) === 0 || (localResult?.items.length ?? 0) === 0;
 
-    // Prior successful checks may skip only when we already have local hits.
-    // Empty local results always re-query upstream.
+    // Skip prior successful checks only with local hits; empty local always re-queries upstream.
     if (this.upstreamCheckCache.has(checkKey) && !query.refresh && !localEmpty && localResult) {
       const catalogHash = localResult.catalogHash ?? (await this.getCatalogHash());
       return {
@@ -938,8 +924,7 @@ export class CardCacheService {
       let upstreamTotal = 0;
       let pagesScanned = 0;
       let consecutiveCleanPages = 0;
-      // Walk until local catches upstream (or hit the hard cap). Deck-builder
-      // identity filters previously stopped after 5 pages and missed later cards.
+      // Walk until local catches upstream (or hard cap); deck-builder identity used to stop at 5 pages and miss cards.
       const maxBackfillPages = maxUpstreamBackfillPages(query);
       const colorsOmittedForWithin =
         query.colorMode === 'within' && Boolean(query.colors);
@@ -1006,8 +991,7 @@ export class CardCacheService {
           Boolean(upstream.pagination?.hasNext) &&
           page < (upstream.pagination?.totalPages ?? page);
 
-        // When colors are omitted for within-mode, upstream totals are broader than
-        // the local filtered total — use clean-page streaks instead.
+        // Within-mode without colors: upstream totals are broader — use clean-page streaks instead.
         const caughtUp = colorsOmittedForWithin
           ? consecutiveCleanPages >= 5
           : !stillBehind;
@@ -1042,8 +1026,7 @@ export class CardCacheService {
         return { result, source: 'upstream' };
       }
 
-      // Upstream reports more matches than we do — keep probing on the next request.
-      // Skip this when within-mode omitted colors (upstream total is a broader pool).
+      // Upstream reports more matches — keep probing next request; skip when within-mode omitted colors.
       if (!colorsOmittedForWithin && upstreamTotal > result.total) {
         this.upstreamCheckCache.delete(checkKey);
       } else {
@@ -1343,8 +1326,7 @@ export class CardCacheService {
       query.rarities ||
       query.excludeTokens
     );
-    // Materialize then group so alternate arts / foil merges never split across
-    // SQL pages (deck builder scroll must see every matching printing).
+    // Materialize then group so alt arts / foil merges never split across SQL pages (deck builder scroll).
     const materializeThenPage =
       hasSearch || hasDeckBuilderFilters || query.sortBy === 'price';
     const fetchCap = hasSearch

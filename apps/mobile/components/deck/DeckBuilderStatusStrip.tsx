@@ -35,7 +35,6 @@ interface DeckBuilderStatusStripProps {
   deck: DeckState;
   readOnly?: boolean;
   onSectionPress?: (section: DeckSectionKey) => void;
-  /** e.g. "2/5 owned" */
   ownershipLabel?: string;
 }
 
@@ -63,10 +62,6 @@ function MeterTrack({
   );
 }
 
-/**
- * Deck completion instrument for the right rail — one stacked readout,
- * not a grid of mini-cards.
- */
 export function DeckBuilderStatusStrip({
   deck,
   readOnly = false,

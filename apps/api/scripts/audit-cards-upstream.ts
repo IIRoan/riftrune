@@ -1,20 +1,5 @@
 #!/usr/bin/env bun
-/**
- * Audit local card cache against upstream Piltover Archive.
- *
- * Catalog sync skips upserts when the fingerprint (total + filters) is unchanged,
- * so field fixes upstream (e.g. name typo "Stagazer" → "Stargazer") can leave
- * stale rows in Postgres. This script fetches every logical card from PA and
- * compares it to the local row.
- *
- * Usage:
- *   bun run --cwd apps/api audit:cards
- *   bun run --cwd apps/api audit:cards -- --fix
- *   bun run --cwd apps/api audit:cards -- --name stargazer
- *   bun run --cwd apps/api audit:cards -- --variant OGS-123 --concurrency 4
- *
- * Exit code 1 when mismatches / missing / errors remain after the run.
- */
+/** Audit local card cache vs PA; catches stale rows when sync fingerprint skips upserts. Exit 1 on remaining mismatches. */
 import { PaLogicalCard, type PaLogicalCard as PaLogicalCardType } from '@riftbound/contracts';
 import { eq } from 'drizzle-orm';
 import { createDb } from '../src/db/client.js';
@@ -300,7 +285,6 @@ function compareLogicalCards(
         localVariant.set.prefix,
         upstreamVariant.set.prefix
       );
-      // Catch-all if hashes differ but none of the sampled fields did.
       if (diffs.length === before) {
         diffs.push({
           path: `variants.${variantNumber}.contentHash`,
@@ -532,7 +516,6 @@ async function main() {
     const coveredUpstreamVariants = new Set<string>();
     let fixed = 0;
 
-    // Local variants absent from the upstream list (likely deleted / renumbered).
     if (!scoped) {
       for (const [vn, cardId] of localVariantToCardId) {
         if (upstreamVariantSet.has(vn)) continue;
@@ -632,8 +615,7 @@ async function main() {
         };
       }
 
-      // Prefer the live DB name column when reporting (source of truth for search).
-      const localForDiff: PaLogicalCardType = {
+        const localForDiff: PaLogicalCardType = {
         ...localLogical,
         id: local.id,
         name: local.name,
@@ -670,7 +652,6 @@ async function main() {
       await processResult(result);
     }
 
-    // Discover logical cards present upstream but missing locally (one probe each).
     if (!scoped) {
       const pendingUpstreamOnly = upstreamVariantNumbers.filter((variantNumber) => {
         const upper = variantNumber.toUpperCase();
@@ -704,7 +685,6 @@ async function main() {
         }
       }
     } else if (args.variantFilter && !localVariantToCardId.has(args.variantFilter)) {
-      // Scoped variant lookup for a printing that is not in the local DB yet.
       const result = await fetchProbe({
         cardId: null,
         probeVariant: args.variantFilter,
@@ -714,7 +694,6 @@ async function main() {
       await processResult(result);
     }
 
-    // De-dupe upstream-only probes that resolved to the same card.
     const uniqueMissing = [
       ...new Map(missingLocally.map((m) => [m.cardId, m])).values(),
     ];
@@ -792,11 +771,9 @@ async function main() {
 
     const remainingMismatches = args.fix ? 0 : mismatches.length;
     const remainingMissing = args.fix ? 0 : uniqueMissing.length;
-    // Local-only variants are informational; they do not fail the audit unless
-    // there were also content/fetch problems. Re-check after fix for mismatches.
+    // Local-only variants are informational; fail only with content/fetch problems. Re-check after --fix.
     let postFixMismatches = 0;
     if (args.fix && mismatches.length > 0) {
-      // Quick re-verify fixed cards against current DB hashes.
       for (const m of mismatches) {
         const row = await db.query.cards.findFirst({
           where: eq(cards.id, m.cardId),

@@ -29,7 +29,6 @@ import { cn, mergeRefs } from "@/lib/utils";
 import { ChevronDownIcon } from "@/components/icons";
 import { Slot } from "./slot";
 
-// Constants
 const CONTENT_ENTER = FadeInDown.springify()
   .damping(28)
   .stiffness(340)
@@ -51,7 +50,6 @@ const ACCORDION_ITEM_CLASSNAME = cn(
 
 const AnimatedView = Animated.createAnimatedComponent(View);
 
-// Types
 type AccordionType = "single" | "multiple";
 
 type AccordionItemLayout =
@@ -65,7 +63,6 @@ type AccordionRootContextValue = {
   type: AccordionType;
   collapsible: boolean;
   itemLayouts: Record<string, AccordionItemLayout>;
-  /** single: one value; multiple: open value set */
   isOpen: (value: string) => boolean;
   toggle: (value: string) => void;
 };
@@ -140,9 +137,7 @@ const getClosedItemLayout = (
 
 export type AccordionProps = {
   type?: AccordionType;
-  /** When `type` is `single`, allow closing the open item so none are open */
   collapsible?: boolean;
-  /** Controlled open value(s) */
   value?: string | string[];
   defaultValue?: string | string[];
   onValueChange?: (value: string | string[] | undefined) => void;

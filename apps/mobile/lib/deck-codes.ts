@@ -31,11 +31,7 @@ function countsToDeck(counts: Map<string, number>): DeckCodeCard[] {
   return [...counts.entries()].map(([cardCode, count]) => ({ cardCode, count }));
 }
 
-/**
- * Flatten an Astral Grove deck into the Piltover Archive encoder shape.
- * Legend, champion, main, runes, and battlefields all live in `mainDeck`;
- * `chosenChampion` is the champion slot's variant number when set.
- */
+/** Flatten to PA encoder shape: legend/champion/main/runes/battlefields in `mainDeck`; `chosenChampion` is champion VN. */
 export function deckStateToCodePayload(deck: DeckState): {
   mainDeck: DeckCodeCard[];
   sideboard: DeckCodeCard[];
@@ -78,10 +74,7 @@ export function exportDeckCode(deck: DeckState): string {
   return getCodeFromDeck(payload.mainDeck, payload.sideboard, payload.chosenChampion);
 }
 
-/**
- * True when `text` looks like a Riftbound deck code (base32, no whitespace).
- * Does not guarantee a successful decode — call `decodeDeckCode` for that.
- */
+/** Heuristic: looks like a Riftbound deck code (base32, no whitespace) — not a decode guarantee. */
 export function looksLikeDeckCode(text: string): boolean {
   const trimmed = text.trim();
   if (trimmed.length < MIN_DECK_CODE_LENGTH) return false;
@@ -96,11 +89,7 @@ export function decodeDeckCode(
   return getDeckFromCode(code.trim(), options);
 }
 
-/**
- * Place decoded card codes into The Astral Grove sections.
- * When `chosenChampion` is set, one copy of that code goes to the champion slot
- * and any remaining copies follow normal type routing (usually main deck).
- */
+/** Route decoded codes into sections; with `chosenChampion`, one copy goes to the champion slot. */
 export async function deckFromCodePayload(
   decoded: DeckWithSideboard,
   resolveCard: VariantResolver

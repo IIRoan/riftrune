@@ -37,12 +37,9 @@ interface DeckBuilderToolbarProps {
   onDuplicate?: () => void;
   onDelete?: () => void;
   duplicateBusy?: boolean;
-  /** Owned view mode → enter the deck builder */
   onEdit?: () => void;
-  /** Desktop: collapse/expand left info drawer */
   infoDrawerOpen?: boolean;
   onToggleInfoDrawer?: () => void;
-  /** Mobile: open info / list sheets */
   onOpenInfo?: () => void;
   onOpenList?: () => void;
   catalogSection?: DeckCatalogSection;

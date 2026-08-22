@@ -16,7 +16,6 @@ export const PriceRow = z.object({
   lastUpdated: z.string().datetime(),
 });
 
-/** One stored price observation per cardmarket listing per UTC calendar day. */
 export const PriceDailyPoint = z.object({
   cardmarketId: z.number().int(),
   isFoil: z.boolean(),
@@ -36,13 +35,11 @@ export const PriceStats = z.object({
   cardmarketId: z.number().int().nullable(),
   isFoil: z.boolean(),
   currency: z.literal('EUR'),
-  /** Cardmarket trend price (price guide) — headline value. */
   currentPrice: z.number().nullable(),
   baselinePrice: z.number().nullable(),
   minPrice: z.number().nullable(),
   maxPrice: z.number().nullable(),
   avgPrice: z.number().nullable(),
-  /** Cheapest marketplace listing today (any language / condition). */
   listingLow: z.number().nullable(),
   changePercent: z.number().int().nullable(),
   trend: PriceTrend,

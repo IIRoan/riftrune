@@ -7,10 +7,7 @@ export type AppTabId =
   | 'play'
   | 'settings';
 
-/**
- * Resolve the active primary tab from an Expo Router pathname.
- * Uses `includes` so both `/collection` and `/(tabs)/collection` match.
- */
+/** Active primary tab from pathname (`includes` so `/collection` and `/(tabs)/collection` both match). */
 export function tabIdFromPathname(pathname: string): AppTabId {
   if (pathname.includes('/collection')) return 'collection';
   if (pathname.includes('/wishlist')) return 'wishlist';

@@ -210,8 +210,7 @@ export async function removeManyFromCollection(
 }
 
 export async function migrateLocalCollectionToRemote(): Promise<void> {
-  // No-op: collection is now cloud-only.
-  // Kept for backward compatibility with AuthPanel's sign-in flow.
+  // No-op (cloud-only); kept for AuthPanel sign-in compatibility.
 }
 
 export function filterCollection(

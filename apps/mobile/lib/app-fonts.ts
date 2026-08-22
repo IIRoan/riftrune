@@ -1,7 +1,4 @@
-/**
- * Expo font map — kept separate from font helpers so unit tests can import
- * `lib/fonts` without loading binary `.ttf` assets.
- */
+/** Expo font map — separate so unit tests can import `lib/fonts` without loading `.ttf` assets. */
 export const APP_FONTS = {
   'Lato-Regular': require('@/assets/fonts/Lato-Regular.ttf'),
   'Lato-Medium': require('@/assets/fonts/Lato-Medium.ttf'),

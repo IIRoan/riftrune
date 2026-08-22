@@ -1,6 +1,4 @@
-/**
- * Contrast checks for archive theme tokens (OKLCH → sRGB relative luminance).
- */
+/** Contrast checks for archive theme tokens (OKLCH → sRGB relative luminance). */
 
 export type ThemeMode = 'light' | 'dark';
 

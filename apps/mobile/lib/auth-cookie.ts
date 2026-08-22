@@ -5,10 +5,7 @@ import { secureStorage } from '@/src/lib/secure-storage';
 
 const AUTH_COOKIE_STORAGE_KEY = 'astral-grove_cookie';
 
-/**
- * Cookie header for authenticated API requests on native.
- * Web clients should rely on `credentials: 'include'` instead.
- */
+/** Native auth Cookie header; web should use `credentials: 'include'` instead. */
 export function getAuthCookieHeader(): string {
   if (Platform.OS === 'web') return '';
 

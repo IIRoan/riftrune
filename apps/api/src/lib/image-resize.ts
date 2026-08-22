@@ -12,7 +12,6 @@ export function parseThumbWidth(raw: string | null | undefined): AllowedThumbWid
     : undefined;
 }
 
-/** R2 object key for a cached derivative (e.g. thumbs/w160/cards/OGN-001.webp). */
 export function thumbStorageKey(sourceKey: string, width: AllowedThumbWidth): string {
   return `thumbs/w${String(width)}/${sourceKey.replace(/^\//, '')}`;
 }

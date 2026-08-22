@@ -5,7 +5,6 @@ export type UpstreamReconcileMode = 'sync' | 'skip';
 /** Hard cap so a broken upstream total cannot loop forever. */
 export const UPSTREAM_BACKFILL_PAGE_CAP = 100;
 
-/** Map our list query to Piltover Archive external API params. */
 export function buildUpstreamListParams(
   query: CardsListQuery
 ): Record<string, string | number | undefined> {
@@ -22,8 +21,7 @@ export function buildUpstreamListParams(
   if (query.super) params.supertypes = query.super;
   if (query.variants) params.variants = query.variants;
   if (query.sets) params.sets = query.sets;
-  // PA has no colorMode=within. Passing colors uses PA's stricter "contains all"
-  // match and under-backfills deck-builder identity pools — omit for within.
+  // PA has no colorMode=within; omit colors for within or PA's "contains all" under-backfills identity pools.
   if (query.colors && query.colorMode !== 'within') {
     params.colors = query.colors;
   }
@@ -55,10 +53,7 @@ export function upstreamCheckKey(query: CardsListQuery): string {
   });
 }
 
-/**
- * How many upstream pages to walk while local totals lag.
- * Text search still multi-pages when behind so alt arts on later pages are not missed.
- */
+/** Upstream pages to walk while local lags; text search still multi-pages so later alt arts are not missed. */
 export function maxUpstreamBackfillPages(query: CardsListQuery): number {
   const q = query.q?.trim();
   if (q && q.length >= 2) return 20;
@@ -81,12 +76,10 @@ export function resolveUpstreamReconcileMode(
 
   if (alreadyChecked) return 'skip';
 
-  // Text search with local hits still reconciles once so upstream-only cards can
-  // backfill; reconcile short-circuits when localTotal >= upstreamTotal.
+  // Text search with local hits still reconciles once for upstream-only backfill; short-circuits when local >= upstream.
   if (hasSearchQuery) return 'sync';
 
-  // First page of browse / deck-builder filters reconciles once when local has
-  // hits so we can compare totals; reconcile short-circuits when local is ahead.
+  // First browse/deck-builder page reconciles once when local has hits; short-circuits when local is ahead.
   if (query.page === 1) return 'sync';
 
   return 'skip';

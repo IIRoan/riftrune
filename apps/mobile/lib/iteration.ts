@@ -1,7 +1,4 @@
-/**
- * Shared iteration helpers — prefer these over chained .filter().map() /
- * .map().filter() and over array.includes() inside loops.
- */
+/** Prefer these over chained filter/map and includes()-in-loop. */
 
 /** Map items that pass a predicate in a single pass. */
 export function mapFilter<T, U>(

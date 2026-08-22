@@ -47,14 +47,7 @@ function releaseHover(dismiss: () => void) {
   }
 }
 
-/**
- * Web-only enlarged card art on hover (readable full card).
- * Portaled so parent `overflow-hidden` cards do not clip it.
- * Native: children only.
- *
- * Cleanup is intentionally aggressive: scroll, blur, tab hide, unmount, and
- * stale `measureInWindow` callbacks must never leave an orphaned preview.
- */
+/** Web-only portaled hover art (overflow-safe); aggressive cleanup avoids orphaned previews. */
 export function CardArtHoverPreview({
   imageUri,
   variantNumber,
@@ -96,8 +89,7 @@ export function CardArtHoverPreview({
     };
   }, [hide, imageUri]);
 
-  // While visible: dismiss on scroll (mouseleave often does not fire when the
-  // list moves under the cursor), window blur, or tab hide.
+  // While visible: dismiss on scroll/blur/tab-hide (mouseleave often misses list scroll).
   useEffect(() => {
     if (!anchor || Platform.OS !== 'web' || typeof window === 'undefined') return;
 

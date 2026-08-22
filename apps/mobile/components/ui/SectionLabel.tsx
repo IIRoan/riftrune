@@ -6,7 +6,6 @@ interface SectionLabelProps extends TextProps {
   children: string;
 }
 
-/** Uppercase tracked label matching modal section headers. */
 export function SectionLabel({ children, className, ...rest }: SectionLabelProps) {
   return (
     <Text

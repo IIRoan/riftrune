@@ -1,8 +1,4 @@
-/**
- * Railway overwrites `X-Real-IP` with the connecting client address.
- * Better Auth will not use a comma-separated `X-Forwarded-For` chain unless
- * `trustedProxies` is set, so a single-value header is required in production.
- */
+/** Railway overwrites X-Real-IP; Better Auth needs trustedProxies + a single-value X-Forwarded-For in production. */
 export const AUTH_IP_ADDRESS_HEADERS = ['x-real-ip'] as const;
 
 export function resolveAuthAdvanced(

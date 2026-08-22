@@ -8,9 +8,8 @@ const FilterCount = z.object({
 
 const SetFilter = FilterCount.extend({
   code: z.string().optional(),
-  /** Expanded collectible printing count for the set (from upstream probe). */
   printCount: z.number().int().optional(),
-  /** Collectible foil printings in the set (foil_only + explicit foil siblings). */
+  /** Foil printings: foil_only + explicit foil siblings. */
   foilPrintCount: z.number().int().optional(),
 });
 

@@ -21,10 +21,7 @@ export function resolveAppUpdatePhase(snapshot: AppUpdateSnapshot): AppUpdatePha
   return 'idle';
 }
 
-/**
- * Settings CTA — Later only hides the full-screen dispatch.
- * A waiting bundle or failed download can still be installed this session.
- */
+/** Settings CTA: Later hides full-screen dispatch; waiting/failed bundles can still install this session. */
 export function resolveAppUpdateAction(snapshot: AppUpdateSnapshot): AppUpdatePhase {
   return resolveAppUpdatePhase({ ...snapshot, dismissed: false });
 }

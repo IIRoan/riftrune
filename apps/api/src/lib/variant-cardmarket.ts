@@ -1,7 +1,4 @@
-/**
- * Distinct foil SKUs (`OGN-001-Foil`) often omit Cardmarket ids upstream while the
- * base printing (`OGN-001`) carries the shared `idProduct`. Resolve that sibling.
- */
+/** Foil SKUs often omit Cardmarket ids; resolve shared idProduct from the base printing sibling. */
 export function baseVariantNumberForCardmarket(variantNumber: string): string | null {
   const trimmed = variantNumber.trim();
   if (!/-Foil$/i.test(trimmed)) return null;
@@ -11,7 +8,7 @@ export function baseVariantNumberForCardmarket(variantNumber: string): string | 
   return base;
 }
 
-/** Prefer the variant's own id, then a `-Foil` base sibling from the same lookup map. */
+/** Prefer variant's own id, then `-Foil` base sibling from the same lookup map. */
 export function resolveCardmarketIdFromMap(
   variantNumber: string,
   byNumber: ReadonlyMap<string, number | null | undefined>

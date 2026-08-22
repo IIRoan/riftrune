@@ -351,8 +351,7 @@ export function buildDeckAddCandidates(args: {
   if (!listItems.length) return [];
 
   const detailByKey = detailMapFromBatch(details);
-  // Keep alternate arts as separate tiles (API search grouping); only foil
-  // finishes stay merged onto their base printing.
+  // Keep alternate arts as separate tiles; only foil finishes merge onto base printing.
   const primaryItems = pickPrimaryListItems(listItems);
   const candidates: DeckCard[] = [];
   const seenVariants = new Set<string>();

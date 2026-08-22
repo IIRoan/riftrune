@@ -141,7 +141,6 @@ describe('collection foil vs standard stack mutations', () => {
   });
 
   test('removing from foil-only decrements foil and leaves standard intact', async () => {
-    // Reset to foil-only: clear std then ensure foil=1
     await authFetch(`/api/v1/collection/${encodeURIComponent(STD)}`, {
       method: 'PUT',
       cookie,
@@ -253,7 +252,6 @@ describe('same-VN foilMode=both finish stacks', () => {
     await authFetch(`/api/v1/collection/${encodeURIComponent(bothVn)}`, {
       method: 'DELETE',
       cookie,
-      // clear any leftover std stack
     });
     await authFetch(`/api/v1/collection/${encodeURIComponent(bothVn)}?isFoil=true`, {
       method: 'DELETE',

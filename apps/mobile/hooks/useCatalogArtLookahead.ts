@@ -26,10 +26,7 @@ type UseCatalogArtLookaheadOptions<T extends ArtItem> = {
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 };
 
-/**
- * Prefetch catalog thumbs ahead of the viewport so FlashList cells paint warm.
- * Pair with an elevated `drawDistance` so cells mount into a primed cache.
- */
+/** Prefetch thumbs ahead of viewport; pair with elevated `drawDistance` so cells mount warm. */
 export function useCatalogArtLookahead<T extends ArtItem>({
   items,
   numColumns,

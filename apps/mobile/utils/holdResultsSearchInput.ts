@@ -18,8 +18,7 @@ export function syncHoldResultsSearchState(
   if (state.holdingFrom !== null && state.holdingFrom === committed) {
     return state;
   }
-  // While focused and editing, ignore parent re-renders that echo the same
-  // committed value — rematerializing state resets the caret on web.
+  // While focused, ignore parent echoes of the same committed value (avoids caret reset on web).
   if (state.focused && state.holdingFrom === null && state.draft === committed) {
     return state;
   }

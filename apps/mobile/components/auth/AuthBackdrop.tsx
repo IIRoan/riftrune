@@ -16,7 +16,6 @@ const TRANSITION_MS = 320;
 
 type AuthBackdropProps = {
   mode: Mode;
-  /** hero = top cinematic strip; contained = framed card for wide layout */
   variant?: 'hero' | 'contained';
 };
 

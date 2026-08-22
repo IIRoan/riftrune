@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-/** Cardmarket `idGame` for Riftbound. */
 export const CARDMARKET_RIFTBOUND_GAME_ID = 22;
 
 export const CARDMARKET_EXPORT_BASE_URL =

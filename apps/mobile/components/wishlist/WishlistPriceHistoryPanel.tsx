@@ -36,9 +36,6 @@ function CardmarketIconButton({ cardmarketId }: { cardmarketId: number }) {
   );
 }
 
-/**
- * Daily trend chart — zero-based EUR scale; hover/tap a day for its price.
- */
 export function WishlistPriceHistoryPanel({
   item,
   className,

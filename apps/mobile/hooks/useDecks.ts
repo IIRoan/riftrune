@@ -106,10 +106,7 @@ export function prefetchDefaultDeckBrowse(queryClient: QueryClient): Promise<voi
     .then(() => undefined);
 }
 
-/**
- * Owned decks — one cached list, filtered client-side so search never misses
- * the bootstrap/prefetch cache.
- */
+/** Owned decks: one cached list, client-filtered so search never misses the bootstrap cache. */
 export function useOwnedDecks(query?: string) {
   const queryClient = useQueryClient();
 

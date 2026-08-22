@@ -41,10 +41,7 @@ export function accumulatePrintCounts(
   return added;
 }
 
-/**
- * Walk the upstream catalog and count every collectible printing (Standard, Alt Art,
- * Overnumbered, Foil, etc.) — matching Piltover Archive collection totals (1,396).
- */
+/** Count every collectible printing upstream (Standard/Alt/Overnumbered/Foil) to match PA totals. */
 export async function probeExpandedCatalog(
   pa: PaClient
 ): Promise<ExpandedCatalogProbe> {

@@ -3,8 +3,7 @@ import { getApiUrl } from '@/lib/api-url';
 import { getAuthCookieHeader } from '@/lib/auth-cookie';
 import { logActionFailure } from '@/lib/logger';
 
-// Public catalog routes use `api` in client.ts (no session cookies on native).
-// Collection, wishlist, and decks need Better Auth cookies attached manually.
+// Authed routes: attach Better Auth cookies manually (public catalog uses client.ts).
 
 export const API_URL = getApiUrl();
 

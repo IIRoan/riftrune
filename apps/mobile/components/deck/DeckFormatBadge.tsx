@@ -10,7 +10,6 @@ export function DeckFormatBadge({
 }: {
   format: DeckFormat;
   className?: string;
-  /** `toolbar` matches deck builder controls (h-9) beside the name input. */
   variant?: 'default' | 'toolbar';
 }) {
   const isToolbar = variant === 'toolbar';

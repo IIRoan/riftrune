@@ -277,7 +277,6 @@ describe('shared collection add/remove mutations', () => {
   });
 
   test('after leave, partner mutations no longer affect the remaining member', async () => {
-    // Ensure still shared from previous test; if not, re-pair.
     let status = CollectionShareStatusResponse.parse(
       await (await authFetch('/api/v1/collection/share', { cookie: cookieOwner })).json()
     );
@@ -305,7 +304,6 @@ describe('shared collection add/remove mutations', () => {
     const partnerCollectionId = await collectionIdForUser(partnerId);
     expect(ownerCollectionId).not.toBe(partnerCollectionId);
 
-    // Partner starts empty after leave, then changes their personal collection.
     await authFetch('/api/v1/collection/OGN-295/add', {
       method: 'POST',
       cookie: cookiePartner,
@@ -318,7 +316,6 @@ describe('shared collection add/remove mutations', () => {
     const ownerQty = await quantitiesFor(cookieOwner, ['OGN-295']);
     expect(ownerQty.get('OGN-295')).toBe(4);
 
-    // Owner remove should not affect partner personal collection.
     await authFetch('/api/v1/collection/OGN-295/remove', {
       method: 'POST',
       cookie: cookieOwner,

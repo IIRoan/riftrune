@@ -63,10 +63,7 @@ export function ownedCountForCardName(
   return collectionByName.get(name) ?? 0;
 }
 
-/**
- * Border color for deck card art by collection coverage of required copies.
- * null when ownership is unknown or the card isn't in the deck yet.
- */
+/** Collection-coverage border for deck art; null when ownership unknown or card not in deck. */
 export function deckOwnershipBorderClass(
   owned: number | null,
   required: number

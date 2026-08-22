@@ -27,7 +27,6 @@ interface DeckBuilderMiddlePanelToggleProps {
   className?: string;
 }
 
-/** Cards / Desc switcher for the middle column — lives under battlefields. */
 export function DeckBuilderMiddlePanelToggle({
   value,
   onChange,

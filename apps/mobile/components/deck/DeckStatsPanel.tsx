@@ -1,16 +1,3 @@
-/**
- * THESIS: Deck composition as a live instrument, not a dashboard of nested
- * metric cards. Refuses gold icon-boxes and rainbow stacked bars.
- * OWN-WORLD: Obsidian canvas, ash hairlines, Geist Mono labels, bone
- * histograms that brighten on inspect. Domain fills are rune data, not chrome.
- * STORY: The curve is an overview — every occupied cost shows its count above
- * the column. Empty decks teach the curve.
- * FIRST VIEWPORT: Energy and power plots with counts on top of the bars, then
- * domain, type, curve-shape, copy, and rarity rows. Two-up on a wide middle
- * column; stacked on mobile. Card counts stay on the deck-list status strip.
- * FORM: Operate extension of the existing builder. Compact live readout plus
- * this full analyze panel.
- */
 import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View, type LayoutChangeEvent } from 'react-native';
 import { ChevronLeftIcon, LightningIcon, ThemedIcon } from '@/components/icons';

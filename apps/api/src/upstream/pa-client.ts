@@ -19,7 +19,6 @@ export class PaApiError extends Error {
   }
 }
 
-/** HTTP client for the Piltover Archive external API. */
 export class PaClient {
   constructor(private readonly env: Env) { }
 
@@ -97,12 +96,7 @@ export class PaClient {
     });
   }
 
-  /**
-   * Upstream deck endpoints (read + best-effort write).
-   *
-   * NOTE: Upstream auth rules for write can be stricter than for reads.
-   * We keep the client un-opinionated and let callers handle failures.
-   */
+  /** Upstream deck endpoints; write auth may be stricter than reads — callers handle failures. */
   listDecks(
     params?: Record<string, string | number | boolean | undefined>
   ): Promise<unknown> {

@@ -35,8 +35,7 @@ export function catalogIndexSizeLooksStale(
   expectedVariantCount: number | undefined
 ): boolean {
   if (expectedVariantCount == null || expectedVariantCount <= 0) return false;
-  // Grouped printings are fewer than raw variants; allow slack, but catch
-  // truncated localStorage / failed writes that kept an old tiny cache.
+  // Grouped printings < raw variants; slack ok, but catch truncated/tiny stale caches.
   return itemCount > 0 && itemCount * 2 < expectedVariantCount;
 }
 
@@ -170,8 +169,7 @@ export function shouldReplaceCatalogPrices(
   if (priceFingerprint(existing) === priceFingerprint(incoming)) return false;
   const existingMax = maxMarketPrice(existing);
   const incomingMax = maxMarketPrice(incoming);
-  // Never clobber a priced row with an unpriced / zero-price snapshot from a
-  // partial list page — that is what made expensive signed printings vanish.
+  // Never clobber a priced row with an unpriced/zero snapshot from a partial list page.
   if (existingMax > 0 && incomingMax <= 0) return false;
   return true;
 }

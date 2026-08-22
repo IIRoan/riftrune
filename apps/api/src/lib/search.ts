@@ -1,7 +1,7 @@
 import { and, ilike, or, sql, type SQL } from 'drizzle-orm';
 import { cards, sets, variants } from '../db/schema.js';
 
-/** Split query into tokens for multi-word matching (all tokens must match somewhere). */
+/** Split query into tokens; all tokens must match somewhere. */
 export function tokenizeSearchQuery(raw: string): string[] {
   return raw
     .trim()
@@ -10,30 +10,21 @@ export function tokenizeSearchQuery(raw: string): string[] {
     .filter((t) => t.length > 0);
 }
 
-/** Escape a literal for PostgreSQL POSIX regex. */
 export function escapeRegexLiteral(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Name with spaces stripped — matches the query regardless of word spacing. */
+/** Name with spaces stripped — matches regardless of word spacing. */
 function squashedName() {
   return sql`replace(lower(${cards.name}), ' ', '')`;
 }
 
-/**
- * Case-insensitive whole-word match on a text column.
- * "signed" matches "Overnumbered Signed" but not "assigned".
- */
+/** Case-insensitive whole-word match: "signed" hits "Overnumbered Signed" but not "assigned". */
 export function wholeWordPattern(token: string): string {
   return `(^|[^[:alnum:]_])${escapeRegexLiteral(token)}([^[:alnum:]_]|$)`;
 }
 
-/**
- * Match card name, variant number/label/type, type, tags, or rules text for every token.
- * Rules/flavor text use whole-word matching so "signed" does not hit "assigned".
- * A space-insensitive whole-query clause also matches the name, so
- * "soulspinner" finds "Soul Spinner" and "soul spinner" finds "Soulspinner".
- */
+/** Per-token match on name/variant/type/tags/rules; whole-word on rules; space-insensitive name clause ("soulspinner" ↔ "Soul Spinner"). */
 export function buildCardSearchCondition(q: string): SQL | undefined {
   const tokens = tokenizeSearchQuery(q);
   if (tokens.length === 0) return undefined;
@@ -67,7 +58,6 @@ export function buildCardSearchCondition(q: string): SQL | undefined {
   return or(tokenCondition, sql`${squashedName()} LIKE ${`%${tokens.join('')}%`}`);
 }
 
-/** Prefer prefix matches, then substring, then alphabetical. */
 export function buildSearchRelevanceOrder(q: string) {
   const trimmed = q.trim();
   const squashed = trimmed.toLowerCase().replace(/\s+/g, '');

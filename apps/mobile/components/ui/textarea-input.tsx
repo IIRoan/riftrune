@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { Input } from "./input";
 import type { InputProps } from "./input.types";
 
-// Types
 export type TextareaInputProps = InputProps & {
   onFocus?: (e: FocusEvent) => void;
   onBlur?: (e: BlurEvent) => void;
@@ -15,12 +14,7 @@ export type TextareaInputProps = InputProps & {
   invalid?: boolean;
 };
 
-// Components
-/**
- * Multiline text field. Intentionally NOT wrapped in InputPressable —
- * a parent Pressable steals the touch responder on web/native and jumps
- * the caret to the end when clicking mid-text.
- */
+/** Not wrapped in InputPressable — parent Pressable steals responder and jumps the caret. */
 export const TextareaInput = ({
   onFocus,
   onBlur,

@@ -281,8 +281,7 @@ export function isCardEligibleForSection(args: {
   }
 
   if (section === 'legend') {
-    // If we already have other cards in the deck, only allow Legends that keep them domain/tag compatible.
-    // This avoids a UX where changing the legend would instantly make your existing deck invalid.
+    // With other cards present, only allow Legends that keep them domain/tag compatible.
     const hasExisting = Boolean(
       deck.champion ||
       deck.mainDeck.size > 0 ||

@@ -1,13 +1,5 @@
 #!/usr/bin/env bun
-/**
- * Drop all tables and re-apply migrations on a fresh database.
- *
- * Safety: refuses remote DATABASE_URL unless CONFIRM_DB_RESET=1 is set.
- *
- * Usage:
- *   bun run --cwd apps/api db:reset
- *   bun run --cwd apps/api db:reset -- --catalog --prices
- */
+/** Drop all tables and re-apply migrations; refuses remote DATABASE_URL unless CONFIRM_DB_RESET=1. */
 import postgres from 'postgres';
 import { createApp } from '../src/app.js';
 import { runStartupMigrations } from '../src/db/migrate.js';

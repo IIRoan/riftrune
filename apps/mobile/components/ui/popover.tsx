@@ -33,13 +33,11 @@ import { cn, mergeRefs } from "@/lib/utils";
 import { Portal, PortalOverlay } from "./portal";
 import { Slot } from "./slot";
 
-// Constants
 const ANIMATION_DURATION = 160;
 const SWITCH_CONTENT_DURATION = 120;
 const ANIMATION_EASING = Easing.out(Easing.quad);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// Types
 type LayoutPosition = {
   pageX: number;
   pageY: number;
@@ -91,7 +89,6 @@ type PopoverCloseProps = React.ComponentPropsWithRef<typeof Pressable> & {
   asChild?: boolean;
 };
 
-// Context
 const PopoverContext = createContext<PopoverContextProps | null>(null);
 
 export const usePopover = () => {
@@ -102,7 +99,6 @@ export const usePopover = () => {
   return context;
 };
 
-// Components
 export const Popover = ({
   open: openProp,
   onOpenChange: onOpenChangeProp,

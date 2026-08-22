@@ -31,12 +31,7 @@ function isEditableTarget(target: EventTarget | null | undefined): boolean {
   return false;
 }
 
-/**
- * Resolve what `/` should do for catalog search (window-level shortcut).
- * - Outside editables → focus search
- * - Already in our search field → clear so the user can retype
- * - Other inputs/textareas → ignore
- */
+/** `/` shortcut: outside editables→focus search; in our field→clear; other inputs→ignore. */
 export function resolveSlashSearchAction(
   event: SlashKeyEvent,
   searchFocused: boolean
@@ -50,11 +45,7 @@ export function resolveSlashSearchAction(
   return 'focus';
 }
 
-/**
- * RN-web often inserts `/` before window preventDefault wins.
- * `/` is a search shortcut, never a query character — any value containing it
- * means "clear and retype".
- */
+/** RN-web may insert `/` before preventDefault; treat any value containing `/` as clear-and-retype. */
 export function isSlashShortcutTextChange(next: string): boolean {
   return next.includes('/');
 }

@@ -1,6 +1,5 @@
 import type { CardCondition } from './collection.js';
 
-/** Piltover collection CSV column headers (export/import format). */
 export const COLLECTION_CSV_HEADERS = [
   'Variant Number',
   'Card Name',

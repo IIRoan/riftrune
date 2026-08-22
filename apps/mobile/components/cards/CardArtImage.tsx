@@ -33,15 +33,9 @@ type CardArtImageProps = {
   priority?: 'low' | 'normal' | 'high';
   /** Skip fade/shimmer — for catalog list cells that recycle while scrolling. */
   instant?: boolean;
-  /**
-   * Low-res API ?w= derivative used as the loading placeholder.
-   * Omit for detail/fullscreen art that should start at full resolution.
-   */
+  /** Low-res ?w= placeholder; omit for detail/fullscreen full-res start. */
   thumbWidth?: number;
-  /**
-   * When true (default) with thumbWidth, show the thumb only while the full
-   * image loads, then swap up. Pass false only for intentionally permanent thumbs.
-   */
+  /** With thumbWidth, show thumb while full image loads (false = permanent thumb). */
   progressive?: boolean;
   className?: string;
   imageClassName?: string;

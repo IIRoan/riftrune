@@ -1,12 +1,3 @@
-/**
- * THESIS: Credentials stay scan-first — identity at rest, editors expand only when needed.
- * Refuses the always-open three-field password card that fights Account for attention.
- * OWN-WORLD: Terminal war room slab — AuthSlabCorners, ash hairlines, mono instrument labels,
- * chalk commit CTAs; signal pulse only for unverified status.
- * STORY: See the live sign-in email; expand Change email (OTP verifies new address) or Change password.
- * FIRST VIEWPORT: Identity strip → expand rows with ash hairlines; Moti height collapse for motion.
- * FORM: Unified Credentials panel; Moti SmoothCollapse (measured height + expo-out ease).
- */
 import { useId, useState } from 'react';
 import { Keyboard, Platform, Pressable, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';

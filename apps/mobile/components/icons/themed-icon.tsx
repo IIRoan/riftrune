@@ -13,15 +13,10 @@ export type ThemedIconProps = {
   icon: AppIcon;
   size: number;
   color?: ThemedIconColor;
-  /** Phosphor weight — omit for size-aware default; use `fill` for selected/active. */
   weight?: IconWeight;
 };
 
-/**
- * Phosphor icon tinted with a Uniwind theme token.
- * Prefer className on styled icons when color is static; use this when the
- * token must resolve at runtime (tab bars, toolbars, active states).
- */
+/** Phosphor tinted by runtime Uniwind token (tab bars / active states). */
 export function ThemedIcon({
   icon: Icon,
   size,

@@ -4,7 +4,6 @@ export type ResetPasswordEmailInput = {
   email: string;
   token: string;
   appUrl: string;
-  /** Better Auth callback URL (validates token then redirects). */
   callbackUrl: string;
 };
 

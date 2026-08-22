@@ -33,13 +33,7 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-/**
- * When the collection is shared, keep an SSE connection open and invalidate
- * local cache on remote changes — including other sessions for the same user.
- *
- * Invalidation is deferred while local collection mutations are in flight so a
- * partner (or other-device) refetch cannot clobber optimistic cache.
- */
+/** Shared-collection SSE: invalidate on remote changes; defer while local mutations are in flight. */
 export function useCollectionLiveSync(enabled = true) {
   const queryClient = useQueryClient();
   const sessionQuery = authClient.useSession();
@@ -67,9 +61,7 @@ export function useCollectionLiveSync(enabled = true) {
             signal: controller.signal,
             onEvent: (event) => {
               if (event.type === 'heartbeat') return;
-              // Always apply remote changes (including same-user other sessions).
-              // A ready event also refreshes data merged while an invite was accepted.
-              // Defer only while this client has in-flight collection mutations.
+              // Apply remote changes (incl. other sessions / invite-ready); defer only while local mutations are in flight.
               if (onCollectionLiveChanged(queryClient)) {
                 pendingInvalidate = true;
               } else {

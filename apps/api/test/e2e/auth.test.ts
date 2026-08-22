@@ -22,7 +22,6 @@ const testPassword = 'test-password-12345';
 const testName = 'Test User';
 
 function extractCookies(res: Response): string {
-  // Bun supports Headers.getSetCookie() which returns an array
   const setCookies = res.headers.getSetCookie?.() ?? [];
   if (setCookies.length > 0) {
     return setCookies.map((c) => c.split(';')[0]).join('; ');
@@ -65,7 +64,6 @@ async function cleanupTestUsers(): Promise<void> {
       await db.delete(userTable).where(eq(userTable.id, u.id));
     }
   } catch {
-    // Context not available (external API mode) — skip DB cleanup
   }
 }
 
@@ -76,7 +74,6 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await cleanupTestUsers();
-  // teardownE2E is handled by the preload
 });
 
 describe('auth: sign-up', () => {
@@ -239,7 +236,6 @@ describe('auth: sign-out', () => {
 
     expect(res.status).toBeLessThan(400);
 
-    // Verify session is no longer valid
     const sessionRes = await authFetch('/api/auth/get-session', {
       cookie: cookieHeader,
     });

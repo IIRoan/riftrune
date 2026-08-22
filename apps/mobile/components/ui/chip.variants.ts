@@ -1,6 +1,5 @@
 import { cva } from 'class-variance-authority';
 
-/** Factory chips — 3px square, panel fills (no pills, no invert). */
 export const chipVariants = cva(
   'flex w-fit shrink-0 flex-row items-center justify-center gap-1 self-start overflow-hidden whitespace-nowrap rounded-[3px] px-2.5 py-1.5 font-semibold text-xs',
   {

@@ -1072,7 +1072,6 @@ function OwnershipStepper({
     )
   }
 
-  // If card has multiple printings, show a picker menu on Add
   if (printings && printings.length > 1) {
     return (
       <Menu.Root>

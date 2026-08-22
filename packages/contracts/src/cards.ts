@@ -33,7 +33,6 @@ export const CardListPrinting = z.object({
   variantNumber: VariantNumber,
   variantLabel: z.string(),
   isFoil: z.boolean(),
-  /** Upstream finish availability when known (`both` | `foil_only` | `nonfoil_only`). */
   foilMode: z.string().optional(),
   priceEur: PriceSummary.nullable(),
 });
@@ -64,7 +63,6 @@ export const VariantDetail = z.object({
   rarity: z.string(),
   variantType: z.string(),
   variantLabel: z.string(),
-  /** Upstream finish availability (`both` | `foil_only` | `nonfoil_only`). */
   foilMode: z.string(),
   imageUrl: z.string().url(),
   cardmarketId: z.number().int().nullable(),
@@ -93,11 +91,7 @@ export const CardsListQuery = z.object({
   q: z.string().max(200).optional(),
   sets: z.string().optional(),
   colors: z.string().optional(),
-  /**
-   * How `colors` is matched.
-   * - `all` (default): card must include every listed color (search filters).
-   * - `within`: every card color must be in the listed set; colorless allowed (deck domain identity).
-   */
+  /** colors match: `all` = must include every listed; `within` = every card color in set (colorless ok; deck identity). */
   colorMode: z.enum(['all', 'within']).default('all'),
   types: z.string().optional(),
   super: z.string().optional(),

@@ -1,22 +1,4 @@
-/**
- * Self-hosted Lato (SIL OFL) — bundled in assets/fonts, no network requests.
- * Instrument/mono remains Geist Mono.
- *
- * Professional UI weight ladder (aligned with product design systems that ship
- * Lato — ONS SDC, Timely TUI, Beeline): honest Tailwind → face mapping.
- *
- * | Class           | Weight | Use                                      |
- * |-----------------|--------|------------------------------------------|
- * | font-normal     | 400    | Body, secondary copy, dense reading      |
- * | font-medium     | 500    | Nav labels, mid emphasis, chip idle      |
- * | font-semibold   | 600    | Titles, prices, instrument tags          |
- * | font-bold       | 700    | Primary CTAs, headings that must commit  |
- * | font-black      | 900    | Rare display / hero only                 |
- *
- * Native: each weight is a separate Expo family name + fontWeight "normal".
- * Web: unified `Lato` / `Geist Mono` + numeric fontWeight (Firefox-safe) —
- * see `web-font-faces.ts`.
- */
+/** Self-hosted Lato (SIL OFL); native per-face families, web unified `Lato` + numeric weight (see web-font-faces.ts). */
 
 import type { TextStyle } from 'react-native';
 
@@ -108,11 +90,7 @@ export function fontFamilyForClassName(className?: string): string {
   return FONT_SANS[weight];
 }
 
-/**
- * Font styles for Text / TextInput.
- * - Native: per-face family + fontWeight normal (no faux-bold).
- * - Web: unified family + numeric weight so Firefox picks the real face.
- */
+/** Text/TextInput fonts: native per-face + normal weight; web unified family + numeric weight for Firefox. */
 export function textFontStyleForClassName(className?: string): TextStyle {
   const value = className ?? '';
   const isMono = /\bfont-mono\b/.test(value);

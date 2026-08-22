@@ -2,10 +2,7 @@ import type { CollectionLiveChangeReason, CollectionLiveChangedEvent } from '@ri
 
 export type CollectionLiveListener = (event: CollectionLiveChangedEvent) => void;
 
-/**
- * In-process fan-out for shared-collection SSE subscribers.
- * Fine for a single API instance; multi-instance would need Redis or LISTEN/NOTIFY.
- */
+/** In-process SSE fan-out for shared collections; multi-instance needs Redis or LISTEN/NOTIFY. */
 export class CollectionLiveLimitError extends Error {
   constructor() {
     super('Too many live listeners');
@@ -55,7 +52,6 @@ export class CollectionLiveHub {
     }
   }
 
-  /** Test helper — how many sockets listen on a collection. */
   subscriberCount(collectionId: string): number {
     return this.listeners.get(collectionId)?.size ?? 0;
   }

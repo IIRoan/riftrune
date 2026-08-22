@@ -61,10 +61,7 @@ export class CatalogMetadataService {
     };
   }
 
-  /**
-   * Overlay per-set printing totals from the synced local catalog so set counts
-   * stay current when upstream filter metadata lags (e.g. Vendetta logical vs print).
-   */
+  /** Overlay local per-set print totals when upstream filter metadata lags (logical vs print). */
   private async withLocalSetCounts(snapshot: FilterSnapshot): Promise<FilterSnapshot> {
     if (snapshot.sets.length === 0) {
       return snapshot;

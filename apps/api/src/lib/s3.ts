@@ -30,7 +30,6 @@ export function createS3Client(env: Env): S3Client {
   return new S3Client(options);
 }
 
-/** API-proxied image URL served from our backend cache. */
 export function apiImageUrl(env: Env, key: string): string {
   const base = env.BETTER_AUTH_URL.replace(/\/$/, '');
   const normalizedKey = key.replace(/^\//, '');
@@ -46,11 +45,9 @@ export function isSafeImageKey(key: string): boolean {
   if (!normalized || normalized.includes('..')) return false;
   if (normalized.toLowerCase().endsWith('.svg')) return false;
   if (normalized.startsWith('cards/') || normalized.startsWith('colors/')) return true;
-  // Cached resize derivatives written by ImageStoreService.
   return /^thumbs\/w(96|160|240|320)\/(cards|colors)\//.test(normalized);
 }
 
-/** Extract the S3 object key from a CDN or upstream image URL. */
 export function objectKeyFromUrl(url: string): string {
   const { pathname } = new URL(url);
   return pathname.replace(/^\//, '');
@@ -88,7 +85,6 @@ export function safeServedContentType(raw: string | undefined, key: string): str
   return raw;
 }
 
-/** Rewrite a CDN URL to our API image route (sync, no network). */
 export function rewriteImageUrl(env: Env, url: string): string {
   if (!hasS3Config(env) || !url) return url;
 
@@ -99,7 +95,6 @@ export function rewriteImageUrl(env: Env, url: string): string {
     const key = objectKeyFromUrl(url);
     if (isSafeImageKey(key)) return apiImageUrl(env, key);
   } catch {
-    // keep original URL for non-parseable values
   }
 
   return url;

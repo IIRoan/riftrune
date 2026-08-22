@@ -22,13 +22,11 @@ const matchingFingerprint = catalogFingerprint(catalogTotal, baseFilters);
 
 type ServiceOptions = {
   latestSnapshot?: FilterSnapshot | null;
-  /** Rows returned in order for each syncState.findFirst call. */
   syncStateRows?: Array<{
     key: string;
     contentHash: string;
     rowCount?: number;
   } | null>;
-  /** Local per-set counts from the variants table. */
   localSetCounts?: Array<{ code: string; name: string; printCount: number }>;
   probeDelayMs?: number;
   probeDisabled?: boolean;

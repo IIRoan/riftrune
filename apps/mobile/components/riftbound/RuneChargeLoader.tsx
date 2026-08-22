@@ -24,15 +24,11 @@ type RuneChargeLoaderProps = {
   size?: RuneChargeSize;
   className?: string;
   accessibilityLabel?: string;
-  /** 0–1 fill. When set, the rune tracks this instead of looping. */
   progress?: number;
 };
 
 const FILL_MS = 1400;
 
-/**
- * Minimal rune loader — empty glyph fills with color, then eases back.
- */
 export function RuneChargeLoader({
   size = 'md',
   className,

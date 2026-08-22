@@ -33,12 +33,7 @@ export type CatalogDisplayItemsInput<T> = {
   searchItemsLength: number;
 };
 
-/**
- * Prefer search hits once available for the settled query.
- * While the draft is still debouncing or the first page is in flight, return
- * an empty list so the UI can show a skeleton instead of flashing the previous
- * term's hits (or browsing tiles mid-search).
- */
+/** Return search hits only for the settled query; empty while debouncing/first page so prior hits don't flash. */
 export function resolveCatalogDisplayItems<T>({
   hasSearchInput,
   searchItems,

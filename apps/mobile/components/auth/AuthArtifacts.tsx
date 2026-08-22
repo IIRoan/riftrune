@@ -34,7 +34,6 @@ export function AuthDomainStrip({
   );
 }
 
-/** Corner ticks inspired by Riftbound hextech frame language — no glow. */
 export function AuthSlabCorners() {
   const tick = 'absolute h-3 w-3 border-foreground/45';
   return (

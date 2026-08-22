@@ -21,12 +21,7 @@ function acceptHref(token: string): Href {
   return collectionInviteAcceptPath(token) as Href;
 }
 
-/**
- * HTTPS invite landing page.
- * - Desktop web: continue straight to the web accept flow
- * - Mobile web: try opening the native astral-grove:// deep link, with web fallback
- * - Native app: go straight to the in-app accept screen
- */
+/** HTTPS invite landing: desktop→web accept, mobile web→deep link then fallback, native→in-app accept. */
 export default function CollectionInviteLinkingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ token?: string }>();

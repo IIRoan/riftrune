@@ -31,12 +31,7 @@ interface SearchBarProps extends Pick<TextInputProps, 'onSubmitEditing' | 'autoF
   enableSlashFocus?: boolean;
 }
 
-/**
- * Catalog search field.
- * - Focus (click or `/` on web) clears the draft without committing — results stay until typing or clear.
- * - Typing a query then `/` clears the field only (keeps current results until a new query).
- * - Explicit clear (X) commits empty and resets results.
- */
+/** Focus/`/` clears draft without committing; X commits empty and resets results. */
 export const SearchBar = memo(function SearchBar({
   value,
   onChangeText,
@@ -110,8 +105,7 @@ export const SearchBar = memo(function SearchBar({
     [clearDraftKeepResults, enableSlashFocus]
   );
 
-  // Keep end-addon slots mounted — toggling Pressable children inside
-  // InputPressable remounts the native field and steals focus on web.
+  // Keep end-addon slots mounted — toggling Pressable children remounts the field on web.
   const showClear = draft.length > 0 || value.length > 0;
 
   return (

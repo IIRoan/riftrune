@@ -6,10 +6,8 @@ import {
   useInAppBrowserOverlaySuspended,
 } from '@/lib/in-app-browser-overlay';
 
-// Constants
 const DEFAULT_PORTAL_HOST = 'TETRA_UI_DEFAULT_HOST_NAME';
 
-// Types
 type PortalHostProps = {
   name?: string;
 };
@@ -26,7 +24,6 @@ type PortalHostMap = Map<string, PortalMap>;
 
 type PortalListener = () => void;
 
-// Components
 export function PortalOverlay({ children }: { children: React.ReactNode }) {
   const inAppBrowserOpen = useInAppBrowserOverlaySuspended();
   if (
@@ -56,8 +53,7 @@ export const Portal = ({
   hostName = DEFAULT_PORTAL_HOST,
   children,
 }: PortalProps) => {
-  // Layout effect so remove/update happen before paint — delayed useEffect
-  // cleanup raced the next drawer open and left a dead full-screen host.
+  // Layout effect before paint — useEffect cleanup raced drawer open and left a dead host.
   useLayoutEffect(() => {
     updatePortal(hostName, name, children);
   }, [hostName, name, children]);
@@ -71,7 +67,6 @@ export const Portal = ({
   return null;
 };
 
-// Hooks
 const usePortalMap = () => {
   return useSyncExternalStore(
     (onStoreChange) => {
@@ -84,7 +79,6 @@ const usePortalMap = () => {
   );
 };
 
-// Utils
 let portalMap: PortalHostMap = new Map<string, PortalMap>().set(
   DEFAULT_PORTAL_HOST,
   new Map<string, React.ReactNode>()

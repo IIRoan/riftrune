@@ -16,7 +16,6 @@ import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { cn } from '@/lib/utils';
 import { hapticPress } from '@/utils/haptics';
 
-/** Extra scroll padding so list content clears the floating pill. */
 export const FLOATING_PILL_NAV_CLEARANCE = 64;
 
 const PILL_MOTION_MS = 220;
@@ -27,7 +26,6 @@ export type PillNavItem<T extends string> = {
   label: string;
   accessibilityLabel?: string;
   icon: LucideIcon;
-  /** Optional mono caption under the label (e.g. "12/40"). */
   badge?: string;
 };
 
@@ -38,18 +36,11 @@ interface PillNavProps<T extends string> {
   value: T;
   onChange: (id: T) => void;
   className?: string;
-  /** Stretch segments to fill the container width. */
   fill?: boolean;
-  /** Shorter inline layout for toolbars (single row, ~36px tall). */
   compact?: boolean;
-  /** Compact toolbar: icons only (counts stay in accessibility labels). */
   iconOnly?: boolean;
 }
 
-/**
- * Shared pill tablist (icon + small label) — same chrome for floating and inline use.
- * Active segment slides under the selection for a continuous state change.
- */
 export function PillNav<T extends string>({
   items,
   value,
@@ -222,10 +213,6 @@ interface FloatingPillNavProps<T extends string> {
   className?: string;
 }
 
-/**
- * Floating bottom placement for PillNav — above the mobile tab bar,
- * or near the bottom edge on desktop side-rail layouts.
- */
 export function FloatingPillNav<T extends string>({
   items,
   value,

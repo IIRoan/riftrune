@@ -5,10 +5,7 @@ import {
   getWebFontPreloadHrefs,
 } from '@/lib/web-font-faces';
 
-// This file is web-only and used to configure the root HTML for every
-// web page during static rendering.
-// The contents of this function only run in Node.js environments and
-// do not have access to the DOM or browser APIs.
+// Web-only root HTML for static rendering — runs in Node, not the DOM.
 export default function Root({ children }: { children: React.ReactNode }) {
   const fontCss = getWebFontFaceCss();
   const fontHrefs = getWebFontPreloadHrefs();
@@ -23,10 +20,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
           content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
 
-        {/* 
-          Disable body scrolling on web. This makes ScrollView components work closer to how they do on native. 
-          However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line.
-        */}
+        {/* Disable body scrolling so ScrollView behaves like native. */}
         <ScrollViewStyleReset />
 
         {fontHrefs.map((href) => (

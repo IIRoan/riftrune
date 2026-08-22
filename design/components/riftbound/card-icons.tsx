@@ -1,7 +1,6 @@
 import type { SVGProps } from "react"
 import { cn } from "@/lib/utils"
 
-/** Energy cost pip — white disc with a black numeral, exactly as printed on the card. */
 export function EnergyPip({
   value,
   className,
@@ -22,7 +21,6 @@ export function EnergyPip({
   )
 }
 
-/** The green ACCELERATE keyword tag, kept in its signature treatment. */
 export function AccelerateBadge({ className }: { className?: string }) {
   return (
     <span
@@ -36,10 +34,6 @@ export function AccelerateBadge({ className }: { className?: string }) {
   )
 }
 
-/**
- * Official "Fury" domain symbol (red three-bladed swirl).
- * Rendered from the real card asset so it always matches the printed mark.
- */
 export function FuryIcon({ className }: { className?: string }) {
   return (
     <img
@@ -51,9 +45,6 @@ export function FuryIcon({ className }: { className?: string }) {
   )
 }
 
-/**
- * Official "Unit" type glyph (brown hooded emblem) from the card.
- */
 export function UnitIcon({ className }: { className?: string }) {
   return (
     <img
@@ -65,9 +56,6 @@ export function UnitIcon({ className }: { className?: string }) {
   )
 }
 
-/**
- * Official "Common" rarity medallion (translucent orb) from the card.
- */
 export function RarityCoin({ className }: { className?: string }) {
   return (
     <img
@@ -79,9 +67,6 @@ export function RarityCoin({ className }: { className?: string }) {
   )
 }
 
-/**
- * The "Might" symbol — a trident/spear mark used for a unit's combat value.
- */
 export function MightIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg

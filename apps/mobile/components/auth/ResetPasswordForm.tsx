@@ -14,7 +14,6 @@ import { authClient } from '@/src/lib/auth-client';
 
 type ResetPasswordFormProps = {
   token: string;
-  /** When present, signs the user in after a successful reset. */
   email?: string | null;
   onSuccess: () => Promise<void> | void;
   onBackToSignIn?: () => void;

@@ -1,7 +1,4 @@
-/**
- * App-wide motion palette — Reanimated springs matched to Apple snappy/smooth/bouncy.
- * Use for state feedback and navigation polish. Gate scale/translate behind `useReduceMotion`.
- */
+/** Motion palette (Apple snappy/smooth/bouncy); gate scale/translate behind `useReduceMotion`. */
 
 import type { WithSpringConfig, WithTimingConfig } from 'react-native-reanimated';
 import { Easing } from 'react-native-reanimated';
@@ -15,10 +12,7 @@ export const MOTION = {
   bouncy: { stiffness: 500, damping: 18, mass: 1 },
 } as const;
 
-/**
- * Layout / accordion springs — slightly lighter mass so height expands feel
- * mechanical (Factory) while still settling like a physical instrument panel.
- */
+/** Layout/accordion springs — lighter mass for mechanical height expands. */
 export const LAYOUT_SPRING = {
   damping: 28,
   stiffness: 340,
@@ -57,12 +51,7 @@ export const TAB_SCENE = {
 /** Ambient pulse loops (final-point cue, etc.). */
 export const PULSE_MS = 1400;
 
-/**
- * Overlay / sheet / dialog choreography.
- * Open: spring-smooth spatial settle. Close: snappy decel (no bounce past closed).
- * Reduced motion: opacity-only fades — no scale/translate.
- * Card-detail Gorhom backdrop opacity must track animatedIndex (−1→0), not pop in.
- */
+/** Overlay choreography: smooth open, snappy close; reduced-motion opacity-only; Gorhom backdrop tracks animatedIndex. */
 export const OVERLAY = {
   /** Content starts slightly small + below, settles into place. */
   enterScale: 0.96,
@@ -72,11 +61,7 @@ export const OVERLAY = {
   backdropDark: 0.75,
   /** Card modal / card-detail drawer denser scrim. */
   backdropCard: 0.85,
-  /**
-   * Dialog presence settle only. Bottom-sheet hosts must release hit-testing
-   * at dismiss-start; card detail may retain non-interactive visual presence
-   * until Gorhom finishes closing.
-   */
+  /** Dialog settle only; sheets release hit-testing at dismiss-start (card detail may keep visual presence until Gorhom closes). */
   unmountMs: 280,
   closeMs: 220,
   closeEasing: Easing.out(Easing.cubic),

@@ -20,11 +20,7 @@ export function uniqueTestUser(prefix = 'ui-e2e'): UiE2eUser {
   };
 }
 
-/**
- * Point the Expo web app at the local API before any app modules evaluate.
- * Metro inlines apps/mobile/.env into expo/virtual/env; shell EXPO_PUBLIC_*
- * cannot override that. Playwright's Chromium runs this init script first.
- */
+/** Init script: point Expo web at local API (Metro inlines .env; shell EXPO_PUBLIC_* cannot override). */
 export async function installLocalApiOverride(context: BrowserContext): Promise<void> {
   await context.addInitScript(
     ({ key, apiUrl }) => {
@@ -39,13 +35,7 @@ export async function installLocalApiOverride(context: BrowserContext): Promise<
   );
 }
 
-/**
- * Sign up via Better Auth and inject the session cookie into Playwright Chromium.
- *
- * Playwright's APIRequestContext hangs parsing `__Secure-*` Set-Cookie from
- * http://localhost (API emits Secure cookies because BETTER_AUTH_URL is https).
- * Use fetch + addCookies instead.
- */
+/** Sign up via Better Auth; inject cookie via fetch+addCookies (APIRequestContext hangs on `__Secure-*` from http://localhost). */
 export async function signUpAndHydrateSession(
   context: BrowserContext,
   user: UiE2eUser = uniqueTestUser()

@@ -63,10 +63,7 @@ async function loadAndWarmLocalModules(modules: number[]): Promise<void> {
   }
 }
 
-/**
- * Download bundled assets into the Expo asset cache before first paint.
- * Uses expo-asset (ships with Expo SDK) — keeps auth + filter icons instant.
- */
+/** Cache bundled assets before first paint so auth + filter icons are instant. */
 export async function preloadCriticalLocalAssets(): Promise<void> {
   await loadAndWarmLocalModules([
     ...CRITICAL_LOCAL_ASSETS,
@@ -74,10 +71,7 @@ export async function preloadCriticalLocalAssets(): Promise<void> {
   ]);
 }
 
-/**
- * Collection dashboard set banners, logos, and type/rarity icons —
- * load as if the page was already visited.
- */
+/** Prefetch collection dashboard banners, logos, and type/rarity icons. */
 export async function preloadCollectionDashboardAssets(): Promise<void> {
   await loadAndWarmLocalModules([
     ...collectionDashboardAssetModules(),

@@ -27,13 +27,7 @@ interface CatalogDesktopToolbarProps {
   onSimpleAddChange: (simpleAdd: boolean) => void;
 }
 
-/**
- * Desktop catalog chrome — bordered filter/action row stays fixed height;
- * active chips mount in a separate in-flow tray underneath so the shell never grows.
- *
- * Do not use Reanimated `entering` here on web — it pins the tray to
- * `position: absolute` and the catalog list paints over it.
- */
+/** Fixed-height desktop toolbar; no Reanimated `entering` on web (pins tray absolute). */
 export function CatalogDesktopToolbar({
   filters,
   onFiltersChange,

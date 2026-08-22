@@ -105,8 +105,7 @@ describe('query invalidation helpers', () => {
 
     // Collection list is exact-matched and refetches when observed again.
     expect(client.getQueryState(collectionQueryKeys.all)?.isInvalidated).toBe(true);
-    // Ownership root invalidation marks the slice stale (prefix match) — expected for login —
-    // but collection `exact: true` must not be what alone forces a blind quantities storm.
+    // Ownership root invalidates by prefix (expected); collection exact:true alone must not storm quantities.
     expect(client.getQueryState(ownershipKey)?.isInvalidated).toBe(true);
 
     await client.fetchQuery({

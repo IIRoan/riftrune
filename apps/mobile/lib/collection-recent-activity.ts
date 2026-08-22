@@ -67,9 +67,7 @@ export function prependRecentActivity(
   });
   for (const [queryKey, data] of queries) {
     if (!recentAddsQueryCoversVariant(queryKey, variantNumber)) continue;
-    // Skip in-flight queries that have never resolved. `data ?? []` would seed a
-    // one-event list and look like a successful fetch, leaving prior lines missing
-    // until staleTime (cancel already aborted the initial request).
+    // Skip unresolved queries — `data ?? []` would seed a one-event list until staleTime.
     if (data === undefined) continue;
     queryClient.setQueryData(
       queryKey,

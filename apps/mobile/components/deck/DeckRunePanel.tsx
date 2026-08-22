@@ -19,7 +19,6 @@ interface DeckRunePanelProps {
   runeCardsByDomain: ReadonlyMap<string, DeckCard>;
   runeCardsLoading?: boolean;
   onAdjust: (domain: string, delta: number) => void;
-  /** Tighter layout for narrow side drawers. */
   dense?: boolean;
   compact?: boolean;
 }

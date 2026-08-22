@@ -1,11 +1,5 @@
 #!/usr/bin/env bun
-/**
- * Download Cardmarket's daily Riftbound price guide and upsert local price cache.
- *
- * Usage:
- *   bun run --cwd apps/api sync:prices
- *   CARDMARKET_GAME_ID=22 bun scripts/sync-cardmarket-prices.ts
- */
+/** Download Cardmarket's daily Riftbound price guide and upsert local price cache. */
 import { createDb } from '../src/db/client.js';
 import { runStartupMigrations } from '../src/db/migrate.js';
 import { loadEnv } from '../src/env.js';

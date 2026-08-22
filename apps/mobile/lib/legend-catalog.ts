@@ -42,10 +42,7 @@ export function groupLegendListItems(raw: CardListItem[]): CardListItem[] {
   );
 }
 
-/**
- * Hydrate legend rows for the play picker.
- * Uses batch detail art when available; otherwise paints instantly from list payloads.
- */
+/** Hydrate legend rows: batch detail art when available, else list payloads. */
 export function buildPlayLegendRows(
   listItems: CardListItem[],
   details: readonly CardDetail[] | undefined
@@ -69,10 +66,7 @@ export function buildPlayLegendRows(
   return results;
 }
 
-/**
- * Only block the picker on a spinner when we have nothing to show yet.
- * Cached / placeholder rows keep the list painted while a new search fetches.
- */
+/** Spinner only when nothing to show; cached/placeholder rows stay painted during search. */
 export function shouldShowLegendCatalogLoading(
   isInitialLoading: boolean,
   legendCount: number
@@ -80,10 +74,7 @@ export function shouldShowLegendCatalogLoading(
   return isInitialLoading && legendCount === 0;
 }
 
-/**
- * Keep the last non-empty result set while a search is in flight so typing
- * never blanks the list. Clear immediately when a settled fetch returns empty.
- */
+/** Keep last non-empty results while searching; clear immediately on settled empty. */
 export function resolveDisplayedLegends<T>(
   legends: readonly T[],
   previous: readonly T[],
@@ -99,10 +90,7 @@ export type PlayScoreHintTone = {
   textClassName: string;
 };
 
-/**
- * Typographic −/+ etch for seat halves (no floating plates).
- * Light UI → darker ink; dark UI → lighter ink. Always readable, never chrome.
- */
+/** −/+ etch for seat halves: darker on light UI, lighter on dark — readable, not chrome. */
 export function playScoreHintClasses(scheme: 'light' | 'dark'): PlayScoreHintTone {
   if (scheme === 'light') {
     return { textClassName: 'text-black/35' };

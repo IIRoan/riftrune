@@ -16,11 +16,9 @@ function parseBooleanFlag(value: string | undefined, fallback: boolean): boolean
 const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(7000),
-  /** Bind address for the HTTP server (default listens on all interfaces). */
   HOST: z.string().min(1).default('::'),
   DATABASE_URL: z.string().min(1),
   DB_POOL_MAX: z.coerce.number().int().positive().max(50).optional(),
-  /** Piltover Archive external API key (`ak_…`). */
   PA_API_KEY: z.string().startsWith('ak_'),
   PA_BASE_URL: z.string().url().default('https://piltoverarchive.com/api/external'),
   ADMIN_SYNC_TOKEN: z.string().min(16),
@@ -31,23 +29,15 @@ const EnvSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url().default('http://localhost:7000'),
 
-  /**
-   * Piltoverarchive deck writes appear to require partner identification.
-   * When set, these values are forwarded as an extra header on
-   * upstream deck create/delete requests.
-   */
+  /** When set, forwarded as partner id header on upstream deck create/delete (PA write auth quirk). */
   UPSTREAM_DECK_WRITE_EXTRA_HEADER_NAME: z.string().min(1).optional(),
   UPSTREAM_DECK_WRITE_EXTRA_HEADER_VALUE: z.string().min(1).optional(),
-  /** Optional override; otherwise derived from BETTER_AUTH_URL + TRUSTED_ORIGINS in production. */
   AUTH_COOKIE_DOMAIN: z.string().min(1).optional(),
   TRUSTED_ORIGINS: z
     .string()
     .optional()
     .transform((value) => parseCsv(value)),
-  /**
-   * Public Expo web origin used for shareable HTTPS invite links
-   * (e.g. https://rift.solace.onl → /invite/:token linking page).
-   */
+  /** Public Expo web origin for shareable HTTPS invite links (/invite/:token). */
   PUBLIC_APP_URL: z.string().url().optional(),
   CATALOG_WARMUP_ON_START: z
     .string()
@@ -90,8 +80,7 @@ export function resolvePublicAppUrl(input: {
       return auth.origin;
     }
   } catch {
-    // Fall through to local Expo web default.
-  }
+    }
   return 'http://localhost:7001';
 }
 

@@ -58,7 +58,6 @@ interface DeckCompositionListProps {
   statsOpen?: boolean;
   onToggleStats?: () => void;
   paddingBottom?: number;
-  /** Hide left border when shown in a sheet / standalone column. */
   bordered?: boolean;
 }
 

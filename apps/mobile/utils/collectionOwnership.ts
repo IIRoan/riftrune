@@ -65,11 +65,7 @@ export function ownershipRecordFromQuantityRows(
   return record;
 }
 
-/**
- * Overlay collection-list ownership onto a quantities/ownership map.
- * Collection entries win — they are updated synchronously by optimistic mutations,
- * while ownership slices can lag behind in-flight `/quantities` responses.
- */
+/** Overlay collection-list ownership onto quantities map — collection wins (optimistic), ownership can lag. */
 export function preferCollectionOwnership(
   ownership: CollectionOwnershipMap,
   fromCollection: CollectionOwnershipMap
@@ -83,11 +79,7 @@ export function preferCollectionOwnership(
   return merged;
 }
 
-/**
- * Merge ownership patches into a cache record.
- * Zero quantities are retained as known-unowned so list tiles do not re-fetch
- * `/quantities` for every variant after a mutation invalidation/refetch.
- */
+/** Merge ownership patches; keep zeros as known-unowned so tiles skip re-fetch after invalidation. */
 export function mergeOwnershipRecords(
   base: Readonly<Record<string, number>>,
   patch: Readonly<Record<string, number>>
@@ -99,10 +91,7 @@ export function mergeOwnershipRecords(
   return next;
 }
 
-/**
- * Apply a full collection snapshot onto an ownership cache without wiping
- * known-zero entries for variants that were never owned.
- */
+/** Apply full collection snapshot onto ownership cache without wiping known-zero never-owned variants. */
 export function mergeOwnershipFromCollection(
   current: Readonly<Record<string, number>>,
   entries: readonly CollectionEntry[]

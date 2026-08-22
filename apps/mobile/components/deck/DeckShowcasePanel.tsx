@@ -15,10 +15,7 @@ import { computeShowcaseIdentityTileWidth } from '@/lib/deck-showcase-layout';
 import type { DeckCard, DeckState } from '@/lib/deck-types';
 import { cn } from '@/lib/utils';
 
-/**
- * Runes sit beside legend/champion only when there is real horizontal room.
- * Two ~120–200px tiles + gap + ~176px rune column needs ~560px+; phones must stack.
- */
+/** Side-by-side runes need ~560px+; phones stack (two tiles + rune column). */
 const RUNES_BESIDE_MIN_WIDTH = 560;
 
 interface DeckShowcasePanelProps {
@@ -30,10 +27,6 @@ interface DeckShowcasePanelProps {
   className?: string;
 }
 
-/**
- * View-only gallery of a deck — legend, runes, battlefields, main, sideboard.
- * Mirrors Piltover Archive’s Deck tab: showcase cards, no quantity editors.
- */
 export function DeckShowcasePanel({
   deck,
   imageByVariant,

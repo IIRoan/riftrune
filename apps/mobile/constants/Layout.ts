@@ -1,14 +1,8 @@
-/**
- * Numeric layout constants for APIs that require raw numbers instead of
- * Uniwind `className` tokens (e.g. FlatList `columnWrapperStyle`/`contentContainerStyle`).
- */
+/** Numeric layout for APIs that need px (FlatList styles) instead of Uniwind className. */
 
 export const Layout = {
   screenPaddingHorizontal: 16,
-  /**
-   * Desktop shell gutter with SideRail: rail→content, content→detail, and
-   * content→screen edge must stay identical (px).
-   */
+  /** Desktop SideRail gutters: rail→content, content→detail, content→edge must match (px). */
   screenPaddingHorizontalRail: 16,
   gridGap: 16,
   /** Floating tab bar height (px). */

@@ -13,14 +13,10 @@ export type SearchInputProps = InputProps & {
   onBlur?: () => void;
   disabled?: boolean;
   children?: InputAddonChildren;
-  /**
-   * Web-only keyboard hint shown when the field is idle (unfocused + empty).
-   * e.g. "/" for catalog search.
-   */
+  /** Web-only idle keyboard hint (e.g. `/`). */
   shortcutHint?: string;
 };
 
-/** Instrument key hint — carbon well, mono caption (Factory). */
 function ShortcutHint({ label }: { label: string }) {
   return (
     <View

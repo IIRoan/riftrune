@@ -30,7 +30,7 @@ import { useWindowDimensions, View } from 'react-native';
 type PlaySetupSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** When set, open directly on that seat’s legend picker (not from settings). */
+  /** Open directly on that seat’s legend picker (not settings). */
   initialSeatId?: string | null;
   state: ScoreTrackerState;
   onSelectFormat: (formatId: PlayFormatId) => void;
@@ -54,7 +54,6 @@ export function PlaySetupSheet({
   const format = PLAY_FORMATS.find((entry) => entry.id === state.format)!;
   const canAdvance = Boolean(format.trackMatchWins && state.winnerSeatId);
   const pickingSeat = state.seats.find((seat) => seat.id === pickingSeatId) ?? null;
-  /** Tall enough for the art grid on web dialog; mobile uses 92% snap. */
   const legendDialogHeight = Math.min(720, Math.round(windowHeight * 0.82));
 
   return (

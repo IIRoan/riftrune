@@ -9,12 +9,7 @@ const uniwindConfig = withUniwindConfig(config, {
   dtsFile: './uniwind-types.d.ts',
 });
 
-// Uniwind remaps `react-native` → `uniwind/components`, then that shim does
-// `require('react-native')` for Platform/Dimensions/StyleSheet. Under Bun's
-// isolated linker, Uniwind's "is this our own file?" check can miss because
-// the same package lives in multiple `.bun/uniwind@…+hash/` folders. The remap
-// then points at itself and iOS dies at startup with:
-//   RangeError: Maximum call stack size exceeded (native stack depth)
+// Bun: Uniwind's react-native remap can recurse (multi-hash uniwind folders); resolve RN from Expo when originating inside uniwind.
 const UNIWIND_PKG = `${sep}node_modules${sep}uniwind${sep}`;
 const expoResolveRequest = config.resolver?.resolveRequest;
 const uniwindResolveRequest = uniwindConfig.resolver.resolveRequest;

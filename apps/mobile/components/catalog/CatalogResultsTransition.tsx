@@ -15,17 +15,12 @@ const HANDOFF_MS = 180;
 const EASE_OUT = Easing.out(Easing.cubic);
 
 interface CatalogResultsTransitionProps {
-  /** Changes when sort or filter state should replay the list handoff. */
   transitionKey: string;
   className?: string;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
 }
 
-/**
- * Soft slide+fade when catalog sort/filter state changes — acknowledges
- * the reorder without a laggy full-grid remount.
- */
 export function CatalogResultsTransition({
   transitionKey,
   className,

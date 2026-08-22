@@ -8,10 +8,7 @@ export type SetCatalogEntry = {
   logo?: ImageSourcePropType;
 };
 
-/**
- * Optional local artwork and release labels for known sets.
- * The collection dashboard list itself comes from `/api/v1/filters` (synced from PA).
- */
+/** Optional local set art/labels; dashboard set list comes from `/api/v1/filters` (PA sync). */
 export const SET_CATALOG: SetCatalogEntry[] = [
   {
     code: 'OGN',

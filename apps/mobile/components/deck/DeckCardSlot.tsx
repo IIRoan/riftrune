@@ -19,7 +19,6 @@ type DeckCardSlotVariant = 'card' | 'add' | 'empty' | 'identity';
 interface DeckCardSlotProps {
   variant: DeckCardSlotVariant;
   tileWidth: number;
-  /** Stretch to parent width (drawer identity grid) instead of fixed tileWidth. */
   stretch?: boolean;
   label?: string;
   card?: DeckCard;
@@ -28,7 +27,6 @@ interface DeckCardSlotProps {
   owned?: number | null;
   illegal?: boolean;
   single?: boolean;
-  /** When opening the card modal from this slot (e.g. deck-view hides collection CTAs). */
   openSource?: CardOpenSource;
   onPress?: () => void;
   onAdd?: () => void;

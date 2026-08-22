@@ -46,11 +46,7 @@ interface AppSheetProps {
   dismissible?: boolean;
 }
 
-/**
- * Unified overlay shell for short confirmations and pickers.
- * Mobile → bottom sheet. Desktop (side rail) → centered dialog.
- * Header / title / body chrome match BottomSheet so surfaces look the same.
- */
+/** Overlay shell: mobile bottom sheet, desktop centered dialog (matched chrome). */
 export function AppSheet({
   open,
   onOpenChange,
@@ -211,12 +207,9 @@ type AppSheetContentGestures = {
 };
 
 type AppSheetContentProps = ComponentProps<typeof View> & {
-  /** Fixed snap points; omit for content-driven dynamic height. */
   snapPoints?: Array<number | string>;
   defaultSnapIndex?: number;
-  /** Sheet gesture behavior (ignored in dialog mode). */
   gestures?: AppSheetContentGestures;
-  /** Lifts the sheet above the screen bottom (Gorhom bottomInset). */
   bottomInset?: number;
 };
 
@@ -407,11 +400,7 @@ type AppSheetScrollViewProps = ComponentProps<typeof BottomSheetScrollView> & {
   headerInset?: number;
 };
 
-/**
- * Scroll body for AppSheet.
- * Sheet mode → Gorhom BottomSheetScrollView (needs BottomSheet context).
- * Dialog mode (wide web) → RN ScrollView so legend/settings never call useBottomSheetInternal.
- */
+/** Sheet → Gorhom scroll; dialog → RN ScrollView (avoids useBottomSheetInternal on web). */
 export function AppSheetScrollView({
   className,
   contentContainerStyle,

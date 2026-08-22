@@ -69,7 +69,6 @@ export class VariantResolver {
             this.addToLookup(lookup, variant.variantNumber);
           }
         } catch {
-          // Unresolvable variant.
         }
       }
     }

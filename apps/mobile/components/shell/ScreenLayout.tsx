@@ -201,7 +201,6 @@ type ScreenLayoutBodyProps = ViewProps & {
   children: React.ReactNode;
 };
 
-/** Flex column body for screens that manage their own scroll regions (e.g. catalog FlatList). */
 export function ScreenLayoutBody({ children, className, ...props }: ScreenLayoutBodyProps) {
   return (
     <View className={cn('min-h-0 w-full flex-1', className)} {...props}>

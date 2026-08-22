@@ -246,10 +246,7 @@ function cardMatchesColorFilter(cardColors: string[], selected: string[]): boole
   return selected.every((color) => cardSet.has(color.toLowerCase()));
 }
 
-/**
- * Riftbound domain identity: every card color must be in the selected set.
- * Colorless cards match. Mind-only matches a Mind+Order selection.
- */
+/** Domain identity: every card color ∈ selected set; colorless matches; Mind-only matches Mind+Order. */
 export function cardMatchesColorIdentity(
   cardColors: string[],
   allowed: string[]

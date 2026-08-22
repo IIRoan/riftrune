@@ -22,7 +22,6 @@ async function paImageExists(url: string): Promise<boolean> {
     const buf = await res.arrayBuffer();
     if (buf.byteLength < 8) return false;
     const bytes = new Uint8Array(buf);
-    // JPEG / PNG / RIFF(webp)
     if (bytes[0] === 0xff && bytes[1] === 0xd8) return true;
     if (bytes[0] === 0x89 && bytes[1] === 0x50) return true;
     if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
@@ -34,11 +33,7 @@ async function paImageExists(url: string): Promise<boolean> {
   }
 }
 
-/**
- * Resolve Overnumbered Signed art from Piltover Archive only.
- * Returns null when PA has not published a dedicated signed asset yet —
- * callers should keep the parent Overnumbered PA imageUrl.
- */
+/** PA Overnumbered Signed art only; null if unpublished — keep parent Overnumbered imageUrl. */
 export async function resolveSignedOvernumberedImageUrl(
   _cardName: string,
   signedVariantNumber: string

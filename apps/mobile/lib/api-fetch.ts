@@ -29,10 +29,7 @@ function delay(ms: number): Promise<void> {
   });
 }
 
-/**
- * Fetch wrapper for the hosted API: on the first cold-start style failure
- * (network error or gateway status), wait for the service to wake and retry once.
- */
+/** On cold-start failure (network/gateway), wait for wake and retry once. */
 export async function fetchWithApiWake(
   input: RequestInfo | URL,
   init?: RequestInit

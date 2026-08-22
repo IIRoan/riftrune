@@ -9,7 +9,6 @@ import { toolbarIconSize } from '@/components/ui/hover-tooltip.constants';
 
 const EDGE_PAD = 8;
 const GAP = 10;
-/** Match shadcn TooltipProvider delayDuration — wait before show. */
 const SHOW_DELAY_MS = 500;
 const TOOLBAR_ICON_SIZE = toolbarIconSize;
 
@@ -24,9 +23,7 @@ type TooltipPlacement = 'top' | 'right' | 'left';
 
 type HoverTooltipProps = {
   label: string;
-  /** Optional second line describing what the control does. */
   description?: string;
-  /** Preferred side relative to the trigger. Defaults to `top`. */
   side?: 'top' | 'right';
   children: ReactElement;
   className?: string;
@@ -46,7 +43,6 @@ function TooltipArrow({
   placement: TooltipPlacement;
   color: string;
 }) {
-  // 45° square caret — same cue as shadcn TooltipArrow
   const base = {
     position: 'absolute' as const,
     width: 8,
@@ -96,11 +92,7 @@ function TooltipArrow({
   );
 }
 
-/**
- * Web-only hover label in the shadcn tooltip idiom (primary surface, xs type,
- * delayed open). Portaled with fixed positioning so sidebar / overflow parents
- * cannot clip it. Native: children only (use accessibilityLabel instead).
- */
+/** Web-only portaled hover label (overflow-safe); native returns children only. */
 export function HoverTooltip({
   label,
   description,
@@ -272,7 +264,6 @@ export function HoverTooltip({
   );
 }
 
-/** Fixed square slot for toolbar glyphs so icons and spinners share the same box. */
 export function ToolbarIconSlot({
   children,
   className,

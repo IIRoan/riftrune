@@ -14,10 +14,7 @@ interface DeckIdentityHeaderProps {
   deck: DeckState;
   readOnly?: boolean;
   legendTileWidth: number;
-  /**
-   * Stretch slots to fill equal columns (narrow builder drawer).
-   * Showcase / view-deck must leave this false so tileWidth caps apply.
-   */
+  /** Equal columns in narrow drawer; leave false in showcase so tileWidth caps apply. */
   stretchSlots?: boolean;
   imageByVariant: ReadonlyMap<string, string>;
   collectionByName: ReadonlyMap<string, number>;
@@ -28,7 +25,6 @@ interface DeckIdentityHeaderProps {
   onAddChampion: () => void;
   onRemoveChampion: () => void;
   onAdjustRune: (domain: string, delta: number) => void;
-  /** Place runes under identity (drawer) or to the right (showcase). */
   runePlacement?: 'below' | 'beside';
   openSource?: CardOpenSource;
 }
@@ -144,8 +140,7 @@ export function DeckIdentityHeader({
   ) : null;
 
   if (runesBeside && runePanel) {
-    // Two columns: legend+champion pair on the left, rune summary on the right.
-    // Align to the bottom of the card art so the rune block sits next to the tiles.
+    // Two columns bottom-aligned: legend+champion left, rune summary right beside tiles.
     return (
       <View className="w-full min-w-0 flex-row items-end gap-4">
         <View className="min-w-0 flex-row gap-3">

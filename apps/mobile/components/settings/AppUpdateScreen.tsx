@@ -75,17 +75,9 @@ export type AppUpdateDispatchProps = {
   errorMessage?: string | null;
   onPrimary?: () => void;
   onSecondary?: () => void;
-  /** Extra chrome above the dispatch (design playground phase switcher). */
   header?: React.ReactNode;
 };
 
-/**
- * THESIS: Full-screen dispatch for a pending EAS Update — not a settings toast and not a silent reload.
- * OWN-WORLD: Obsidian field, Geist Mono kicker, Lato SemiBold title, chalk commit, rune fill as progress.
- * STORY: See that a bundle is waiting, install it, restart to run it; Later leaves catalog work unblocked.
- * FIRST VIEWPORT: Centered rune, title, body, chalk CTA at the thumb; channel kicker above.
- * FORM: Operate extension of the instrument shell; three mechanical states, no new visual world.
- */
 export function AppUpdateDispatch({
   phase,
   channelLabel,

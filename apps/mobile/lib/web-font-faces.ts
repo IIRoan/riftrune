@@ -1,16 +1,4 @@
-/**
- * Web-only font-face registration for Firefox-correct weight matching.
- *
- * Expo's loader emits `@font-face { font-family: "Lato-Medium"; src: … }` with
- * no `font-weight` descriptor. Firefox then fails to match when Uniwind sets
- * numeric CSS weights. Spec guidance: one family name, explicit weight per file
- * (MDN `@font-face` font-weight; Expo PR #37170).
- *
- * Native keeps Expo per-file family names (`Lato-Medium`, etc.).
- *
- * Inject these rules before first UI paint. `font-display: swap` plus a
- * post-paint `useEffect` is what made Firefox flash a system face on load.
- */
+/** Web @font-face with explicit weights for Firefox; inject before paint (swap+post-paint useEffect caused FOUT). */
 
 import { Asset } from 'expo-asset';
 import { Platform } from 'react-native';
@@ -81,9 +69,7 @@ const FACES: Face[] = [
   },
 ];
 
-/** Re-declare Expo per-weight family names with a full weight range so
- * `fontFamily: 'Lato-Medium'` + CSS `font-weight: 500` still hits the correct
- * file in Firefox instead of falling through. */
+/** Re-declare Expo per-weight families with full weight range so Firefox matches `Lato-Medium` + weight 500. */
 const LEGACY_NAMED_FACES: { family: string; moduleId: FontModuleId }[] = [
   { family: 'Lato-Regular', moduleId: require('@/assets/fonts/Lato-Regular.ttf') },
   { family: 'Lato-Medium', moduleId: require('@/assets/fonts/Lato-Medium.ttf') },

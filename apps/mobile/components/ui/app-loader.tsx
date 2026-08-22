@@ -9,14 +9,12 @@ import { cn } from '@/lib/utils';
 
 type AppLoaderProps = {
   size?: RuneChargeSize;
-  /** Optional status copy — prefer the rune fill alone for generic loading. */
   label?: string;
   detail?: string;
   className?: string;
   accessibilityLabel?: string;
 };
 
-/** Centered rune mark with optional status copy. */
 export function AppLoader({
   size = 'md',
   label,
@@ -44,7 +42,6 @@ export function AppLoader({
   );
 }
 
-/** Full-screen / flex-fill blocking loader — rune only by default. */
 export function AppLoadingScreen({ size, label, detail, className }: AppLoaderProps) {
   const { width, height } = useWindowDimensions();
   const stageSize = size ?? runeSizeForShortSide(Math.min(width, height));
@@ -69,7 +66,6 @@ type AppLoadingOverlayProps = {
   onRequestClose?: () => void;
 };
 
-/** Modal overlay for long-running actions — rune fill is the primary signal. */
 export function AppLoadingOverlay({
   visible,
   message,

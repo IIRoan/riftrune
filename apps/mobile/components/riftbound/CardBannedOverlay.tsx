@@ -2,7 +2,6 @@ import { View } from 'react-native';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
 import { cn } from '@/lib/utils';
 
-/** ILLEGAL keyword overlay for banned cards on art thumbnails. */
 export function CardBannedOverlay({
   compact = true,
   className,

@@ -2,11 +2,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { View } from "react-native";
 import { cn } from "@/lib/utils";
 
-// Types
 export type StackProps = React.ComponentProps<typeof View> &
   VariantProps<typeof stackVariants>;
 
-// Components
 export const Stack = ({
   children,
   className,
@@ -24,7 +22,6 @@ export const Stack = ({
   );
 };
 
-// Styles
 const stackVariants = cva("flex", {
   variants: {
     gap: {

@@ -1,7 +1,4 @@
-/**
- * Run async work over `items` with at most `concurrency` in flight.
- * Results preserve input order; `fn` rejections propagate after all settle.
- */
+/** Map with bounded concurrency; preserves order; rejections propagate after all settle. */
 export async function mapPool<T, U>(
   items: readonly T[],
   concurrency: number,

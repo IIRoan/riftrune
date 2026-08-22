@@ -39,10 +39,7 @@ function parseSseBlock(block: string): LiveEvent | null {
   }
 }
 
-/**
- * Long-lived SSE subscription for shared-collection updates.
- * Resolves when the stream ends; caller should reconnect with backoff.
- */
+/** Long-lived SSE for shared-collection updates; resolves when stream ends — caller reconnects with backoff. */
 export async function subscribeCollectionLiveEvents(options: {
   signal: AbortSignal;
   onEvent: (event: LiveEvent) => void;

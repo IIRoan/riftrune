@@ -8,7 +8,6 @@ type DeckCardArtProps = {
   variantNumber: string;
 };
 
-/** Static deck-builder card art with disk+memory cache (no scroll shimmer). */
 function DeckCardArtInner({ uri, variantNumber }: DeckCardArtProps) {
   return (
     <View className="absolute inset-0 items-center justify-center p-1">

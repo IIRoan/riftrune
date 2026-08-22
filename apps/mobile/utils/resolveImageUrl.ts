@@ -41,11 +41,7 @@ function appendWidthParam(url: string, width: number): string {
   return `${url}${separator}w=${String(width)}`;
 }
 
-/**
- * Normalize card image URLs for mobile clients.
- * Rewrites API proxy and CDN paths to EXPO_PUBLIC_API_URL so images always load
- * from the API the app is configured to use (which serves bytes directly).
- */
+/** Normalize card image URLs to EXPO_PUBLIC_API_URL so clients load from the configured API. */
 export function resolveImageUrl(
   url: string | null | undefined,
   options?: ResolveImageUrlOptions

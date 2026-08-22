@@ -31,9 +31,7 @@ export function ownedQuantityForPrinting(
   const byFinish = collectionByVariant.get(finishKey);
   if (byFinish) return byFinish.quantity;
 
-  // Finish-aware maps always write at least one `::std`/`::foil` key when any
-  // finish of this VN is owned. Do not fall back to the aggregate VN total —
-  // that would attribute std copies to the foil row (and double totalOwned).
+  // Finish-aware maps write `::std`/`::foil`; do not fall back to aggregate VN (would double-count foil).
   const stdKey = collectionFinishKey(printing.variantNumber, false);
   const foilKey = collectionFinishKey(printing.variantNumber, true);
   if (collectionByVariant.has(stdKey) || collectionByVariant.has(foilKey)) {

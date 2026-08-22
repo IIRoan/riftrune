@@ -8,7 +8,6 @@ export type AppSheetContextValue = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dismissible: boolean;
-  /** Dialog-mode presence (0–1). Null in sheet mode. */
   presence: SharedValue<number> | null;
   reduceMotion: boolean;
 };

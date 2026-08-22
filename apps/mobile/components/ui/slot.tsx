@@ -2,13 +2,10 @@ import { Children, cloneElement, isValidElement } from "react";
 import type { Pressable as RNPressable, View as RNView } from "react-native";
 import { mergeRefs } from "@/lib/utils";
 
-// Constants
 const HANDLER_REGEX = /^on[A-Z]/;
 
-// Types
 type AnyProps = Record<string, unknown>;
 
-// Components
 const View = ({
   ref,
   children,
@@ -59,7 +56,6 @@ const Pressable = ({
   });
 };
 
-// Utils
 function mergeHandler(
   slotPropValue: unknown,
   childPropValue: unknown

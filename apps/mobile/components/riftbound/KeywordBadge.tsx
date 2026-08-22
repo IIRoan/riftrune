@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 
 const KEYWORD_SKEW_DEG = -10;
 
-/** Inline action-keyword tag — slanted parallelogram matching printed cards. */
 export function KeywordBadge({
   label,
   keywordBase,
@@ -19,7 +18,6 @@ export function KeywordBadge({
   label: string;
   keywordBase?: string;
   compact?: boolean;
-  /** Rendered inside the badge after the label (e.g. REPEAT cost pips). */
   trailing?: ReactNode;
 }) {
   const base = keywordBase ?? label;

@@ -16,8 +16,7 @@ import type { z } from 'zod';
 import { fetchWithApiWake } from '@/lib/api-fetch';
 import { getApiUrl } from '@/lib/api-url';
 
-// Unauthenticated JSON client for catalog, prices, and filters.
-// User data (collection, decks) goes through authedClient.ts instead.
+// Unauthenticated JSON client for catalog/prices/filters; user data uses authedClient.ts.
 
 const API_URL = getApiUrl();
 

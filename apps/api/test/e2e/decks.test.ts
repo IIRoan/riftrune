@@ -44,7 +44,6 @@ async function cleanupTestUsers(): Promise<void> {
       await db.delete(userTable).where(eq(userTable.id, u.id));
     }
   } catch {
-    // External API mode
   }
 }
 
@@ -211,5 +210,4 @@ describe('decks: upstream transformation', () => {
     expect(row).toBeTruthy();
   });
 
-  // List endpoint uses upstream summaries (one upstream call), not per-deck detail transforms.
 });

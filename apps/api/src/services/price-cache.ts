@@ -82,7 +82,6 @@ function chunk<T>(items: T[], size: number): T[][] {
 export class PriceCacheService {
   constructor(private readonly db: Database) {}
 
-  /** Fetch only prices for the cardmarket IDs in the current result page (fast path). */
   async getRowsForCardmarketIds(cardmarketIds: number[]): Promise<PaPriceRow[]> {
     const unique = [...new Set(cardmarketIds)];
     if (unique.length === 0) return [];

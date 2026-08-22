@@ -306,8 +306,7 @@ export function AuthPanel({
   const [busy, setBusy] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  // Better Auth sendOnSignUp / sendOnSignIn already deliver an OTP; avoid a second
-  // sendOnMount that would invalidate the code in the first email.
+  // Better Auth already sent OTP on sign-up/sign-in — skip sendOnMount (would invalidate it).
   const [otpSentWithAuth, setOtpSentWithAuth] = useState(false);
   const [internalPendingEmail, setInternalPendingEmail] = useState<string | null>(null);
   const pendingVerificationEmail =
@@ -326,9 +325,7 @@ export function AuthPanel({
       ? normalizeVerificationEmail(session.user.email)
       : null);
 
-  // Clear credentials when mode changes — including external controlledMode updates
-  // that never go through setMode (ModeSwitch only covers in-panel clicks).
-  // Do not clear an in-progress email verification.
+  // Clear credentials on mode change (incl. controlledMode); keep in-progress email verification.
   const modeChanged = useValueChangeFlag(mode);
   if (modeChanged && !verificationEmail) {
     setError(null);
@@ -539,8 +536,7 @@ export function AuthPanel({
   const formBody = verificationEmail ? (
     <EmailVerificationForm
       email={verificationEmail}
-      // Session restore / AuthGate hold: no recent auth send — request one.
-      // Fresh sign-up / sign-in: server already sent via sendOnSignUp / sendOnSignIn.
+      // Restore/AuthGate: request OTP; fresh sign-up/sign-in already sent by Better Auth.
       autoSendOnMount={!otpSentWithAuth}
       onVerified={finishAuthenticated}
       onChangeEmail={() => {

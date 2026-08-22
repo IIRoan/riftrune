@@ -8,10 +8,7 @@ type GlobalWithApiOverride = typeof globalThis & {
   [API_URL_RUNTIME_OVERRIDE_KEY]?: string;
 };
 
-/**
- * Resolve the API base URL for catalog, auth, and image proxy requests.
- * Trailing slashes are stripped so path joins stay correct.
- */
+/** API base URL with trailing slashes stripped for path joins. */
 export function getApiUrl(): string {
   const runtime = (globalThis as GlobalWithApiOverride)[API_URL_RUNTIME_OVERRIDE_KEY];
   if (typeof runtime === 'string' && runtime.length > 0) {

@@ -44,12 +44,10 @@ export type CollectionAuditEvent = z.infer<typeof CollectionAuditEvent>;
 
 export const CollectionAuditListQuery = z.object({
   limit: z.coerce.number().int().positive().max(200).default(50),
-  /** ISO timestamp cursor — return events strictly older than this. */
+  /** Return events strictly older than this ISO timestamp. */
   before: z.string().datetime().optional(),
   variantNumber: z.string().min(1).optional(),
-  /** Filter to a specific actor (must be a member of the collection). */
   actorUserId: z.string().min(1).optional(),
-  /** When true, only events performed by the authenticated user. */
   mine: z
     .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
     .optional()
@@ -110,7 +108,6 @@ type ActivitySource = {
   actor: CollectionAuditActor;
 };
 
-/** Map already newest-first quantity changes into the wire shape (adds and removes). */
 export function takeRecentCollectionActivity(
   events: readonly ActivitySource[],
   limit = RECENT_COLLECTION_ACTIVITY_LIMIT

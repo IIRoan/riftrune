@@ -174,7 +174,6 @@ describe('shared collection invite flows', () => {
     const collectionIdB = await collectionIdForUser(userIdB);
     expect(collectionIdA).toBe(collectionIdB);
 
-    // Both can mutate the shared inventory
     await authFetch(`/api/v1/collection/${encodeURIComponent('OGN-203')}/add`, {
       method: 'POST',
       cookie: cookieB,
@@ -187,8 +186,7 @@ describe('shared collection invite flows', () => {
   });
 
   test('merge sums overlapping stacks; decks and wishlist stay personal', async () => {
-    // Leave shared state from previous test so we can re-pair cleanly with fresh users.
-    // Create a third pair for merge to avoid interference.
+    // Leave prior shared state; create a third pair for merge to avoid interference.
     const stamp2 = Date.now();
     const cookieC = await signUpTestUser({
       email: `test-db-share-c-${stamp2}@test.riftbound.dev`,
@@ -326,7 +324,6 @@ describe('shared collection invite flows', () => {
     const idF = await collectionIdForUser(sessionF.user.id as string);
     expect(idE).not.toBe(idF);
 
-    // Remaining partner still has the cards
     const listE = CollectionListResponse.parse(
       await (await authFetch('/api/v1/collection', { cookie: cookieE })).json()
     );
@@ -397,14 +394,12 @@ describe('shared collection invite flows', () => {
       }
     );
 
-    // Create a new invite while already shared should fail
     const inviteWhileShared = await authFetch('/api/v1/collection/share/invite', {
       method: 'POST',
       cookie: cookieG,
     });
     expect(inviteWhileShared.status).toBe(409);
 
-    // Old token already accepted — cannot join as third
     const third = await authFetch(
       `/api/v1/collection/share/invite/${encodeURIComponent(invite.data.token)}/accept`,
       {

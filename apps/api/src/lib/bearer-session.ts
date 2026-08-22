@@ -1,7 +1,7 @@
 const BEARER_SCHEME = 'bearer ';
 const SESSION_COOKIE = '__Secure-better-auth.session_token';
 
-/** Map Authorization Bearer to the session cookie Better Auth expects in getSession(). */
+/** Map Authorization Bearer → session cookie Better Auth expects in getSession(). */
 export function headersWithBearerSession(headers: Headers): Headers {
   const authorization = headers.get('authorization');
   if (!authorization?.toLowerCase().startsWith(BEARER_SCHEME)) {

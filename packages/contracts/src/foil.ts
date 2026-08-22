@@ -1,7 +1,4 @@
-/**
- * Upstream `foilMode` is a product finish-availability flag, not "this row is foil".
- * Explicit foil siblings (e.g. OGN-001-Foil) are detected via number/label/type.
- */
+/** foilMode is finish availability, not "this row is foil"; explicit foil siblings via number/label/type. */
 
 export type FoilMode = 'both' | 'foil_only' | 'nonfoil_only' | 'unknown';
 
@@ -13,7 +10,6 @@ export function normalizeFoilMode(foilMode: string | null | undefined): FoilMode
   return 'unknown';
 }
 
-/** True when number/label/type explicitly mark a foil sibling SKU. */
 export function isExplicitFoilVariant(
   variantNumber: string,
   variantLabel?: string,
@@ -25,11 +21,7 @@ export function isExplicitFoilVariant(
   return false;
 }
 
-/**
- * Whether a catalog printing itself is a foil finish.
- * `foil_only` means every copy of that printing is foil.
- * `both` alone does not — only an explicit foil sibling is foil under `both`.
- */
+/** Printing is foil if foil_only, or an explicit foil sibling under both (both alone is not foil). */
 export function isVariantFoil(
   foilMode: string | null | undefined,
   variantNumber: string,
@@ -40,7 +32,6 @@ export function isVariantFoil(
   return normalizeFoilMode(foilMode) === 'foil_only';
 }
 
-/** True when a single SKU offers both standard and foil without a distinct foil sibling. */
 export function variantOffersDualFinishes(
   foilMode: string | null | undefined,
   variantNumber: string,
@@ -51,7 +42,7 @@ export function variantOffersDualFinishes(
   return !isExplicitFoilVariant(variantNumber, variantLabel, variantType);
 }
 
-/** Ownership / quantity map key that distinguishes finish on the same variant number. */
+/** Ownership key distinguishing finish on the same variant number. */
 export function collectionFinishKey(variantNumber: string, isFoil: boolean): string {
   return `${variantNumber}::${isFoil ? 'foil' : 'std'}`;
 }

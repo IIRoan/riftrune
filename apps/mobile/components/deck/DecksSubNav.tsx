@@ -28,7 +28,6 @@ function isBrowseDecksPath(pathname: string): boolean {
   return pathname.includes('/decks/browse');
 }
 
-/** Decks Mine / Browse — shared FloatingPillNav. */
 export function DecksSubNav() {
   const router = useRouter();
   const pathname = usePathname();

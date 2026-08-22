@@ -50,7 +50,6 @@ import { XIcon } from '@/components/icons';
 import { Portal, PortalOverlay } from './portal';
 import { Slot } from './slot';
 
-// Constants
 const BOTTOM_SHEET_PORTAL_NAME = 'bottom-sheet-portal';
 const BOTTOM_SHEET_KEYBOARD_BEHAVIOR = 'extend' as const;
 const SHEET_TOP_GAP = 16;
@@ -64,7 +63,6 @@ const BOTTOM_SHEET_SCROLL_CONTENT_TOP_PADDING = 16;
 const BOTTOM_SHEET_FOOTER_BASE_PADDING = 16;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// Types
 type SnapPointInput = number | string;
 
 type BottomSheetChildDisplayName =
@@ -130,7 +128,6 @@ type BottomSheetOverlayProps = {
 type BottomSheetContentProps = Omit<React.ComponentProps<typeof View>, 'children'> &
   BottomSheetContentConfig & {
     children: React.ReactNode;
-    /** Applied to the sheet shell (rounded top + fill). */
     backgroundClassName?: string;
     handleClassName?: string;
     /** Surface under the grabber when `handleDivider` is set. */
@@ -409,7 +406,6 @@ const BottomSheetBackground = ({
 
 const renderNullBackdrop = () => null;
 
-// Context
 const BottomSheetContext = createContext<BottomSheetContextValue | null>(null);
 
 const useBottomSheetContext = () => {
@@ -420,7 +416,6 @@ const useBottomSheetContext = () => {
   return context;
 };
 
-// Components
 export const BottomSheet = ({
   open: openProp,
   onOpenChange: onOpenChangeProp,
@@ -454,9 +449,7 @@ export const BottomSheet = ({
       return;
     }
 
-    // Unmount immediately when closed. A delayed portal left an invisible
-    // full-screen host that ate catalog taps while the selected tile border
-    // could still look “active”, causing selected-but-no-drawer glitches.
+    // Unmount immediately when closed — delayed portal ate catalog taps (selected-but-no-drawer).
     bottomSheetRef.current?.close();
     setMounted(false);
   }, [open]);
@@ -516,8 +509,7 @@ export const BottomSheetPortal = ({
     return null;
   }
 
-  // When parent clears `open` at dismiss-start, stop hit-testing immediately so
-  // catalog taps aren’t blocked while Gorhom finishes sliding off-screen.
+  // Stop hit-testing when open clears at dismiss-start so catalog taps aren’t blocked.
   return (
     <Portal name={name} {...portalProps}>
       <BottomSheetContext.Provider value={ctx}>
@@ -741,8 +733,7 @@ export const BottomSheetContent = ({
     [backgroundClassName]
   );
 
-  // Sticky absolute wrapper is only for overlay headers. Bare scroll sheets must
-  // stay direct Gorhom children so height + pan/scroll handoff measure correctly.
+  // Sticky absolute wrapper only for overlay headers; bare scroll stays a direct Gorhom child.
   const sheetContent = hasScrollView ? (
     header ? (
       <BottomSheetStickyScrollContent
@@ -894,10 +885,7 @@ export const BottomSheetFooter = ({
       style={style}
       {...props}
     >
-      {/*
-        Safe-area inset lives on an inner wrapper so `pb-*` on `className`
-        cannot push the Done/close control under the home indicator.
-      */}
+      {/* Safe-area on inner wrapper so `pb-*` on className cannot bury Done under the home indicator. */}
       <Animated.View className="w-full" style={animatedStyle}>
         {children}
       </Animated.View>

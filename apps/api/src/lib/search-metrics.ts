@@ -66,32 +66,26 @@ export function summarizeGlobalSearchQuery(query: GlobalSearchQuery): Record<str
   };
 }
 
-/** Served from in-memory TTL search cache (browse paths only). */
 export function logSearchCacheHit(fields: Record<string, unknown>): void {
   write('info', 'search.cache', fields);
 }
 
-/** Postgres variant SELECT finished — before hydration. */
 export function logSearchPostgresQuery(fields: Record<string, unknown>): void {
   write('info', 'search.postgres.query', fields);
 }
 
-/** Hydration + grouping finished for a cards list query. */
 export function logSearchComplete(fields: Record<string, unknown>): void {
   write('info', 'search.complete', fields);
 }
 
-/** End-to-end cards.search() including cache lookup and optional upstream reconcile. */
 export function logSearchPipeline(fields: Record<string, unknown>): void {
   write('info', 'search.pipeline', fields);
 }
 
-/** GET /api/v1/search (command palette path). */
 export function logSearchGlobal(fields: Record<string, unknown>): void {
   write('info', 'search.global', fields);
 }
 
-/** Upstream catalog backfill during search reconcile. */
 export function logSearchReconcile(fields: Record<string, unknown>): void {
   write('warn', 'search.reconcile', fields);
 }

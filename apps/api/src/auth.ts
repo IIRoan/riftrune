@@ -87,7 +87,6 @@ export function createAuth(db: Database, env: Env): AuthApi {
       // Always mount so /email-otp/* exists; sending still requires mail env.
       emailOTP({
         overrideDefaultEmailVerification: emailEnabled,
-        // Mount always; Settings UI only offers change-email when mail is configured.
         changeEmail: {
           enabled: true,
         },

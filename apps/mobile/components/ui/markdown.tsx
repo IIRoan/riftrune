@@ -20,7 +20,6 @@ type Token = ReturnType<MarkdownIt['parse']>[number];
 interface SecureMarkdownProps {
   children: string;
   className?: string;
-  /** `prose` uses larger type and spacing for the description preview panel. */
   variant?: 'compact' | 'prose';
 }
 
@@ -336,10 +335,7 @@ function renderBlocks(tokens: Token[], prose: boolean): React.ReactNode[] {
   return nodes;
 }
 
-/**
- * Renders user-authored markdown with a locked-down parser:
- * HTML off, images off, only http(s)/mailto links open in an in-app browser.
- */
+/** Locked-down markdown: no HTML/images; only http(s)/mailto via in-app browser. */
 export function SecureMarkdown({
   children,
   className,

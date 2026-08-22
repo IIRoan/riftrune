@@ -34,10 +34,7 @@ function prefetchCardImage(item: CardListItem): void {
 
 const LIST_PLACEHOLDER_HASH = 'list-placeholder';
 
-/**
- * True when cache holds a real detail payload (GET / batch), including cards
- * whose rules text is the empty string. List-row placeholders are not hydrated.
- */
+/** True for real detail payloads (incl. empty rules text); list-row placeholders are not hydrated. */
 export function isHydratedDetail(entry: CardDetailCacheEntry | undefined): boolean {
   if (!entry?.data) return false;
   if (entry.meta.contentHash === LIST_PLACEHOLDER_HASH) return false;
@@ -170,10 +167,7 @@ export function prefetchCardDetail(queryClient: QueryClient, item: CardListItem)
   pending?.variantNumbers.add(variantNumber);
 }
 
-/**
- * Fetch this card's full detail (including rules text) immediately.
- * Does not wait on the background batch prefetch queue.
- */
+/** Fetch full detail immediately — does not wait on the background batch queue. */
 export async function fetchCardDetailNow(
   queryClient: QueryClient,
   variantNumber: string

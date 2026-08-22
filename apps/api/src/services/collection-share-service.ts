@@ -47,7 +47,6 @@ export type CollectionStackKey = {
   acquiredPriceCents?: number | null;
 };
 
-/** Pure merge: sum quantities on matching variant/condition/language/finish keys. */
 export function mergeCollectionStacks(
   target: CollectionStackKey[],
   source: CollectionStackKey[]
@@ -71,15 +70,11 @@ export function mergeCollectionStacks(
   return [...map.values()];
 }
 
-/** Native-app deep link for collection invite accept. */
 export function buildCollectionInviteDeepLink(token: string): string {
   return `astral-grove://collection/invite/${token}`;
 }
 
-/**
- * Shareable HTTPS invite URL pointing at the Expo web linking page.
- * That page opens the native deep link on mobile, or the web accept flow on desktop.
- */
+/** HTTPS invite URL to Expo web linking page (native deep link on mobile, web accept on desktop). */
 export function buildCollectionInviteUrl(token: string, publicAppUrl: string): string {
   const base = publicAppUrl.replace(/\/$/, '');
   return `${base}/invite/${token}`;

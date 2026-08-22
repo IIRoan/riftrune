@@ -63,10 +63,6 @@ function LogLine({
   );
 }
 
-/**
- * Card-level activity log above Cost / Might / Power.
- * Instant updates — no animation.
- */
 export function CollectionAddLog({
   events,
   className,

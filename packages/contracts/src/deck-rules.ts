@@ -21,7 +21,6 @@ export function deckFormatLabel(format: DeckFormat): string {
   return DECK_FORMAT_OPTIONS.find((option) => option.value === format)?.label ?? format;
 }
 
-/** Canonical Riftbound constructed deck rules — single source of truth for API + clients. */
 export const RIFTBOUND_DECK_RULES = {
   version: '2026.1',
   game: 'Riftbound',
@@ -81,18 +80,17 @@ export const RIFTBOUND_DECK_RULES = {
     },
   },
   copyLimits: {
-    /** Max copies of a non-rune card by name. null = unlimited. */
+    /** Max non-rune copies by name; null = unlimited. */
     default: 3 as number | null,
     rune: 12,
     battlefieldPerName: 1,
-    /** Max Signature cards in Main Deck. null = unlimited. */
+    /** Max Signature cards in Main Deck; null = unlimited. */
     signatureTotal: 3 as number | null,
   },
-  /** Max unique domains across the deck. null = restricted to Legend identity. */
+  /** Max unique domains; null = restricted to Legend identity. */
   maxDomains: null as number | null,
   requireChampionTagMatch: true,
   requireSignatureTagMatch: true,
-  /** When true, clients may block ineligible cards in add pickers. */
   restrictPicker: true,
   constraints: [
     {
@@ -124,7 +122,7 @@ export const RIFTBOUND_DECK_RULES = {
   ],
 } as const;
 
-/** Pre-Rift / Sealed deck rules (Launch-week sealed events). */
+/** Pre-Rift / Sealed rules (launch-week sealed events). */
 export const RIFTBOUND_PRE_RIFT_DECK_RULES = {
   version: '2026.1',
   game: 'Riftbound',
@@ -193,7 +191,7 @@ export const RIFTBOUND_PRE_RIFT_DECK_RULES = {
   maxDomains: 3 as number | null,
   requireChampionTagMatch: false,
   requireSignatureTagMatch: false,
-  /** Pre-Rift builders help users explore; validation still reports legality. */
+  /** Pre-Rift builders stay exploratory; validation still reports legality. */
   restrictPicker: false,
   constraints: [
     {
@@ -228,7 +226,6 @@ export function getDeckRules(format: DeckFormat = 'constructed'): RiftboundDeckR
   return RIFTBOUND_DECK_RULES_BY_FORMAT[format];
 }
 
-/** Whether deck add pickers should block cards that fail identity/copy rules. */
 export function deckFormatRestrictsPicker(format: DeckFormat): boolean {
   return getDeckRules(format).restrictPicker;
 }
@@ -585,12 +582,10 @@ export function deckValidationIsValid(messages: DeckValidationMessage[]): boolea
   return messages.some((message) => message.type === 'valid');
 }
 
-/** Rune card name for a domain color (e.g. Fury → "Fury Rune"). */
 export function runeNameForDomain(domain: string): string {
   return `${domain} Rune`;
 }
 
-/** Legend domains used for the 12-rune split (first two identity colors). */
 export function legendRuneDomains(
   legend: Pick<DeckCardInput, 'colors'>
 ): [string, string] {

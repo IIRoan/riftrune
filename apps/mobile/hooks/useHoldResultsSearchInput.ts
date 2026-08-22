@@ -8,10 +8,7 @@ import {
   syncHoldResultsSearchState,
 } from '@/utils/holdResultsSearchInput';
 
-/**
- * Search field draft that clears on focus without committing an empty query.
- * Results keep using `committed` until the user types (or explicitly clears).
- */
+/** Clears draft on focus without committing empty; results keep `committed` until type/clear. */
 export function useHoldResultsSearchInput(
   committed: string,
   onCommit: (next: string) => void

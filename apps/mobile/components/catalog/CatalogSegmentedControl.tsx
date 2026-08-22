@@ -23,14 +23,12 @@ interface CatalogSegmentedControlProps<T extends string> {
   options: readonly CatalogSegmentOption<T>[];
   mobile?: boolean;
   iconOnly?: boolean;
-  /** Stretch to parent width; labeled segments share space equally. */
   fill?: boolean;
   className?: string;
   accessibilityRole?: 'radiogroup' | 'tablist';
   segmentAccessibilityRole?: 'radio' | 'tab';
 }
 
-/** Squared segmented toolbar control — shared by view toggle and collection filter. */
 export function CatalogSegmentedControl<T extends string>({
   value,
   onChange,

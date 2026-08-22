@@ -48,16 +48,7 @@ const BottomSheetScrollView = GorhomBottomSheetScrollView as ComponentType<
   ComponentProps<typeof GorhomBottomSheetScrollView> & { className?: string }
 >;
 
-/**
- * Mobile card detail — Gorhom sheet (Expo Go compatible).
- *
- * Dismiss has two phases: the parent clears selection at close-start so this
- * host stops hit-testing immediately, then the visual host stays just long
- * enough for Gorhom to finish the close animation.
- *
- * True Sheet would be nicer natively but requires a custom dev client —
- * not Expo Go.
- */
+/** Two-phase dismiss: clear selection at close-start for hit-testing; keep host for Gorhom close animation. */
 export function CardDetailDrawer({
   open,
   onClose,

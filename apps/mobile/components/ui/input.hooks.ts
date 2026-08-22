@@ -33,8 +33,7 @@ export const useInputFocusState = ({ onFocus, onBlur }: UseInputFocusStateProps)
   );
 
   const handlePress = useCallback(() => {
-    // Re-focusing an already-focused field jumps the caret to the end
-    // (especially on web when Pressable still receives the tap).
+    // Skip re-focus when already focused — jumps caret to end (esp. web Pressable taps).
     if (isFocused) return;
     internalRef.current?.focus();
   }, [isFocused]);

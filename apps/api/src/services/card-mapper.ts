@@ -94,7 +94,6 @@ function toPrinting(
   };
 }
 
-/** Emit one or two finish printings for a catalog variant row. */
 export function printingsForVariant(
   variant: PaVariant,
   priceRows: PaPriceRow[] = []
@@ -121,10 +120,7 @@ export function printingsForVariant(
   return [toPrinting(variant, isFoil, priceRows)];
 }
 
-/**
- * When a real `-Foil` sibling is present, drop same-VN synthetic foil finishes
- * produced from `foilMode=both` on the standard SKU.
- */
+/** Drop same-VN synthetic foil finishes from foilMode=both when a real `-Foil` sibling exists. */
 export function dedupeFinishPrintings(
   printings: CardListPrinting[]
 ): CardListPrinting[] {
@@ -181,10 +177,7 @@ export function mapCardDetail(
   };
 }
 
-/**
- * Upstream often leaves `cardmarketId` null on distinct `-Foil` SKUs. Reuse the
- * base printing's id so prices and history attach to that sibling too.
- */
+/** Reuse base printing cardmarketId on `-Foil` SKUs when upstream leaves it null. */
 export function inheritFoilSiblingCardmarket(
   variants: VariantDetail[],
   priceRows: PaPriceRow[] = []
@@ -347,7 +340,6 @@ export function getSearchGroupKey(
   return key;
 }
 
-/** Merge foil + non-foil rows that share the same base printing. */
 export function groupCardListItems(items: CardListItem[]): CardListItem[] {
   const groups = new Map<string, CardListItem>();
 
@@ -408,7 +400,6 @@ function pickPrimaryPrinting(printings: CardListPrinting[]): CardListPrinting {
   return printings.find((p) => !p.isFoil) ?? printings[0]!;
 }
 
-/** Merge all variant rows that belong to the same logical card (catalog grid rows). */
 export function groupCatalogListItems(items: CardListItem[]): CardListItem[] {
   const groups = new Map<
     string,

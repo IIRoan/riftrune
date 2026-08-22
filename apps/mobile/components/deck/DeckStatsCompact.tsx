@@ -14,7 +14,6 @@ import { hapticPress } from '@/utils/haptics';
 interface DeckStatsCompactProps {
   stats: DeckStats;
   statsOpen?: boolean;
-  /** View mode returns to the deck showcase instead of the catalog. */
   readOnly?: boolean;
   onToggleStats?: () => void;
 }

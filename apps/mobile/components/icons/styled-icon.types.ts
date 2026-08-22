@@ -2,7 +2,6 @@ import type { IconProps, IconWeight } from 'phosphor-react-native';
 
 export type { IconWeight };
 
-/** Phosphor icon props plus Uniwind `className` support. */
 export type AppIconProps = IconProps & {
   className?: string;
 };

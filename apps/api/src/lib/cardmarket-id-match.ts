@@ -32,8 +32,7 @@ function productPriceRank(
   product: CardmarketProduct,
   priceRankByProduct?: ReadonlyMap<number, number>
 ): number {
-  // Prefer foil-trend price; fall back to idProduct so missing price rows still
-  // order newer/premium SKUs above older ones (ids are typically monotonic).
+  // Prefer foil-trend price; fall back to idProduct (monotonic) so missing prices still order newer/premium first.
   return priceRankByProduct?.get(product.idProduct) ?? product.idProduct;
 }
 
@@ -49,7 +48,6 @@ function sortProductsByPriceAsc(
   });
 }
 
-/** Pair catalog printings with Cardmarket products that share a card name within one expansion. */
 export function matchVariantsToProducts(
   variants: VariantForCardmarketMatch[],
   products: CardmarketProduct[],
@@ -71,9 +69,7 @@ export function matchVariantsToProducts(
   }
 
   if (sortedProducts.length > sortedVariants.length) {
-    // Cardmarket often lists an extra Signed SKU before Piltover Archive catalogs it.
-    // Assign cheapest→standard, next→unsigned premium, and only give the top price
-    // tiers to Signed printings — leave unmatched expensive products unmapped.
+    // Extra CM Signed SKUs before PA catalogs them: cheapest→standard, next→unsigned premium, top tiers→Signed only.
     const standard = sortedVariants.filter((variant) => !isPremiumVariant(variant));
     const premium = sortedVariants.filter((variant) => isPremiumVariant(variant));
     const signed = premium.filter((variant) => isSignedVariant(variant));
@@ -115,7 +111,6 @@ export function matchVariantsToProducts(
   return result;
 }
 
-/** Derive Cardmarket expansion ids from variants that already carry a mapped product id. */
 export function buildSetExpansionMap(
   rows: { setCode: string; cardmarketId: number }[],
   productsById: ReadonlyMap<number, CardmarketProduct>

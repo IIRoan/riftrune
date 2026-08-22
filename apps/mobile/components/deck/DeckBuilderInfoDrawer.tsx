@@ -32,11 +32,9 @@ interface DeckBuilderInfoDrawerProps {
   onAddBattlefield: () => void;
   onRemoveBattlefield: (name: string) => void;
   onAdjustBattlefield?: (name: string, delta: number) => void;
-  /** Cards / Desc switcher for the middle column. Hidden in view mode. */
   middlePanel?: DeckBuilderMiddlePanel;
   onMiddlePanelChange?: (panel: DeckBuilderMiddlePanel) => void;
   paddingBottom?: number;
-  /** When false, render as a plain column (parent owns scrolling). */
   scrollEnabled?: boolean;
 }
 

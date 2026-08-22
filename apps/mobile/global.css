@@ -3,18 +3,7 @@
 
 @source "./**/*.{ts,tsx}";
 
-/*
- * Global render polish (web + RNW):
- * - Unified Lato / Geist Mono family tokens (honest weight ladder)
- * - No faux-bold (font-synthesis off; web uses real weight files)
- * - Geometric SVG edges so Phosphor icons stay clean in Firefox
- *
- * Do NOT force -webkit-font-smoothing: antialiased / -moz-osx-font-smoothing:
- * grayscale. MDN: those switch to grayscale AA and make light-on-dark text look
- * thinner. Blink (Chrome) often still looks full; Gecko (Firefox/Zen) looks
- * wispy — especially on Linux when Zen disables subpixel AA (rounded view / CSD).
- * Leave smoothing at auto so the engine can use subpixel when available.
- */
+/* Do not force antialiased/grayscale font-smoothing — thins light-on-dark in Firefox/Zen; leave auto for subpixel. */
 @layer base {
   html {
     -webkit-font-smoothing: auto;
@@ -194,11 +183,7 @@
 }
 
 @theme inline {
-  /*
-   * Native Expo face names only — Uniwind turns these into RN fontFamily ids.
-   * Quoted multi-word names like "Geist Mono" crash Hermes (MonoGeistMono).
-   * Web overrides to unified `Lato` / `Geist Mono` via textFontStyleForClassName.
-   */
+  /* Native Expo face names only (quoted "Geist Mono" crashes Hermes); web overrides via textFontStyleForClassName. */
   --font-sans: Lato-Regular, ui-sans-serif, system-ui, sans-serif;
   --font-mono: GeistMono-Regular, ui-monospace, monospace;
   --color-background: var(--background);

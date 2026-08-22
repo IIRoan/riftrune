@@ -78,8 +78,7 @@ function toWishlistPriceItem(
 export async function fetchWishlistPrices(
   queryClient: QueryClient
 ): Promise<WishlistPriceItem[]> {
-  // fetchQuery (not ensureQueryData): after wishlist add/remove, membership
-  // may be invalidated but still cached — ensureQueryData would reuse it.
+  // fetchQuery not ensureQueryData — invalidated membership may still be cached.
   const wishlist = await queryClient.fetchQuery({
     queryKey: wishlistQueryKeys.all,
     queryFn: async () => {

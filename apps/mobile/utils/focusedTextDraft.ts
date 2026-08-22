@@ -1,8 +1,4 @@
-/**
- * Local draft for controlled text fields that also write to a parent store.
- * While focused, ignore external value churn (persist/autosave/query cache)
- * so mid-string edits keep the caret instead of jumping to the end.
- */
+/** Local draft for parent-bound text fields — while focused, ignore external churn so the caret stays put. */
 
 export type FocusedTextDraftState = {
   draft: string;
@@ -45,10 +41,7 @@ export function changeFocusedTextDraftState(
   return { draft: text, focused: true };
 }
 
-/**
- * Whether a draft change should notify the parent immediately.
- * Same-string no-ops (and clamp no-ops) must not retrigger persist.
- */
+/** Notify parent only when the draft string actually changed (skip clamp/same-string no-ops). */
 export function shouldCommitFocusedTextDraft(
   previous: string,
   next: string

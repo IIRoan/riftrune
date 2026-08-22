@@ -2,11 +2,7 @@ import { sql } from 'drizzle-orm';
 import { parseCardTypeFilters } from '@riftbound/contracts';
 import { cards } from '../db/schema.js';
 
-/**
- * Match cards whose type equals any filter, or includes it as a whitespace token.
- * Riftbound dual types like "Unit Gear" must match both `Unit` and `Gear` filters.
- * Semantics must stay aligned with `cardTypeMatchesFilters` in @riftbound/contracts.
- */
+/** Dual types ("Unit Gear") match whitespace tokens; keep aligned with contracts cardTypeMatchesFilters. */
 export function buildCardTypesCondition(typeFilters: string[]) {
   const normalized = parseCardTypeFilters(typeFilters.join(','));
   if (normalized.length === 0) return undefined;

@@ -24,12 +24,7 @@ import {
 } from './collection-audit-service.js';
 import { VariantResolver } from './variant-resolver.js';
 
-/**
- * Whether a catalog printing should count as foil in a user's collection.
- * `foil_mode` is a product finish availability flag (`both` | `foil_only` | `nonfoil_only`),
- * not "this row is foil" — only `foil_only` means every copy of that printing is foil.
- * Explicit foil siblings under `both` (e.g. OGN-001-Foil) are detected via label/number/type.
- */
+/** foil_mode is finish availability, not "this row is foil"; only foil_only (or explicit foil sibling under both) counts as foil. */
 export function isCollectionVariantFoil(
   foilMode: string,
   variantNumber: string,
@@ -43,10 +38,7 @@ function toIso(value: Date | null): string | null {
   return value ? value.toISOString() : null;
 }
 
-/**
- * Next stack quantity after an add/remove delta.
- * Callers treat values <= 0 as "delete this stack".
- */
+/** Next stack quantity after delta; callers treat <= 0 as delete this stack. */
 export function nextStackQuantity(
   existingQuantity: number | undefined,
   delta: number

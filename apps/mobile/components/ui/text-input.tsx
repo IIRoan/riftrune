@@ -6,7 +6,6 @@ import { Input } from "./input";
 import type { InputAddonChildren, InputProps } from "./input.types";
 import { useInputAddons, useInputFocusState } from "./input.hooks";
 
-// Types
 export type TextInputProps = InputProps & {
   onFocus?: () => void;
   onBlur?: () => void;
@@ -15,12 +14,7 @@ export type TextInputProps = InputProps & {
   children?: InputAddonChildren;
 };
 
-// Components
-/**
- * Single-line text field. Intentionally NOT wrapped in InputPressable —
- * a parent Pressable steals the touch responder on web/native and jumps
- * the caret to the end when clicking mid-text (same fix as TextareaInput).
- */
+/** Not wrapped in InputPressable — parent Pressable steals responder and jumps the caret. */
 export const TextInput = forwardRef<RNTextInput, TextInputProps>(
   (
     { onFocus, onBlur, disabled, invalid, children, className, ...props },

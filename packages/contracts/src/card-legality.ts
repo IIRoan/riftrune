@@ -1,4 +1,3 @@
-/** True when a card's tournament ban date exists and is on or before `nowMs`. */
 export function isCardBannedAt(
   banEffectiveDate: string | null | undefined,
   nowMs: number = Date.now()

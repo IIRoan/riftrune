@@ -138,12 +138,10 @@ class LiveEventSession {
             );
             if (parsed.success) this.events.push(parsed.data);
           } catch {
-            // ignore malformed chunks
           }
         }
       }
     } catch {
-      // aborted / closed
     }
   }
 
@@ -173,7 +171,6 @@ class LiveEventSession {
     try {
       await this.reader?.cancel();
     } catch {
-      // ignore
     }
     await this.pump?.catch(() => undefined);
   }
@@ -241,7 +238,6 @@ describe('collection live SSE e2e', () => {
       expect(partnerReady.collectionId).toBe(sharedId);
     }
 
-    // Owner adds — partner must see the event; stranger must not.
     const addRes = await authFetch('/api/v1/collection/OGN-302/add', {
       method: 'POST',
       cookie: cookieOwner,
@@ -264,7 +260,6 @@ describe('collection live SSE e2e', () => {
 
     expect((await quantitiesFor(cookiePartner, ['OGN-302'])).get('OGN-302')).toBe(2);
 
-    // Owner removes one copy.
     const removeRes = await authFetch('/api/v1/collection/OGN-302/remove', {
       method: 'POST',
       cookie: cookieOwner,
@@ -282,7 +277,6 @@ describe('collection live SSE e2e', () => {
     expect(removeEvent.type).toBe('collection.changed');
     expect((await quantitiesFor(cookiePartner, ['OGN-302'])).get('OGN-302')).toBe(1);
 
-    // Owner deletes the stack.
     const deleteRes = await authFetch('/api/v1/collection/OGN-302', {
       method: 'DELETE',
       cookie: cookieOwner,
@@ -298,7 +292,6 @@ describe('collection live SSE e2e', () => {
     );
     expect((await quantitiesFor(cookiePartner, ['OGN-302'])).get('OGN-302')).toBe(0);
 
-    // Stranger's personal collection stream must not have received shared events.
     expect(strangerLive.changedEvents()).toEqual([]);
 
     await partnerLive.close();
@@ -306,7 +299,6 @@ describe('collection live SSE e2e', () => {
   });
 
   test('partner mutation is visible to owner over SSE', async () => {
-    // Still shared from previous test; re-pair if needed.
     const ownerCollectionId = await collectionIdForUser(ownerId);
     const partnerCollectionId = await collectionIdForUser(partnerId);
     if (ownerCollectionId !== partnerCollectionId) {

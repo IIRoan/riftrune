@@ -3,7 +3,6 @@ import { resizeImageToWebp } from '../../src/lib/image-resize-buffer.js';
 
 describe('resizeImageToWebp', () => {
   test('downscales a png buffer to webp', async () => {
-    // 2×2 opaque red PNG
     const pngBase64 =
       'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEklEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     const input = Uint8Array.from(atob(pngBase64), (c) => c.charCodeAt(0)).buffer;

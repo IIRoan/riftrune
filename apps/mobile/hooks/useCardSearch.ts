@@ -168,8 +168,7 @@ export function useCardSearch(
   );
 
   const rawItems = useMemo(() => {
-    // Draft has not caught up to the committed/debounced term — never leak
-    // the previous query's hits into the grid while the user is still typing.
+    // Draft lags committed/debounced term — don't leak previous hits while typing.
     if (!inputMatchesActive) return [];
     if (hasApiResults) return apiItems;
     if (result.isFetching && !instantCacheForTerm) return [];

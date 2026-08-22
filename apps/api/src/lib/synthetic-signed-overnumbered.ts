@@ -25,7 +25,6 @@ export function isSignedOvernumbered(variant: {
   return /overnumbered/i.test(haystack) && /signed/i.test(haystack);
 }
 
-/** Highest-priced Cardmarket products not already assigned to a catalog variant. */
 export function leftoverCardmarketProducts(
   products: readonly CardmarketProduct[],
   usedCardmarketIds: ReadonlySet<number>,
@@ -41,10 +40,7 @@ export function leftoverCardmarketProducts(
     });
 }
 
-/**
- * When Cardmarket lists a Signed SKU that Piltover Archive has not catalogued yet,
- * invent `{overnumberedVN}*` mirroring Nasus VEN-192* / Shen VEN-193*.
- */
+/** Invent `{overnumberedVN}*` when Cardmarket has a Signed SKU PA has not catalogued yet (VEN-192* style). */
 export function buildSyntheticSignedOvernumbered(
   parent: PaVariant,
   cardmarketId: number,

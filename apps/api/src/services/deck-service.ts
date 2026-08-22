@@ -183,7 +183,6 @@ export class DeckService {
     };
   }
 
-  /** Copy a read-only upstream deck into the user's owned decks. */
   async importFromUpstream(
     userId: string,
     sourceDeckId: string

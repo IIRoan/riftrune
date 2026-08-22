@@ -8,7 +8,6 @@ type BattlefieldCardArtProps = {
   variantNumber: string;
 };
 
-/** Portrait card art rotated 90° to match in-game horizontal battlefield orientation. */
 export function BattlefieldCardArt({ uri, variantNumber }: BattlefieldCardArtProps) {
   const [layout, setLayout] = useState({ width: 0, height: 0 });
 

@@ -71,14 +71,11 @@ export function resolveVerificationAppUrl(env: Env): string {
 }
 
 export type ChangeEmailOtpEmailInput = {
-  /** Destination mailbox — the proposed new address. */
   email: string;
   otp: string;
-  /** Current account address (for copy clarity only). */
   currentEmail?: string;
 };
 
-/** OTP mail for Better Auth emailOTP change-email (code entered in Settings). */
 export function changeEmailOtpEmailContent(input: ChangeEmailOtpEmailInput): {
   subject: string;
   text: string;

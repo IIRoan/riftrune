@@ -22,7 +22,6 @@ const MODE_OPTIONS: readonly CatalogSegmentOption<EditorMode>[] = [
 interface DeckDescriptionViewProps {
   description: string;
   className?: string;
-  /** Hide the section entirely when empty (view/showcase). */
   hideWhenEmpty?: boolean;
 }
 
@@ -30,7 +29,6 @@ interface DeckDescriptionEditorProps {
   value: string;
   onChange: (description: string) => void;
   className?: string;
-  /** Fill available height (middle builder column). */
   fill?: boolean;
 }
 
@@ -74,8 +72,7 @@ function DeckDescriptionEditor({
   fill = false,
 }: DeckDescriptionEditorProps) {
   const [mode, setMode] = useState<EditorMode>('write');
-  // Local draft + debounced parent commit — persist/query cache refreshes must
-  // not rewrite `value` mid-keystroke or the caret jumps to the end.
+  // Local draft + debounced commit — cache refresh must not rewrite mid-keystroke (caret jump).
   const descriptionDraft = useFocusedTextDraft(value, onChange, {
     transform: clampMarkdownSource,
   });
@@ -155,7 +152,6 @@ interface DeckDescriptionPanelProps {
   className?: string;
 }
 
-/** Spacious middle-column description workspace for the deck builder. */
 export function DeckDescriptionPanel({
   value,
   onChange,

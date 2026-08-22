@@ -24,7 +24,6 @@ const PILTOVER_CDN_HOST = 'cdn.piltoverarchive.com';
 
 const DeckUpstreamDeckId = z.string().min(1);
 
-// These are intentionally minimal: we only validate the fields we need for transformation.
 const UpstreamDeckLegend = z.object({
   id: z.string(),
   name: z.string(),
@@ -165,7 +164,6 @@ function deckDisplayImageUrl(value: unknown): string | null {
       if (isSafeImageKey(key)) return cdnImageUrl(key);
     }
   } catch {
-    // Relative API image paths still get normalized below.
   }
 
   if (imageUrl.startsWith(API_IMAGES_PREFIX)) {
@@ -320,7 +318,6 @@ async function resolveDeckCardForUpstreamEntry(
     try {
       return await getCard(variantNumber);
     } catch {
-      // Fall through to placeholder when catalog lookup fails.
     }
   }
 
@@ -383,7 +380,7 @@ export class DeckSyncService {
     return parsed.data.map((d) => d.id);
   }
 
-  /** Lightweight imported decks for list views — one upstream list call, no per-deck detail fetches. */
+  /** Imported decks for list views — one upstream list call, no per-deck detail fetches. */
   async listImportedDeckSummaries(options: {
     skipIds: Set<string>;
     query?: DecksListQuery;
@@ -501,7 +498,6 @@ export class DeckSyncService {
     };
   }
 
-  /** Fetch upstream deck details to populate browse preview card lists. */
   async enrichImportedDeckPreviews(items: DeckListItem[]): Promise<DeckListItem[]> {
     return mapWithConcurrency(items, BROWSE_PREVIEW_CONCURRENCY, async (item) => {
       try {
@@ -712,7 +708,6 @@ export class DeckSyncService {
   }
 
   async upsertUpstreamDeck(deck: StoredDeckPayload): Promise<StoredDeckPayload> {
-    // Map our StoredDeckPayload (variantNumber) → upstream expected payload (variantId).
     const variantNumbers: string[] = [];
     if (deck.legend?.variantNumber) variantNumbers.push(deck.legend.variantNumber);
     if (deck.champion?.variantNumber) variantNumbers.push(deck.champion.variantNumber);
@@ -793,8 +788,7 @@ export class DeckSyncService {
 
     const res = await this.pa.createOrUpsertDeck(payload, extraHeaders);
 
-    // If the upstream returns the full deck detail, we can transform it. Otherwise,
-    // fall back to returning our own deck payload.
+    // Transform full upstream deck detail when present; otherwise return our own deck payload.
     try {
       const parsed = UpstreamDeckDetail.parse(res);
       return await this.transformUpstreamDeckDetailToStoredDeckPayload(parsed);

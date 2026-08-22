@@ -104,10 +104,7 @@ function classifyBracketToken(inner: string): CardRulesPart {
   };
 }
 
-/**
- * Printed cards show REPEAT costs as energy/domain/rune icons beside the badge,
- * never as "REPEAT 2" text inside it. Expand fused tokens like `[Repeat 2]`.
- */
+/** Expand fused `[Repeat N]` into badge + cost icons (printed cards never put "REPEAT N" inside the badge). */
 function expandRepeatKeyword(part: CardRulesPart): CardRulesPart[] {
   if (part.type !== 'keyword' || part.keywordBase !== 'REPEAT') {
     return [part];
@@ -135,10 +132,7 @@ export function isKeywordBannerCostPart(
   return part.type === 'energy' || part.type === 'domain' || part.type === 'rune';
 }
 
-/**
- * Collect energy / domain / rune costs that follow a banner keyword
- * (REPEAT, EQUIP) until reminder text or another token.
- */
+/** Collect energy/domain/rune costs after a banner keyword (REPEAT, EQUIP) until reminder text or another token. */
 export function takeKeywordBannerCosts(
   parts: CardRulesPart[],
   startIndex: number

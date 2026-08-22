@@ -19,10 +19,7 @@ export function formatPricePointDate(priceDate: string): string {
   });
 }
 
-/**
- * Which axis labels to show under a bar series.
- * Always first + last; short series show every date; longer series keep sparse mid labels.
- */
+/** Bar axis labels: always first+last; short series every date; longer series sparse mid labels. */
 export function shouldShowPricePointLabel(index: number, total: number): boolean {
   if (total <= 0) return false;
   if (total <= 5) return true;
@@ -36,10 +33,7 @@ export function shouldShowPricePointLabel(index: number, total: number): boolean
   return false;
 }
 
-/**
- * Nice EUR ceiling for a zero-based bar chart so heights stay proportional to price.
- * Tiny day-to-day moves no longer fill the full plot height.
- */
+/** Nice EUR ceiling for zero-based bars so tiny day-to-day moves don't fill the plot. */
 export function chartScaleMax(maxValue: number): number {
   if (!Number.isFinite(maxValue) || maxValue <= 0) return 1;
   const padded = maxValue * 1.05;

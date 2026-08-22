@@ -84,9 +84,7 @@ function CardTileInner({
   const { addCard, adjustQuantity } = useCollectionMutations();
   const artInstant = instantArt || _mode === 'search';
 
-  // Scope prices + quick-add to this row's printing family. Prefer an explicit
-  // family context (selected detail), otherwise the row's own variant so
-  // overnumbered / alt art tiles keep their Cardmarket price.
+  // Scope prices/quick-add to printing family (selected detail, else row variant for alt art).
   const stepperPrintings = useMemo(
     () =>
       resolveQuickAddPrintings(card, familyContextVariantNumber ?? card.variantNumber),
@@ -106,8 +104,7 @@ function CardTileInner({
     () => totalOwnedForCard(scopedCard, collectionByVariant),
     [scopedCard, collectionByVariant]
   );
-  // Quantity comes from TanStack Query optimistic cache (onMutate) — no local
-  // mirror that syncs from props (react-doctor no-adjust-state-on-prop-change).
+  // Qty from Query optimistic cache — no local prop-synced mirror.
   const priceLabel = formatListPrice(scopedCard);
   const showPrice = !hidePrice && (!isMobile || layout === 'grid');
 

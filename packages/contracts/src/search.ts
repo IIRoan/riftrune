@@ -5,7 +5,6 @@ export const SearchEntityType = z.enum(['cards', 'decks', 'navigation', 'actions
 
 export const GlobalSearchQuery = z.object({
   q: z.string().min(1).max(200),
-  /** Comma-separated entity kinds — default `cards`. */
   types: z.string().optional(),
   limit: z.coerce.number().int().positive().max(50).default(10),
   page: z.coerce.number().int().positive().default(1),

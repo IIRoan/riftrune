@@ -298,10 +298,7 @@ export function peakBucketIndex(buckets: readonly DeckStatBucket[]): number {
   return peak;
 }
 
-/**
- * Composition stats for the playable main body: main deck + chosen champion.
- * Runes, battlefields, legend, and sideboard stay out of the curve.
- */
+/** Curve stats for main deck + chosen champion only (runes/battlefields/legend/sideboard excluded). */
 export function computeDeckStats(
   deck: DeckState,
   catalogPower?: DeckStatsCatalogPower

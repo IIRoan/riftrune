@@ -13,15 +13,10 @@ import Animated, {
 type PressableScaleProps = Omit<ComponentProps<typeof Pressable>, 'children'> & {
   children: ReactNode;
   className?: string;
-  /** Scale while pressed. Default PRESS.depth (0.97). */
   depth?: number;
   contentClassName?: string;
 };
 
-/**
- * Apple-style pressure pressable — compresses on press-in, spring-settles on release.
- * Opacity-only when reduced motion is on.
- */
 export function PressableScale({
   children,
   className,
