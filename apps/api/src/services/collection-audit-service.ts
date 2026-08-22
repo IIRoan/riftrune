@@ -1,10 +1,15 @@
-import { and, count, desc, eq, lt, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull, lt, ne, type SQL } from 'drizzle-orm';
 import type {
   CollectionAuditAction,
   CollectionAuditEvent,
   CollectionAuditListQuery,
+  CollectionActivityEvent,
 } from '@riftbound/contracts';
-import { CardCondition } from '@riftbound/contracts';
+import {
+  CardCondition,
+  RECENT_COLLECTION_ACTIVITY_LIMIT,
+  takeRecentCollectionActivity,
+} from '@riftbound/contracts';
 import { user as userTable } from '../db/auth-schema.js';
 import type { Database } from '../db/client.js';
 import { collectionAuditEvents } from '../db/schema.js';
@@ -150,6 +155,58 @@ export class CollectionAuditService {
     }
 
     return this.page(filters, query.limit);
+  }
+
+  /** Latest quantity changes (adds and removes) across the requested printings. */
+  async recentAddsForVariants(
+    collectionId: string,
+    variantNumbers: string[]
+  ): Promise<CollectionActivityEvent[]> {
+    const unique = [
+      ...new Set(variantNumbers.map((value) => value.trim()).filter(Boolean)),
+    ].slice(0, 200);
+    if (unique.length === 0) return [];
+
+    const rows = await this.db
+      .select({
+        id: collectionAuditEvents.id,
+        action: collectionAuditEvents.action,
+        quantityDelta: collectionAuditEvents.quantityDelta,
+        quantityAfter: collectionAuditEvents.quantityAfter,
+        isFoil: collectionAuditEvents.isFoil,
+        createdAt: collectionAuditEvents.createdAt,
+        actorUserId: collectionAuditEvents.actorUserId,
+        actorName: userTable.name,
+        actorEmail: userTable.email,
+      })
+      .from(collectionAuditEvents)
+      .innerJoin(userTable, eq(collectionAuditEvents.actorUserId, userTable.id))
+      .where(
+        and(
+          eq(collectionAuditEvents.collectionId, collectionId),
+          inArray(collectionAuditEvents.variantNumber, unique),
+          isNotNull(collectionAuditEvents.quantityDelta),
+          ne(collectionAuditEvents.quantityDelta, 0)
+        )
+      )
+      .orderBy(desc(collectionAuditEvents.createdAt), desc(collectionAuditEvents.id))
+      .limit(RECENT_COLLECTION_ACTIVITY_LIMIT);
+
+    return takeRecentCollectionActivity(
+      rows.map((row) => ({
+        id: row.id,
+        action: row.action,
+        quantityDelta: row.quantityDelta,
+        quantityAfter: row.quantityAfter,
+        isFoil: row.isFoil,
+        createdAt: row.createdAt.toISOString(),
+        actor: {
+          userId: row.actorUserId,
+          name: row.actorName,
+          email: row.actorEmail,
+        },
+      }))
+    );
   }
 
   private async page(

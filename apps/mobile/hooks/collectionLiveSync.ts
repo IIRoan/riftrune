@@ -24,6 +24,9 @@ export function invalidateCollectionFromLive(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({
     queryKey: collectionQueryKeys.ownershipRoot,
   });
+  void queryClient.invalidateQueries({
+    queryKey: collectionQueryKeys.recentAddsRoot,
+  });
 }
 
 /**

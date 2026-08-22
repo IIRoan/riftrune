@@ -42,6 +42,7 @@ export async function invalidateUserDataQueries(queryClient: QueryClient): Promi
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all, exact: true }),
     queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot }),
+    queryClient.invalidateQueries({ queryKey: collectionQueryKeys.recentAddsRoot }),
     queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.all }),
     queryClient.invalidateQueries({ queryKey: wishlistQueryKeys.prices }),
     queryClient.invalidateQueries({ queryKey: deckQueryKeys.all }),
@@ -53,6 +54,7 @@ export function removeUserDataQueries(queryClient: QueryClient): void {
   for (const key of [
     collectionQueryKeys.all,
     collectionQueryKeys.ownershipRoot,
+    collectionQueryKeys.recentAddsRoot,
     wishlistQueryKeys.all,
     wishlistQueryKeys.prices,
     deckQueryKeys.all,

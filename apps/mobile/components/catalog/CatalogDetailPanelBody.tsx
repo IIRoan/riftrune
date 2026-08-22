@@ -5,6 +5,7 @@ import type { CardDetail } from '@riftbound/contracts';
 import { CatalogCardFullscreen } from '@/components/catalog/CatalogCardFullscreen';
 import { buildCatalogDetailCollectionSections } from '@/components/catalog/CatalogDetailCollectionStats';
 import { CatalogDetailHeader } from '@/components/catalog/CatalogDetailHeader';
+import { CollectionAddLog } from '@/components/collection/CollectionAddLog';
 import {
   CatalogDetailDescriptionBlock,
   CatalogDetailScrollBody,
@@ -13,6 +14,7 @@ import { VariantFamilySwitcher } from '@/components/catalog/VariantFamilySwitche
 import { VariantPickerSheet } from '@/components/ui/VariantPickerSheet';
 import type { useCardDetail } from '@/hooks/useCardDetail';
 import { useCollectionMutations } from '@/hooks/useCollection';
+import { useCollectionRecentAdds } from '@/hooks/useCollectionRecentAdds';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useWishlistMutations } from '@/hooks/useWishlistMutations';
 import type { WishlistPriceItem } from '@/hooks/useWishlistPrices';
@@ -229,6 +231,11 @@ export function CatalogDetailPanelBody({
     },
   });
 
+  const { events } = useCollectionRecentAdds(
+    printings.map((printing) => printing.variantNumber),
+    !hideCollectionActions
+  );
+
   const descriptionBlock = (
     <CatalogDetailDescriptionBlock
       isPlaceholder={detail.isPlaceholderData}
@@ -239,6 +246,11 @@ export function CatalogDetailPanelBody({
   const detailBody = (
     <CatalogDetailScrollBody
       printingRows={printingRows}
+      addedLog={
+        hideCollectionActions ? null : (
+          <CollectionAddLog events={events} className="px-3 py-2.5" />
+        )
+      }
       statsRow={statsRow}
       metaAttributes={metaAttributes}
       descriptionBlock={descriptionBlock}

@@ -30,6 +30,7 @@ export function shouldPersistQuery(query: Pick<Query, 'queryKey' | 'state'>): bo
   if (typeof root !== 'string' || !PERSISTABLE_ROOTS.has(root)) return false;
   // Catalog index is persisted by catalogIndexService — avoid doubling disk.
   if (root === 'catalog' && query.queryKey[1] === 'index') return false;
+  if (root === 'collection' && query.queryKey[1] === 'recent-adds') return false;
   // Price history charts can be large; list membership is enough at boot.
   if (root === 'wishlist' && query.queryKey[1] === 'prices') return false;
   return true;

@@ -3,6 +3,7 @@ import { ScrollView, View } from 'react-native';
 import type { CardDetail, VariantDetail } from '@riftbound/contracts';
 import { PrintingPreviewStrip } from '@/components/cards/PrintingPreviewStrip';
 import { CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
+import { CollectionAddLog } from '@/components/collection/CollectionAddLog';
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import {
   CardAttributeRow,
@@ -31,6 +32,7 @@ import {
   toPriceEurSummary,
 } from '@/utils/variants';
 import { useIsDesktopLayout } from '@/hooks/useResponsiveColumns';
+import { useCollectionRecentAdds } from '@/hooks/useCollectionRecentAdds';
 
 const PAGE_CARD_WIDTH = 300;
 
@@ -70,6 +72,9 @@ export function CardDetailPage({
   const singleMarketPrice = marketPrices[0] ?? null;
   const activePrice = pickVariantDisplayPrice(activeVariant.prices, activeVariant);
   const singlePriceTrend = formatMarketTrend(toPriceEurSummary(activePrice));
+  const { events } = useCollectionRecentAdds(
+    card.variants.map((variant) => variant.variantNumber)
+  );
 
   const info = (
     <>
@@ -99,6 +104,8 @@ export function CardDetailPage({
           />
         ) : null}
       </View>
+
+      <CollectionAddLog events={events} className="mx-8 mb-2" />
 
       <View className="mx-8 mb-4 flex-row overflow-hidden rounded-[10px] bg-card">
         <CardStat label="Cost">

@@ -18,6 +18,7 @@ import { getModalShellWidth } from '@/components/cards/cardModalLayout';
 import { VariantPriceSummary } from '@/components/catalog/VariantPriceSummary';
 import { PrintingPreviewStrip } from '@/components/cards/PrintingPreviewStrip';
 import { CollectionAddButton, CollectionQtyControls } from '@/components/collection/CollectionQtyControls';
+import { CollectionAddLog } from '@/components/collection/CollectionAddLog';
 import { AppLoader } from '@/components/ui/app-loader';
 import { CardRulesText } from '@/components/riftbound/CardRulesText';
 import { StatusKeywordBadge } from '@/components/riftbound/RiftboundBadges';
@@ -42,6 +43,7 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { Stack } from '@/components/ui/stack';
 import { Text } from '@/components/ui/text';
 import { useOverlayEnterProgress } from '@/hooks/useOverlayPresence';
+import { useCollectionRecentAdds } from '@/hooks/useCollectionRecentAdds';
 import { OVERLAY } from '@/lib/motion';
 import { formatStat } from '@/utils/cardFormat';
 import {
@@ -248,6 +250,11 @@ function ModalInfoPanel({
 
   const panelPadding = isWide ? 'px-8 py-7' : 'px-5 py-5';
   const isBanned = isCardBannedAt(card.banEffectiveDate);
+  const showCollectionActions = source !== 'wishlist' && source !== 'deck-view';
+  const { events } = useCollectionRecentAdds(
+    card.variants.map((variant) => variant.variantNumber),
+    showCollectionActions
+  );
 
   const showPriceHistory = source !== 'deck-view';
   const priceHistory = useVariantPriceHistory(activeVariant.variantNumber, {
@@ -285,6 +292,8 @@ function ModalInfoPanel({
           This card is banned in tournament play.
         </Text>
       ) : null}
+
+      {showCollectionActions ? <CollectionAddLog events={events} /> : null}
 
       <Stack gap="md">
         <Stack direction="row" className="flex-wrap items-center gap-x-4 gap-y-2">
@@ -345,8 +354,7 @@ function ModalInfoPanel({
       <WishlistPriceHistoryPanel
         item={{
           ...historyItem,
-          cardmarketId:
-            historyItem.cardmarketId ?? activeVariant.cardmarketId ?? null,
+          cardmarketId: historyItem.cardmarketId ?? activeVariant.cardmarketId ?? null,
         }}
       />
     ) : priceHistory.isLoading ? (

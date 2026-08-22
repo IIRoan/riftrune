@@ -50,6 +50,7 @@ function invalidateCollectionAndShare(queryClient: ReturnType<typeof useQueryCli
     exact: true,
   });
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
+  void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.recentAddsRoot });
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.share });
 }
 

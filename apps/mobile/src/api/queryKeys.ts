@@ -33,6 +33,9 @@ export const collectionQueryKeys = {
   ownership: (variantNumbers: string[]) =>
     ['collection', 'ownership', [...variantNumbers].sort().join(',')] as const,
   ownershipRoot: ['collection', 'ownership'] as const,
+  recentAdds: (variantNumbers: string[]) =>
+    ['collection', 'recent-adds', [...variantNumbers].sort().join(',')] as const,
+  recentAddsRoot: ['collection', 'recent-adds'] as const,
   share: ['collection', 'share'] as const,
 };
 

@@ -73,3 +73,65 @@ export const CollectionAuditListResponse = z.object({
 });
 
 export type CollectionAuditListResponse = z.infer<typeof CollectionAuditListResponse>;
+
+export const RECENT_COLLECTION_ACTIVITY_LIMIT = 3;
+
+export const CollectionActivityEvent = z.object({
+  id: z.string().uuid(),
+  at: z.string().datetime(),
+  action: CollectionAuditAction,
+  quantityDelta: z.number().int(),
+  quantityAfter: z.number().int().nullable(),
+  isFoil: z.boolean().nullable(),
+  actor: CollectionAuditActor,
+});
+
+export type CollectionActivityEvent = z.infer<typeof CollectionActivityEvent>;
+
+export const CollectionRecentAddsRequest = z.object({
+  variantNumbers: z.array(z.string().min(1)).max(200),
+});
+
+export type CollectionRecentAddsRequest = z.infer<typeof CollectionRecentAddsRequest>;
+
+export const CollectionRecentAddsResponse = z.object({
+  data: z.array(CollectionActivityEvent).max(10),
+});
+
+export type CollectionRecentAddsResponse = z.infer<typeof CollectionRecentAddsResponse>;
+
+type ActivitySource = {
+  id: string;
+  action: string;
+  quantityDelta: number | null;
+  quantityAfter: number | null;
+  isFoil: boolean | null;
+  createdAt: string;
+  actor: CollectionAuditActor;
+};
+
+/** Map already newest-first quantity changes into the wire shape (adds and removes). */
+export function takeRecentCollectionActivity(
+  events: readonly ActivitySource[],
+  limit = RECENT_COLLECTION_ACTIVITY_LIMIT
+): CollectionActivityEvent[] {
+  const out: CollectionActivityEvent[] = [];
+
+  for (const event of events) {
+    if (event.quantityDelta == null || event.quantityDelta === 0) continue;
+    const action = CollectionAuditAction.safeParse(event.action);
+    if (!action.success) continue;
+    out.push({
+      id: event.id,
+      at: event.createdAt,
+      action: action.data,
+      quantityDelta: event.quantityDelta,
+      quantityAfter: event.quantityAfter,
+      isFoil: event.isFoil,
+      actor: event.actor,
+    });
+    if (out.length >= limit) break;
+  }
+
+  return out;
+}

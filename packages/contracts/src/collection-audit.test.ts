@@ -4,6 +4,8 @@ import {
   CollectionAuditEvent,
   CollectionAuditListQuery,
   CollectionAuditListResponse,
+  CollectionRecentAddsResponse,
+  takeRecentCollectionActivity,
 } from './collection-audit.js';
 
 describe('CollectionAuditAction', () => {
@@ -56,5 +58,71 @@ describe('CollectionAuditListResponse', () => {
       meta: { total: 0, limit: 50, hasMore: false },
     });
     expect(parsed.meta.hasMore).toBe(false);
+  });
+});
+
+describe('takeRecentCollectionActivity', () => {
+  const actor = { userId: 'user_1', name: 'roan', email: 'a@b.c' };
+
+  test('returns newest add and remove events across finishes', () => {
+    const rows = takeRecentCollectionActivity([
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        action: 'remove',
+        quantityDelta: -1,
+        quantityAfter: 2,
+        isFoil: true,
+        createdAt: '2026-08-23T08:00:00.000Z',
+        actor,
+      },
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        action: 'add',
+        quantityDelta: 2,
+        quantityAfter: 3,
+        isFoil: true,
+        createdAt: '2026-08-22T15:00:00.000Z',
+        actor,
+      },
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        action: 'add',
+        quantityDelta: 1,
+        quantityAfter: 1,
+        isFoil: false,
+        createdAt: '2026-08-20T10:00:00.000Z',
+        actor,
+      },
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        action: 'add',
+        quantityDelta: 1,
+        quantityAfter: 1,
+        isFoil: false,
+        createdAt: '2026-08-18T09:00:00.000Z',
+        actor,
+      },
+    ]);
+
+    expect(rows.map((event) => event.quantityDelta)).toEqual([-1, 2, 1]);
+    expect(rows[0]?.action).toBe('remove');
+    expect(rows[0]?.isFoil).toBe(true);
+  });
+
+  test('parses the activity log envelope', () => {
+    const parsed = CollectionRecentAddsResponse.parse({
+      data: [
+        {
+          id: '55555555-5555-4555-8555-555555555555',
+          at: '2026-08-22T15:00:00.000Z',
+          action: 'remove',
+          quantityDelta: -1,
+          quantityAfter: 0,
+          isFoil: true,
+          actor: { userId: 'user_1', name: 'roan', email: null },
+        },
+      ],
+    });
+    expect(parsed.data[0]?.quantityDelta).toBe(-1);
   });
 });

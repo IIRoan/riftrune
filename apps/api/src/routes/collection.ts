@@ -11,6 +11,8 @@ import {
   CollectionItemResponse,
   CollectionQuantitiesRequest,
   CollectionQuantitiesResponse,
+  CollectionRecentAddsRequest,
+  CollectionRecentAddsResponse,
   CollectionUpsertRequest,
   type CollectionLiveChangeReason,
   type CollectionLiveChangedEvent,
@@ -203,6 +205,21 @@ export function createCollectionRoutes(
             hasMore: result.hasMore,
           },
         });
+      }
+    )
+    .post(
+      '/recent-adds',
+      { detail: { tags: ['collection'] } },
+      async ({ request, set, body }) => {
+        const user = await getSessionUser(auth, request.headers);
+        if (!user) {
+          set.status = 401;
+          return unauthorized();
+        }
+        const { collectionId } = await ensureCollectionMembership(db, user.id);
+        const { variantNumbers } = CollectionRecentAddsRequest.parse(body);
+        const rows = await audit.recentAddsForVariants(collectionId, variantNumbers);
+        return CollectionRecentAddsResponse.parse({ data: rows });
       }
     )
     .get('/events', { detail: { tags: ['collection'] } }, async ({ request, set }) => {

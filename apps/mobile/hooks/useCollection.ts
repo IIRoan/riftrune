@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
-import type { CardListItem } from '@riftbound/contracts';
+import { collectionFinishKey, type CardListItem } from '@riftbound/contracts';
 import { useMemo } from 'react';
 import { logActionFailure } from '@/lib/logger';
 import {
@@ -41,7 +41,13 @@ import {
   ownershipRecordFromQuantityRows,
   type CollectionOwnershipMap,
 } from '@/utils/collectionOwnership';
-import { collectionFinishKey } from '@riftbound/contracts';
+import { authClient } from '@/src/lib/auth-client';
+import {
+  recordOptimisticCollectionActivity,
+  restoreRecentActivityQueries,
+  snapshotRecentActivityQueries,
+  type RecentActivitySnapshot,
+} from '@/lib/collection-recent-activity';
 
 const COLLECTION_STALE_MS = 5 * 60 * 1000;
 const OWNERSHIP_STALE_MS = 5 * 60 * 1000;
@@ -125,7 +131,8 @@ export function useCollection(options?: { enabled?: boolean }) {
       // request was in flight — never replace that with a stale snapshot.
       if (getCollectionMutationGeneration(queryClient) !== generation) {
         return (
-          queryClient.getQueryData<CollectionEntry[]>(collectionQueryKeys.all) ?? entries
+          queryClient.getQueryData<CollectionEntry[]>(collectionQueryKeys.all) ??
+          entries
         );
       }
       syncOwnershipFromCollection(queryClient, entries);
@@ -226,6 +233,13 @@ interface CollectionMutationContext {
   previousEntry?: CollectionEntry | null | undefined;
   previousEntries?: Map<string, CollectionEntry | null | undefined>;
   previousOwnership?: OwnershipRecord;
+  previousRecentAdds?: RecentActivitySnapshot;
+}
+
+function invalidateRecentAdds(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({
+    queryKey: collectionQueryKeys.recentAddsRoot,
+  });
 }
 
 function invalidateCollection(queryClient: QueryClient) {
@@ -237,6 +251,7 @@ function invalidateCollection(queryClient: QueryClient) {
     exact: true,
   });
   void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
+  invalidateRecentAdds(queryClient);
 }
 
 /** Persist optimistic collection state without refetching the full list. */
@@ -263,6 +278,9 @@ function reconcileCollectionEntries(
   }
 
   commitCollectionLocal(queryClient);
+  // Cancel in onMutate aborts an in-flight first fetch; refetch so the log is
+  // not left empty (or on a synthetic one-event cache) until staleTime.
+  invalidateRecentAdds(queryClient);
 }
 
 function logMutationFailure(
@@ -288,6 +306,7 @@ function beginCollectionMutation(
       collectionQueryKeys.entry(variantNumber)
     ),
     previousOwnership: getOwnershipRecord(queryClient),
+    previousRecentAdds: snapshotRecentActivityQueries(queryClient),
   };
   void queryClient.cancelQueries({ queryKey: collectionQueryKeys.all, exact: true });
   void queryClient.cancelQueries({
@@ -296,6 +315,7 @@ function beginCollectionMutation(
   // Cancel in-flight /quantities so a stale response cannot overwrite the
   // optimistic ownership write (critical for shared collections).
   void queryClient.cancelQueries({ queryKey: collectionQueryKeys.ownershipRoot });
+  void queryClient.cancelQueries({ queryKey: collectionQueryKeys.recentAddsRoot });
   return context;
 }
 
@@ -324,6 +344,7 @@ function rollbackCollectionCache(
       () => context.previousOwnership
     );
   }
+  restoreRecentActivityQueries(queryClient, context.previousRecentAdds);
 }
 
 function applyCollectionQuantity(
@@ -455,6 +476,12 @@ function currentQuantity(
 
 export function useCollectionMutations() {
   const queryClient = useQueryClient();
+  const sessionQuery = authClient.useSession();
+  const actor = {
+    userId: sessionQuery.data?.user.id ?? 'local',
+    name: sessionQuery.data?.user.name ?? null,
+    email: sessionQuery.data?.user.email ?? null,
+  };
 
   const addCard = useMutation({
     mutationKey: collectionMutationKey,
@@ -482,9 +509,17 @@ export function useCollectionMutations() {
         printings[0];
       const isFoil = vars.isFoil ?? printing?.isFoil ?? false;
       const context = beginCollectionMutation(queryClient, variantNumber);
-      const nextQuantity = currentQuantity(queryClient, variantNumber, isFoil) + 1;
+      const previousQuantity = currentQuantity(queryClient, variantNumber, isFoil);
+      const nextQuantity = previousQuantity + 1;
       const seed = entrySeedFromListCard(vars.card, variantNumber, isFoil) ?? undefined;
       applyCollectionQuantity(queryClient, variantNumber, nextQuantity, seed, isFoil);
+      recordOptimisticCollectionActivity(queryClient, {
+        variantNumber,
+        previousQuantity,
+        nextQuantity,
+        isFoil,
+        actor,
+      });
       return context;
     },
     onError: (error, vars, context) => {
@@ -522,8 +557,12 @@ export function useCollectionMutations() {
           );
         })();
       const context = beginCollectionMutation(queryClient, vars.variantNumber);
-      const nextQuantity =
-        currentQuantity(queryClient, vars.variantNumber, derivedIsFoil) + 1;
+      const previousQuantity = currentQuantity(
+        queryClient,
+        vars.variantNumber,
+        derivedIsFoil
+      );
+      const nextQuantity = previousQuantity + 1;
       const seed =
         entrySeedFromDetailCard(vars.card, vars.variantNumber, derivedIsFoil) ??
         undefined;
@@ -534,6 +573,13 @@ export function useCollectionMutations() {
         seed,
         derivedIsFoil
       );
+      recordOptimisticCollectionActivity(queryClient, {
+        variantNumber: vars.variantNumber,
+        previousQuantity,
+        nextQuantity,
+        isFoil: derivedIsFoil,
+        actor,
+      });
       return context;
     },
     onError: (error, vars, context) => {
@@ -560,14 +606,27 @@ export function useCollectionMutations() {
       isFoil?: boolean;
     }) => updateCollectionQuantity(variantNumber, quantity, isFoil),
     onMutate: (vars) => {
+      const isFoil = vars.isFoil ?? false;
       const context = beginCollectionMutation(queryClient, vars.variantNumber);
+      const previousQuantity = currentQuantity(
+        queryClient,
+        vars.variantNumber,
+        isFoil
+      );
       applyCollectionQuantity(
         queryClient,
         vars.variantNumber,
         vars.quantity,
         undefined,
-        vars.isFoil ?? false
+        isFoil
       );
+      recordOptimisticCollectionActivity(queryClient, {
+        variantNumber: vars.variantNumber,
+        previousQuantity,
+        nextQuantity: vars.quantity,
+        isFoil,
+        actor,
+      });
       return context;
     },
     onError: (error, vars, context) => {
@@ -596,8 +655,12 @@ export function useCollectionMutations() {
     onMutate: (vars) => {
       const isFoil = vars.isFoil ?? false;
       const context = beginCollectionMutation(queryClient, vars.variantNumber);
-      const nextQuantity =
-        currentQuantity(queryClient, vars.variantNumber, isFoil) + vars.delta;
+      const previousQuantity = currentQuantity(
+        queryClient,
+        vars.variantNumber,
+        isFoil
+      );
+      const nextQuantity = previousQuantity + vars.delta;
       applyCollectionQuantity(
         queryClient,
         vars.variantNumber,
@@ -605,6 +668,13 @@ export function useCollectionMutations() {
         undefined,
         isFoil
       );
+      recordOptimisticCollectionActivity(queryClient, {
+        variantNumber: vars.variantNumber,
+        previousQuantity,
+        nextQuantity,
+        isFoil,
+        actor,
+      });
       return context;
     },
     onError: (error, vars, context) => {
@@ -630,7 +700,15 @@ export function useCollectionMutations() {
       const variantNumber = typeof input === 'string' ? input : input.variantNumber;
       const isFoil = typeof input === 'string' ? false : (input.isFoil ?? false);
       const context = beginCollectionMutation(queryClient, variantNumber);
+      const previousQuantity = currentQuantity(queryClient, variantNumber, isFoil);
       applyCollectionQuantity(queryClient, variantNumber, 0, undefined, isFoil);
+      recordOptimisticCollectionActivity(queryClient, {
+        variantNumber,
+        previousQuantity,
+        nextQuantity: 0,
+        isFoil,
+        actor,
+      });
       return context;
     },
     onError: (error, input, context) => {
@@ -653,6 +731,7 @@ export function useCollectionMutations() {
         collectionQueryKeys.all
       );
       const previousOwnership = getOwnershipRecord(queryClient);
+      const previousRecentAdds = snapshotRecentActivityQueries(queryClient);
       const previousEntries = new Map(
         variantNumbers.map((variantNumber) => [
           variantNumber,
@@ -679,13 +758,14 @@ export function useCollectionMutations() {
         exact: true,
       });
       void queryClient.cancelQueries({ queryKey: collectionQueryKeys.ownershipRoot });
+      void queryClient.cancelQueries({ queryKey: collectionQueryKeys.recentAddsRoot });
       for (const variantNumber of variantNumbers) {
         void queryClient.cancelQueries({
           queryKey: collectionQueryKeys.entry(variantNumber),
         });
       }
 
-      return { previousAll, previousEntries, previousOwnership };
+      return { previousAll, previousEntries, previousOwnership, previousRecentAdds };
     },
     onError: (error, variantNumbers, context) => {
       if (context?.previousAll !== undefined) {
@@ -710,6 +790,7 @@ export function useCollectionMutations() {
           () => context.previousOwnership
         );
       }
+      restoreRecentActivityQueries(queryClient, context?.previousRecentAdds);
       logMutationFailure('collection.remove_many', error, {
         count: variantNumbers.length,
       });

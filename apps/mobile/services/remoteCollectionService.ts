@@ -1,8 +1,13 @@
-import type { CollectionItem, WishlistItem } from '@riftbound/contracts';
+import type {
+  CollectionActivityEvent,
+  CollectionItem,
+  WishlistItem,
+} from '@riftbound/contracts';
 import {
   CollectionImportResponse,
   CollectionListResponse,
   CollectionQuantitiesResponse,
+  CollectionRecentAddsResponse,
   WishlistListResponse,
 } from '@riftbound/contracts';
 import { authedFetch, authedFetchText, parseOrThrow } from '@/src/api/authedClient';
@@ -25,6 +30,21 @@ export async function fetchRemoteCollectionQuantities(
     body: { variantNumbers },
   });
   return parseOrThrow('collection.quantities.parse', CollectionQuantitiesResponse, res)
+    .data;
+}
+
+export async function fetchRemoteCollectionRecentAdds(
+  variantNumbers: string[]
+): Promise<CollectionActivityEvent[]> {
+  if (variantNumbers.length === 0) return [];
+  const res = await authedFetch<{ data: CollectionActivityEvent[] }>(
+    '/api/v1/collection/recent-adds',
+    {
+      method: 'POST',
+      body: { variantNumbers },
+    }
+  );
+  return parseOrThrow('collection.recentAdds.parse', CollectionRecentAddsResponse, res)
     .data;
 }
 

@@ -16,6 +16,7 @@ export function useCollectionImportExport() {
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.all, exact: true });
     void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.ownershipRoot });
+    void queryClient.invalidateQueries({ queryKey: collectionQueryKeys.recentAddsRoot });
   };
 
   const importCsv = useMutation({

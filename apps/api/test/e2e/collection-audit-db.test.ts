@@ -9,6 +9,7 @@ import {
 import {
   CollectionAuditListResponse,
   CollectionItemResponse,
+  CollectionRecentAddsResponse,
 } from '@riftbound/contracts';
 import { eq } from 'drizzle-orm';
 import { authFetch, cleanupTestUsers, signUpTestUser } from './helpers/auth.js';
@@ -103,6 +104,55 @@ describe('collection audit trail', () => {
       .from(collectionAuditEvents)
       .where(eq(collectionAuditEvents.collectionId, membership!.collectionId));
     expect(rows.length).toBeGreaterThanOrEqual(2);
+  });
+
+  test('returns the latest add and remove events for a card', async () => {
+    const variantNumber = 'OGN-310';
+
+    const first = await authFetch(
+      `/api/v1/collection/${encodeURIComponent(variantNumber)}/add`,
+      {
+        method: 'POST',
+        cookie,
+        body: JSON.stringify({ delta: 1 }),
+      }
+    );
+    expect(first.status).toBe(200);
+
+    const second = await authFetch(
+      `/api/v1/collection/${encodeURIComponent(variantNumber)}/add`,
+      {
+        method: 'POST',
+        cookie,
+        body: JSON.stringify({ delta: 1 }),
+      }
+    );
+    expect(second.status).toBe(200);
+
+    const removeRes = await authFetch(
+      `/api/v1/collection/${encodeURIComponent(variantNumber)}/remove`,
+      {
+        method: 'POST',
+        cookie,
+        body: JSON.stringify({ delta: 1 }),
+      }
+    );
+    expect(removeRes.status).toBe(200);
+
+    const recentRes = await authFetch('/api/v1/collection/recent-adds', {
+      method: 'POST',
+      cookie,
+      body: JSON.stringify({ variantNumbers: [variantNumber] }),
+    });
+    expect(recentRes.status).toBe(200);
+    const recent = CollectionRecentAddsResponse.parse(await recentRes.json());
+    expect(recent.data.length).toBeGreaterThanOrEqual(2);
+    expect(recent.data[0]?.quantityDelta).toBe(-1);
+    expect(recent.data[0]?.action).toBe('remove');
+    expect(recent.data[0]?.actor.userId).toBe(userId);
+    expect(recent.data.some((event) => event.quantityDelta > 0)).toBe(true);
+    const [latest, previous] = recent.data;
+    expect(latest?.at && previous?.at ? latest.at >= previous.at : false).toBe(true);
   });
 
   test('rejects unauthenticated audit reads', async () => {

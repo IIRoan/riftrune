@@ -13,6 +13,7 @@ import { hapticPress } from '@/utils/haptics';
 
 interface CatalogDetailScrollBodyProps {
   printingRows: React.ReactNode;
+  addedLog?: React.ReactNode;
   statsRow: React.ReactNode;
   metaAttributes: React.ReactNode;
   descriptionBlock: React.ReactNode;
@@ -38,6 +39,7 @@ function SectionDivider() {
 
 export function CatalogDetailScrollBody({
   printingRows,
+  addedLog,
   statsRow,
   metaAttributes,
   descriptionBlock,
@@ -63,6 +65,7 @@ export function CatalogDetailScrollBody({
       ) : null}
 
       <SectionDivider />
+      {addedLog}
       <View className="px-1 py-1">{statsRow}</View>
 
       <SectionDivider />

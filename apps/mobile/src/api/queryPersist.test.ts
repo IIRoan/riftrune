@@ -57,6 +57,12 @@ describe('queryPersist', () => {
         state: { status: 'success' },
       })
     ).toBe(false);
+    expect(
+      shouldPersistQuery({
+        queryKey: ['collection', 'recent-adds', 'OGN-001'],
+        state: { status: 'success' },
+      })
+    ).toBe(false);
   });
 
   test('skips unsuccessful queries', () => {

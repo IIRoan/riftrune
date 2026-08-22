@@ -60,9 +60,24 @@ export const DETAIL_PRINTING_ID_CLASS =
   'font-mono text-[11px] font-medium tabular-nums text-muted-foreground';
 
 /** Detail stats / meta values (Cost 2, Type Spell, …). */
-export const DETAIL_META_VALUE_CLASS =
-  'text-sm font-semibold text-foreground';
+export const DETAIL_META_VALUE_CLASS = 'text-sm font-semibold text-foreground';
 
 /** Detail stat numeric values (mono). */
 export const DETAIL_STAT_VALUE_CLASS =
   'font-mono text-sm font-semibold tabular-nums text-foreground';
+
+/** Single row in the card-level collection log — fixed height, normal flow. */
+export const COLLECTION_ADD_LOG_ROW_CLASS =
+  'min-h-[26px] flex-row items-center gap-2 py-0.5';
+
+/** Time column in the card-level collection log. */
+export const COLLECTION_ADD_LOG_TIME_CLASS =
+  'w-[6.5rem] shrink-0 font-mono text-[11px] font-normal leading-[14px] tabular-nums text-muted-foreground';
+
+/** What happened (Added 2 Foil copies · now 4). */
+export const COLLECTION_ADD_LOG_WHAT_CLASS =
+  'min-w-0 flex-1 font-mono text-[11px] font-normal leading-[14px] text-foreground';
+
+/** Signed quantity at the end of a log line. */
+export const COLLECTION_ADD_LOG_DELTA_CLASS =
+  'w-7 shrink-0 text-right font-mono text-[11px] font-normal leading-[14px] tabular-nums';
