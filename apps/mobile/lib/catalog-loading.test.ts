@@ -48,6 +48,7 @@ describe('isCatalogGridLoading', () => {
 describe('resolveCatalogDisplayItems', () => {
   const browse = ['browse-a', 'browse-b'];
   const search = ['soraka'];
+  const previousSearch = ['ahri', 'akali'];
 
   test('returns browse items when not searching', () => {
     expect(
@@ -63,18 +64,32 @@ describe('resolveCatalogDisplayItems', () => {
     ).toEqual(browse);
   });
 
-  test('holds browse tiles while the first search page is in flight', () => {
+  test('hides previous search hits while the draft is still debouncing', () => {
+    expect(
+      resolveCatalogDisplayItems({
+        hasSearchInput: true,
+        searchItems: previousSearch,
+        browseItems: browse,
+        searchPending: true,
+        isLoading: false,
+        isFetching: false,
+        searchItemsLength: previousSearch.length,
+      })
+    ).toEqual([]);
+  });
+
+  test('shows a skeleton-empty list while the first search page is in flight', () => {
     expect(
       resolveCatalogDisplayItems({
         hasSearchInput: true,
         searchItems: [],
         browseItems: browse,
-        searchPending: true,
-        isLoading: false,
+        searchPending: false,
+        isLoading: true,
         isFetching: false,
         searchItemsLength: 0,
       })
-    ).toEqual(browse);
+    ).toEqual([]);
   });
 
   test('switches to search hits once they arrive', () => {

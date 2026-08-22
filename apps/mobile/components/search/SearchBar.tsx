@@ -1,7 +1,8 @@
-import { useCallback, useRef } from 'react';
+import { forwardRef, memo, useCallback, useRef } from 'react';
 import {
   ActivityIndicator,
   Platform,
+  View,
   type NativeSyntheticEvent,
   type TextInput,
   type TextInputKeyPressEventData,
@@ -17,6 +18,7 @@ import { XIcon } from '@/components/icons';
 import { useHoldResultsSearchInput } from '@/hooks/useHoldResultsSearchInput';
 import { useLatestRef } from '@/hooks/useLatestRef';
 import { useWebSlashFocus } from '@/hooks/useWebSlashFocus';
+import { cn } from '@/lib/utils';
 import { isSlashShortcutTextChange } from '@/utils/webSlashFocus';
 
 interface SearchBarProps extends Pick<TextInputProps, 'onSubmitEditing' | 'autoFocus'> {
@@ -35,7 +37,7 @@ interface SearchBarProps extends Pick<TextInputProps, 'onSubmitEditing' | 'autoF
  * - Typing a query then `/` clears the field only (keeps current results until a new query).
  * - Explicit clear (X) commits empty and resets results.
  */
-export function SearchBar({
+export const SearchBar = memo(function SearchBar({
   value,
   onChangeText,
   onClear,
@@ -108,38 +110,38 @@ export function SearchBar({
     [clearDraftKeepResults, enableSlashFocus]
   );
 
-  // Keep the clear control mounted while loading. Swapping it for a spinner
-  // remounts Pressable siblings inside InputPressable and steals TextInput
-  // focus on web — exactly when search crosses MIN_SEARCH_LENGTH (3 chars).
+  // Keep end-addon slots mounted — toggling Pressable children inside
+  // InputPressable remounts the native field and steals focus on web.
   const showClear = draft.length > 0 || value.length > 0;
 
   return (
-    <SearchInput
-      ref={inputRef}
-      value={draft}
-      onChangeText={handleChangeText}
-      onKeyPress={handleKeyPress}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      placeholder={placeholder}
-      returnKeyType="search"
-      autoCapitalize="none"
-      autoCorrect={false}
-      onSubmitEditing={onSubmitEditing}
-      autoFocus={autoFocus}
-      shortcutHint={enableSlashFocus ? '/' : undefined}
-    >
-      {isLoading ? (
-        <InputAddon align="inline-end">
-          <ActivityIndicator size="small" className="accent-primary" />
-        </InputAddon>
-      ) : null}
-      {showClear ? (
-        <InputAddon align="inline-end">
+    <View className="relative w-full">
+      <SearchInput
+        ref={inputRef}
+        value={draft}
+        onChangeText={handleChangeText}
+        onKeyPress={handleKeyPress}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        returnKeyType="search"
+        autoCapitalize="none"
+        autoCorrect={false}
+        onSubmitEditing={onSubmitEditing}
+        autoFocus={autoFocus}
+        shortcutHint={enableSlashFocus ? '/' : undefined}
+      >
+        <InputAddon
+          align="inline-end"
+          className={cn(!showClear && 'w-0 min-w-0 overflow-hidden opacity-0')}
+        >
           <InputAddonButton
+            accessibilityElementsHidden={!showClear}
             accessibilityLabel="Clear search"
+            importantForAccessibility={showClear ? 'yes' : 'no-hide-descendants'}
             onPress={clearSearch}
             size="sm"
+            tabIndex={showClear ? 0 : -1}
             variant="ghost"
           >
             <InputAddonButtonIcon>
@@ -147,7 +149,20 @@ export function SearchBar({
             </InputAddonButtonIcon>
           </InputAddonButton>
         </InputAddon>
+      </SearchInput>
+      {isLoading ? (
+        <View
+          accessibilityElementsHidden
+          className={cn(
+            'absolute bottom-0 top-0 justify-center',
+            showClear ? 'right-11' : 'right-3'
+          )}
+          importantForAccessibility="no-hide-descendants"
+          pointerEvents="none"
+        >
+          <ActivityIndicator size="small" className="accent-primary" />
+        </View>
       ) : null}
-    </SearchInput>
+    </View>
   );
-}
+});

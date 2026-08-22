@@ -34,8 +34,10 @@ export type CatalogDisplayItemsInput<T> = {
 };
 
 /**
- * Prefer search hits once available; while the first page is in flight, keep
- * browse tiles so the list does not collapse under a focused search field.
+ * Prefer search hits once available for the settled query.
+ * While the draft is still debouncing or the first page is in flight, return
+ * an empty list so the UI can show a skeleton instead of flashing the previous
+ * term's hits (or browsing tiles mid-search).
  */
 export function resolveCatalogDisplayItems<T>({
   hasSearchInput,
@@ -47,10 +49,9 @@ export function resolveCatalogDisplayItems<T>({
   searchItemsLength,
 }: CatalogDisplayItemsInput<T>): T[] {
   if (!hasSearchInput) return browseItems;
+  if (searchPending) return [];
   const waitingForFirstPage =
-    searchItems.length === 0 &&
-    searchItemsLength === 0 &&
-    (searchPending || isLoading || isFetching);
-  if (waitingForFirstPage) return browseItems;
+    searchItemsLength === 0 && (isLoading || isFetching);
+  if (waitingForFirstPage) return [];
   return searchItems;
 }

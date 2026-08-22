@@ -12,7 +12,7 @@ describe('holdResultsSearchInput', () => {
   test('focus clears draft while remembering the committed query', () => {
     const initial = createHoldResultsSearchState('OGN-015');
     const focused = focusHoldResultsSearchState(initial, 'OGN-015');
-    expect(focused).toEqual({ draft: '', holdingFrom: 'OGN-015' });
+    expect(focused).toEqual({ draft: '', holdingFrom: 'OGN-015', focused: true });
 
     // Parent still has the same committed query — draft stays empty.
     expect(syncHoldResultsSearchState(focused, 'OGN-015')).toEqual(focused);
@@ -26,6 +26,7 @@ describe('holdResultsSearchInput', () => {
     expect(changeHoldResultsSearchState('Jinx')).toEqual({
       draft: 'Jinx',
       holdingFrom: null,
+      focused: true,
     });
   });
 
@@ -37,6 +38,7 @@ describe('holdResultsSearchInput', () => {
     expect(blurHoldResultsSearchState(focused)).toEqual({
       draft: 'Captain Farron',
       holdingFrom: null,
+      focused: false,
     });
   });
 
@@ -48,10 +50,20 @@ describe('holdResultsSearchInput', () => {
     expect(syncHoldResultsSearchState(focused, 'Jinx')).toEqual({
       draft: 'Jinx',
       holdingFrom: null,
+      focused: true,
     });
   });
 
+  test('noop sync while focused and draft already matches committed', () => {
+    const editing = changeHoldResultsSearchState('Jinx');
+    expect(syncHoldResultsSearchState(editing, 'Jinx')).toBe(editing);
+  });
+
   test('clear resets draft and hold', () => {
-    expect(clearHoldResultsSearchState()).toEqual({ draft: '', holdingFrom: null });
+    expect(clearHoldResultsSearchState()).toEqual({
+      draft: '',
+      holdingFrom: null,
+      focused: false,
+    });
   });
 });

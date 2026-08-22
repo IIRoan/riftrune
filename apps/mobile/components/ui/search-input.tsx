@@ -91,9 +91,14 @@ export const SearchInput = forwardRef<RNTextInput, SearchInputProps>(
           ref={mergedRef}
         />
 
-        {showShortcutHint && shortcutHint ? (
-          <InputAddon align="inline-end">
-            <ShortcutHint label={shortcutHint} />
+        {shortcutHint ? (
+          <InputAddon
+            align="inline-end"
+            className={cn(!showShortcutHint && 'w-0 min-w-0 overflow-hidden opacity-0')}
+          >
+            <View pointerEvents="none">
+              <ShortcutHint label={shortcutHint} />
+            </View>
           </InputAddon>
         ) : null}
 

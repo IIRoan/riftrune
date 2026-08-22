@@ -596,28 +596,54 @@ export function useSearchScreenBody(): React.ReactElement {
 
   const pageMaxWidth = splitLayout ? undefined : contentWidth;
 
-  const searchPanel = (
-    <SearchScreenToolbar
-      pageMaxWidth={pageMaxWidth}
-      query={query}
-      onQueryChange={setQuery}
-      onClearSearch={clearSearch}
-      // Only network fetch — debounce `searchPending` used to flip this on the
-      // 3rd character and remount SearchBar end-addons, stealing input focus.
-      searchLoading={hasSearchInput && (isLoading || isFetching)}
-      onSubmitSearch={() => {
-        searchNow();
-      }}
-      isMobile={isMobile}
-      filterActive={filterActive}
-      catalogFilters={catalogFilters}
-      onFiltersChange={applyCatalogFilters}
-      catalogSort={catalogSort}
-      onSortPress={() => {
-        setSortSheetOpen(true);
-      }}
-      onFilterPress={() => setFilterSheetOpen(true)}
-    />
+  const handleSubmitSearch = useCallback(() => {
+    searchNow();
+  }, [searchNow]);
+
+  const handleSortPress = useCallback(() => {
+    setSortSheetOpen(true);
+  }, []);
+
+  const handleFilterPress = useCallback(() => {
+    setFilterSheetOpen(true);
+  }, []);
+
+  const searchLoading = hasSearchInput && isLoading;
+
+  const searchPanel = useMemo(
+    () => (
+      <SearchScreenToolbar
+        pageMaxWidth={pageMaxWidth}
+        query={query}
+        onQueryChange={setQuery}
+        onClearSearch={clearSearch}
+        // Spinner uses isLoading only — isFetching is a subset and must not
+        // flip chrome while the user is mid-keystroke on the same term.
+        searchLoading={searchLoading}
+        onSubmitSearch={handleSubmitSearch}
+        isMobile={isMobile}
+        filterActive={filterActive}
+        catalogFilters={catalogFilters}
+        onFiltersChange={applyCatalogFilters}
+        catalogSort={catalogSort}
+        onSortPress={handleSortPress}
+        onFilterPress={handleFilterPress}
+      />
+    ),
+    [
+      pageMaxWidth,
+      query,
+      clearSearch,
+      searchLoading,
+      handleSubmitSearch,
+      isMobile,
+      filterActive,
+      catalogFilters,
+      applyCatalogFilters,
+      catalogSort,
+      handleSortPress,
+      handleFilterPress,
+    ]
   );
 
   const resultsTransitionKey = catalogFiltersQueryKey(catalogFilters);
